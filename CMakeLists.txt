@@ -103,6 +103,7 @@ if(WIN32)
 endif()
 
 
-add_subdirectory(MonophasicTest)
+add_subdirectory(LinearTracer)
+add_subdirectory(CGP)
 
 
