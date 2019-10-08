@@ -320,11 +320,7 @@ void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMater
     
 
     TPZManVector<REAL,3> n = data.normal;
-    TPZManVector<REAL,3> q_l =  datavecleft[q_b].sol[0];
-    REAL qn = 0.0;
-    for (int i = 0; i < 3; i++) {
-        qn += q_l[i]*n[i];
-    }
+    REAL qn =  datavecleft[q_b].sol[0][0];
     
     switch (bc.Type()) {
             

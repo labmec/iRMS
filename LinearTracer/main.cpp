@@ -60,34 +60,25 @@
 #include "RSimulatorConfiguration.h"
 #include "pzshapepiram.h"
 
-void case1_Axi();
-
 
 int main(){
-    case1_Axi();
-    
-    return 0;
-}
-
-void case1_Axi(){
-    
+ 
     SimulationCase sim;
     sim.UsePardisoQ=true;
     sim.IsHybrid=true;
-    sim.n_threads = 24;
+    sim.n_threads = 0;
     sim.omega_ids.push_back(1);
     sim.omega_dim.push_back(2);
     sim.permeabilities.push_back(1.0);
     sim.porosities.push_back(1.0);
-
-    /// C inlet value
+    
     sim.c_inlet = 1.0;
     
     int bc_non_flux = -1;
     int bc_inlet  = -2;
     int bc_non_flux2 = -3;
     int bc_outlet = -4;
-   
+    
     sim.gamma_ids.push_back(bc_non_flux);
     sim.gamma_dim.push_back(1);
     sim.gamma_ids.push_back(bc_inlet);
@@ -96,8 +87,6 @@ void case1_Axi(){
     sim.gamma_dim.push_back(1);
     sim.gamma_ids.push_back(bc_outlet);
     sim.gamma_dim.push_back(1);
-   
-    
     
     int bc_type_D = 0;    //    D = 0;
     int bc_type_N = 1;    //    N = 1;
@@ -109,7 +98,7 @@ void case1_Axi(){
     sim.type.push_back(bc_type_D);
     sim.type.push_back(bc_type_N);
     sim.type.push_back(bc_type_D);
- 
+    
     sim.vals.push_back(qn);
     sim.vals.push_back(p_inlet);
     sim.vals.push_back(qn);
@@ -119,6 +108,5 @@ void case1_Axi(){
     RSimulatorConfiguration caseSim(sim);
     caseSim.Run();
     
-    int ok;
+    return 0;
 }
-

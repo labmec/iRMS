@@ -421,15 +421,24 @@ TPZMultiphysicsCompMesh * RSimulatorConfiguration::MPTransportMesh(TPZMultiphysi
     TPZMultiphysicsCompMesh *cmesh = new TPZMultiphysicsCompMesh(geometry);
     
     /// Inserting matrix materials
+
     int n_vols = fsim_case.omega_ids.size();
     for (int i = 0; i < n_vols; i++) {
         int mat_id = fsim_case.omega_ids[i];
         REAL phi = fsim_case.porosities[i];
-        TPZTracerFlow * volume = new TPZTracerFlow(mat_id,0);
+        TPZTracerFlow * volume = new TPZTracerFlow(mat_id,dimension);
         volume->SetPorosity(phi);
         cmesh->InsertMaterialObject(volume);
     }
     
+    int transport_matid = 10;
+    {
+        REAL phi = 0.1;
+
+        TPZTracerFlow * interface = new TPZTracerFlow(transport_matid,dimension-1);
+        interface->SetPorosity(phi);
+        cmesh->InsertMaterialObject(interface);
+    }
     /// Inserting fracture materials
 //    int n_fracs = fracture_data.size();
 //    for (int i = 0; i < n_fracs; i++) {
@@ -479,23 +488,82 @@ TPZMultiphysicsCompMesh * RSimulatorConfiguration::MPTransportMesh(TPZMultiphysi
     active_approx_spaces[2] = 1;
     cmesh->BuildMultiphysicsSpace(active_approx_spaces,meshvec);
     
+#ifdef PZDEBUG
+    std::ofstream transport_a("transport_cmesh_after.txt");
+    cmesh->Print(transport_a);
+#endif
     
-    if (fsim_case.IsMHMQ) {
-        cmesh->CleanUpUnconnectedNodes();
-        cmesh->ExpandSolution();
-    }
-    else{
-        //        TPZCompMeshTools::GroupElements(cmesh);
-        //        std::cout << "Created grouped elements\n";
-        //        bool keepmatrix = false;
-        //        bool keeponelagrangian = true;
-        //        TPZCompMeshTools::CreatedCondensedElements(cmesh, keeponelagrangian, keepmatrix);
-        //        std::cout << "Created condensed elements\n";
-        //        cmesh->CleanUpUnconnectedNodes();
-        //        cmesh->ExpandSolution();
+    {
+        cmesh->Reference()->ResetReference();
+        cmesh->LoadReferences();
+
+        TPZManVector<std::vector<int64_t>,4> cel_indexes(4);
+        
+        TPZManVector<int64_t,3> left_mesh_indexes(2,0);
+        left_mesh_indexes[0] = 0;
+        left_mesh_indexes[1] = 2;
+        TPZManVector<int64_t,3> right_mesh_indexes(1,0);
+        right_mesh_indexes[0] = 2;
+        
+        int64_t nel = cmesh->NElements();
+        for (int64_t el = 0; el < nel; el++) {
+            
+            TPZCompEl *cel = cmesh->Element(el);
+            if(!cel) DebugStop();
+            TPZMultiphysicsElement *celmp = dynamic_cast<TPZMultiphysicsElement *>(cel);
+            if(!celmp) DebugStop();
+            TPZGeoEl *gel = cel->Reference();
+            if(!gel) DebugStop();
+            
+            int gel_dim = gel->Dimension();
+            cel_indexes[gel_dim].push_back(el);
+            
+        }
+        
+        for (auto cel_index: cel_indexes[2]) { // 2D case
+            TPZCompEl *cel = cmesh->Element(cel_index);
+            TPZMultiphysicsElement * celmult = dynamic_cast<TPZMultiphysicsElement *>(cel);
+            if (!celmult) {
+                DebugStop();
+            }
+            
+            if (!cel){continue;};
+            TPZGeoEl *gel = cel->Reference();
+            if (!gel){continue;};
+            int nsides = gel->NSides();
+            
+            for (int iside = gel->NNodes(); iside < nsides; iside++) {
+                
+                TPZGeoElSide gelside(gel,iside);
+                TPZCompElSide celside_l(cel,iside);
+                TPZGeoElSide neig = gelside.Neighbour();
+                TPZGeoEl *neihel = neig.Element();
+                TPZCompElSide celside_r = neig.Reference();
+                if ((neihel->Dimension() == gel->Dimension()) && (gel->Id() < neihel->Id()) ) {
+                    TPZGeoElBC gbc(gelside,transport_matid);
+                    
+                    int64_t index;
+                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*cmesh, gbc.CreatedElement(), index, celside_l,celside_r);
+                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
+                }
+                if ((neihel->Dimension() == dimension - 1)) { // BC cases
+                    
+                    TPZGeoElBC gbc(gelside,neihel->MaterialId());
+                    
+                    int64_t index;
+                    
+                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*cmesh, gbc.CreatedElement(), index, celside_l,celside_r);
+                    
+                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
+                    
+                }
+                
+            }
+            
+        }
     }
    
-    InsertTransportInterfaceElements(cmesh);
+//    InsertTransportInterfaceElements(cmesh);
    
     
     std::cout << "Created multi-physics transport mesh\n";
@@ -655,9 +723,9 @@ void RSimulatorConfiguration::PosProcess(){
     
 }
 void RSimulatorConfiguration::Run(){
-    CreateGeomesh(200,1, 1, 1, EQuadrilateral);
-    fsim_case.order_p=5;
-    fsim_case.order_q = 5;
+    CreateGeomesh(2, 1, 1, 1, EQuadrilateral);
+    fsim_case.order_p=1;
+    fsim_case.order_q=1;
     TPZMultiphysicsCompMesh *c_mult = CreateMultiPhysicsCompMesh(fGmesh);
     
     TPZCompMesh *s_cmesh = CreateTransportMesh(c_mult, 0);
@@ -667,6 +735,13 @@ void RSimulatorConfiguration::Run(){
     meshvec[1]=meshvect[1];
     meshvec[2]=s_cmesh;
     TPZMultiphysicsCompMesh *mul_sat = MPTransportMesh(c_mult, meshvec);
+    
+    {
+        TPZGeoMesh * gmsh = mul_sat->Reference();
+        std::string vtk_name = "geometry_sat.vtk";
+        std::ofstream vtkfile(vtk_name.c_str());
+        TPZVTKGeoMesh::PrintGMeshVTK(gmsh, vtkfile, true);
+    }
     
     std::ofstream fileprint("test_sat.txt");
     mul_sat->Print(fileprint);
@@ -696,8 +771,6 @@ void RSimulatorConfiguration::Run(){
     std::string fileresult("casetest.vtk");
     an->DefineGraphMesh(dim,scalnames,vecnames,fileresult);
     an->PostProcess(div,dim);
-    
-    
   
     TPZAnalysis *tracer_an = CreateTransportAnalysis(mul_sat, fsim_case);
     int n_steps = 300;
@@ -890,40 +963,10 @@ void RSimulatorConfiguration::InsertInterfacesBetweenElements(int transport_mati
     for (auto cel_index: cel_indexes) {
         TPZCompEl *cel = cmesh->Element(cel_index);
         TPZMultiphysicsElement * celmult = dynamic_cast<TPZMultiphysicsElement *>(cel);
+        if (!celmult) {
+            DebugStop();
+        }
         celmult->CreateInterfaces();
-        if (!cel){continue;};
-        TPZGeoEl *gel = cel->Reference();
-         if (!gel){continue;};
-        int nsides = gel->NSides();
-
-        for (int iside =gel->NNodes(); iside< nsides; iside++) {
-          //  celmult->CreateInterfaces();
-//            TPZGeoElSide gelside(gel,iside);
-//            TPZCompElSide celside_l(cel,iside);
-//            TPZGeoElSide neig = gelside.Neighbour();
-//            TPZGeoEl *neihel = neig.Element();
-//            TPZCompElSide celside_r = neig.Reference();
-//            if ((neihel->Dimension() == gel->Dimension()) && (gel->Id() < neihel->Id()) ) {
-//                TPZGeoElBC gbc(gelside,transport_matid);
-//
-//                 int64_t index;
-//                TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*cmesh, gbc.CreatedElement(), index, celside_r,celside_l);
-//                  mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-//            }
-//            if ((neihel->Dimension() == gel->Dimension()+1)) {
-//
-//                    TPZGeoElBC gbc(gelside,(gel->MaterialId()));
-//
-//                    int64_t index;
-//
-//                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*cmesh, gbc.CreatedElement(), index, celside_r,celside_l);
-//
-//                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-//
-//            }
-//
-       }
-
     }
   
 

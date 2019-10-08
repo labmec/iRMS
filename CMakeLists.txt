@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 2.8.0)
 
 set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE TYPE  INTERNAL FORCE )
 
-project (RSimulator)
+project (iMRS)
 
 IF (WIN32)
 	# Prevents timespec redefinition problem with Visual Studio 2015
