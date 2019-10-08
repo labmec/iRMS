@@ -70,7 +70,7 @@ int main(){
     sim.omega_ids.push_back(1);
     sim.omega_dim.push_back(2);
     sim.permeabilities.push_back(1.0);
-    sim.porosities.push_back(1.0);
+    sim.porosities.push_back(0.1);
     
     sim.c_inlet = 1.0;
     
@@ -90,8 +90,8 @@ int main(){
     
     int bc_type_D = 0;    //    D = 0;
     int bc_type_N = 1;    //    N = 1;
-    REAL p_inlet  = 240.818;
-    REAL p_outlet = 50.0;
+    REAL p_inlet  = 1.0;
+    REAL p_outlet = 0.0;
     REAL qn       = 0.0;
     
     sim.type.push_back(bc_type_N);

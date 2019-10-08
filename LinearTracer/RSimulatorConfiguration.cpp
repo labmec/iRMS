@@ -722,8 +722,11 @@ void RSimulatorConfiguration::PrintGmesh( std::ofstream &file_name){
 void RSimulatorConfiguration::PosProcess(){
     
 }
+
+//#define Verbose_Q
+
 void RSimulatorConfiguration::Run(){
-    CreateGeomesh(2, 1, 1, 1, EQuadrilateral);
+    CreateGeomesh(10, 1, 2, 1, EQuadrilateral);
     fsim_case.order_p=1;
     fsim_case.order_q=1;
     TPZMultiphysicsCompMesh *c_mult = CreateMultiPhysicsCompMesh(fGmesh);
@@ -736,6 +739,7 @@ void RSimulatorConfiguration::Run(){
     meshvec[2]=s_cmesh;
     TPZMultiphysicsCompMesh *mul_sat = MPTransportMesh(c_mult, meshvec);
     
+#ifdef Verbose_Q
     {
         TPZGeoMesh * gmsh = mul_sat->Reference();
         std::string vtk_name = "geometry_sat.vtk";
@@ -747,9 +751,11 @@ void RSimulatorConfiguration::Run(){
     mul_sat->Print(fileprint);
     std::ofstream file("sat.vtk");
     TPZVTKGeoMesh::PrintCMeshVTK(mul_sat, file);
+#endif
     
     TPZAnalysis *an = CreateAnalysis(c_mult, false, 1, true);
     
+#ifdef Verbose_Q
     std::ofstream fileg("geometry.txt");
     fGmesh->Print(fileg);
     std::ofstream filep("pressure.txt");
@@ -758,23 +764,24 @@ void RSimulatorConfiguration::Run(){
     c_mult->MeshVector()[0]->Print(flux);
     std::ofstream multi("multi.txt");
     c_mult->Print(multi);
+#endif
+    
     an->Assemble();
         an->Solve();
     c_mult->LoadSolutionFromMultiPhysics();
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("q");
     scalnames.Push("p");
-    //  scalnames.Push("Permeability");
     
     int div = 0;
     int dim=fGmesh->Dimension();
-    std::string fileresult("casetest.vtk");
+    std::string fileresult("flux_and_p.vtk");
     an->DefineGraphMesh(dim,scalnames,vecnames,fileresult);
     an->PostProcess(div,dim);
   
     TPZAnalysis *tracer_an = CreateTransportAnalysis(mul_sat, fsim_case);
-    int n_steps = 300;
-    REAL dt     = 0.00001;
+    int n_steps = 20;
+    REAL dt     = 0.1;
     TPZFMatrix<STATE> M_diag;
         TPZFMatrix<STATE> saturations = TimeForward(tracer_an, n_steps, dt, M_diag);
    
@@ -1015,7 +1022,7 @@ TPZFMatrix<STATE> RSimulatorConfiguration::TimeForward(TPZAnalysis * tracer_anal
     {
         
         bool mass_matrix_Q = true;
-        std::set<int> volumetric_mat_ids = {1};
+        std::set<int> volumetric_mat_ids = {1,10};
         
         for (auto mat_id: volumetric_mat_ids) {
             TPZMaterial * mat = cmesh_transport->FindMaterial(mat_id);
@@ -1031,6 +1038,9 @@ TPZFMatrix<STATE> RSimulatorConfiguration::TimeForward(TPZAnalysis * tracer_anal
         std::cout << "Mass Matrix is computed." << std::endl;
         M = tracer_analysis->Solver().Matrix()->Clone();
     }
+    
+//    M->Print("M = ",std::cout,EMathematicaInput);
+    
     int n_rows = M->Rows();
     M_diag.Resize(n_rows,M->Cols());
     
@@ -1046,7 +1056,7 @@ TPZFMatrix<STATE> RSimulatorConfiguration::TimeForward(TPZAnalysis * tracer_anal
     
     {
         bool mass_matrix_Q = false;
-        std::set<int> volumetric_mat_ids = {1};
+        std::set<int> volumetric_mat_ids = {1,10};
         
         for (auto mat_id: volumetric_mat_ids) {
             TPZMaterial * mat = cmesh_transport->FindMaterial(mat_id);
@@ -1060,7 +1070,7 @@ TPZFMatrix<STATE> RSimulatorConfiguration::TimeForward(TPZAnalysis * tracer_anal
         
         std::cout << "Computing transport operator K = M + T, and F_inlet " << std::endl;
         tracer_analysis->Assemble();
-     //   tracer_analysis->Solver().Matrix()->Print(std::cout);
+//        tracer_analysis->Rhs().Print("f = ",std::cout,EMathematicaInput);
  
         F_inlet = tracer_analysis->Rhs();
    
@@ -1116,7 +1126,7 @@ TPZFMatrix<STATE> RSimulatorConfiguration::TimeForward(TPZAnalysis * tracer_anal
             std::set<int> mat_id_3D;
             mat_id_3D.insert(1);
             
-            std::string file_reservoir("cube_s.vtk");
+            std::string file_reservoir("saturation.vtk");
             tracer_analysis->DefineGraphMesh(2,mat_id_3D,scalnames,vecnames,file_reservoir);
             tracer_analysis->PostProcess(div,2);
             
