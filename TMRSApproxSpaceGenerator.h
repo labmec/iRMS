@@ -13,12 +13,19 @@
 #include "TPZGmshReader.h"
 #include "pzgmesh.h"
 #include "TPZVTKGeoMesh.h"
+#include "TPZMultiphysicsCompMesh.h"
+#include "TPZMixedDarcyFlow.h"
+#include "TMRSDataTransfer.h"
+#include "TPZTracerFlow.h"
+#include "pzl2projection.h"
 
 class TMRSApproxSpaceGenerator : public TMRSSavable {
     
 private:
     
     TPZGeoMesh * mGeometry;
+    
+    TMRSDataTransfer mDataTransfer;
     
 public:
     
@@ -43,9 +50,19 @@ public:
     
     TPZGeoMesh * GetGeometry();
     
+    void SetDataTransfer(TMRSDataTransfer & DataTransfer);
+    
+    TMRSDataTransfer & GetDataTransfer();
+    
     void LoadGeometry(std::string geometry_file);
     
     void PrintGeometry(std::string name);
+    
+    TPZCompMesh * HdivFluxCmesh(int order);
+    
+    TPZCompMesh * DiscontinuousCmesh(int order = 0);
+    
+    TPZMultiphysicsCompMesh * MixedMultiPhysicsCompMesh(int order);
     
 };
 

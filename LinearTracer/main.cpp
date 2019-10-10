@@ -63,18 +63,53 @@
 
 // Geometry generation
 #include "../TMRSApproxSpaceGenerator.h"
+#include "../TMRSDataTransfer.h"
 
-TPZGeoMesh * ReadGeometry(std::string geometry_file);
-void PrintGeometry(TPZGeoMesh * geometry, std::string name);
+TPZAnalysis * CreateAnalysis(TPZMultiphysicsCompMesh * cmesh_mult,  bool must_opt_band_width_Q, int n_threads, bool UsePardiso_Q);
 
 int main(){
  
+    TMRSDataTransfer sim_data;
+    
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_rock"] = 1;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_wbregion_p"] = 2;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_wbregion_i"] = 3;
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(6);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(4,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(5,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(6,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(7,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(10,0,20.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(11,0,30.0);
+    
     std::string geometry_file = "reservoir.msh";
     std::string name = "reservoir";
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
     aspace.PrintGeometry(name);
+    aspace.SetDataTransfer(sim_data);
     
+    int order = 1;
+    TPZMultiphysicsCompMesh * mixed_operator = aspace.MixedMultiPhysicsCompMesh(order);
+    bool must_opt_band_width_Q = true;
+    int n_threads = 0;
+    bool UsePardiso_Q = true;
+    TPZAnalysis * analysis =  CreateAnalysis(mixed_operator,  must_opt_band_width_Q, n_threads, UsePardiso_Q);
+    
+    analysis->Assemble();
+    analysis->Solve();
+    mixed_operator->LoadSolutionFromMultiPhysics();
+    TPZStack<std::string,10> scalnames, vecnames;
+    vecnames.Push("q");
+    scalnames.Push("p");
+    
+    int div = 0;
+    int dim = aspace.GetGeometry()->Dimension();
+    std::string fileresult("flux_and_p.vtk");
+    analysis->DefineGraphMesh(dim,scalnames,vecnames,fileresult);
+    analysis->PostProcess(div,dim);
+    
+    return 0;
     
     SimulationCase sim;
     sim.UsePardisoQ=true;
@@ -125,3 +160,31 @@ int main(){
 }
 
 
+TPZAnalysis * CreateAnalysis(TPZMultiphysicsCompMesh * cmesh_mult,  bool must_opt_band_width_Q, int n_threads, bool UsePardiso_Q){
+    
+    TPZAnalysis * analysis = new TPZAnalysis(cmesh_mult, must_opt_band_width_Q);
+    
+    if (UsePardiso_Q) {
+        
+        TPZSymetricSpStructMatrix matrix(cmesh_mult);
+        matrix.SetNumThreads(n_threads);
+        
+        analysis->SetStructuralMatrix(matrix);
+        TPZStepSolver<STATE> step;
+        step.SetDirect(ELDLt);
+        analysis->SetSolver(step);
+
+    }else{
+        
+        TPZSkylineStructMatrix matrix(cmesh_mult);
+        matrix.SetNumThreads(n_threads);
+        TPZStepSolver<STATE> step;
+        step.SetDirect(ECholesky);
+        analysis->SetSolver(step);
+        analysis->SetStructuralMatrix(matrix);
+
+    }
+    
+    return analysis;
+    
+}

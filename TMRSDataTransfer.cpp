@@ -8,22 +8,37 @@
 #include "TMRSDataTransfer.h"
 
 
-TMRSDataTransfer::TMRSDataTransfer(){
-    DebugStop();
+TMRSDataTransfer::TMRSDataTransfer() : mTGeometry(), mTPetroPhysics(), mTFluidProperties(), mTBoundaryConditions(), mTNumerics(), mTPostProcess(){
+    
 }
 
 
 TMRSDataTransfer::TMRSDataTransfer(const TMRSDataTransfer &other){
-    DebugStop();
+    mTGeometry = other.mTGeometry;
+    mTPetroPhysics = other.mTPetroPhysics;
+    mTFluidProperties = other.mTFluidProperties;
+    mTBoundaryConditions = other.mTBoundaryConditions;
+    mTNumerics = other.mTNumerics;
+    mTPostProcess = other.mTPostProcess;
 }
 
 
 TMRSDataTransfer & TMRSDataTransfer::operator=(const TMRSDataTransfer &other){
-    DebugStop();
+    
+    if (this != & other) // prevent self-assignment
+    {
+        mTGeometry = other.mTGeometry;
+        mTPetroPhysics = other.mTPetroPhysics;
+        mTFluidProperties = other.mTFluidProperties;
+        mTBoundaryConditions = other.mTBoundaryConditions;
+        mTNumerics = other.mTNumerics;
+        mTPostProcess = other.mTPostProcess;
+    }
+    return *this;
 }
 
 TMRSDataTransfer::~TMRSDataTransfer(){
-    DebugStop();
+
 }
 
 void TMRSDataTransfer::Write(TPZStream &buf, int withclassid) const{
