@@ -103,6 +103,15 @@ if(WIN32)
 endif()
 
 
+file(GLOB headers_files *.h)
+
+file(GLOB sources_files *.cpp)
+
+set(common_files ${headers_files} ${sources_files} )
+
+set(common_dir ${CMAKE_CURRENT_SOURCE_DIR} )
+
+
 add_subdirectory(LinearTracer)
 add_subdirectory(CGP)
 

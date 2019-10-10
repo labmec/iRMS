@@ -62,8 +62,8 @@
 
 
 // Geometry generation
-#include "../TMRSApproxSpaceGenerator.h"
-#include "../TMRSDataTransfer.h"
+#include "TMRSApproxSpaceGenerator.h"
+#include "TMRSDataTransfer.h"
 
 TPZAnalysis * CreateAnalysis(TPZMultiphysicsCompMesh * cmesh_mult,  bool must_opt_band_width_Q, int n_threads, bool UsePardiso_Q);
 
@@ -77,7 +77,7 @@ TMRSDataTransfer Setting3D();
 
 int main(){
  
-    bool is_3D_Q = true;
+    bool is_3D_Q = false;
     
     TMRSDataTransfer sim_data;
     std::string geometry_file, name;
@@ -86,7 +86,7 @@ int main(){
         name = "reservoir_3d";
         sim_data = Setting3D();
     }else{
-        geometry_file = "reservoir_2d.msh";
+        geometry_file = "reservoir.msh";
         name = "reservoir_2d";
         sim_data = Setting2D();
     }
