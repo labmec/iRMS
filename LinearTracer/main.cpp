@@ -91,8 +91,8 @@ int main(){
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(5,0,0.0);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(6,0,0.0);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(7,0,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(10,0,1.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(11,1,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(10,1,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(11,0,1.0);
     
     std::string geometry_file = "reservoir.msh";
     std::string name = "reservoir";
@@ -103,7 +103,7 @@ int main(){
     
     int order = 1;
     bool must_opt_band_width_Q = true;
-    int n_threads = 0;
+    int n_threads = 24;
     bool UsePardiso_Q = true;
     aspace.MixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
@@ -125,57 +125,10 @@ int main(){
     aspace.TransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     TPZAnalysis *tracer_an = CreateTransportAnalysis(transport_operator, must_opt_band_width_Q, n_threads, UsePardiso_Q);
-    int n_steps = 20;
-    REAL dt     = 0.1;
+    int n_steps = 50;
+    REAL dt     = 1000.0;
     TPZFMatrix<STATE> M_diag;
     TPZFMatrix<STATE> saturations = TimeForward(tracer_an, n_steps, dt, M_diag);
-    
-    return 0;
-    
-    SimulationCase sim;
-    sim.UsePardisoQ=true;
-    sim.IsHybrid=true;
-    sim.n_threads = 0;
-    sim.omega_ids.push_back(1);
-    sim.omega_dim.push_back(2);
-    sim.permeabilities.push_back(1.0);
-    sim.porosities.push_back(0.1);
-    
-    sim.c_inlet = 1.0;
-    
-    int bc_non_flux = -1;
-    int bc_inlet  = -2;
-    int bc_non_flux2 = -3;
-    int bc_outlet = -4;
-    
-    sim.gamma_ids.push_back(bc_non_flux);
-    sim.gamma_dim.push_back(1);
-    sim.gamma_ids.push_back(bc_inlet);
-    sim.gamma_dim.push_back(1);
-    sim.gamma_ids.push_back(bc_non_flux2);
-    sim.gamma_dim.push_back(1);
-    sim.gamma_ids.push_back(bc_outlet);
-    sim.gamma_dim.push_back(1);
-    
-    int bc_type_D = 0;    //    D = 0;
-    int bc_type_N = 1;    //    N = 1;
-    REAL p_inlet  = 1.0;
-    REAL p_outlet = 0.0;
-    REAL qn       = 0.0;
-    
-    sim.type.push_back(bc_type_N);
-    sim.type.push_back(bc_type_D);
-    sim.type.push_back(bc_type_N);
-    sim.type.push_back(bc_type_D);
-    
-    sim.vals.push_back(qn);
-    sim.vals.push_back(p_inlet);
-    sim.vals.push_back(qn);
-    sim.vals.push_back(p_outlet);
-    
-    
-    RSimulatorConfiguration caseSim(sim);
-    caseSim.Run();
     
     return 0;
 }
