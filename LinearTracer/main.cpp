@@ -61,8 +61,21 @@
 #include "pzshapepiram.h"
 
 
+// Geometry generation
+#include "../TMRSApproxSpaceGenerator.h"
+
+TPZGeoMesh * ReadGeometry(std::string geometry_file);
+void PrintGeometry(TPZGeoMesh * geometry, std::string name);
+
 int main(){
  
+    std::string geometry_file = "reservoir.msh";
+    std::string name = "reservoir";
+    TMRSApproxSpaceGenerator aspace;
+    aspace.LoadGeometry(geometry_file);
+    aspace.PrintGeometry(name);
+    
+    
     SimulationCase sim;
     sim.UsePardisoQ=true;
     sim.IsHybrid=true;
@@ -110,3 +123,5 @@ int main(){
     
     return 0;
 }
+
+
