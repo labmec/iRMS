@@ -27,6 +27,10 @@ private:
     
     TMRSDataTransfer mDataTransfer;
     
+    TPZMultiphysicsCompMesh * mMixedOperator;
+    
+    TPZMultiphysicsCompMesh * mTransportOperator;
+    
 public:
     
     TMRSApproxSpaceGenerator();
@@ -62,7 +66,13 @@ public:
     
     TPZCompMesh * DiscontinuousCmesh(int order = 0);
     
-    TPZMultiphysicsCompMesh * MixedMultiPhysicsCompMesh(int order);
+    void MixedMultiPhysicsCompMesh(int order);
+    
+    void TransportMultiPhysicsCompMesh();
+    
+    TPZMultiphysicsCompMesh * GetMixedOperator();
+    
+    TPZMultiphysicsCompMesh * GetTransportOperator();
     
 };
 
