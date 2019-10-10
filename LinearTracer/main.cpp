@@ -71,31 +71,27 @@ TPZAnalysis * CreateTransportAnalysis(TPZMultiphysicsCompMesh * cmesh, bool must
 
 TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL & dt, TPZFMatrix<STATE> & M_diag);
 
+TMRSDataTransfer Setting2D();
+
+TMRSDataTransfer Setting3D();
+
 int main(){
  
+    bool is_3D_Q = true;
+    
     TMRSDataTransfer sim_data;
+    std::string geometry_file, name;
+    if (is_3D_Q) {
+        geometry_file = "reservoir_3d.msh";
+        name = "reservoir_3d";
+        sim_data = Setting3D();
+    }else{
+        geometry_file = "reservoir_2d.msh";
+        name = "reservoir_2d";
+        sim_data = Setting2D();
+    }
     
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_rock"] = 1;
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_wbregion_p"] = 2;
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_wbregion_i"] = 3;
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(6);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(4,1,0.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(5,1,0.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(6,1,0.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(7,1,0.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(10,0,20.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(11,0,30.0);
     
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(6);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(4,0,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(5,0,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(6,0,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(7,0,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(10,1,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(11,0,1.0);
-    
-    std::string geometry_file = "reservoir.msh";
-    std::string name = "reservoir";
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
     aspace.PrintGeometry(name);
@@ -104,7 +100,7 @@ int main(){
     int order = 1;
     bool must_opt_band_width_Q = true;
     int n_threads = 24;
-    bool UsePardiso_Q = true;
+    bool UsePardiso_Q = false;
     aspace.MixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     TPZAnalysis * analysis =  CreateAnalysis(mixed_operator,  must_opt_band_width_Q, n_threads, UsePardiso_Q);
@@ -125,12 +121,74 @@ int main(){
     aspace.TransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     TPZAnalysis *tracer_an = CreateTransportAnalysis(transport_operator, must_opt_band_width_Q, n_threads, UsePardiso_Q);
-    int n_steps = 50;
+    int n_steps = 10;
     REAL dt     = 1000.0;
     TPZFMatrix<STATE> M_diag;
     TPZFMatrix<STATE> saturations = TimeForward(tracer_an, n_steps, dt, M_diag);
     
     return 0;
+    
+}
+
+TMRSDataTransfer Setting2D(){
+    
+    TMRSDataTransfer sim_data;
+    
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_rock"] = 1;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_wbregion_p"] = 2;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_wbregion_i"] = 3;
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(6);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(4,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(5,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(6,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(7,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(10,0,20.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(11,0,30.0);
+    
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(6);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(4,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(5,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(6,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(7,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(10,1,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(11,0,1.0);
+    return sim_data;
+}
+
+TMRSDataTransfer Setting3D(){
+    
+    TMRSDataTransfer sim_data;
+    
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["d_rock"] = 1;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["d_wbregion_p"] = 2;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["d_wbregion_i"] = 3;
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(10);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(4,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(5,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(6,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(7,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(8,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(9,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[6] = std::make_tuple(10,1,0.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[7] = std::make_tuple(11,1,0.0);
+    
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[8] = std::make_tuple(12,0,20.0);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[9] = std::make_tuple(13,0,30.0);
+    
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(10);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(4,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(5,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(6,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(7,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(8,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(9,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[6] = std::make_tuple(10,0,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[7] = std::make_tuple(11,0,0.0);
+    
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[8] = std::make_tuple(12,1,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[9] = std::make_tuple(13,0,1.0);
+    
+    return sim_data;
 }
 
 
@@ -153,7 +211,7 @@ TPZAnalysis * CreateAnalysis(TPZMultiphysicsCompMesh * cmesh_mult,  bool must_op
         TPZSkylineStructMatrix matrix(cmesh_mult);
         matrix.SetNumThreads(n_threads);
         TPZStepSolver<STATE> step;
-        step.SetDirect(ECholesky);
+        step.SetDirect(ELDLt);
         analysis->SetSolver(step);
         analysis->SetStructuralMatrix(matrix);
 
@@ -309,11 +367,12 @@ TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL
             }
             
             int div = 0;
+            int dimension = tracer_analysis->Mesh()->Reference()->Dimension();
             std::set<int> mat_id_3D = volumetric_mat_ids;
             
             std::string file_reservoir("saturation.vtk");
-            tracer_analysis->DefineGraphMesh(2,mat_id_3D,scalnames,vecnames,file_reservoir);
-            tracer_analysis->PostProcess(div,2);
+            tracer_analysis->DefineGraphMesh(dimension,mat_id_3D,scalnames,vecnames,file_reservoir);
+            tracer_analysis->PostProcess(div,dimension);
             
             //                std::set<int> mat_id_2D;
             //                mat_id_2D.insert(6);

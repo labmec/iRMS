@@ -33,12 +33,12 @@ well_i_v_regions = {};
 
 
 geomechanicQ = 0;
-dimension = 2;
+dimension = 3;
 nolinearQ = 0;
 CADReservoirQ = 0;
 
 xzQ = 0;
-hexahedronsWQ = 1;
+hexahedronsWQ = 0;
 hexahedronsRQ = 0;
 hexahedronsSBQ = 0;
 
@@ -55,12 +55,12 @@ EndIf
 
 sf=1.0;
 
-// Gmsh allows variables; these will be used to set desired
+// Gmsh allows global variables, they will be used to set desired
 // element sizes at various Points
 cl1 = 1;
 cl2 = 0.1;
-cl3 = 10.0;
-cl4 = 25.0;
+cl3 = 5.0;
+cl4 = 50.0;
 cl5 = sf*5000.0;
 
 ////////////////////////////////////////////////////////////////////////////
@@ -128,8 +128,8 @@ wl = 40.0;
 
 wbr = 20.0;
 ela = 40.0;
-rw_cell= 5.0;
-wr_cell= 20.0;
+rw_cell= 2.0;
+wr_cell= 10.0;
 
 If(dimension == 2)
 rw = 0.2;

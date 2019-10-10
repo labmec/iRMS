@@ -339,7 +339,7 @@ void TMRSApproxSpaceGenerator::TransportMultiPhysicsCompMesh(){
             
         }
         
-        for (auto cel_index: cel_indexes[2]) { // 2D case
+        for (auto cel_index: cel_indexes[dimension]) { // Higher dimension case
             TPZCompEl *cel = mTransportOperator->Element(cel_index);
             TPZMultiphysicsElement * celmult = dynamic_cast<TPZMultiphysicsElement *>(cel);
             if (!celmult) {
