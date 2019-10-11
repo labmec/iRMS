@@ -197,17 +197,15 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     int dimension = mGeometry->Dimension();
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-    TPZMixedDarcyFlow * volume = nullptr;
+    TMRSDarcyFlowWithMem<TMRSDarcyMemory> * volume = nullptr;
     mMixedOperator->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mDataTransfer.mTGeometry.mDomainDimNameAndPhysicalTag;
-    REAL kappa = 1.0;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
-            volume = new TPZMixedDarcyFlow(materia_id,d);
-            volume->SetPermeability(kappa);
+            volume = new TMRSDarcyFlowWithMem<TMRSDarcyMemory>(materia_id,d);
             mMixedOperator->InsertMaterialObject(volume);
         }
     }
@@ -226,7 +224,7 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
         mMixedOperator->InsertMaterialObject(face);
     }
     
-    mMixedOperator->SetDimModel(dimension);
+    
     TPZManVector<TPZCompMesh * ,2> mesh_vec(2);
 
     mesh_vec[0] = HdivFluxCmesh(order);
@@ -234,7 +232,8 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     TPZManVector<int,5> active_approx_spaces(2);
     active_approx_spaces[0] = 1;
     active_approx_spaces[1] = 1;
-    mMixedOperator->BuildMultiphysicsSpace(active_approx_spaces,mesh_vec);
+    mMixedOperator->SetDimModel(dimension);
+    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
     
 #ifdef PZDEBUG
     std::stringstream file_name;

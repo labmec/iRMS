@@ -26,7 +26,7 @@ class TMRSDarcyFlowWithMem : public TPZMatWithMem<TMEM> {
     STATE m_scale_flux = 1.0;
     
     /// Directive that stands for the use of four approximations spaces (iterative method)
-    bool is_four_spaces_Q;
+    bool m_is_four_spaces_Q;
     
 public:
     

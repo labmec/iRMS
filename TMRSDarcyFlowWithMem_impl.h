@@ -16,38 +16,61 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TPZMatWithMem<TMEM>() {
 }
 
 template <class TMEM>
-TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension){
-    DebugStop();
+TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension) : TPZMatWithMem<TMEM>(mat_id){
+    m_dimension = dimension;
+    m_is_four_spaces_Q = false;
 }
 
 template <class TMEM>
-TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(const TMRSDarcyFlowWithMem & other){
-    DebugStop();
+TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(const TMRSDarcyFlowWithMem & other) : TPZMatWithMem<TMEM>(other){
+    m_dimension         = other.m_dimension;
+    m_scale_pressure    = other.m_scale_pressure;
+    m_scale_flux        = other.m_scale_flux;
+    m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
 }
 
 template <class TMEM>
 TMRSDarcyFlowWithMem<TMEM> & TMRSDarcyFlowWithMem<TMEM>::operator=(const TMRSDarcyFlowWithMem & other){
-    DebugStop();
+    // check for self-assignment
+    if(&other == this){
+        return *this;
+    }
+    m_dimension         = other.m_dimension;
+    m_scale_pressure    = other.m_scale_pressure;
+    m_scale_flux        = other.m_scale_flux;
+    m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
+    return *this;
 }
 
 template <class TMEM>
 TMRSDarcyFlowWithMem<TMEM>::~TMRSDarcyFlowWithMem(){
-    DebugStop();
+    
 }
 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::FillDataRequirements(TPZVec<TPZMaterialData> &datavec) {
-    DebugStop();
+    int ndata = datavec.size();
+    for (int idata=0; idata < ndata ; idata++) {
+        datavec[idata].SetAllRequirements(false);
+        datavec[idata].fNeedsSol = true;
+    }
 }
 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::FillBoundaryConditionDataRequirement(int type, TPZVec<TPZMaterialData> &datavec) {
-    DebugStop();
+    int ndata = datavec.size();
+    for (int idata=0; idata < ndata ; idata++) {
+        datavec[idata].SetAllRequirements(false);
+        datavec[idata].fNeedsSol = true;
+    }
 }
 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::Print(std::ostream &out) {
-    DebugStop();
+    out << m_dimension << std::endl;
+    out << m_scale_pressure << std::endl;
+    out << m_scale_flux << std::endl;
+    out << m_is_four_spaces_Q << std::endl;
 }
 
 template <class TMEM>
