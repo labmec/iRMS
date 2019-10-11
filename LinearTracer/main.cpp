@@ -385,7 +385,7 @@ TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL
             
             for (auto data: volumetric_ids) {
                 TPZMaterial * mat = cmesh_transport->FindMaterial(data.first);
-                TPZTracerFlow * volume = dynamic_cast<TPZTracerFlow * >(mat);
+                TMRSMultiphaseFlow<TMRSTransportMemory> * volume = dynamic_cast<TMRSMultiphaseFlow<TMRSTransportMemory> * >(mat);
                 if (!volume) {
                     DebugStop();
                 }

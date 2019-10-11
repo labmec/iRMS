@@ -303,7 +303,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     active_approx_spaces[0] = 0;
     active_approx_spaces[1] = 0;
     active_approx_spaces[2] = 1;
-    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
+    mTransportOperator->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
     
 #ifdef PZDEBUG
     std::ofstream transport_a("transport_cmesh_after.txt");
