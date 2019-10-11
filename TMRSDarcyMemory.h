@@ -28,13 +28,14 @@ public:
     /// weight pressure at last state
     REAL m_p;
     
+    /// weight pressure at current state
+    REAL m_p_n;
+    
     /// mass flux
     TPZManVector<REAL,3> m_flux;
     
     /// Dimensional factor
     REAL m_d;
-    
-public:
     
     /// Default constructor
     TMRSDarcyMemory();
@@ -112,6 +113,18 @@ public:
     REAL p()
     {
         return m_p;
+    }
+    
+    /// Set pore pressure at current state
+    void Setp_n(REAL p_n)
+    {
+        m_p_n = p_n;
+    }
+    
+    /// Get pore pressure at current state
+    REAL p_n()
+    {
+        return m_p_n;
     }
 
     
