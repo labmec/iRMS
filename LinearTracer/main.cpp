@@ -82,11 +82,11 @@ int main(){
     TMRSDataTransfer sim_data;
     std::string geometry_file, name;
     if (is_3D_Q) {
-        geometry_file = "reservoir_3d.msh";
+        geometry_file = "gmsh/reservoir_3d.msh";
         name = "reservoir_3d";
         sim_data = Setting3D();
     }else{
-        geometry_file = "reservoir.msh";
+        geometry_file = "gmsh/reservoir_2d.msh";
         name = "reservoir_2d";
         sim_data = Setting2D();
     }
@@ -100,7 +100,7 @@ int main(){
     int order = 1;
     bool must_opt_band_width_Q = true;
     int n_threads = 24;
-    bool UsePardiso_Q = false;
+    bool UsePardiso_Q = true;
     aspace.MixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     TPZAnalysis * analysis =  CreateAnalysis(mixed_operator,  must_opt_band_width_Q, n_threads, UsePardiso_Q);
@@ -121,7 +121,7 @@ int main(){
     aspace.TransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     TPZAnalysis *tracer_an = CreateTransportAnalysis(transport_operator, must_opt_band_width_Q, n_threads, UsePardiso_Q);
-    int n_steps = 10;
+    int n_steps = 50;
     REAL dt     = 1000.0;
     TPZFMatrix<STATE> M_diag;
     TPZFMatrix<STATE> saturations = TimeForward(tracer_an, n_steps, dt, M_diag);
@@ -137,21 +137,47 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_rock"] = 1;
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_wbregion_p"] = 2;
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_wbregion_i"] = 3;
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(6);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(4,1,0.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(5,1,0.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(6,1,0.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(7,1,0.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(10,0,20.0);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(11,0,30.0);
     
+    //zero flux boundaries
+    int D_Type = 0;
+    int N_Type = 1;
+    int zero_flux=0.0;
+    REAL pressure_in = 30.0;
+    REAL pressure_out = 20.0;
+    
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(6);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(4,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(5,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(6,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(7,N_Type,zero_flux);
+    
+    //well pressure
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(10,D_Type,pressure_out);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(11,D_Type,pressure_in);
+    
+    //Transport boundary Conditions
+    int bc_inlet = 0;
+    int bc_outlet = 1;
+    REAL sat_in = 1.0;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(6);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(4,0,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(5,0,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(6,0,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(7,0,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(10,1,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(11,0,1.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(4,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(5,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(6,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(7,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(10,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(11,bc_inlet,sat_in);
+    
+    //Relative permermeabilities
+    
+    sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.Resize(1);
+    TRSLinearInterpolator krw, krow ;
+    std::string name_krw("PetroPhysics/krw.txt");
+    std::string name_krow("PetroPhysics/krow.txt");
+    krw.ReadData(name_krw);
+    krow.ReadData(name_krow);
+    sim_data.mTPetroPhysics.mLayer_Krow_RelPerModel[0] ;
+    
+    
     return sim_data;
 }
 

@@ -14,6 +14,7 @@
 #include "TMRSSavable.h"
 #include "pzmanvector.h"
 #include<tuple> // for tuple
+#include "TRSLinearInterpolator.h"
 
 
 /// Object that represents GUI state and store all the required input/output data
@@ -82,6 +83,33 @@ public:
     class TPetroPhysics : public TMRSSavable {
         
     public:
+           TPZManVector<std::tuple<int, TRSLinearInterpolator>> mLayer_Krw_RelPerModel;
+        TPZManVector<std::tuple<int, TRSLinearInterpolator>> mLayer_Krow_RelPerModel;
+        
+        TPetroPhysics(){
+            mLayer_Krw_RelPerModel.Resize(1);
+            mLayer_Krow_RelPerModel.Resize(1);
+        }
+        
+        ~TPetroPhysics(){
+            
+        }
+    
+        TPetroPhysics(const TPetroPhysics &other){
+            mLayer_Krw_RelPerModel = other.mLayer_Krw_RelPerModel;
+            mLayer_Krow_RelPerModel = other.mLayer_Krow_RelPerModel;
+           
+        }
+        
+        TPetroPhysics &operator=(const TPetroPhysics &other){
+            if (this != & other) // prevent self-assignment
+            {
+                mLayer_Krw_RelPerModel = other.mLayer_Krw_RelPerModel;
+                mLayer_Krow_RelPerModel = other.mLayer_Krow_RelPerModel;
+               
+            }
+            return *this;
+        }
     
         
     };

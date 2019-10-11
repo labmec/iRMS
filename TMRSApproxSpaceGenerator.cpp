@@ -6,7 +6,7 @@
 //
 
 #include "TMRSApproxSpaceGenerator.h"
-
+using namespace std;
 
 TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator(){
     mGeometry = nullptr;

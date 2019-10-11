@@ -19,12 +19,12 @@
 #include "pzmatrix.h"
 //#include "tpanic.h"
 
-typedef TPZFMatrix<double> Matrix;
+
 
 class TRSLinearInterpolator
 {
 private:
-     Matrix fdata;
+     TPZFMatrix<REAL> fdata;
 public:
    
 
@@ -53,17 +53,17 @@ public:
     /** @brief Constructor with data to interpolate
      * @param data is a matrix(nx2 for linear interpolation or nx3 for Hermite interpolation) with one dimensional data to interpolate
      */
-    TRSLinearInterpolator(Matrix data);
+    TRSLinearInterpolator(TPZFMatrix<REAL> data);
     
     /** @brief Function that sets the matrix((x,f(x)) for linear interpolation or (x,f(x), f'(x)) for Hermite interpolation) with the data to interpolate
      * @param data is a matrix(nx2 for Linear interpolation or nx3 for Hermite interpolation) with one dimensional data to interpolate
      */
-    void SetData(Matrix data);
+    void SetData(TPZFMatrix<REAL> data);
     
     /** @brief Function that returns the data
      * @return  The matrix(nx2 for Linear interpolation or nx3 for Hermite interpolation) with the one dimensional data to interpolate
      */
-    Matrix GetData();
+    TPZFMatrix<REAL> GetData();
     
     /** @brief Function that read the interpolation data from a ".txt" file
      * @param data is the name of the file with the interpolation data
@@ -106,7 +106,7 @@ public:
      *  @param x is the interpolation point
      *  @return A vector with the Lagrange Basis at x point and its derivatives
      */
-    TPZVec<double> LagrangeB(Matrix mat, int k,double x);
+    TPZVec<double> LagrangeB(TPZFMatrix<REAL> mat, int k,double x);
     
     /** @brief Function that calculates the Hermite Basis value "k" at x point
      *  @param mat is the matrix that contains the interval to analyze
@@ -114,7 +114,7 @@ public:
      *  @param x is the interpolation point
      *  @return A vector with the Hermite Basis at x point and its derivatives
      */
-    TPZVec<double> HermiteB(Matrix mat, int k,double x);
+    TPZVec<double> HermiteB(TPZFMatrix<REAL> mat, int k,double x);
     
     /** @brief Function that transforms the "TRSInterpolator" object as an function that returns the interpolated values
      *  @param Function that returns the interpolated value

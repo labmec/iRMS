@@ -102,6 +102,8 @@ if(WIN32)
 
 endif()
 
+file (COPY gmsh  DESTINATION ./LinearTracer/Debug)
+file (COPY PetroPhysics  DESTINATION ./LinearTracer/Debug)
 
 file(GLOB headers_files *.h)
 

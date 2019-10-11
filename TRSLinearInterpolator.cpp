@@ -18,7 +18,7 @@ TRSLinearInterpolator::TRSLinearInterpolator(){
  * @brief Constructor
  * @param data is a matrix that contains the values (x,f(x)) for linear interpolation or (x, f(x), f'(x)) for Hermite Interpolation.
  */
-TRSLinearInterpolator::TRSLinearInterpolator(Matrix data){
+TRSLinearInterpolator::TRSLinearInterpolator(TPZFMatrix<REAL> data){
     fdata=data;
     
 }
@@ -26,7 +26,7 @@ TRSLinearInterpolator::TRSLinearInterpolator(Matrix data){
 /** @brief Function that sets the matrix((x,f(x)) for linear interpolation or (x,f(x), f'(x)) for hermite interpolation) with the data to interpolate
  * @param  data is a matrix (nx2 for Linear interpolation or nx3 for Hermite interpolation) with the dimensional data to interpolate
  */
-void TRSLinearInterpolator::SetData(Matrix data){
+void TRSLinearInterpolator::SetData(TPZFMatrix<REAL> data){
     if(data.Rows()>= 2){
         fdata = data;
     }
@@ -38,7 +38,7 @@ void TRSLinearInterpolator::SetData(Matrix data){
 /** @brief Function that returns a matrix (nx2 for Linear interpolation or nx3 for Hermite interpolation) with one dimensional data to interpolate
  * @return  The matrix (nx2) with one dimensional data to interpolate
  */
-Matrix TRSLinearInterpolator::GetData(){
+TPZFMatrix<REAL> TRSLinearInterpolator::GetData(){
     return fdata;
 }
 
@@ -105,7 +105,7 @@ std::tuple<double, double> TRSLinearInterpolator::ValDeriv(double x){
             if (x >= fdata(0,0) && x<= fdata(npoints-1,0) ){
                 for(int i=0;  i<npoints-1; i++){
                     if(x >= fdata(i,0) && x<= fdata(i+1,0)){
-                        Matrix Vals(2,3);
+                        TPZFMatrix<REAL> Vals(2,3);
                         Vals(0,0) = fdata(i,0);
                         Vals(1,0) = fdata(i+1,0);
                         Vals(0,1) = fdata(i,1);
@@ -223,7 +223,7 @@ void TRSLinearInterpolator::SetInterpolationType(InterpType type){
  * @param x is the point at which the lagrange polynomial associated with point k is evaluated
  * @return A vector with the lagrange polynomial value associated with k point and the derivative valueof the polynomial evaluated at point x
  */
-TPZVec<double> TRSLinearInterpolator::LagrangeB(Matrix mat, int k,double x){
+TPZVec<double> TRSLinearInterpolator::LagrangeB(TPZFMatrix<REAL> mat, int k,double x){
     
     int rows = mat.Rows();
   
@@ -250,7 +250,7 @@ TPZVec<double> TRSLinearInterpolator::LagrangeB(Matrix mat, int k,double x){
  * @return A vector with the Hermite polynomial value  associated with k point and the derivative value of the polynomial evaluated at x point
  
  */
-TPZVec<double> TRSLinearInterpolator::HermiteB(Matrix mat, int k,double x){
+TPZVec<double> TRSLinearInterpolator::HermiteB(TPZFMatrix<REAL> mat, int k,double x){
     TPZVec<double> BaseLagrange = LagrangeB(mat, k, x);
     TPZVec<double> BaseHermite(4);
     double hermi = (1 - 2*(x-mat(k,0))*(BaseLagrange[1]))*(BaseLagrange[0]*BaseLagrange[0]);
@@ -294,7 +294,7 @@ void TRSLinearInterpolator::ReadData(std::string name){
     file.open(name);
     
     int i=1;
-    Matrix data;
+    TPZFMatrix<REAL> data;
     std::string line;
     int n_cols =0;
     while (std::getline(file, line))
