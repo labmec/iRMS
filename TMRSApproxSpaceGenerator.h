@@ -66,9 +66,9 @@ public:
     
     TPZCompMesh * DiscontinuousCmesh(int order = 0);
     
-    void MixedMultiPhysicsCompMesh(int order);
+    void BuildMixedMultiPhysicsCompMesh(int order);
     
-    void TransportMultiPhysicsCompMesh();
+    void BuildTransportMultiPhysicsCompMesh();
     
     TPZMultiphysicsCompMesh * GetMixedOperator();
     

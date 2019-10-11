@@ -192,7 +192,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
 }
 
 
-void TMRSApproxSpaceGenerator::MixedMultiPhysicsCompMesh(int order){
+void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     
     int dimension = mGeometry->Dimension();
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
@@ -245,7 +245,7 @@ void TMRSApproxSpaceGenerator::MixedMultiPhysicsCompMesh(int order){
     
 }
 
-void TMRSApproxSpaceGenerator::TransportMultiPhysicsCompMesh(){
+void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     
     if (!mMixedOperator || !mGeometry) {
         DebugStop();

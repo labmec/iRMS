@@ -99,9 +99,9 @@ int main(){
     
     int order = 1;
     bool must_opt_band_width_Q = true;
-    int n_threads = 24;
+    int n_threads = 0;
     bool UsePardiso_Q = true;
-    aspace.MixedMultiPhysicsCompMesh(order);
+    aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     TPZAnalysis * analysis =  CreateAnalysis(mixed_operator,  must_opt_band_width_Q, n_threads, UsePardiso_Q);
     
@@ -118,7 +118,7 @@ int main(){
     analysis->DefineGraphMesh(dim,scalnames,vecnames,fileresult);
     analysis->PostProcess(div,dim);
     
-    aspace.TransportMultiPhysicsCompMesh();
+    aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     TPZAnalysis *tracer_an = CreateTransportAnalysis(transport_operator, must_opt_band_width_Q, n_threads, UsePardiso_Q);
     int n_steps = 50;
