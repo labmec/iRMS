@@ -17,6 +17,8 @@
 #include "TPZMixedDarcyFlow.h"
 #include "TMRSDarcyFlowWithMem_impl.h"
 #include "TMRSDarcyMemory.h"
+#include "TMRSMultiphaseFlow_impl.h"
+#include "TMRSTransportMemory.h"
 #include "TMRSDataTransfer.h"
 #include "TPZTracerFlow.h"
 #include "pzl2projection.h"

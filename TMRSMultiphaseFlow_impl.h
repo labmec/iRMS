@@ -1,0 +1,334 @@
+//
+//  TMRSMultiphaseFlow_impl.h
+//
+//
+//  Created by Omar Durán on 10/10/19.
+//
+
+#include "TMRSMultiphaseFlow.h"
+
+template <class TMEM>
+TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow() : TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>(){
+    m_dimension = 0;
+}
+
+template <class TMEM>
+TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow(int matid, int dimension) : TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>(matid){
+    m_dimension = dimension;
+}
+
+template <class TMEM>
+TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow(const TMRSMultiphaseFlow &other){
+    m_dimension = other.m_dimension;
+}
+
+template <class TMEM>
+TMRSMultiphaseFlow<TMEM> & TMRSMultiphaseFlow<TMEM>::operator=(const TMRSMultiphaseFlow &other){
+    // check for self-assignment
+    if(&other == this){
+        return *this;
+    }
+    m_dimension = other.m_dimension;
+    return *this;
+}
+
+template <class TMEM>
+TMRSMultiphaseFlow<TMEM>::~TMRSMultiphaseFlow(){
+
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::FillDataRequirements(TPZVec<TPZMaterialData> &datavec) {
+    int ndata = datavec.size();
+    for (int idata=0; idata < ndata ; idata++) {
+        datavec[idata].SetAllRequirements(false);
+        datavec[idata].fNeedsSol = true;
+    }
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::FillBoundaryConditionDataRequirement(int type, TPZVec<TPZMaterialData> &datavec) {
+    int ndata = datavec.size();
+    for (int idata=0; idata < ndata ; idata++) {
+        datavec[idata].SetAllRequirements(false);
+        datavec[idata].fNeedsSol = true;
+        datavec[idata].fNeedsNormal = true;
+    }
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::FillDataRequirementsInterface(TPZMaterialData &data) {
+    data.SetAllRequirements(false);
+    data.fNeedsSol = true;
+    data.fNeedsNormal = true;
+    if(TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>::fLinearContext == false){
+        data.fNeedsNeighborSol = true;
+    }
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::FillDataRequirementsInterface(TPZMaterialData &data, TPZVec<TPZMaterialData > &datavec_left, TPZVec<TPZMaterialData > &datavec_right) {
+   
+    data.SetAllRequirements(false);
+    data.fNeedsSol = true;
+    data.fNeedsNormal = true;
+    int nref_left = datavec_left.size();
+    for(int iref = 0; iref<nref_left; iref++){
+        datavec_left[iref].SetAllRequirements(false);
+        datavec_left[iref].fNeedsSol = true;
+        datavec_left[iref].fNeedsNormal = true;
+    }
+    int nref_right = datavec_right.size();
+    for(int iref = 0; iref<nref_right; iref++){
+        datavec_right[iref].SetAllRequirements(false);
+        datavec_right[iref].fNeedsSol = true;
+    }
+    
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::Print(std::ostream &out){
+    out << "\t Base class print:\n";
+    out << " name of material : " << this->Name() << "\n";
+    TPZMaterial::Print(out);
+}
+
+template <class TMEM>
+int TMRSMultiphaseFlow<TMEM>::VariableIndex(const std::string &name) {
+    if (!strcmp("Sw", name.c_str())) return 0;
+    if (!strcmp("So", name.c_str())) return 1;
+    return TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>::VariableIndex(name);
+}
+
+template <class TMEM>
+int TMRSMultiphaseFlow<TMEM>::NSolutionVariables(int var) {
+    switch(var) {
+        case 0:
+            return 1; // Scalar
+        case 1:
+            return 1; // Scalar
+            
+    }
+    return TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>::NSolutionVariables(var);
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout) {
+    
+    int s_b    = 2;
+    REAL sw = datavec[s_b].sol[0][0];
+    
+    Solout.Resize(this->NSolutionVariables(var));
+    
+    switch(var) {
+        case 0:
+        {
+            Solout[0] = sw;
+        }
+            break;
+        case 1:
+        {
+            Solout[0] = 1.0-sw;
+        }
+            break;
+    }
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef) {
+    
+#ifdef PZDEBUG
+    int nref =  datavec.size();
+    if (nref != 3 ) {
+        std::cout << " Erro. The size of the datavec is different from 3 \n";
+        DebugStop();
+    }
+#endif
+    
+    int s_b = 2;
+    
+    REAL alpha = 1.0;
+    REAL m_phi = 1.0;
+
+    // Setting the phis
+    TPZFMatrix<REAL>  &phiS =  datavec[s_b].phi;
+    REAL s = datavec[s_b].sol[0][0];
+    int n_phi_s = phiS.Rows();
+    
+    int firsts_s    = 0;
+    
+    for (int is = 0; is < n_phi_s; is++)
+    {
+        ef(is + firsts_s) += 1.0 * alpha * weight * m_phi * s * phiS(is,0);
+        
+        for (int js = 0; js < n_phi_s; js++)
+        {
+            ek(is + firsts_s, js + firsts_s) += alpha * weight * m_phi * (phiS(js,0) )* phiS(is,0);
+        }
+    }
+    
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
+    TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
+    this->Contribute(datavec, weight, ek_fake, ef);
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, TPZVec<TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
+    
+    int q_b = 0;
+    int s_b = 2;
+    
+    // Getting phis and solution for left material data
+    TPZFMatrix<REAL>  &phiS_l =  datavecleft[s_b].phi;
+    int n_phi_s_l = phiS_l.Rows();
+    REAL s_l = datavecleft[s_b].sol[0][0];
+    int firsts_s_l    = 0;
+    
+    // Getting phis and solution for right material data
+    TPZFMatrix<REAL>  &phiS_r =  datavecright[s_b].phi;
+    int n_phi_s_r = phiS_r.Rows();
+    REAL s_r = datavecright[s_b].sol[0][0];
+    int firsts_s_r    = n_phi_s_l;
+    
+    TPZManVector<REAL,3> n = data.normal;
+    TPZManVector<REAL,3> q_l =  datavecleft[q_b].sol[0];
+    REAL qn = 0.0;
+    for (int i = 0; i < 3; i++) {
+        qn += q_l[i]*n[i];
+    }
+    
+    REAL beta = 0.0;
+    // upwinding
+    if (qn > 0.0) {
+        beta = 1.0;
+    }
+    
+    for (int is = 0; is < n_phi_s_l; is++) {
+        
+        ef(is + firsts_s_l) += +1.0 * m_dt * weight * (beta*s_l + (1.0-beta)*s_r)*phiS_l(is,0)*qn;
+        
+        for (int js = 0; js < n_phi_s_l; js++) {
+            ek(is + firsts_s_l, js + firsts_s_l) += +1.0* m_dt * weight * beta * phiS_l(js,0) * phiS_l(is,0)*qn;
+        }
+        
+        for (int js = 0; js < n_phi_s_r; js++) {
+            ek(is + firsts_s_l, js + firsts_s_r) += +1.0* m_dt * weight * (1.0-beta) * phiS_r(js,0) * phiS_l(is,0)*qn;
+        }
+        
+    }
+    
+    for (int is = 0; is < n_phi_s_r; is++) {
+        
+        ef(is + firsts_s_r) += -1.0* m_dt * weight * (beta*s_l + (1.0-beta)*s_r)*phiS_r(is,0)*qn;
+        
+        for (int js = 0; js < n_phi_s_l; js++) {
+            ek(is + firsts_s_r, js + firsts_s_l) += -1.0* m_dt * weight * beta * phiS_l(js,0) * phiS_r(is,0)*qn;
+        }
+        
+        for (int js = 0; js < n_phi_s_r; js++) {
+            ek(is + firsts_s_r, js + firsts_s_r) += -1.0* m_dt * weight * (1.0-beta) * phiS_r(js,0) * phiS_r(is,0)*qn;
+        }
+        
+    }
+    
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, TPZVec<TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ef) {
+    TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
+    this->ContributeInterface(data,datavecleft,datavecright, weight, ek_fake, ef);
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc) {
+    
+    int q_b = 0;
+    int s_b = 2;
+    
+    // Getting phis and solution for left material data
+    TPZFMatrix<REAL>  &phiS_l =  datavecleft[s_b].phi;
+    int n_phi_s_l = phiS_l.Rows();
+    REAL s_l = datavecleft[s_b].sol[0][0];
+    int firsts_s_l    = 0;
+    
+    
+    TPZManVector<REAL,3> n = data.normal;
+    TPZManVector<REAL,3> q_l =  datavecleft[q_b].sol[0];
+    REAL qn = 0.0;
+    for (int i = 0; i < 3; i++) {
+        qn += q_l[i]*n[i];
+    }
+    
+    switch (bc.Type()) {
+            
+        case 0 :    // BC inlet
+        {
+            
+            REAL s_inlet = bc.Val2()(0,0);
+            if (qn > 0.0 || IsZero(qn)) {
+                std::cout << "TPZTracerFlow:: Outlet flux in inlet boundary condition qn = " << qn << std::endl;
+            }
+            for (int is = 0; is < n_phi_s_l; is++) {
+                ef(is + firsts_s_l) += +1.0* m_dt * weight * s_inlet * phiS_l(is,0)*qn;
+            }
+            
+        }
+            break;
+            
+        case 1 :    // BC outlet
+        {
+            
+            if (qn > 0.0 || IsZero(qn)) {
+                for (int is = 0; is < n_phi_s_l; is++) {
+                    
+                    ef(is + firsts_s_l) += +1.0* m_dt * weight * s_l*phiS_l(is,0)*qn;
+                    
+                    for (int js = 0; js < n_phi_s_l; js++) {
+                        ek(is + firsts_s_l, js + firsts_s_l) += +1.0* m_dt * weight * phiS_l(js,0) * phiS_l(is,0)*qn;
+                    }
+                }
+            }else{
+                std::cout << "TPZTracerFlow:: Inlet flux on outlet boundary condition qn = " << qn << std::endl;
+            }
+            
+            
+        }
+            break;
+            
+        default: std::cout << "This BC doesn't exist." << std::endl;
+        {
+            
+            DebugStop();
+        }
+            break;
+    }
+    
+    return;
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
+    
+    TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
+    this->ContributeBCInterface(data,datavecleft, weight, ek_fake, ef, bc);
+    
+}
+
+template <class TMEM>
+int TMRSMultiphaseFlow<TMEM>::ClassId() const{
+    DebugStop();
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::Write(TPZStream &buf, int withclassid){
+    DebugStop();
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::Read(TPZStream &buf, void *context) {
+    DebugStop();
+}
+

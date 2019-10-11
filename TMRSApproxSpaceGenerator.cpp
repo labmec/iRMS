@@ -261,7 +261,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     int dimension = mGeometry->Dimension();
     mTransportOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-    TPZTracerFlow * volume = nullptr;
+    TMRSMultiphaseFlow<TMRSTransportMemory> * volume = nullptr;
     mTransportOperator->SetDefaultOrder(0);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mDataTransfer.mTGeometry.mDomainDimNameAndPhysicalTag;
     REAL phi = 1.0;
@@ -270,8 +270,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
-            volume = new TPZTracerFlow(materia_id,d);
-            volume->SetPorosity(phi);
+            volume = new TMRSMultiphaseFlow<TMRSTransportMemory>(materia_id,d);
             mTransportOperator->InsertMaterialObject(volume);
         }
     }
@@ -304,7 +303,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     active_approx_spaces[0] = 0;
     active_approx_spaces[1] = 0;
     active_approx_spaces[2] = 1;
-    mTransportOperator->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
+    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
     
 #ifdef PZDEBUG
     std::ofstream transport_a("transport_cmesh_after.txt");
