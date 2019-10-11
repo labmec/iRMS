@@ -14,7 +14,7 @@
 #include "pzgmesh.h"
 #include "TPZVTKGeoMesh.h"
 #include "TPZMultiphysicsCompMesh.h"
-#include "TPZMixedDarcyFlow.h"
+#include "TMRSDarcyFlowWithMem_impl.h"
 #include "TMRSDataTransfer.h"
 #include "TPZTracerFlow.h"
 #include "pzl2projection.h"
