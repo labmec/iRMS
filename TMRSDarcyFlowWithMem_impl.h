@@ -156,6 +156,10 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     STATE p                  = datavec[pb].sol[0][0];
     
+    // Get the data at integrations points
+    long gp_index = datavec[qb].intGlobPtIndex;
+    TMEM & memory = this->GetMemory().get()->operator[](gp_index);
+    
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
     
     int s_i, s_j;
@@ -163,8 +167,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            DebugStop();
-//            kappa_inv_q(i,0) += m_kappa_inv(i,j)*q[j];
+            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*q[j];
         }
     }
     
@@ -191,8 +194,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    DebugStop();
-//                    kappa_inv_phi_q_j(i,0) += m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fNormalVec(j,v_j);
+                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fNormalVec(j,v_j);
                 }
             }
             
@@ -240,6 +242,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
     
+    REAL gBigNumber = TPZMaterial::gBigNumber;
     int qb = 0;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     
@@ -267,13 +270,12 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, 
             
             for (int iq = 0; iq < nphi_q; iq++)
             {
-                REAL qn_N = bc_data[0], qn = q[0];
-                DebugStop();
-//                ef(iq + first_q) += -1.0 * weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0);
+                REAL qn_N = bc_data[0];
+                REAL qn = q[0];
+                ef(iq + first_q) += -1.0 * weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++)
                 {
-                    DebugStop();
-//                    ek(iq + first_q,jq + first_q) += -1.0 * weight * gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
+                    ek(iq + first_q,jq + first_q) += -1.0 * weight * gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
                 }
                 
             }
