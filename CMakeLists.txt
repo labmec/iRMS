@@ -102,8 +102,16 @@ if(WIN32)
 
 endif()
 
-file (COPY gmsh  DESTINATION ./LinearTracer/Debug)
+
+file(GLOB mesh
+  "gmsh/*.msh"
+)
+file(COPY ${mesh} DESTINATION ./LinearTracer/Debug/gmsh)
+file(COPY ${mesh} DESTINATION ./LinearTracer/Release/gmsh)
+
+
 file (COPY PetroPhysics  DESTINATION ./LinearTracer/Debug)
+file (COPY PetroPhysics  DESTINATION ./LinearTracer/Release)
 
 file(GLOB headers_files *.h)
 

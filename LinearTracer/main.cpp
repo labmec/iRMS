@@ -76,7 +76,7 @@ TMRSDataTransfer Setting3D();
 int main(){
  
     bool is_3D_Q = false;
-    
+    bool is_2D_Coarse_Q = false;
     TMRSDataTransfer sim_data;
     std::string geometry_file, name;
     if (is_3D_Q) {
@@ -84,7 +84,12 @@ int main(){
         name = "reservoir_3d";
         sim_data = Setting3D();
     }else{
-        geometry_file = "gmsh/reservoir_2d.msh";
+        if (is_2D_Coarse_Q) {
+            geometry_file = "gmsh/reservoir_2d_coarse.msh";
+        }
+        else{
+            geometry_file = "gmsh/reservoir_2d_fine.msh";
+        }
         name = "reservoir_2d";
         sim_data = Setting2D();
     }
