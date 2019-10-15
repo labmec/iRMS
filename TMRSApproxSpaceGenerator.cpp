@@ -202,7 +202,7 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     int dimension = mGeometry->Dimension();
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-    TMRSDarcyFlowWithMem<TMRSDarcyMemory> * volume = nullptr;
+    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
     mMixedOperator->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mDataTransfer.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
@@ -210,7 +210,7 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
-            volume = new TMRSDarcyFlowWithMem<TMRSDarcyMemory>(materia_id,d);
+            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
             mMixedOperator->InsertMaterialObject(volume);
         }
     }
@@ -266,7 +266,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     int dimension = mGeometry->Dimension();
     mTransportOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-    TMRSMultiphaseFlow<TMRSTransportMemory> * volume = nullptr;
+    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
     mTransportOperator->SetDefaultOrder(0);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mDataTransfer.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
@@ -274,7 +274,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
-            volume = new TMRSMultiphaseFlow<TMRSTransportMemory>(materia_id,d);
+            volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
             mTransportOperator->InsertMaterialObject(volume);
         }
     }
@@ -498,4 +498,25 @@ void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOpera
     cmesh_tra->Print(out_geo);
 #endif
     
+}
+
+void TMRSApproxSpaceGenerator::UnifyMaterialMemory(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator) {
+    
+    TPZCompMesh * cmesh_o = MixedOperator;
+    TPZCompMesh * cmesh_d = TransportOperator;
+    
+    /// Apply memory link
+    TPZMaterial * material_o = cmesh_o->FindMaterial(material_id);
+    TPZMaterial * material_d = cmesh_d->FindMaterial(material_id);
+    if (!material_o || !material_d) {
+        DebugStop();
+    }
+    
+    TPZMatWithMem<TMRSMemory> * mat_with_memory_o = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material_o);
+    TPZMatWithMem<TMRSMemory> * mat_with_memory_d = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material_d);
+    if (!mat_with_memory_o || !mat_with_memory_d) {
+        DebugStop();
+    }
+    
+    mat_with_memory_d->SetMemory(mat_with_memory_o->GetMemory());
 }

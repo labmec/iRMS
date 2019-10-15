@@ -16,9 +16,8 @@
 #include "TPZMultiphysicsCompMesh.h"
 #include "TPZMixedDarcyFlow.h"
 #include "TMRSDarcyFlowWithMem_impl.h"
-#include "TMRSDarcyMemory.h"
 #include "TMRSMultiphaseFlow_impl.h"
-#include "TMRSTransportMemory.h"
+#include "TMRSMemory.h"
 #include "TMRSDataTransfer.h"
 #include "TPZTracerFlow.h"
 #include "pzl2projection.h"
@@ -79,6 +78,8 @@ public:
     TPZMultiphysicsCompMesh * GetTransportOperator();
     
     static void AdjustMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
+    
+    static void UnifyMaterialMemory(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
     
 };
 

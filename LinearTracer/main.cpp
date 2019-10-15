@@ -60,8 +60,6 @@
 #include "RSimulatorConfiguration.h"
 #include "pzshapepiram.h"
 
-
-// Geometry generation
 #include "TMRSApproxSpaceGenerator.h"
 #include "TMRSDataTransfer.h"
 
@@ -111,6 +109,10 @@ int main(){
     // Linking the memory between the operators
     {
         TMRSApproxSpaceGenerator::AdjustMemory(mixed_operator, transport_operator);
+        for (auto item : sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]) {
+            int material_id = item.second;
+            TMRSApproxSpaceGenerator::UnifyMaterialMemory(material_id, mixed_operator, transport_operator);
+        }
     }
     
     // Solving global darcy problem
@@ -398,7 +400,7 @@ TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL
             
             for (auto data: volumetric_ids) {
                 TPZMaterial * mat = cmesh_transport->FindMaterial(data.first);
-                TMRSMultiphaseFlow<TMRSTransportMemory> * volume = dynamic_cast<TMRSMultiphaseFlow<TMRSTransportMemory> * >(mat);
+                TMRSMultiphaseFlow<TMRSMemory> * volume = dynamic_cast<TMRSMultiphaseFlow<TMRSMemory> * >(mat);
                 if (!volume) {
                     DebugStop();
                 }
