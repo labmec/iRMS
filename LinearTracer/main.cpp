@@ -67,7 +67,7 @@ TPZAnalysis * CreateAnalysis(TPZMultiphysicsCompMesh * cmesh_mult,  bool must_op
 
 TPZAnalysis * CreateTransportAnalysis(TPZMultiphysicsCompMesh * cmesh, bool must_opt_band_width_Q, int n_threads, bool UsePardiso_Q);
 
-TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL & dt, TPZFMatrix<STATE> & M_diag);
+TPZFMatrix<STATE> TimeForward(TMRSDataTransfer & sim_data, TPZAnalysis * tracer_analysis, int & n_steps, REAL & dt, TPZFMatrix<STATE> & M_diag);
 
 TMRSDataTransfer Setting2D();
 
@@ -109,9 +109,10 @@ int main(){
     // Linking the memory between the operators
     {
         TMRSApproxSpaceGenerator::AdjustMemory(mixed_operator, transport_operator);
-        for (auto item : sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]) {
+        for (auto item : sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]) {
             int material_id = item.second;
             TMRSApproxSpaceGenerator::UnifyMaterialMemory(material_id, mixed_operator, transport_operator);
+            TMRSApproxSpaceGenerator::FillMaterialMemory(material_id, mixed_operator, transport_operator);
         }
     }
     
@@ -139,7 +140,7 @@ int main(){
     int n_steps = 50;
     REAL dt     = 1000.0;
     TPZFMatrix<STATE> M_diag;
-    TPZFMatrix<STATE> saturations = TimeForward(tracer_an, n_steps, dt, M_diag);
+    TPZFMatrix<STATE> saturations = TimeForward(sim_data, tracer_an, n_steps, dt, M_diag);
     
     return 0;
     
@@ -290,7 +291,9 @@ TPZAnalysis * CreateTransportAnalysis(TPZMultiphysicsCompMesh * cmesh, bool must
     
 }
 
-TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL & dt, TPZFMatrix<STATE> & M_diag){
+#define NewTimeForward_Q
+
+TPZFMatrix<STATE> TimeForward(TMRSDataTransfer & sim_data, TPZAnalysis * tracer_analysis, int & n_steps, REAL & dt, TPZFMatrix<STATE> & M_diag){
     
     TPZMultiphysicsCompMesh * cmesh_transport = dynamic_cast<TPZMultiphysicsCompMesh *>(tracer_analysis->Mesh());
     
@@ -299,8 +302,96 @@ TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL
     }
     
     std::set<int> volumetric_mat_ids = {1,2,3,100};
-    
     TPZManVector<TPZCompMesh *,3> meshtrvec = cmesh_transport->MeshVector();
+    
+    int64_t n_eq = tracer_analysis->Mesh()->NEquations();
+    TPZFMatrix<STATE> saturations(n_eq,n_steps);
+    
+#ifdef NewTimeForward_Q
+    
+    /// Time evolution
+    std::string file_reservoir("transport.vtk");
+    
+    {
+        int div = 0;
+        int n_iterations = 1;
+        bool stop_criterion_Q = false;
+        REAL res_norm = 1.0;
+        REAL res_tol = 1.0e-8;
+        TPZFMatrix<REAL> ds,s;
+        s = tracer_analysis->Solution();
+        for (int it = 0; it < n_steps; it++) {
+            
+            // Newton like process
+            for (int k = 0; k < n_iterations; k++) {
+                
+                /// Newton correction
+                tracer_analysis->Assemble();
+//                tracer_analysis->Rhs().Print("r = ",std::cout,EMathematicaInput);
+                tracer_analysis->Rhs() *= -1.0;
+                tracer_analysis->Solve(); /// (LU decomposition)
+                ds = tracer_analysis->Solution();
+//                ds.Print("ds = ",std::cout,EMathematicaInput);
+                s += ds;
+                tracer_analysis->LoadSolution(s);
+                cmesh_transport->LoadSolutionFromMultiPhysics();
+                tracer_analysis->AssembleResidual();
+                
+                res_norm = Norm(tracer_analysis->Rhs());
+                stop_criterion_Q = res_norm <= res_tol;
+                if (stop_criterion_Q) {
+                    std::cout << "Residual norm = " << res_norm << std::endl;
+                    // Updating memory
+                    TMRSApproxSpaceGenerator::SetUpdateMemory(2, sim_data, cmesh_transport, true);
+                    tracer_analysis->AssembleResidual();
+                    TMRSApproxSpaceGenerator::SetUpdateMemory(2, sim_data, cmesh_transport, false);
+                }else{
+                    DebugStop();
+                }
+                
+
+                
+                /// postprocess ...
+                TPZStack<std::string,10> scalnames, vecnames;
+                scalnames.Push("Sw");
+                scalnames.Push("So");
+                
+                std::map<int,int> volumetric_ids;
+                volumetric_ids.insert(std::make_pair(1, 2));
+                
+                std::map<int,int> fracture_ids;
+                fracture_ids.insert(std::make_pair(6, 2));
+                
+                std::map<int,int> fracture_intersections_ids;
+                fracture_intersections_ids.insert(std::make_pair(7, 1));
+                
+                for (auto data: volumetric_ids) {
+                    TPZMaterial * mat = cmesh_transport->FindMaterial(data.first);
+                    TMRSMultiphaseFlow<TMRSMemory> * volume = dynamic_cast<TMRSMultiphaseFlow<TMRSMemory> * >(mat);
+                    if (!volume) {
+                        DebugStop();
+                    }
+                    volume->SetDimension(data.second);
+                }
+                
+                int dimension = tracer_analysis->Mesh()->Reference()->Dimension();
+                std::set<int> mat_id_3D = volumetric_mat_ids;
+                
+                std::string file_reservoir("saturation.vtk");
+                tracer_analysis->DefineGraphMesh(dimension,mat_id_3D,scalnames,vecnames,file_reservoir);
+                tracer_analysis->PostProcess(div,dimension);
+                
+            }
+            
+        }
+        
+        
+    }
+    
+    return saturations;
+    
+    
+#else
     
     /// Compute mass matrix M.
     TPZAutoPointer<TPZMatrix<STATE> > M;
@@ -308,7 +399,7 @@ TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL
     {
         
         bool mass_matrix_Q = true;
-
+        
         
         for (auto mat_id: volumetric_mat_ids) {
             TPZMaterial * mat = cmesh_transport->FindMaterial(mat_id);
@@ -433,5 +524,10 @@ TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL
         
         
     }
+    
     return saturations;
+    
+#endif
+
+
 }

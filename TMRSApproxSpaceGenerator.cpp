@@ -502,6 +502,10 @@ void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOpera
 
 void TMRSApproxSpaceGenerator::UnifyMaterialMemory(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator) {
     
+    if (!MixedOperator || !TransportOperator) {
+        DebugStop();
+    }
+    
     TPZCompMesh * cmesh_o = MixedOperator;
     TPZCompMesh * cmesh_d = TransportOperator;
     
@@ -513,10 +517,114 @@ void TMRSApproxSpaceGenerator::UnifyMaterialMemory(int material_id, TPZMultiphys
     }
     
     TPZMatWithMem<TMRSMemory> * mat_with_memory_o = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material_o);
-    TPZMatWithMem<TMRSMemory> * mat_with_memory_d = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material_d);
+    TPZMatWithMem<TMRSMemory,TPZDiscontinuousGalerkin> * mat_with_memory_d = dynamic_cast<TPZMatWithMem<TMRSMemory,TPZDiscontinuousGalerkin> * >(material_d);
     if (!mat_with_memory_o || !mat_with_memory_d) {
         DebugStop();
     }
     
     mat_with_memory_d->SetMemory(mat_with_memory_o->GetMemory());
 }
+
+void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator){
+    
+    if (!MixedOperator || !TransportOperator) {
+        DebugStop();
+    }
+    
+    TPZCompMesh * cmesh = MixedOperator;
+    TPZMaterial * material = cmesh->FindMaterial(material_id);
+    if (!material) {
+        DebugStop();
+    }
+    
+    TPZMatWithMem<TMRSMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material);
+    if (!mat_with_memory) {
+        DebugStop();
+    }
+    
+    
+    // Set initial porosity, permeability, saturations, etc ...
+    {
+        std::shared_ptr<TPZAdmChunkVector<TMRSMemory>> & memory_vector = mat_with_memory->GetMemory();
+        int ndata = memory_vector->NElements();
+        
+#ifdef USING_TBB
+        tbb::parallel_for(size_t(0), size_t(ndata), size_t(1), [&memory_vector] (size_t & i) {
+            TMRSMemory &mem = memory_vector.get()->operator [](i);
+            
+            mem.m_sw = 0.0;
+            mem.m_phi = 0.1;
+            
+            REAL kappa = 1.0;
+            mem.m_kappa.Resize(3, 3);
+            mem.m_kappa.Zero();
+            mem.m_kappa_inv.Resize(3, 3);
+            mem.m_kappa_inv.Zero();
+            for (int i = 0; i < 3; i++) {
+                mem.m_kappa(i,i) = kappa;
+                mem.m_kappa_inv(i,i) = 1.0/kappa;
+            }
+            
+        }
+);
+        
+#else
+        for (int i = 0; i < ndata; i++) {
+            TMRSMemory &mem = memory_vector.get()->operator [](i);
+
+            
+            mem.m_sw = 0.0;
+            mem.m_phi = 0.1;
+            
+            REAL kappa = 1.0;
+            mem.m_kappa.Resize(3, 3);
+            mem.m_kappa.Zero();
+            mem.m_kappa_inv.Resize(3, 3);
+            mem.m_kappa_inv.Zero();
+            for (int i = 0; i < 3; i++) {
+                mem.m_kappa(i,i) = kappa;
+                mem.m_kappa_inv(i,i) = 1.0/kappa;
+            }
+
+        }
+#endif
+        
+        
+    }
+    
+    
+}
+
+void TMRSApproxSpaceGenerator::SetUpdateMaterialMemory(int material_id, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q){
+    
+    if (!cmesh) {
+        DebugStop();
+    }
+    
+    TPZMaterial * material = cmesh->FindMaterial(material_id);
+    if (!material) {
+        DebugStop();
+    }
+    
+    TPZMatWithMem<TMRSMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material);
+    if (mat_with_memory) {
+        mat_with_memory->SetUpdateMem(update_memory_Q);
+        return;
+    }
+    
+    TPZMatWithMem<TMRSMemory,TPZDiscontinuousGalerkin> * mat_with_memory_trans = dynamic_cast<TPZMatWithMem<TMRSMemory,TPZDiscontinuousGalerkin> * >(material);
+    if (mat_with_memory_trans) {
+        mat_with_memory_trans->SetUpdateMem(update_memory_Q);
+        return;
+    }
+
+}
+
+void TMRSApproxSpaceGenerator::SetUpdateMemory(int dimension, TMRSDataTransfer & sim_data, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q){
+    for (auto item : sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[dimension]) {
+        int material_id = item.second;
+        SetUpdateMaterialMemory(material_id, cmesh, update_memory_Q);
+    }
+}
+
+

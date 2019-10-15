@@ -146,22 +146,26 @@ void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL
 #endif
     
     int s_b = 2;
-    REAL m_phi = 0.1;
-
-    // Setting the phis
+    long gp_index = datavec[s_b].intGlobPtIndex;
+    TMEM & memory = this->GetMemory().get()->operator[](gp_index);
     TPZFMatrix<REAL>  &phiS =  datavec[s_b].phi;
-    REAL s = datavec[s_b].sol[0][0];
-    int n_phi_s = phiS.Rows();
+
     
+    REAL phi = memory.m_phi;
+    REAL sw = memory.m_sw;
+    REAL sw_n = datavec[s_b].sol[0][0];
+
+
+    int n_phi_s = phiS.Rows();
     int firsts_s    = 0;
     
     for (int is = 0; is < n_phi_s; is++)
     {
-        ef(is + firsts_s) += 1.0 * weight * m_phi * s * phiS(is,0);
+        ef(is + firsts_s) += 1.0 * weight * phi * (sw_n - sw)  * phiS(is,0);
         
         for (int js = 0; js < n_phi_s; js++)
         {
-            ek(is + firsts_s, js + firsts_s) += weight * m_phi * (phiS(js,0) )* phiS(is,0);
+            ek(is + firsts_s, js + firsts_s) += weight * phi * (phiS(js,0) )* phiS(is,0);
         }
     }
     
@@ -171,6 +175,16 @@ template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
     this->Contribute(datavec, weight, ek_fake, ef);
+    
+    
+    if(TMRSMultiphaseFlow<TMEM>::fUpdateMem){
+        int s_b = 2;
+        long gp_index = datavec[s_b].intGlobPtIndex;
+        TMEM & memory = this->GetMemory().get()->operator[](gp_index);
+        REAL sw_n = datavec[s_b].sol[0][0];
+        memory.m_sw = sw_n;
+    }
+    
 }
 
 template <class TMEM>
@@ -243,6 +257,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
 template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc) {
     
+    REAL tol = 1.0e-10;
     int q_b = 0;
     int s_b = 2;
     
@@ -266,12 +281,14 @@ void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZV
         {
             
             REAL s_inlet = bc.Val2()(0,0);
-            if (qn > 0.0 || IsZero(qn)) {
+            if (qn < 0.0 || fabs(qn) < tol) {
+                for (int is = 0; is < n_phi_s_l; is++) {
+                    ef(is + firsts_s_l) += +1.0* m_dt * weight * s_inlet * phiS_l(is,0)*qn;
+                }
+            }else{
                 std::cout << "TPZTracerFlow:: Outlet flux in inlet boundary condition qn = " << qn << std::endl;
             }
-            for (int is = 0; is < n_phi_s_l; is++) {
-                ef(is + firsts_s_l) += +1.0* m_dt * weight * s_inlet * phiS_l(is,0)*qn;
-            }
+ 
             
         }
             break;
@@ -279,7 +296,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZV
         case 1 :    // BC outlet
         {
             
-            if (qn > 0.0 || IsZero(qn)) {
+            if (qn > 0.0 || fabs(qn) < tol) {
                 for (int is = 0; is < n_phi_s_l; is++) {
                     
                     ef(is + firsts_s_l) += +1.0* m_dt * weight * s_l*phiS_l(is,0)*qn;
