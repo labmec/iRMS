@@ -68,7 +68,7 @@ public:
     /** @brief Function that read the interpolation data from a ".txt" file
      * @param data is the name of the file with the interpolation data
      */
-    void ReadData(std::string name);
+    void ReadData(std::string name, bool print_table_Q = false);
     
     /** @brief Function that calculates the value of the interpolated function corresponding to a "x" point
      * @param x is the interpolate point

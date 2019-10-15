@@ -78,6 +78,8 @@ public:
     
     TPZMultiphysicsCompMesh * GetTransportOperator();
     
+    static void AdjustMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
+    
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

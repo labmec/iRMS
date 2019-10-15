@@ -288,11 +288,11 @@ std::function<std::tuple<double, double>(double)> TRSLinearInterpolator::GetFunc
 }
 
 
-void TRSLinearInterpolator::ReadData(std::string name){
+void TRSLinearInterpolator::ReadData(std::string name, bool print_table_Q){
    
     std::ifstream file;
     file.open(name);
-    
+
     int i=1;
     TPZFMatrix<REAL> data;
     std::string line;
@@ -337,18 +337,19 @@ void TRSLinearInterpolator::ReadData(std::string name){
                 }
             }
          }
-        
-    
-        if(data.Rows()>0){
+
+        if(data.Rows() == 0){
+            std::cout<<"No data read."<<std::endl;
+            DebugStop();
+        }
+
+        if(print_table_Q){
             std::cout<<"*************************"<<std::endl;
             std::cout<<"Reading file... ok!"<<std::endl;
             std::cout<<"*************************"<<std::endl;
             SetData(data);
             data.Print(std::cout);
         }
-        
-        
-        
         
         
 //        char l = line[0];

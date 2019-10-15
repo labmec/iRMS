@@ -103,24 +103,37 @@ int main(){
     bool UsePardiso_Q = true;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    TPZAnalysis * analysis =  CreateAnalysis(mixed_operator,  must_opt_band_width_Q, n_threads, UsePardiso_Q);
-    
-    analysis->Assemble();
-    analysis->Solve();
-    mixed_operator->LoadSolutionFromMultiPhysics();
-    TPZStack<std::string,10> scalnames, vecnames;
-    vecnames.Push("q");
-    scalnames.Push("p");
-    
-    int div = 0;
-    int dim = aspace.GetGeometry()->Dimension();
-    std::string fileresult("flux_and_p.vtk");
-    analysis->DefineGraphMesh(dim,scalnames,vecnames,fileresult);
-    analysis->PostProcess(div,dim);
-    
+
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
+    
+    
+    // Linking the memory between the operators
+    {
+        TMRSApproxSpaceGenerator::AdjustMemory(mixed_operator, transport_operator);
+    }
+    
+    // Solving global darcy problem
+    {
+        TPZAnalysis * analysis =  CreateAnalysis(mixed_operator,  must_opt_band_width_Q, n_threads, UsePardiso_Q);
+        
+        analysis->Assemble();
+        analysis->Solve();
+        mixed_operator->LoadSolutionFromMultiPhysics();
+        TPZStack<std::string,10> scalnames, vecnames;
+        vecnames.Push("q");
+        scalnames.Push("p");
+        
+        int div = 0;
+        int dim = aspace.GetGeometry()->Dimension();
+        std::string fileresult("flux_and_p.vtk");
+        analysis->DefineGraphMesh(dim,scalnames,vecnames,fileresult);
+        analysis->PostProcess(div,dim);
+    }
+    
     TPZAnalysis *tracer_an = CreateTransportAnalysis(transport_operator, must_opt_band_width_Q, n_threads, UsePardiso_Q);
+    
+    // Solving transport problem
     int n_steps = 50;
     REAL dt     = 1000.0;
     TPZFMatrix<STATE> M_diag;

@@ -6,6 +6,11 @@
 //
 
 #include "TMRSApproxSpaceGenerator.h"
+
+#ifdef USING_TBB
+#include <tbb/parallel_for.h>
+#endif
+
 using namespace std;
 
 TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator(){
@@ -264,7 +269,6 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     TMRSMultiphaseFlow<TMRSTransportMemory> * volume = nullptr;
     mTransportOperator->SetDefaultOrder(0);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mDataTransfer.mTGeometry.mDomainDimNameAndPhysicalTag;
-    REAL phi = 1.0;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
@@ -303,7 +307,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     active_approx_spaces[0] = 0;
     active_approx_spaces[1] = 0;
     active_approx_spaces[2] = 1;
-    mTransportOperator->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
+    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
     
 #ifdef PZDEBUG
     std::ofstream transport_a("transport_cmesh_after.txt");
@@ -400,4 +404,98 @@ TPZMultiphysicsCompMesh * TMRSApproxSpaceGenerator::GetMixedOperator(){
 
 TPZMultiphysicsCompMesh * TMRSApproxSpaceGenerator::GetTransportOperator(){
     return mTransportOperator;
+}
+
+
+void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator){
+    
+    if (!MixedOperator || !TransportOperator) {
+        DebugStop();
+    }
+    
+    /// Adjust integration rule
+    /// o Stands for reservoir
+    /// d Stands for pressure
+    
+    TPZCompMesh * cmesh_res = MixedOperator;
+    TPZCompMesh * cmesh_tra = TransportOperator;
+    
+    cmesh_tra->LoadReferences();
+    int nel_res = cmesh_res->NElements();
+    int gmesh_dim = cmesh_tra->Reference()->Dimension();
+    
+    // Scanning structure
+    std::vector<std::pair<int64_t, int64_t>> cel_pairs;
+    for (long el = 0; el < nel_res; el++) {
+        TPZCompEl *cel_res = cmesh_res->Element(el);
+        if (!cel_res) {
+            continue;
+        }
+        
+        TPZGeoEl * gel = cel_res->Reference();
+        if (!gel) {
+            continue;
+        }
+        
+        if (gel->Dimension() != gmesh_dim || gel->HasSubElement()) {
+            continue;
+        }
+        
+        /// Finding the other computational element
+        TPZCompEl * cel_tra = gel->Reference();
+        if (!cel_tra) {
+            continue;
+        }
+        
+        int64_t cel_res_index = cel_res->Index();
+        int64_t cel_tra_index = cel_tra->Index();
+        cel_pairs.push_back(std::make_pair(cel_res_index, cel_tra_index));
+        cel_tra->SetFreeIntPtIndices();  // operation involving resize. It is not thread safe.
+    }
+    
+    int nel = cel_pairs.size();
+#ifdef USING_TBB
+    tbb::parallel_for(size_t(0), size_t(nel), size_t(1), [&cel_pairs,&cmesh_res,&cmesh_tra] (size_t & i)
+      {
+          int64_t cel_res_index = cel_pairs[i].first;
+          int64_t cel_geo_index = cel_pairs[i].second;
+          TPZCompEl *cel_res = cmesh_res->Element(cel_res_index);
+          TPZCompEl * cel_tra = cmesh_tra->Element(cel_geo_index);
+          
+          const TPZIntPoints & rule = cel_res->GetIntegrationRule();
+          TPZIntPoints * cloned_rule = rule.Clone();
+          TPZManVector<int64_t,20> indices;
+          cel_res->GetMemoryIndices(indices);
+          cel_tra->SetMemoryIndices(indices);
+          cel_tra->SetIntegrationRule(cloned_rule);
+      }
+);
+    
+#else
+    for (long i = 0; i < nel; i++) {
+        
+        int64_t cel_res_index = cel_pairs[i].first;
+        int64_t cel_tra_index = cel_pairs[i].second;
+        TPZCompEl *cel_res = cmesh_res->Element(cel_res_index);
+        TPZCompEl * cel_tra = cmesh_tra->Element(cel_tra_index);
+        
+        const TPZIntPoints & rule = cel_res->GetIntegrationRule();
+        TPZIntPoints * cloned_rule = rule.Clone();
+        TPZManVector<int64_t,20> indices;
+        cel_res->GetMemoryIndices(indices);
+        cel_tra->SetMemoryIndices(indices);
+        cel_tra->SetIntegrationRule(cloned_rule);
+    }
+#endif
+    
+#ifdef PZDEBUG
+    std::ofstream out_res("Cmesh_res_adjusted.txt");
+    cmesh_res->Print(out_res);
+#endif
+    
+#ifdef PZDEBUG
+    std::ofstream out_geo("Cmesh_tra_adjusted.txt");
+    cmesh_tra->Print(out_geo);
+#endif
+    
 }
