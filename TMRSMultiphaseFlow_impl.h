@@ -146,9 +146,7 @@ void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL
 #endif
     
     int s_b = 2;
-    
-    REAL alpha = 1.0;
-    REAL m_phi = 1.0;
+    REAL m_phi = 0.1;
 
     // Setting the phis
     TPZFMatrix<REAL>  &phiS =  datavec[s_b].phi;
@@ -159,11 +157,11 @@ void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL
     
     for (int is = 0; is < n_phi_s; is++)
     {
-        ef(is + firsts_s) += 1.0 * alpha * weight * m_phi * s * phiS(is,0);
+        ef(is + firsts_s) += 1.0 * weight * m_phi * s * phiS(is,0);
         
         for (int js = 0; js < n_phi_s; js++)
         {
-            ek(is + firsts_s, js + firsts_s) += alpha * weight * m_phi * (phiS(js,0) )* phiS(is,0);
+            ek(is + firsts_s, js + firsts_s) += weight * m_phi * (phiS(js,0) )* phiS(is,0);
         }
     }
     

@@ -23,7 +23,7 @@ private:
     /// Dimension
     int m_dimension;
     
-    REAL m_dt = 100.0;
+    REAL m_dt = 1000.0;
     
 public:
     
@@ -58,13 +58,13 @@ public:
     }
     
     /// Returns the integrable dimension of the material
-    int Dimension() const {return m_dimension;}
+    int Dimension() const override {return m_dimension;}
     
     /// Sets material dimension
     void SetDimension(int dim) { m_dimension = dim; }
     
     /// Returns the number of state variables associated with the material
-    int NStateVariables() const {return 1;} // Deprecated, must to be removed
+    int NStateVariables() const override {return 1;} // Deprecated, must to be removed
     
     /// Returns material copied form this object
     virtual TPZMaterial *NewMaterial() override
@@ -108,7 +108,7 @@ public:
     void ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCond &bc);
     
     /// Unique identifier for serialization purposes
-    int ClassId() const;
+    int ClassId() const override;
     
      /// Save the element data to a stream
     void Write(TPZStream &buf, int withclassid);
