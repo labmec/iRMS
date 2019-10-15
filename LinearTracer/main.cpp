@@ -97,7 +97,7 @@ int main(){
     
     int order = 1;
     bool must_opt_band_width_Q = true;
-    int n_threads = 0;
+    int n_threads = 24;
     bool UsePardiso_Q = true;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();

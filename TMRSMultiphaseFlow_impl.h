@@ -183,6 +183,7 @@ void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL
         TMEM & memory = this->GetMemory().get()->operator[](gp_index);
         REAL sw_n = datavec[s_b].sol[0][0];
         memory.m_sw = sw_n;
+        memory.m_so = 1.0-sw_n;
     }
     
 }

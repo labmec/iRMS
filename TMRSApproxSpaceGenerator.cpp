@@ -295,10 +295,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     
     int transport_matid = 100;
     {
-        REAL phi = 0.1;
-        
-        TPZTracerFlow * interface = new TPZTracerFlow(transport_matid,dimension-1);
-        interface->SetPorosity(phi);
+        TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
         mTransportOperator->InsertMaterialObject(interface);
     }
     
