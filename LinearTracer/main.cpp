@@ -62,6 +62,7 @@
 
 #include "TMRSApproxSpaceGenerator.h"
 #include "TMRSDataTransfer.h"
+#include "TMRSSFIAnalysis.h"
 #include "TMRSMixedAnalysis.h"
 #include "TMRSTransportAnalysis.h"
 
@@ -106,7 +107,6 @@ int main(){
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     
-    
     // Linking the memory between the operators
     {
         TMRSApproxSpaceGenerator::AdjustMemory(mixed_operator, transport_operator);
@@ -116,6 +116,18 @@ int main(){
             TMRSApproxSpaceGenerator::FillMaterialMemory(material_id, mixed_operator, transport_operator);
         }
     }
+    
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+    sfi_analysis->Configure(n_threads, UsePardiso_Q);
+    sfi_analysis->SetDataTransfer(&sim_data);
+    
+    int n_steps = sim_data.mTNumerics.m_n_steps;
+    for (int it = 0; it < n_steps; it++) {
+        sfi_analysis->RunTimeStep();
+        sfi_analysis->PostProcessTimeStep();
+    }
+    
+    return 0;
     
     // Solving global darcy problem
     TMRSMixedAnalysis * mixed_analysis = new TMRSMixedAnalysis(mixed_operator,  must_opt_band_width_Q);
@@ -132,8 +144,8 @@ int main(){
     transport_analysis->Configure(n_threads, UsePardiso_Q);
     transport_analysis->SetDataTransfer(&sim_data);
     
-    int n_steps = sim_data.mTNumerics.m_n_steps;
-    for (int it = 0; it < n_steps; it++) {
+    int n_steps1 = sim_data.mTNumerics.m_n_steps;
+    for (int it = 0; it < n_steps1; it++) {
         transport_analysis->RunTimeStep();
         transport_analysis->PostProcessTimeStep();
         // Updating memory

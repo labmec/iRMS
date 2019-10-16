@@ -230,13 +230,15 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     }
     
     
-    TPZManVector<TPZCompMesh * ,2> mesh_vec(2);
+    TPZManVector<TPZCompMesh *, 3> mesh_vec(3);
 
     mesh_vec[0] = HdivFluxCmesh(order);
     mesh_vec[1] = DiscontinuousCmesh(order);
-    TPZManVector<int,5> active_approx_spaces(2);
+    mesh_vec[2] = DiscontinuousCmesh();
+    TPZManVector<int,5> active_approx_spaces(3);
     active_approx_spaces[0] = 1;
     active_approx_spaces[1] = 1;
+    active_approx_spaces[2] = 0;
     mMixedOperator->SetDimModel(dimension);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
     
