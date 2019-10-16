@@ -62,6 +62,8 @@
 
 #include "TMRSApproxSpaceGenerator.h"
 #include "TMRSDataTransfer.h"
+#include "TMRSMixedAnalysis.h"
+#include "TMRSTransportAnalysis.h"
 
 TPZAnalysis * CreateAnalysis(TPZMultiphysicsCompMesh * cmesh_mult,  bool must_opt_band_width_Q, int n_threads, bool UsePardiso_Q);
 
@@ -76,7 +78,7 @@ TMRSDataTransfer Setting3D();
 int main(){
  
     bool is_3D_Q = false;
-    bool is_2D_Coarse_Q = false;
+    bool is_2D_Coarse_Q = true;
     TMRSDataTransfer sim_data;
     std::string geometry_file, name;
     if (is_3D_Q) {
@@ -123,29 +125,36 @@ int main(){
     
     // Solving global darcy problem
     {
-        TPZAnalysis * analysis =  CreateAnalysis(mixed_operator,  must_opt_band_width_Q, n_threads, UsePardiso_Q);
-        
-        analysis->Assemble();
-        analysis->Solve();
-        mixed_operator->LoadSolutionFromMultiPhysics();
-        TPZStack<std::string,10> scalnames, vecnames;
-        vecnames.Push("q");
-        scalnames.Push("p");
-        
-        int div = 0;
-        int dim = aspace.GetGeometry()->Dimension();
-        std::string fileresult("flux_and_p.vtk");
-        analysis->DefineGraphMesh(dim,scalnames,vecnames,fileresult);
-        analysis->PostProcess(div,dim);
+        TMRSMixedAnalysis * mixed_analysis = new TMRSMixedAnalysis(mixed_operator,  must_opt_band_width_Q);
+        mixed_analysis->Configure(n_threads, UsePardiso_Q);
+        mixed_analysis->SetDataTransfer(&sim_data);
+        mixed_analysis->RunTimeStep();
+        mixed_analysis->PostProcessTimeStep();
     }
     
-    TPZAnalysis *tracer_an = CreateTransportAnalysis(transport_operator, must_opt_band_width_Q, n_threads, UsePardiso_Q);
+    // Solving transport problem
+    TMRSTransportAnalysis * transport_analysis = new  TMRSTransportAnalysis(transport_operator,  must_opt_band_width_Q);
+    transport_analysis->Configure(n_threads, UsePardiso_Q);
+    transport_analysis->SetDataTransfer(&sim_data);
+    
+    int n_steps = sim_data.mTNumerics.m_n_steps;
+    for (int it = 0; it < n_steps; it++) {
+        transport_analysis->RunTimeStep();
+        transport_analysis->PostProcessTimeStep();
+        // Updating memory
+        TMRSApproxSpaceGenerator::SetUpdateMemory(2, sim_data, transport_operator, true);
+        transport_analysis->AssembleResidual();
+        TMRSApproxSpaceGenerator::SetUpdateMemory(2, sim_data, transport_operator, false);
+    }
+
+    
+//    TPZAnalysis *tracer_an = CreateTransportAnalysis(transport_operator, must_opt_band_width_Q, n_threads, UsePardiso_Q);
     
     // Solving transport problem
-    int n_steps = 50;
-    REAL dt     = 1000.0;
-    TPZFMatrix<STATE> M_diag;
-    TPZFMatrix<STATE> saturations = TimeForward(sim_data, tracer_an, n_steps, dt, M_diag);
+//    int n_steps = 50;
+//    REAL dt     = 1000.0;
+//    TPZFMatrix<STATE> M_diag;
+//    TPZFMatrix<STATE> saturations = TimeForward(sim_data, tracer_an, n_steps, dt, M_diag);
     
     return 0;
     
@@ -197,6 +206,19 @@ TMRSDataTransfer Setting2D(){
     krw.ReadData(name_krw);
     krow.ReadData(name_krow);
     sim_data.mTPetroPhysics.mLayer_Krow_RelPerModel[0] ;
+    
+    // Numerical controls
+    sim_data.mTNumerics.m_max_iter_mixed = 2;
+    sim_data.mTNumerics.m_max_iter_transport = 2;
+    sim_data.mTNumerics.m_max_iter_sfi = 2;
+    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-8;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-8;
+    sim_data.mTNumerics.m_n_steps = 50;
+    sim_data.mTNumerics.m_dt      = 1000.0;
+    
+    // PostProcess controls
+    sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
+    sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
     
     
     return sim_data;

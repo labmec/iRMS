@@ -171,11 +171,211 @@ public:
         
     public:
         
+        /// time step size
+        REAL m_dt;
+        
+        /// Residual tolerance for mixed operator
+        REAL m_res_tol_mixed;
+        
+        /// Residual tolerance for transport operator
+        REAL m_res_tol_transport;
+        
+        /// Correction tolerance for mixed operator
+        REAL m_corr_tol_mixed;
+        
+        /// Correction tolerance for transport operator
+        REAL m_corr_tol_transport;
+        
+        /// Maximum number of iterations per time step for mixed operator
+        int m_max_iter_mixed;
+        
+        /// Maximum number of iterations per time step for transport operator
+        int m_max_iter_transport;
+        
+        /// Maximum number of Sequential Fully Implicit (SFI) iterations per time step
+        int m_max_iter_sfi;
+        
+        /// Number of time steps
+        int m_n_steps;
+        
+        TNumerics(){
+            
+            m_dt                    = 0.0;
+            m_res_tol_mixed         = 1.0e-7;
+            m_res_tol_transport     = 1.0e-7;
+            m_corr_tol_mixed        = 1.0e-7;
+            m_corr_tol_transport    = 1.0e-7;
+            m_max_iter_mixed        = 0;
+            m_max_iter_transport    = 0;
+            m_max_iter_sfi          = 0;
+            m_n_steps               = 0;
+            
+        }
+        
+        ~TNumerics(){
+            
+        }
+        
+        TNumerics(const TNumerics & other){
+            
+            m_dt                    = other.m_dt;
+            m_res_tol_mixed         = other.m_res_tol_mixed;
+            m_res_tol_transport     = other.m_res_tol_transport;
+            m_corr_tol_mixed        = other.m_corr_tol_mixed;
+            m_corr_tol_transport    = other.m_corr_tol_transport;
+            m_max_iter_mixed        = other.m_max_iter_mixed;
+            m_max_iter_transport    = other.m_max_iter_transport;
+            m_max_iter_sfi          = other.m_max_iter_sfi;
+            m_n_steps               = other.m_n_steps;
+        }
+        
+        TNumerics & operator=(const TNumerics &other){
+            
+            // check for self-assignment
+            if(&other == this){
+                return *this;
+            }
+            
+            m_dt                    = other.m_dt;
+            m_res_tol_mixed         = other.m_res_tol_mixed;
+            m_res_tol_transport     = other.m_res_tol_transport;
+            m_corr_tol_mixed        = other.m_corr_tol_mixed;
+            m_corr_tol_transport    = other.m_corr_tol_transport;
+            m_max_iter_mixed        = other.m_max_iter_mixed;
+            m_max_iter_transport    = other.m_max_iter_transport;
+            m_max_iter_sfi          = other.m_max_iter_sfi;
+            m_n_steps               = other.m_n_steps;
+            return *this;
+        }
+        
+        bool operator==(const TNumerics &other){
+            
+            // check for self-assignment
+            if(&other == this){
+                return true;
+            }
+            
+            return
+            m_dt                    == other.m_dt &&
+            m_res_tol_mixed         == other.m_res_tol_mixed &&
+            m_res_tol_transport     == other.m_res_tol_transport &&
+            m_corr_tol_mixed        == other.m_corr_tol_mixed &&
+            m_corr_tol_transport    == other.m_corr_tol_transport &&
+            m_max_iter_mixed        == other.m_max_iter_mixed &&
+            m_max_iter_transport    == other.m_max_iter_transport &&
+            m_max_iter_sfi          == other.m_max_iter_sfi &&
+            m_n_steps               == other.m_n_steps;
+        }
+        
+        void Write(TPZStream &buf, int withclassid) const{ //ok
+            buf.Write(&m_dt);
+            buf.Write(&m_res_tol_mixed);
+            buf.Write(&m_res_tol_transport);
+            buf.Write(&m_corr_tol_mixed);
+            buf.Write(&m_max_iter_mixed);
+            buf.Write(&m_max_iter_transport);
+            buf.Write(&m_max_iter_sfi);
+            buf.Write(&m_n_steps);
+        }
+        
+        void Read(TPZStream &buf, void *context){ //ok
+            buf.Read(&m_dt);
+            buf.Read(&m_res_tol_mixed);
+            buf.Read(&m_res_tol_transport);
+            buf.Read(&m_corr_tol_mixed);
+            buf.Read(&m_corr_tol_transport);
+            buf.Read(&m_max_iter_mixed);
+            buf.Read(&m_max_iter_transport);
+            buf.Read(&m_max_iter_sfi);
+            buf.Read(&m_n_steps);
+        }
+        
+        virtual int ClassId() const {
+            return Hash("TMRSDataTransfer::TNumerics");
+        }
+        
+        void Print() const {
+            std::cout << m_dt << std::endl;
+            std::cout << m_res_tol_mixed << std::endl;
+            std::cout << m_res_tol_transport << std::endl;
+            std::cout << m_corr_tol_mixed << std::endl;
+            std::cout << m_corr_tol_transport << std::endl;
+            std::cout << m_max_iter_mixed << std::endl;
+            std::cout << m_max_iter_transport << std::endl;
+            std::cout << m_max_iter_sfi << std::endl;
+            std::cout << m_n_steps << std::endl;
+        }
+        
     };
     
     class TPostProcess : public TMRSSavable {
         
     public:
+        
+        /// Mixed operator vtk file name
+        std::string m_file_name_mixed;
+        
+        /// Transpor operator vtk file name
+        std::string m_file_name_transport;
+        
+        TPostProcess(){
+            
+            m_file_name_mixed       = "";
+            m_file_name_transport   = "";
+            
+        }
+        
+        ~TPostProcess(){
+            
+        }
+        
+        TPostProcess(const TPostProcess & other){
+            m_file_name_mixed       = other.m_file_name_mixed;
+            m_file_name_transport   = other.m_file_name_transport;
+        }
+        
+        TPostProcess & operator=(const TPostProcess &other){
+            
+            // check for self-assignment
+            if(&other == this){
+                return *this;
+            }
+            
+            m_file_name_mixed       = other.m_file_name_mixed;
+            m_file_name_transport   = other.m_file_name_transport;
+            return *this;
+        }
+        
+        bool operator==(const TPostProcess &other){
+            
+            // check for self-assignment
+            if(&other == this){
+                return true;
+            }
+            
+            return
+            m_file_name_mixed       == other.m_file_name_mixed &&
+            m_file_name_transport   == other.m_file_name_transport;
+        }
+        
+        void Write(TPZStream &buf, int withclassid) const{ //ok
+            buf.Write(&m_file_name_mixed);
+            buf.Write(&m_file_name_transport);
+        }
+        
+        void Read(TPZStream &buf, void *context){ //ok
+            buf.Read(&m_file_name_mixed);
+            buf.Read(&m_file_name_transport);
+        }
+        
+        virtual int ClassId() const {
+            return Hash("TMRSDataTransfer::TPostProcess");
+        }
+        
+        void Print() const {
+            std::cout << m_file_name_mixed << std::endl;
+            std::cout << m_file_name_transport << std::endl;
+        }
         
     };
     
