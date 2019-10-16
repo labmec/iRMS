@@ -128,32 +128,6 @@ int main(){
     }
     
     return 0;
-    
-    // Solving global darcy problem
-    TMRSMixedAnalysis * mixed_analysis = new TMRSMixedAnalysis(mixed_operator,  must_opt_band_width_Q);
-    mixed_analysis->Configure(n_threads, UsePardiso_Q);
-    mixed_analysis->SetDataTransfer(&sim_data);
-    mixed_analysis->RunTimeStep();
-    mixed_analysis->PostProcessTimeStep();
-    TMRSApproxSpaceGenerator::SetUpdateMemory(2, sim_data, mixed_operator, true);
-    mixed_analysis->AssembleResidual();
-    TMRSApproxSpaceGenerator::SetUpdateMemory(2, sim_data, mixed_operator, false);
-    
-    // Solving transport problem
-    TMRSTransportAnalysis * transport_analysis = new  TMRSTransportAnalysis(transport_operator,  must_opt_band_width_Q);
-    transport_analysis->Configure(n_threads, UsePardiso_Q);
-    transport_analysis->SetDataTransfer(&sim_data);
-    
-    int n_steps1 = sim_data.mTNumerics.m_n_steps;
-    for (int it = 0; it < n_steps1; it++) {
-        transport_analysis->RunTimeStep();
-        transport_analysis->PostProcessTimeStep();
-        // Updating memory
-        TMRSApproxSpaceGenerator::SetUpdateMemory(2, sim_data, transport_operator, true);
-        transport_analysis->AssembleResidual();
-        TMRSApproxSpaceGenerator::SetUpdateMemory(2, sim_data, transport_operator, false);
-    }
-    return 0;
 }
 
 TMRSDataTransfer Setting2D(){
