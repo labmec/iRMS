@@ -231,6 +231,15 @@ template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     this->Contribute(datavec, weight, ekfake, ef);
+    
+    if(TMRSDarcyFlowWithMem<TMEM>::fUpdateMem){
+        int pb = 1;
+        long gp_index = datavec[pb].intGlobPtIndex;
+        TMEM & memory = this->GetMemory().get()->operator[](gp_index);
+        REAL p_n = datavec[pb].sol[0][0];
+        memory.m_p = p_n;
+    }
+    
 }
 
 template <class TMEM>
