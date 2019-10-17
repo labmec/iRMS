@@ -13,9 +13,11 @@
 #include "pzbndcond.h"
 #include "pzaxestools.h"
 #include "pzdiscgal.h"
+#include "TMRSDataTransfer.h"
+#include <tuple>
+#include <functional>
 
 template <class TMEM>
-
 class TMRSMultiphaseFlow : public TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin> {
   
 private:
@@ -23,7 +25,7 @@ private:
     /// Dimension
     int m_dimension;
     
-    REAL m_dt = 1000.0;
+    TMRSDataTransfer mSimData;
     
 public:
     
@@ -62,6 +64,9 @@ public:
     
     /// Sets material dimension
     void SetDimension(int dim) { m_dimension = dim; }
+    
+    /// Set data transfer object
+    void SetDataTransfer(TMRSDataTransfer & SimData);
     
     /// Returns the number of state variables associated with the material
     int NStateVariables() const override {return 1;} // Deprecated, must to be removed

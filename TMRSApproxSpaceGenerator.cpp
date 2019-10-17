@@ -277,6 +277,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
             volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
+            volume->SetDataTransfer(mDataTransfer);
             mTransportOperator->InsertMaterialObject(volume);
         }
     }
@@ -298,6 +299,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     int transport_matid = 100;
     {
         TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
+        interface->SetDataTransfer(mDataTransfer);
         mTransportOperator->InsertMaterialObject(interface);
     }
     

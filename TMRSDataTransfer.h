@@ -13,7 +13,8 @@
 #include <map>
 #include "TMRSSavable.h"
 #include "pzmanvector.h"
-#include<tuple> // for tuple
+#include <map> // for map
+#include <tuple> // for tuple
 #include "TRSLinearInterpolator.h"
 
 
@@ -83,12 +84,15 @@ public:
     class TPetroPhysics : public TMRSSavable {
         
     public:
-           TPZManVector<std::tuple<int, TRSLinearInterpolator>> mLayer_Krw_RelPerModel;
-        TPZManVector<std::tuple<int, TRSLinearInterpolator>> mLayer_Krow_RelPerModel;
+        
+        std::vector<TRSLinearInterpolator > mLayer_Krw_RelPerModel;
+        
+        std::vector<TRSLinearInterpolator > mLayer_Kro_RelPerModel;
+        
         
         TPetroPhysics(){
-            mLayer_Krw_RelPerModel.Resize(1);
-            mLayer_Krow_RelPerModel.Resize(1);
+            mLayer_Krw_RelPerModel.clear();
+            mLayer_Kro_RelPerModel.clear();
         }
         
         ~TPetroPhysics(){
@@ -97,7 +101,7 @@ public:
     
         TPetroPhysics(const TPetroPhysics &other){
             mLayer_Krw_RelPerModel = other.mLayer_Krw_RelPerModel;
-            mLayer_Krow_RelPerModel = other.mLayer_Krow_RelPerModel;
+            mLayer_Kro_RelPerModel = other.mLayer_Kro_RelPerModel;
            
         }
         
@@ -105,7 +109,7 @@ public:
             if (this != & other) // prevent self-assignment
             {
                 mLayer_Krw_RelPerModel = other.mLayer_Krw_RelPerModel;
-                mLayer_Krow_RelPerModel = other.mLayer_Krow_RelPerModel;
+                mLayer_Kro_RelPerModel = other.mLayer_Kro_RelPerModel;
                
             }
             return *this;
@@ -117,6 +121,47 @@ public:
     class TFluidProperties : public TMRSSavable {
         
     public:
+        
+    };
+    
+    class TMultiphaseFunctions : public TMRSSavable {
+        
+    public:
+        
+        std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_fw;
+        
+        std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_fo;
+        
+        std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_Glambda;
+        
+        
+        TMultiphaseFunctions(){
+            mLayer_fw.clear();
+            mLayer_fo.clear();
+            mLayer_Glambda.clear();
+        }
+        
+        ~TMultiphaseFunctions(){
+            
+        }
+        
+        TMultiphaseFunctions(const TMultiphaseFunctions &other){
+            mLayer_fw = other.mLayer_fw;
+            mLayer_fo = other.mLayer_fo;
+            mLayer_Glambda = other.mLayer_Glambda;
+            
+        }
+        
+        TMultiphaseFunctions &operator=(const TMultiphaseFunctions &other){
+            if (this != & other) // prevent self-assignment
+            {
+                mLayer_fw = other.mLayer_fw;
+                mLayer_fo = other.mLayer_fo;
+                mLayer_Glambda = other.mLayer_Glambda;
+            }
+            return *this;
+        }
+        
         
     };
     
@@ -199,9 +244,6 @@ public:
         /// Number of time steps
         int m_n_steps;
         
-        /// time step size
-        int m_report_time;
-        
         TNumerics(){
             
             m_dt                    = 0.0;
@@ -213,7 +255,6 @@ public:
             m_max_iter_transport    = 0;
             m_max_iter_sfi          = 0;
             m_n_steps               = 0;
-          
             
         }
         
@@ -387,18 +428,17 @@ public:
         void Write(TPZStream &buf, int withclassid) const{ //ok
             buf.Write(&m_file_name_mixed);
             buf.Write(&m_file_name_transport);
-            buf.Write(&m_file_name_transport);
-            buf.Write(&m_vecnames);
-            buf.Write(&m_scalnames);
+            buf.Write(m_vecnames);
+            buf.Write(m_scalnames);
             buf.Write(&m_n_report_time);
         }
         
         void Read(TPZStream &buf, void *context){ //ok
             buf.Read(&m_file_name_mixed);
             buf.Read(&m_file_name_transport);
+            buf.Read(m_vecnames);
+            buf.Read(m_scalnames);
             buf.Read(&m_n_report_time);
-//            buf.Read(&m_vecnames);
-//            buf.Read(&m_scalnames);
         }
         
         virtual int ClassId() const {
@@ -421,6 +461,8 @@ public:
     TPetroPhysics mTPetroPhysics;
     
     TFluidProperties mTFluidProperties;
+    
+    TMultiphaseFunctions mTMultiphaseFunctions;
     
     TBoundaryConditions mTBoundaryConditions;
     

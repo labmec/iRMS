@@ -8,18 +8,19 @@
 #include "TMRSMultiphaseFlow.h"
 
 template <class TMEM>
-TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow() : TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>(){
+TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow() : TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>(), mSimData(){
     m_dimension = 0;
 }
 
 template <class TMEM>
-TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow(int matid, int dimension) : TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>(matid){
+TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow(int matid, int dimension) : TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>(matid), mSimData(){
     m_dimension = dimension;
 }
 
 template <class TMEM>
 TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow(const TMRSMultiphaseFlow &other){
     m_dimension = other.m_dimension;
+    mSimData = other.mSimData;
 }
 
 template <class TMEM>
@@ -29,6 +30,7 @@ TMRSMultiphaseFlow<TMEM> & TMRSMultiphaseFlow<TMEM>::operator=(const TMRSMultiph
         return *this;
     }
     m_dimension = other.m_dimension;
+    mSimData = other.mSimData;
     return *this;
 }
 
@@ -91,6 +93,11 @@ void TMRSMultiphaseFlow<TMEM>::Print(std::ostream &out){
     out << "\t Base class print:\n";
     out << " name of material : " << this->Name() << "\n";
     TPZMaterial::Print(out);
+}
+
+template <class TMEM>
+void TMRSMultiphaseFlow<TMEM>::SetDataTransfer(TMRSDataTransfer & SimData){
+    mSimData = SimData;
 }
 
 template <class TMEM>
@@ -192,17 +199,29 @@ template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, TPZVec<TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
     
     int q_b = 0;
+//    int p_b = 1;
     int s_b = 2;
+    REAL dt = mSimData.mTNumerics.m_dt;
+    
+    TRSLinearInterpolator & Krw = mSimData.mTPetroPhysics.mLayer_Krw_RelPerModel[0];
+    TRSLinearInterpolator & Kro = mSimData.mTPetroPhysics.mLayer_Kro_RelPerModel[0];
+    
+    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & fw = mSimData.mTMultiphaseFunctions.mLayer_fw[0];
+//    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & fo = mSimData.mTMultiphaseFunctions.mLayer_fo[0];
+    
+
     
     // Getting phis and solution for left material data
     TPZFMatrix<REAL>  &phiS_l =  datavecleft[s_b].phi;
     int n_phi_s_l = phiS_l.Rows();
+    REAL p_l = 0.0;//datavecleft[p_b].sol[0][0];
     REAL s_l = datavecleft[s_b].sol[0][0];
     int firsts_s_l    = 0;
     
     // Getting phis and solution for right material data
     TPZFMatrix<REAL>  &phiS_r =  datavecright[s_b].phi;
     int n_phi_s_r = phiS_r.Rows();
+    REAL p_r = 0.0;//datavecright[p_b].sol[0][0];
     REAL s_r = datavecright[s_b].sol[0][0];
     int firsts_s_r    = n_phi_s_l;
     
@@ -219,30 +238,40 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
         beta = 1.0;
     }
     
+    // Fractional flow evaluation
+    std::tuple<double, double, double> fw_l = fw(Krw,Kro,s_l,p_l);
+    std::tuple<double, double, double> fw_r = fw(Krw,Kro,s_r,p_r);
+    
+    REAL fw_lv = s_l;//std::get<0>(fw_l);
+    REAL dfw_dsw_lv = 1.0;//std::get<1>(fw_l);
+    
+    REAL fw_rv = s_r;//std::get<0>(fw_r);
+    REAL dfw_dsw_rv = 1.0;//std::get<1>(fw_r);
+    
     for (int is = 0; is < n_phi_s_l; is++) {
         
-        ef(is + firsts_s_l) += +1.0 * m_dt * weight * (beta*s_l + (1.0-beta)*s_r)*phiS_l(is,0)*qn;
+        ef(is + firsts_s_l) += +1.0 * dt * weight * (beta*fw_lv + (1.0-beta)*fw_rv)*phiS_l(is,0)*qn;
         
         for (int js = 0; js < n_phi_s_l; js++) {
-            ek(is + firsts_s_l, js + firsts_s_l) += +1.0* m_dt * weight * beta * phiS_l(js,0) * phiS_l(is,0)*qn;
+            ek(is + firsts_s_l, js + firsts_s_l) += +1.0* dt * weight * beta * dfw_dsw_lv * phiS_l(js,0) * phiS_l(is,0)*qn;
         }
         
         for (int js = 0; js < n_phi_s_r; js++) {
-            ek(is + firsts_s_l, js + firsts_s_r) += +1.0* m_dt * weight * (1.0-beta) * phiS_r(js,0) * phiS_l(is,0)*qn;
+            ek(is + firsts_s_l, js + firsts_s_r) += +1.0* dt * weight * (1.0-beta) * dfw_dsw_rv * phiS_r(js,0) * phiS_l(is,0)*qn;
         }
         
     }
     
     for (int is = 0; is < n_phi_s_r; is++) {
         
-        ef(is + firsts_s_r) += -1.0* m_dt * weight * (beta*s_l + (1.0-beta)*s_r)*phiS_r(is,0)*qn;
+        ef(is + firsts_s_r) += -1.0* dt * weight * (beta*fw_lv + (1.0-beta)*fw_rv)*phiS_r(is,0)*qn;
         
         for (int js = 0; js < n_phi_s_l; js++) {
-            ek(is + firsts_s_r, js + firsts_s_l) += -1.0* m_dt * weight * beta * phiS_l(js,0) * phiS_r(is,0)*qn;
+            ek(is + firsts_s_r, js + firsts_s_l) += -1.0* dt * weight * beta * dfw_dsw_lv * phiS_l(js,0) * phiS_r(is,0)*qn;
         }
         
         for (int js = 0; js < n_phi_s_r; js++) {
-            ek(is + firsts_s_r, js + firsts_s_r) += -1.0* m_dt * weight * (1.0-beta) * phiS_r(js,0) * phiS_r(is,0)*qn;
+            ek(is + firsts_s_r, js + firsts_s_r) += -1.0* dt * weight * (1.0-beta) * dfw_dsw_rv * phiS_r(js,0) * phiS_r(is,0)*qn;
         }
         
     }
@@ -261,6 +290,8 @@ void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZV
     REAL tol = 1.0e-10;
     int q_b = 0;
     int s_b = 2;
+    
+    REAL dt = mSimData.mTNumerics.m_dt;
     
     // Getting phis and solution for left material data
     TPZFMatrix<REAL>  &phiS_l =  datavecleft[s_b].phi;
@@ -284,7 +315,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZV
             REAL s_inlet = bc.Val2()(0,0);
             if (qn < 0.0 || fabs(qn) < tol) {
                 for (int is = 0; is < n_phi_s_l; is++) {
-                    ef(is + firsts_s_l) += +1.0* m_dt * weight * s_inlet * phiS_l(is,0)*qn;
+                    ef(is + firsts_s_l) += +1.0* dt * weight * s_inlet * phiS_l(is,0)*qn;
                 }
             }else{
                 std::cout << "TPZTracerFlow:: Outlet flux in inlet boundary condition qn = " << qn << std::endl;
@@ -300,10 +331,10 @@ void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZV
             if (qn > 0.0 || fabs(qn) < tol) {
                 for (int is = 0; is < n_phi_s_l; is++) {
                     
-                    ef(is + firsts_s_l) += +1.0* m_dt * weight * s_l*phiS_l(is,0)*qn;
+                    ef(is + firsts_s_l) += +1.0* dt * weight * s_l*phiS_l(is,0)*qn;
                     
                     for (int js = 0; js < n_phi_s_l; js++) {
-                        ek(is + firsts_s_l, js + firsts_s_l) += +1.0* m_dt * weight * phiS_l(js,0) * phiS_l(is,0)*qn;
+                        ek(is + firsts_s_l, js + firsts_s_l) += + 1.0* dt * weight * phiS_l(js,0) * phiS_l(is,0)*qn;
                     }
                 }
             }else{
