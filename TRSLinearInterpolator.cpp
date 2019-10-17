@@ -28,9 +28,9 @@ TRSLinearInterpolator::TRSLinearInterpolator(const TRSLinearInterpolator &other)
     fdata = other.fdata;
 }
 
-/** @brief Assignment operator */
-TRSLinearInterpolator &TRSLinearInterpolator::operator=(const TRSLinearInterpolator &other){
+TRSLinearInterpolator & TRSLinearInterpolator::operator=(const TRSLinearInterpolator &other){
     fdata = other.fdata;
+    return *this;
     
 }
 
