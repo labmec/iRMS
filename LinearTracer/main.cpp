@@ -200,11 +200,11 @@ TMRSDataTransfer Setting2D(){
         double Bo = 1.0;
         
         std::tuple<double, double> krw_t = krw.ValDeriv(sw);
-        std::tuple<double, double> kro_t = kro.ValDeriv(1-sw);
+        std::tuple<double, double> kro_t = kro.ValDeriv(sw);
         double krwv = std::get<0>(krw_t);
         double krov = std::get<0>(kro_t);
         double dkrw_dswv = std::get<1>(krw_t);
-        double dkro_dswv = -std::get<1>(kro_t);
+        double dkro_dswv = std::get<1>(kro_t);
         double lwv  = krwv/(mu_w*Bw);
         double dlw_dswv  = dkrw_dswv/(mu_w*Bw);
         double lov  = krov/(mu_o*Bo);
@@ -225,11 +225,11 @@ TMRSDataTransfer Setting2D(){
         double Bo = 1.0;
         
         std::tuple<double, double> krw_t = krw.ValDeriv(sw);
-        std::tuple<double, double> kro_t = kro.ValDeriv(1-sw);
+        std::tuple<double, double> kro_t = kro.ValDeriv(sw);
         double krwv = std::get<0>(krw_t);
         double krov = std::get<0>(kro_t);
         double dkrw_dswv = std::get<1>(krw_t);
-        double dkro_dswv = -std::get<1>(kro_t);
+        double dkro_dswv = std::get<1>(kro_t);
         double lwv  = krwv/(mu_w*Bw);
         double dlw_dswv  = dkrw_dswv/(mu_w*Bw);
         double lov  = krov/(mu_o*Bo);
@@ -250,11 +250,11 @@ TMRSDataTransfer Setting2D(){
         double Bo = 1.0;
         
         std::tuple<double, double> krw_t = krw.ValDeriv(sw);
-        std::tuple<double, double> kro_t = kro.ValDeriv(1-sw);
+        std::tuple<double, double> kro_t = kro.ValDeriv(sw);
         double krwv = std::get<0>(krw_t);
         double krov = std::get<0>(kro_t);
         double dkrw_dswv = std::get<1>(krw_t);
-        double dkro_dswv = -std::get<1>(kro_t);
+        double dkro_dswv = std::get<1>(kro_t);
         double lwv  = krwv/(mu_w*Bw);
         double dlw_dswv  = dkrw_dswv/(mu_w*Bw);
         double lov  = krov/(mu_o*Bo);
