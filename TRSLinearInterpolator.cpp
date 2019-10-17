@@ -23,6 +23,17 @@ TRSLinearInterpolator::TRSLinearInterpolator(TPZFMatrix<REAL> data){
     
 }
 
+/** @brief Constructor based on a TPZTracerFlow object */
+TRSLinearInterpolator::TRSLinearInterpolator(const TRSLinearInterpolator &other){
+    fdata = other.fdata;
+}
+
+/** @brief Assignment operator */
+TRSLinearInterpolator &TRSLinearInterpolator::operator=(const TRSLinearInterpolator &other){
+    fdata = other.fdata;
+    
+}
+
 /** @brief Function that sets the matrix((x,f(x)) for linear interpolation or (x,f(x), f'(x)) for hermite interpolation) with the data to interpolate
  * @param  data is a matrix (nx2 for Linear interpolation or nx3 for Hermite interpolation) with the dimensional data to interpolate
  */

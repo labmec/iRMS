@@ -58,6 +58,15 @@ public:
     /** @brief Function that sets the matrix((x,f(x)) for linear interpolation or (x,f(x), f'(x)) for Hermite interpolation) with the data to interpolate
      * @param data is a matrix(nx2 for Linear interpolation or nx3 for Hermite interpolation) with one dimensional data to interpolate
      */
+    
+    /** @brief Constructor based on a TPZTracerFlow object */
+    TRSLinearInterpolator(const TRSLinearInterpolator &other);
+    
+    /** @brief Assignment operator */
+    TRSLinearInterpolator &operator=(const TRSLinearInterpolator &other);
+    
+    
+    
     void SetData(TPZFMatrix<REAL> data);
     
     /** @brief Function that returns the data
