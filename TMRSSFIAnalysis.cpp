@@ -57,7 +57,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
     bool stop_criterion_Q = false;
     REAL error_rel_mixed = 1.0;
     REAL error_rel_transport = 1.0;
-    REAL eps_tol = 0.001;
+    REAL eps_tol = 0.01;
 
     for (int i = 1; i <= n_iterations; i++) {
         
@@ -67,6 +67,8 @@ void TMRSSFIAnalysis::RunTimeStep(){
         
         stop_criterion_Q = error_rel_mixed <= eps_tol && error_rel_transport <= eps_tol;
         if (stop_criterion_Q) {
+            std::cout << "SFI converged " << std::endl;
+            std::cout << "Number of iterations = " << i << std::endl;
             UpdateMemoryInModules();
             break;
         }

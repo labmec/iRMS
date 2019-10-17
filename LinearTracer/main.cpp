@@ -213,7 +213,7 @@ TMRSDataTransfer Setting2D(){
         double dl_dswv   = dlw_dswv + dlo_dswv;
         double fwv  = lwv/lv;
         double dfw_dswv  = (dlw_dswv/lv) - lwv*(dl_dswv/(lv*lv));
-        std::tuple<double, double, double> fw_t(fwv, dfw_dswv, 0.0);
+        std::tuple<double, double, double> fw_t(sw*sw, 2*sw, 0.0);
         return fw_t;
     };
     
@@ -238,7 +238,7 @@ TMRSDataTransfer Setting2D(){
         double dl_dswv   = dlw_dswv + dlo_dswv;
         double fov  = lov/lv;
         double dfo_dswv  = (dlo_dswv/lv) - lov*(dl_dswv/(lv*lv));
-        std::tuple<double, double, double> fo_t(fov, dfo_dswv, 0.0);
+        std::tuple<double, double, double> fo_t((1-sw)*(1-sw), -2.0*(1-sw), 0.0);
         return fo_t;
     };
     
@@ -261,7 +261,7 @@ TMRSDataTransfer Setting2D(){
         double dlo_dswv  = dkro_dswv/(mu_o*Bo);
         double lv   = lwv + lov;
         double dl_dswv   = dlw_dswv + dlo_dswv;
-        std::tuple<double, double, double> l_t(lv, dl_dswv, 0.0);
+        std::tuple<double, double, double> l_t(sw*sw+(1-sw)*(1-sw), dl_dswv, 0.0);
         return l_t;
     };
     
@@ -270,13 +270,13 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
     
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 2;
-    sim_data.mTNumerics.m_max_iter_transport = 2;
-    sim_data.mTNumerics.m_max_iter_sfi = 2;
-    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-8;
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-8;
-    sim_data.mTNumerics.m_n_steps = 10;
-    sim_data.mTNumerics.m_dt      = 1000.0;
+    sim_data.mTNumerics.m_max_iter_mixed = 10;
+    sim_data.mTNumerics.m_max_iter_transport = 20;
+    sim_data.mTNumerics.m_max_iter_sfi = 10;
+    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-4;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-4;
+    sim_data.mTNumerics.m_n_steps = 5;
+    sim_data.mTNumerics.m_dt      = 0.1;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -284,7 +284,7 @@ TMRSDataTransfer Setting2D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
-    sim_data.mTPostProcess.m_n_report_time = 10;
+    sim_data.mTPostProcess.m_n_report_time = 5;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
