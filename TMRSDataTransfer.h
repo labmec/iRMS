@@ -173,6 +173,7 @@ public:
         
         /// time step size
         REAL m_dt;
+     
         
         /// Residual tolerance for mixed operator
         REAL m_res_tol_mixed;
@@ -198,6 +199,9 @@ public:
         /// Number of time steps
         int m_n_steps;
         
+        /// time step size
+        int m_report_time;
+        
         TNumerics(){
             
             m_dt                    = 0.0;
@@ -209,6 +213,7 @@ public:
             m_max_iter_transport    = 0;
             m_max_iter_sfi          = 0;
             m_n_steps               = 0;
+            m_report_time           = 3;
             
         }
         
@@ -227,6 +232,9 @@ public:
             m_max_iter_transport    = other.m_max_iter_transport;
             m_max_iter_sfi          = other.m_max_iter_sfi;
             m_n_steps               = other.m_n_steps;
+            m_report_time           = other.m_report_time;
+            
+            
         }
         
         TNumerics & operator=(const TNumerics &other){
@@ -245,6 +253,7 @@ public:
             m_max_iter_transport    = other.m_max_iter_transport;
             m_max_iter_sfi          = other.m_max_iter_sfi;
             m_n_steps               = other.m_n_steps;
+            m_report_time           = other.m_report_time;
             return *this;
         }
         
@@ -264,7 +273,9 @@ public:
             m_max_iter_mixed        == other.m_max_iter_mixed &&
             m_max_iter_transport    == other.m_max_iter_transport &&
             m_max_iter_sfi          == other.m_max_iter_sfi &&
-            m_n_steps               == other.m_n_steps;
+            m_n_steps               == other.m_n_steps &&
+            m_report_time           == other.m_report_time;
+            
         }
         
         void Write(TPZStream &buf, int withclassid) const{ //ok
@@ -276,6 +287,7 @@ public:
             buf.Write(&m_max_iter_transport);
             buf.Write(&m_max_iter_sfi);
             buf.Write(&m_n_steps);
+            buf.Write(&m_report_time);
         }
         
         void Read(TPZStream &buf, void *context){ //ok
@@ -288,6 +300,7 @@ public:
             buf.Read(&m_max_iter_transport);
             buf.Read(&m_max_iter_sfi);
             buf.Read(&m_n_steps);
+            buf.Read(&m_report_time);
         }
         
         virtual int ClassId() const {
@@ -304,6 +317,7 @@ public:
             std::cout << m_max_iter_transport << std::endl;
             std::cout << m_max_iter_sfi << std::endl;
             std::cout << m_n_steps << std::endl;
+            std::cout << m_report_time << std::endl;
         }
         
     };
@@ -318,10 +332,15 @@ public:
         /// Transpor operator vtk file name
         std::string m_file_name_transport;
         
+        TPZStack<std::string,10> m_scalnames;
+        TPZStack<std::string,10> m_vecnames;
+        
         TPostProcess(){
             
             m_file_name_mixed       = "";
             m_file_name_transport   = "";
+            m_scalnames.Resize(0);
+            m_vecnames.Resize(0);
             
         }
         
@@ -332,6 +351,8 @@ public:
         TPostProcess(const TPostProcess & other){
             m_file_name_mixed       = other.m_file_name_mixed;
             m_file_name_transport   = other.m_file_name_transport;
+            m_vecnames              = other.m_vecnames;
+            m_scalnames             = other.m_scalnames;
         }
         
         TPostProcess & operator=(const TPostProcess &other){
@@ -343,6 +364,9 @@ public:
             
             m_file_name_mixed       = other.m_file_name_mixed;
             m_file_name_transport   = other.m_file_name_transport;
+            m_vecnames              = other.m_vecnames;
+            m_scalnames              = other.m_scalnames;
+            
             return *this;
         }
         
@@ -355,26 +379,36 @@ public:
             
             return
             m_file_name_mixed       == other.m_file_name_mixed &&
-            m_file_name_transport   == other.m_file_name_transport;
+            m_file_name_transport   == other.m_file_name_transport&&
+            m_vecnames              == other.m_vecnames&&
+            m_scalnames              == other.m_scalnames;
         }
         
         void Write(TPZStream &buf, int withclassid) const{ //ok
             buf.Write(&m_file_name_mixed);
             buf.Write(&m_file_name_transport);
+            buf.Write(&m_file_name_transport);
+            buf.Write(&m_vecnames);
+            buf.Write(&m_scalnames);
         }
         
         void Read(TPZStream &buf, void *context){ //ok
             buf.Read(&m_file_name_mixed);
             buf.Read(&m_file_name_transport);
+//            buf.Read(&m_vecnames);
+//            buf.Read(&m_scalnames);
         }
         
         virtual int ClassId() const {
             return Hash("TMRSDataTransfer::TPostProcess");
         }
         
+        
+        
         void Print() const {
             std::cout << m_file_name_mixed << std::endl;
             std::cout << m_file_name_transport << std::endl;
+            //scalnames and vecnames
         }
         
     };

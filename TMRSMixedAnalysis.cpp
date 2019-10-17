@@ -110,8 +110,9 @@ void TMRSMixedAnalysis::NewtonIteration(){
 void TMRSMixedAnalysis::PostProcessTimeStep(){
     TPZStack<std::string,10> scalnames, vecnames;
     // @TODO:: Locate these variables in mTPostProcess
-    vecnames.Push("q");
-    scalnames.Push("p");
+    
+    scalnames = m_sim_data->mTPostProcess.m_scalnames;
+    vecnames = m_sim_data->mTPostProcess.m_vecnames;
 
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();

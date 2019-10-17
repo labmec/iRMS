@@ -122,9 +122,20 @@ int main(){
     sfi_analysis->SetDataTransfer(&sim_data);
     
     int n_steps = sim_data.mTNumerics.m_n_steps;
+    REAL dt = sim_data.mTNumerics.m_dt;
+    REAL reporting_time =(n_steps * dt)/(sim_data.mTNumerics.m_report_time);
+    REAL sim_time = 0.0;
+    
     for (int it = 0; it < n_steps; it++) {
         sfi_analysis->RunTimeStep();
-        sfi_analysis->PostProcessTimeStep();
+        sim_time = it*dt;
+        
+        
+        if (sim_time >= (reporting_time - 0.0000001)) {
+            std::cout<<"PostProcess over the reporting time:  "<<reporting_time<<std::endl;
+            sfi_analysis->PostProcessTimeStep();
+            reporting_time += reporting_time ;
+        }
     }
     
     return 0;
@@ -189,7 +200,11 @@ TMRSDataTransfer Setting2D(){
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
-    
+    TPZStack<std::string,10> scalnames, vecnames;
+    vecnames.Push("Flux");
+    scalnames.Push("Pressure");
+    sim_data.mTPostProcess.m_vecnames = vecnames;
+    sim_data.mTPostProcess.m_scalnames = scalnames;
     
     return sim_data;
 }

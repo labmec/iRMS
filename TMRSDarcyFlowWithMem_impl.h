@@ -75,8 +75,8 @@ void TMRSDarcyFlowWithMem<TMEM>::Print(std::ostream &out) {
 
 template <class TMEM>
 int TMRSDarcyFlowWithMem<TMEM>::VariableIndex(const std::string &name) {
-    if(!strcmp("q",name.c_str()))               return  1;
-    if(!strcmp("p",name.c_str()))               return  2;
+    if(!strcmp("Flux",name.c_str()))            return  1;
+    if(!strcmp("Pressure",name.c_str()))        return  2;
     if(!strcmp("div_q",name.c_str()))           return  3;
     if(!strcmp("kappa",name.c_str()))           return  4;
     return TPZMatWithMem<TMEM>::VariableIndex(name);
