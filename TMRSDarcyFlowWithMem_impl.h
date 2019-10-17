@@ -179,7 +179,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     
     // Total mobility
     std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,sw,p);
-    REAL lambda_v       = 1.0;//std::get<0>(lambda_t);
+    REAL lambda_v       = std::get<0>(lambda_t);
 //    REAL dlambda_dp_v   = std::get<2>(lambda_t);
     
     int s_i, s_j;
