@@ -12,6 +12,7 @@
 #include "TPZMatWithMem.h"
 #include "pzbndcond.h"
 #include "pzaxestools.h"
+#include "TMRSDataTransfer.h"
 
 template <class TMEM>
 class TMRSDarcyFlowWithMem : public TPZMatWithMem<TMEM> {
@@ -27,6 +28,8 @@ class TMRSDarcyFlowWithMem : public TPZMatWithMem<TMEM> {
     
     /// Directive that stands for the use of four approximations spaces (iterative method)
     bool m_is_four_spaces_Q;
+    
+    TMRSDataTransfer mSimData;
     
 public:
     
@@ -66,6 +69,9 @@ public:
     {
         return new TMRSDarcyFlowWithMem(*this);
     }
+    
+    /// Set data transfer object
+    void SetDataTransfer(TMRSDataTransfer & SimData);
     
     /// Print out the data associated with the material
     void Print(std::ostream &out = std::cout) override;

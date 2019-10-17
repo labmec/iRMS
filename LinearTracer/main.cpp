@@ -242,9 +242,32 @@ TMRSDataTransfer Setting2D(){
         return fo_t;
     };
     
+    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double sw, double p)> lambda = [](TRSLinearInterpolator & krw, TRSLinearInterpolator & kro, double sw, double p) {
+        
+        double mu_w = 1.0;
+        double mu_o = 1.0;
+        double Bw = 1.0;
+        double Bo = 1.0;
+        
+        std::tuple<double, double> krw_t = krw.ValDeriv(sw);
+        std::tuple<double, double> kro_t = kro.ValDeriv(1-sw);
+        double krwv = std::get<0>(krw_t);
+        double krov = std::get<0>(kro_t);
+        double dkrw_dswv = std::get<1>(krw_t);
+        double dkro_dswv = -std::get<1>(kro_t);
+        double lwv  = krwv/(mu_w*Bw);
+        double dlw_dswv  = dkrw_dswv/(mu_w*Bw);
+        double lov  = krov/(mu_o*Bo);
+        double dlo_dswv  = dkro_dswv/(mu_o*Bo);
+        double lv   = lwv + lov;
+        double dl_dswv   = dlw_dswv + dlo_dswv;
+        std::tuple<double, double, double> l_t(lv, dl_dswv, 0.0);
+        return l_t;
+    };
     
     sim_data.mTMultiphaseFunctions.mLayer_fw[0] = fw;
     sim_data.mTMultiphaseFunctions.mLayer_fo[0] = fo;
+    sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
     
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 2;

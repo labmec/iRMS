@@ -11,12 +11,13 @@
 #include "TMRSDarcyFlowWithMem.h"
 
 template <class TMEM>
-TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TPZMatWithMem<TMEM>() {
-    DebugStop();
+TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TPZMatWithMem<TMEM>(), mSimData() {
+    m_dimension = 0;
+    m_is_four_spaces_Q = false;
 }
 
 template <class TMEM>
-TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension) : TPZMatWithMem<TMEM>(mat_id){
+TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension) : TPZMatWithMem<TMEM>(mat_id), mSimData(){
     m_dimension = dimension;
     m_is_four_spaces_Q = false;
 }
@@ -27,6 +28,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(const TMRSDarcyFlowWithMem & ot
     m_scale_pressure    = other.m_scale_pressure;
     m_scale_flux        = other.m_scale_flux;
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
+    mSimData  = other.mSimData;
 }
 
 template <class TMEM>
@@ -39,6 +41,7 @@ TMRSDarcyFlowWithMem<TMEM> & TMRSDarcyFlowWithMem<TMEM>::operator=(const TMRSDar
     m_scale_pressure    = other.m_scale_pressure;
     m_scale_flux        = other.m_scale_flux;
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
+    mSimData  = other.mSimData;
     return *this;
 }
 
@@ -63,6 +66,11 @@ void TMRSDarcyFlowWithMem<TMEM>::FillBoundaryConditionDataRequirement(int type, 
         datavec[idata].SetAllRequirements(false);
         datavec[idata].fNeedsSol = true;
     }
+}
+
+template <class TMEM>
+void TMRSDarcyFlowWithMem<TMEM>::SetDataTransfer(TMRSDataTransfer & SimData){
+    mSimData = SimData;
 }
 
 template <class TMEM>
@@ -138,6 +146,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     
     int qb = 0;
     int pb = 1;
+    int sb = 2;
     
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;
@@ -155,6 +164,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     STATE p                  = datavec[pb].sol[0][0];
+    STATE sw                 = datavec[sb].sol[0][0];
     
     // Get the data at integrations points
     long gp_index = datavec[qb].intGlobPtIndex;
@@ -162,12 +172,22 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
     
+    TRSLinearInterpolator & Krw = mSimData.mTPetroPhysics.mLayer_Krw_RelPerModel[0];
+    TRSLinearInterpolator & Kro = mSimData.mTPetroPhysics.mLayer_Kro_RelPerModel[0];
+    
+    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & lambda = mSimData.mTMultiphaseFunctions.mLayer_lambda[0];
+    
+    // Total mobility
+    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,sw,p);
+    REAL lambda_v       = std::get<0>(lambda_t);
+//    REAL dlambda_dp_v   = std::get<2>(lambda_t);
+    
     int s_i, s_j;
     int v_i, v_j;
     
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*q[j];
+            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
         }
     }
     

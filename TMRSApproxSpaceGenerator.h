@@ -28,7 +28,7 @@ private:
     
     TPZGeoMesh * mGeometry;
     
-    TMRSDataTransfer mDataTransfer;
+    TMRSDataTransfer mSimData;
     
     TPZMultiphysicsCompMesh * mMixedOperator;
     

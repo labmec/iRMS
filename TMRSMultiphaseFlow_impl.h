@@ -242,11 +242,11 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
     std::tuple<double, double, double> fw_l = fw(Krw,Kro,s_l,p_l);
     std::tuple<double, double, double> fw_r = fw(Krw,Kro,s_r,p_r);
     
-    REAL fw_lv = s_l;//std::get<0>(fw_l);
-    REAL dfw_dsw_lv = 1.0;//std::get<1>(fw_l);
+    REAL fw_lv = std::get<0>(fw_l);
+    REAL dfw_dsw_lv = std::get<1>(fw_l);
     
-    REAL fw_rv = s_r;//std::get<0>(fw_r);
-    REAL dfw_dsw_rv = 1.0;//std::get<1>(fw_r);
+    REAL fw_rv = std::get<0>(fw_r);
+    REAL dfw_dsw_rv = std::get<1>(fw_r);
     
     for (int is = 0; is < n_phi_s_l; is++) {
         

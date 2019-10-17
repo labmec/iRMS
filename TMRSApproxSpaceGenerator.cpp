@@ -92,7 +92,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     TPZMixedDarcyFlow * volume = nullptr;
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
-    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mDataTransfer.mTGeometry.mDomainDimNameAndPhysicalTag;
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     REAL kappa = 1.0;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
@@ -110,7 +110,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     }
     
     TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mDataTransfer.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
@@ -144,7 +144,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
     
-    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mDataTransfer.mTGeometry.mDomainDimNameAndPhysicalTag;
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     int nstate = 1;
     TPZVec<STATE> sol;
     for (int d = 0; d <= dimension; d++) {
@@ -163,7 +163,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
     
     if (order == 0) {
         TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
-        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mDataTransfer.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
+        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
         for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
             int bc_id   = get<0>(chunk);
             int bc_type = get<1>(chunk);
@@ -204,13 +204,14 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     
     TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
     mMixedOperator->SetDefaultOrder(order);
-    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mDataTransfer.mTGeometry.mDomainDimNameAndPhysicalTag;
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
             volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
+            volume->SetDataTransfer(mSimData);
             mMixedOperator->InsertMaterialObject(volume);
         }
     }
@@ -220,7 +221,7 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     }
     
     TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mDataTransfer.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
@@ -270,14 +271,14 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     
     TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
     mTransportOperator->SetDefaultOrder(0);
-    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mDataTransfer.mTGeometry.mDomainDimNameAndPhysicalTag;
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
             volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
-            volume->SetDataTransfer(mDataTransfer);
+            volume->SetDataTransfer(mSimData);
             mTransportOperator->InsertMaterialObject(volume);
         }
     }
@@ -287,7 +288,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     }
     
     TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mDataTransfer.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
+    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
@@ -299,7 +300,7 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     int transport_matid = 100;
     {
         TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
-        interface->SetDataTransfer(mDataTransfer);
+        interface->SetDataTransfer(mSimData);
         mTransportOperator->InsertMaterialObject(interface);
     }
     
@@ -391,12 +392,12 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
 #endif
 }
 
-void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & DataTransfer){
-    mDataTransfer = DataTransfer;
+void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){
+    mSimData = SimData;
 }
 
 TMRSDataTransfer & TMRSApproxSpaceGenerator::GetDataTransfer(){
-    return mDataTransfer;
+    return mSimData;
 }
 
 TPZMultiphysicsCompMesh * TMRSApproxSpaceGenerator::GetMixedOperator(){

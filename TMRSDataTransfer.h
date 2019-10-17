@@ -132,12 +132,15 @@ public:
         
         std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_fo;
         
+        std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_lambda;
+        
         std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_Glambda;
         
         
         TMultiphaseFunctions(){
             mLayer_fw.clear();
             mLayer_fo.clear();
+            mLayer_lambda.clear();
             mLayer_Glambda.clear();
         }
         
@@ -148,6 +151,7 @@ public:
         TMultiphaseFunctions(const TMultiphaseFunctions &other){
             mLayer_fw = other.mLayer_fw;
             mLayer_fo = other.mLayer_fo;
+            mLayer_lambda = other.mLayer_lambda;
             mLayer_Glambda = other.mLayer_Glambda;
             
         }
@@ -157,6 +161,7 @@ public:
             {
                 mLayer_fw = other.mLayer_fw;
                 mLayer_fo = other.mLayer_fo;
+                mLayer_lambda = other.mLayer_lambda;
                 mLayer_Glambda = other.mLayer_Glambda;
             }
             return *this;
