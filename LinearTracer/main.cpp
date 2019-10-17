@@ -181,8 +181,8 @@ TMRSDataTransfer Setting2D(){
     
     //Relative permermeabilities
     TRSLinearInterpolator krw, kro ;
-    std::string name_krw("PetroPhysics/krw.txt");
-    std::string name_kro("PetroPhysics/krow.txt");
+    std::string name_krw("PetroPhysics/krw_linear.txt");
+    std::string name_kro("PetroPhysics/krow_linear.txt");
     krw.ReadData(name_krw,true);
     kro.ReadData(name_kro,true);
     sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.resize(1);
