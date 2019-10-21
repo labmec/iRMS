@@ -12,6 +12,7 @@
 TRSLinearInterpolator::TRSLinearInterpolator(){
     fdata.Resize(1, 1);
     fdata(0,0)=0;
+    fInterType =InterpType::TLinear;
 }
 
 /**
@@ -20,16 +21,27 @@ TRSLinearInterpolator::TRSLinearInterpolator(){
  */
 TRSLinearInterpolator::TRSLinearInterpolator(TPZFMatrix<REAL> data){
     fdata=data;
+    fInterType =InterpType::TLinear;
     
 }
 
 /** @brief Constructor based on a TPZTracerFlow object */
 TRSLinearInterpolator::TRSLinearInterpolator(const TRSLinearInterpolator &other){
     fdata = other.fdata;
+    fextLeft = other.fextLeft;
+    fextRight = other.fextRight;
+    fvalLef = other.fvalLef;
+    fvalRight = other.fvalRight;
+    fInterType = other.fInterType;
 }
 
 TRSLinearInterpolator & TRSLinearInterpolator::operator=(const TRSLinearInterpolator &other){
     fdata = other.fdata;
+    fextLeft = other.fextLeft;
+    fextRight = other.fextRight;
+    fvalLef = other.fvalLef;
+    fvalRight = other.fvalRight;
+    fInterType = other.fInterType;
     return *this;
     
 }
@@ -89,6 +101,7 @@ std::tuple<double, double> TRSLinearInterpolator::ValDeriv(double x){
     if (x >= fdata(0,0) && x<= fdata(npoints-1,0) ){
         for(int i=0;  i<npoints-1; i++){
             if(x >= fdata(i,0) && x<= fdata(i+1,0)){
+                //fdata.Print(std::cout);
                 double x1 = fdata(i,0);
                 double x2 = fdata(i+1,0);
                 double y1 = fdata(i,1);
@@ -96,6 +109,7 @@ std::tuple<double, double> TRSLinearInterpolator::ValDeriv(double x){
                 double a = (x - x2)/(x1 - x2);
                 double b = (x - x1)/(x2 - x1);
                 returned = a*y1 + b*y2;
+               // std::cout<<"sw: "<<x<< "kr_ :"<<returned<<std::endl;
                 deriv = (y2-y1)/(x2-x1);
                 return {returned,deriv};
                 
@@ -339,7 +353,7 @@ void TRSLinearInterpolator::ReadData(std::string name, bool print_table_Q){
             }
             if (n_cols==3) {
                 double a, b, c;
-                data.Resize(i, 2);
+                data.Resize(i, 3);
                 if(iss >> a >> b >> c) ;
                 data(i-1,0)=a;
                 data(i-1,1)=b;

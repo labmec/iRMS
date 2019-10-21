@@ -374,8 +374,8 @@ public:
         
         TPZStack<std::string,10> m_scalnames;
         TPZStack<std::string,10> m_vecnames;
-        
-        int m_n_report_time;
+        REAL m_file_time_step;
+        TPZStack<REAL,100> m_vec_reporting_times;
         
         TPostProcess(){
             
@@ -383,8 +383,9 @@ public:
             m_file_name_transport   = "";
             m_scalnames.Resize(0);
             m_vecnames.Resize(0);
-            m_n_report_time =100;
-            
+            m_file_time_step = 0.0;
+            m_vec_reporting_times.Resize(0);
+           
             
         }
         
@@ -397,7 +398,9 @@ public:
             m_file_name_transport   = other.m_file_name_transport;
             m_vecnames              = other.m_vecnames;
             m_scalnames             = other.m_scalnames;
-            m_n_report_time         = other.m_n_report_time;
+            m_file_time_step        = other.m_file_time_step;
+            m_vec_reporting_times   = other.m_vec_reporting_times;
+            
         }
         
         TPostProcess & operator=(const TPostProcess &other){
@@ -410,8 +413,10 @@ public:
             m_file_name_mixed       = other.m_file_name_mixed;
             m_file_name_transport   = other.m_file_name_transport;
             m_vecnames              = other.m_vecnames;
-            m_scalnames              = other.m_scalnames;
-            m_n_report_time         = other.m_n_report_time;
+            m_scalnames             = other.m_scalnames;
+            m_file_time_step        = other.m_file_time_step;
+            m_vec_reporting_times   = other.m_vec_reporting_times;
+            
             return *this;
         }
         
@@ -427,15 +432,19 @@ public:
             m_file_name_transport   == other.m_file_name_transport&&
             m_vecnames              == other.m_vecnames&&
             m_scalnames             == other.m_scalnames&&
-            m_n_report_time        == other.m_n_report_time;
+            m_file_time_step        == other.m_file_time_step&&
+            m_vec_reporting_times   == other.m_vec_reporting_times;
+            
         }
         
+    
         void Write(TPZStream &buf, int withclassid) const{ //ok
             buf.Write(&m_file_name_mixed);
             buf.Write(&m_file_name_transport);
             buf.Write(m_vecnames);
             buf.Write(m_scalnames);
-            buf.Write(&m_n_report_time);
+            buf.Write(&m_file_time_step);
+            buf.Write(m_vec_reporting_times);
         }
         
         void Read(TPZStream &buf, void *context){ //ok
@@ -443,7 +452,8 @@ public:
             buf.Read(&m_file_name_transport);
             buf.Read(m_vecnames);
             buf.Read(m_scalnames);
-            buf.Read(&m_n_report_time);
+            buf.Read(&m_file_time_step);
+            buf.Read(m_vec_reporting_times);
         }
         
         virtual int ClassId() const {
@@ -455,7 +465,8 @@ public:
         void Print() const {
             std::cout << m_file_name_mixed << std::endl;
             std::cout << m_file_name_transport << std::endl;
-            std::cout << m_n_report_time << std::endl;
+            std::cout << m_file_time_step << std::endl;
+            std::cout << m_vec_reporting_times << std::endl;
             //scalnames and vecnames
         }
         

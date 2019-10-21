@@ -45,7 +45,7 @@ public:
     
     double fvalRight=0.0;
      //Default right extension value to extrapolate
-    InterpType fInterType = TLinear;
+    InterpType fInterType;;
     
     /** @brief Default constructor */
     TRSLinearInterpolator();

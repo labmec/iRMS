@@ -238,7 +238,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
         beta = 1.0;
     }
     
-    // Fractional flow evaluation
+ 
     std::tuple<double, double, double> fw_l = fw(Krw,Kro,s_l,p_l);
     std::tuple<double, double, double> fw_r = fw(Krw,Kro,s_r,p_r);
     
@@ -247,6 +247,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
     
     REAL fw_rv = std::get<0>(fw_r);
     REAL dfw_dsw_rv = std::get<1>(fw_r);
+    
     
     for (int is = 0; is < n_phi_s_l; is++) {
         
@@ -288,6 +289,7 @@ template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc) {
     
     REAL tol = 1.0e-10;
+ //   REAL tol = 0.01;
     int q_b = 0;
     int s_b = 2;
     
@@ -318,6 +320,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZV
                     ef(is + firsts_s_l) += +1.0* dt * weight * s_inlet * phiS_l(is,0)*qn;
                 }
             }else{
+
                 std::cout << "TPZTracerFlow:: Outlet flux in inlet boundary condition qn = " << qn << std::endl;
             }
  

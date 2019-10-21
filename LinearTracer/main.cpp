@@ -67,14 +67,16 @@
 #include "TMRSTransportAnalysis.h"
 
 TMRSDataTransfer Setting2D();
-
+TMRSDataTransfer SettingSimple2D();
 TMRSDataTransfer Setting3D();
+
 
 int main(){
  
     bool is_3D_Q = false;
     bool is_2D_Coarse_Q = true;
     TMRSDataTransfer sim_data;
+    
     std::string geometry_file, name;
     if (is_3D_Q) {
         geometry_file = "gmsh/reservoir_3d.msh";
@@ -82,13 +84,16 @@ int main(){
         sim_data = Setting3D();
     }else{
         if (is_2D_Coarse_Q) {
-            geometry_file = "gmsh/reservoir_2d_coarse.msh";
+          // geometry_file = "gmsh/reservoir_2d_coarse.msh";
+            geometry_file = "gmsh/simple_2D_coarse.msh";
+            
         }
         else{
-            geometry_file = "gmsh/reservoir_2d_fine.msh";
+            geometry_file = "gmsh/reservoir_2d_coarse.msh";
+            //geometry_file = "gmsh/reservoir_2d_fine.msh";
         }
         name = "reservoir_2d";
-        sim_data = Setting2D();
+        sim_data = SettingSimple2D();
     }
     
     
@@ -123,17 +128,32 @@ int main(){
     
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
-    REAL rtime = sim_data.mTPostProcess.m_n_report_time;
-    REAL reporting_time =(n_steps)/(rtime);
-    REAL sim_time = 0.0;
     
-    for (int it = 0; it < n_steps; it++) {
+    // Fill time steps vector
+    TPZStack<REAL,100> reporting_times;
+    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    int n_reporting_times =(n_steps)/(time/dt) + 1;
+    REAL r_time =0.0;
+    for (int i =1; i<= n_reporting_times; i++) {
+        r_time += dt*(time/dt);
+        reporting_times.push_back(r_time);
+    }
+    
+    
+
+    REAL sim_time = 0.0;
+    int pos =0;
+    REAL current_report_time = reporting_times[pos];
+    
+    for (int it = 1; it <= n_steps; it++) {
         sfi_analysis->RunTimeStep();
         sim_time = it*dt;
-        if (sim_time >= (reporting_time)) {
-            std::cout << "PostProcess over the reporting time:  " << reporting_time << std::endl;
+        if (sim_time >=  current_report_time) {
+            std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
             sfi_analysis->PostProcessTimeStep();
-            reporting_time += rtime ;
+            pos++;
+            current_report_time =reporting_times[pos];
+            
         }
     }
     
@@ -176,23 +196,27 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(7,bc_inlet,0.0);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(10,bc_outlet,0.0);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(11,bc_inlet,sat_in);
-    
 
-    
     //Relative permermeabilities
     TRSLinearInterpolator krw, kro ;
     std::string name_krw("PetroPhysics/krw_linear.txt");
     std::string name_kro("PetroPhysics/krow_linear.txt");
+    
     krw.ReadData(name_krw,true);
     kro.ReadData(name_kro,true);
+    kro.SetLeftExtension(TRSLinearInterpolator::Enone,1.0);
+    krw.SetLeftExtension(TRSLinearInterpolator::Enone,0.0);
+    kro.SetRightExtension(TRSLinearInterpolator::Enone,0.0);
+    krw.SetRightExtension(TRSLinearInterpolator::Enone,1.0);
+
     sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.resize(1);
     sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel.resize(1);
     sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel[0] = krw;
     sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel[0] = kro;
-    
+
     // Fractional flows composition
     
-    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double sw, double p)> fw = [](TRSLinearInterpolator & krw, TRSLinearInterpolator & kro, double sw, double p) {
+    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double sw, double p)> fw = [](TRSLinearInterpolator & krw, TRSLinearInterpolator  &kro, double sw, double p) {
         
         double mu_w = 1.0;
         double mu_o = 1.0;
@@ -213,7 +237,7 @@ TMRSDataTransfer Setting2D(){
         double dl_dswv   = dlw_dswv + dlo_dswv;
         double fwv  = lwv/lv;
         double dfw_dswv  = (dlw_dswv/lv) - lwv*(dl_dswv/(lv*lv));
-        std::tuple<double, double, double> fw_t(sw*sw, 2*sw, 0.0);
+        std::tuple<double, double, double> fw_t(fwv, dfw_dswv, 0.0);
         return fw_t;
     };
     
@@ -238,7 +262,8 @@ TMRSDataTransfer Setting2D(){
         double dl_dswv   = dlw_dswv + dlo_dswv;
         double fov  = lov/lv;
         double dfo_dswv  = (dlo_dswv/lv) - lov*(dl_dswv/(lv*lv));
-        std::tuple<double, double, double> fo_t((1-sw)*(1-sw), -2.0*(1-sw), 0.0);
+   //     std::tuple<double, double, double> fo_t((1-sw)*(1-sw), -2.0*(1-sw), 0.0);
+        std::tuple<double, double, double> fo_t(fov,dfo_dswv, 0.0);
         return fo_t;
     };
     
@@ -260,11 +285,16 @@ TMRSDataTransfer Setting2D(){
         double lov  = krov/(mu_o*Bo);
         double dlo_dswv  = dkro_dswv/(mu_o*Bo);
         double lv   = lwv + lov;
+      
         double dl_dswv   = dlw_dswv + dlo_dswv;
-        std::tuple<double, double, double> l_t(sw*sw+(1-sw)*(1-sw), dl_dswv, 0.0);
+
+     //   std::tuple<double, double, double> l_t(sw*sw+(1-sw)*(1-sw), dl_dswv, 0.0);
+        std::tuple<double, double, double> l_t(lv, dl_dswv, 0.0);
+
+        
         return l_t;
     };
-    
+
     sim_data.mTMultiphaseFunctions.mLayer_fw[0] = fw;
     sim_data.mTMultiphaseFunctions.mLayer_fo[0] = fo;
     sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
@@ -275,8 +305,8 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_max_iter_sfi = 10;
     sim_data.mTNumerics.m_res_tol_mixed = 1.0e-4;
     sim_data.mTNumerics.m_res_tol_transport = 1.0e-4;
-    sim_data.mTNumerics.m_n_steps = 5;
-    sim_data.mTNumerics.m_dt      = 0.1;
+    sim_data.mTNumerics.m_n_steps = 30;
+    sim_data.mTNumerics.m_dt      = 500;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -284,7 +314,7 @@ TMRSDataTransfer Setting2D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
-    sim_data.mTPostProcess.m_n_report_time = 5;
+    sim_data.mTPostProcess.m_file_time_step = 500;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
@@ -326,3 +356,166 @@ TMRSDataTransfer Setting3D(){
     
     return sim_data;
 }
+
+
+TMRSDataTransfer SettingSimple2D(){
+    TMRSDataTransfer sim_data;
+    
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_rock"] = 1;
+    
+    //zero flux boundaries
+    int D_Type = 0;
+    int N_Type = 1;
+    int zero_flux=0.0;
+    REAL pressure_in = 30.0;
+    REAL pressure_out = 20.0;
+    
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(2,N_Type,zero_flux);
+    
+    //domain pressure
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(4,D_Type,pressure_in);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(5,D_Type,pressure_out);
+    
+    //Transport boundary Conditions
+    int bc_inlet = 0;
+    int bc_outlet = 1;
+    REAL sat_in = 1.0;
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(3);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(2,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(4,bc_inlet,sat_in);
+
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(5,bc_outlet,0.0);
+    
+    //Relative permermeabilities
+    TRSLinearInterpolator krw, kro ;
+    std::string name_krw("PetroPhysics/krw_linear.txt");
+    std::string name_kro("PetroPhysics/krow_linear.txt");
+    
+    krw.ReadData(name_krw,true);
+    kro.ReadData(name_kro,true);
+    
+
+    kro.SetLeftExtension(TRSLinearInterpolator::Enone,1.0);
+    krw.SetLeftExtension(TRSLinearInterpolator::Enone,0.0);
+    kro.SetRightExtension(TRSLinearInterpolator::Enone,0.0);
+    krw.SetRightExtension(TRSLinearInterpolator::Enone,1.0);
+
+    
+    sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.resize(1);
+    sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel.resize(1);
+    sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel[0] = krw;
+    sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel[0] = kro;
+    
+    // Fractional flows composition
+    
+    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double sw, double p)> fw = [](TRSLinearInterpolator & krw, TRSLinearInterpolator  &kro, double sw, double p) {
+        
+        double mu_w = 1.0;
+        double mu_o = 1.0;
+        double Bw = 1.0;
+        double Bo = 1.0;
+        
+        std::tuple<double, double> krw_t = krw.ValDeriv(sw);
+        std::tuple<double, double> kro_t = kro.ValDeriv(sw);
+        double krwv = std::get<0>(krw_t);
+        double krov = std::get<0>(kro_t);
+        double dkrw_dswv = std::get<1>(krw_t);
+        double dkro_dswv = std::get<1>(kro_t);
+        double lwv  = krwv/(mu_w*Bw);
+        double dlw_dswv  = dkrw_dswv/(mu_w*Bw);
+        double lov  = krov/(mu_o*Bo);
+        double dlo_dswv  = dkro_dswv/(mu_o*Bo);
+        double lv   = lwv + lov;
+        double dl_dswv   = dlw_dswv + dlo_dswv;
+        double fwv  = lwv/lv;
+        double dfw_dswv  = (dlw_dswv/lv) - lwv*(dl_dswv/(lv*lv));
+//        double fwv = ((sw*sw)/(1.0 + 2.0*(sw*sw - sw)));
+//        double dfw_dswv =(-2.0*(-1.0 + sw)*sw)/(pow(1.0 + 2.0*(-1.0 + sw)*sw,2.0));
+
+        std::tuple<double, double, double> fw_t(fwv, dfw_dswv, 0.0);
+        return fw_t;
+    };
+    
+    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double sw, double p)> fo = [](TRSLinearInterpolator & krw, TRSLinearInterpolator & kro, double sw, double p) {
+
+        double mu_w = 1.0;
+        double mu_o = 1.0;
+        double Bw = 1.0;
+        double Bo = 1.0;
+        
+        std::tuple<double, double> krw_t = krw.ValDeriv(sw);
+        std::tuple<double, double> kro_t = kro.ValDeriv(sw);
+        double krwv = std::get<0>(krw_t);
+        double krov = std::get<0>(kro_t);
+        double dkrw_dswv = std::get<1>(krw_t);
+        double dkro_dswv = std::get<1>(kro_t);
+        double lwv  = krwv/(mu_w*Bw);
+        double dlw_dswv  = dkrw_dswv/(mu_w*Bw);
+        double lov  = krov/(mu_o*Bo);
+        double dlo_dswv  = dkro_dswv/(mu_o*Bo);
+        double lv   = lwv + lov;
+        double dl_dswv   = dlw_dswv + dlo_dswv;
+        double fov  = lov/lv;
+        double dfo_dswv  = (dlo_dswv/lv) - lov*(dl_dswv/(lv*lv));
+//        double fov=  pow(-1.0 + sw,2.0)/(1.0 + 2.0*(-1.0 + sw)*sw);
+//        double dfo_dswv = (2.0*(-1.0 + sw)*sw)/pow(1.0 + 2.0*(-1.0 + sw)*sw,2.0);
+        std::tuple<double, double, double> fo_t(fov,dfo_dswv, 0.0);
+        return fo_t;
+    };
+    
+    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double sw, double p)> lambda = [](TRSLinearInterpolator & krw, TRSLinearInterpolator & kro, double sw, double p) {
+        
+        
+        double mu_w = 1.0;
+        double mu_o = 1.0;
+        double Bw = 1.0;
+        double Bo = 1.0;
+        
+        std::tuple<double, double> krw_t = krw.ValDeriv(sw);
+        std::tuple<double, double> kro_t = kro.ValDeriv(sw);
+        double krwv = std::get<0>(krw_t);
+        double krov = std::get<0>(kro_t);
+        double dkrw_dswv = std::get<1>(krw_t);
+        double dkro_dswv = std::get<1>(kro_t);
+        double lwv  = krwv/(mu_w*Bw);
+        double dlw_dswv  = dkrw_dswv/(mu_w*Bw);
+        double lov  = krov/(mu_o*Bo);
+        double dlo_dswv  = dkro_dswv/(mu_o*Bo);
+        double lv   = lwv + lov;
+        double dl_dswv   = dlw_dswv + dlo_dswv;
+//        double lv = pow(1.0 - sw,2.0) + pow(sw,2.0);
+//        double dl_dswv = -2.0 + 4.0*sw;
+
+        std::tuple<double, double, double> l_t(lv, dl_dswv, 0.0);
+        
+        
+        return l_t;
+    };
+    
+    sim_data.mTMultiphaseFunctions.mLayer_fw[0] = fw;
+    sim_data.mTMultiphaseFunctions.mLayer_fo[0] = fo;
+    sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
+    
+    // Numerical controls
+    sim_data.mTNumerics.m_max_iter_mixed = 10;
+    sim_data.mTNumerics.m_max_iter_transport = 20;
+    sim_data.mTNumerics.m_max_iter_sfi = 10;
+    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-5;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-5;
+    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_dt      = 1.0;
+    
+    // PostProcess controls
+    sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
+    sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
+    TPZStack<std::string,10> scalnames, vecnames;
+    vecnames.Push("Flux");
+    scalnames.Push("Pressure");
+    sim_data.mTPostProcess.m_file_time_step = 1;
+    sim_data.mTPostProcess.m_vecnames = vecnames;
+    sim_data.mTPostProcess.m_scalnames = scalnames;
+    
+    return sim_data;
+}
+
