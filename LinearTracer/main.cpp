@@ -366,7 +366,7 @@ TMRSDataTransfer SettingSimple2D(){
     //zero flux boundaries
     int D_Type = 0;
     int N_Type = 1;
-    int zero_flux=0.0;
+    REAL zero_flux=0.0;
     REAL pressure_in = 30.0;
     REAL pressure_out = 20.0;
     
@@ -384,23 +384,29 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(3);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(2,bc_inlet,0.0);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(4,bc_inlet,sat_in);
-
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(5,bc_outlet,0.0);
     
     //Relative permermeabilities
     TRSLinearInterpolator krw, kro ;
-    std::string name_krw("PetroPhysics/krw_linear.txt");
-    std::string name_kro("PetroPhysics/krow_linear.txt");
+    std::string name_krw("PetroPhysics/krw_quadratic2.txt");
+    std::string name_kro("PetroPhysics/krow_quadratic2.txt");
     
     krw.ReadData(name_krw,true);
     kro.ReadData(name_kro,true);
     
 
-    kro.SetLeftExtension(TRSLinearInterpolator::Enone,1.0);
-    krw.SetLeftExtension(TRSLinearInterpolator::Enone,0.0);
-    kro.SetRightExtension(TRSLinearInterpolator::Enone,0.0);
-    krw.SetRightExtension(TRSLinearInterpolator::Enone,1.0);
-
+//    kro.SetLeftExtension(TRSLinearInterpolator::Enone,1.0);
+//    krw.SetLeftExtension(TRSLinearInterpolator::Enone,1.0);
+//    kro.SetRightExtension(TRSLinearInterpolator::Enone,1.0);
+//    krw.SetRightExtension(TRSLinearInterpolator::Enone,1.0);
+    
+    kro.SetLeftExtension(TRSLinearInterpolator::ELinear);
+    krw.SetLeftExtension(TRSLinearInterpolator::ELinear);
+    kro.SetRightExtension(TRSLinearInterpolator::ELinear);
+    krw.SetRightExtension(TRSLinearInterpolator::ELinear);
+    
+    kro.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
+    krw.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
     
     sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.resize(1);
     sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel.resize(1);
@@ -430,8 +436,8 @@ TMRSDataTransfer SettingSimple2D(){
         double dl_dswv   = dlw_dswv + dlo_dswv;
         double fwv  = lwv/lv;
         double dfw_dswv  = (dlw_dswv/lv) - lwv*(dl_dswv/(lv*lv));
-//        double fwv = ((sw*sw)/(1.0 + 2.0*(sw*sw - sw)));
-//        double dfw_dswv =(-2.0*(-1.0 + sw)*sw)/(pow(1.0 + 2.0*(-1.0 + sw)*sw,2.0));
+//        double fwv = ((sw * sw)/(1.0 + 2.0*(sw * sw - sw)));
+//        double dfw_dswv =(-2.0*(-1.0 + sw) * sw)/(pow(1.0 + 2.0 * (-1.0 + sw) * sw,2.0));
 
         std::tuple<double, double, double> fw_t(fwv, dfw_dswv, 0.0);
         return fw_t;
@@ -460,6 +466,7 @@ TMRSDataTransfer SettingSimple2D(){
         double dfo_dswv  = (dlo_dswv/lv) - lov*(dl_dswv/(lv*lv));
 //        double fov=  pow(-1.0 + sw,2.0)/(1.0 + 2.0*(-1.0 + sw)*sw);
 //        double dfo_dswv = (2.0*(-1.0 + sw)*sw)/pow(1.0 + 2.0*(-1.0 + sw)*sw,2.0);
+
         std::tuple<double, double, double> fo_t(fov,dfo_dswv, 0.0);
         return fo_t;
     };
@@ -487,9 +494,13 @@ TMRSDataTransfer SettingSimple2D(){
 //        double lv = pow(1.0 - sw,2.0) + pow(sw,2.0);
 //        double dl_dswv = -2.0 + 4.0*sw;
 
+        if (sw>1.0 || sw<0.0) {
+            DebugStop();
+        }
+
+        
         std::tuple<double, double, double> l_t(lv, dl_dswv, 0.0);
-        
-        
+
         return l_t;
     };
     
@@ -499,12 +510,14 @@ TMRSDataTransfer SettingSimple2D(){
     
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 10;
-    sim_data.mTNumerics.m_max_iter_transport = 20;
-    sim_data.mTNumerics.m_max_iter_sfi = 10;
-    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-5;
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-5;
-    sim_data.mTNumerics.m_n_steps = 100;
-    sim_data.mTNumerics.m_dt      = 1.0;
+    sim_data.mTNumerics.m_max_iter_transport = 10;
+    sim_data.mTNumerics.m_max_iter_sfi = 20;
+    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-7;
+    sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-7;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-7;
+    sim_data.mTNumerics.m_n_steps = 15;
+    sim_data.mTNumerics.m_dt      = 1.5;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -512,7 +525,8 @@ TMRSDataTransfer SettingSimple2D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
-    sim_data.mTPostProcess.m_file_time_step = 1;
+    scalnames.Push("Sw_exact");
+    sim_data.mTPostProcess.m_file_time_step = 1.5;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     

@@ -56,6 +56,7 @@ void TMRSDarcyFlowWithMem<TMEM>::FillDataRequirements(TPZVec<TPZMaterialData> &d
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
         datavec[idata].fNeedsSol = true;
+        //datavec[idata].fNormalVec = true;
     }
 }
 
@@ -65,6 +66,7 @@ void TMRSDarcyFlowWithMem<TMEM>::FillBoundaryConditionDataRequirement(int type, 
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
         datavec[idata].fNeedsSol = true;
+        datavec[idata].fNormalVec = true;
     }
 }
 
@@ -177,8 +179,9 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     
     std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & lambda = mSimData.mTMultiphaseFunctions.mLayer_lambda[0];
     
+    
     // Total mobility
-    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,sw,p);
+    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,memory.sw_n(),p);
     REAL lambda_v       = std::get<0>(lambda_t);
     
     int s_i, s_j;
@@ -252,9 +255,13 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     this->Contribute(datavec, weight, ekfake, ef);
     
     if(TMRSDarcyFlowWithMem<TMEM>::fUpdateMem){
+        int qb = 0;
         int pb = 1;
         long gp_index = datavec[pb].intGlobPtIndex;
         TMEM & memory = this->GetMemory().get()->operator[](gp_index);
+        TPZVec<REAL> q_n = datavec[qb].sol[0][0];
+        memory.m_flux = q_n;
+        
         REAL p_n = datavec[pb].sol[0][0];
         memory.m_p = p_n;
     }
@@ -299,7 +306,9 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, 
             for (int iq = 0; iq < nphi_q; iq++)
             {
                 REAL qn_N = bc_data[0];
-                REAL qn = q[0];
+                REAL qn = 0.0;
+                qn = q[0];
+
                 ef(iq + first_q) += weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++)
                 {

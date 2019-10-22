@@ -58,13 +58,20 @@ void TMRSTransportAnalysis::RunTimeStep(){
         DebugStop();
     }
     
-    int n = m_sim_data->mTNumerics.m_max_iter_mixed;
+    int n = m_sim_data->mTNumerics.m_max_iter_transport;
     bool stop_criterion_Q = false;
     bool stop_criterion_corr_Q = false;
     REAL res_norm = 1.0;
     REAL corr_norm = 1.0;
-    REAL res_tol = m_sim_data->mTNumerics.m_res_tol_mixed;
-    REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_mixed;
+    REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
+    REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_transport;
+    
+    AssembleResidual();
+    res_norm = Norm(Rhs());
+    if (res_norm < res_tol) {
+        std::cout << "Already converged solution with res_norm = " << res_norm << std::endl;
+        return;
+    }
     
     TPZFMatrix<STATE> dx,x(Solution());
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
@@ -82,13 +89,15 @@ void TMRSTransportAnalysis::RunTimeStep(){
         
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
-        if (stop_criterion_Q || stop_criterion_corr_Q) {
+        if (stop_criterion_Q && stop_criterion_corr_Q) {
             std::cout << "Transport operator: " << std::endl;
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             break;
         }
-        
+        if (m_k_iteration >= n) {
+            std::cout << "Transport operator not converge " << std::endl;
+        }
     }
     
 }
@@ -106,6 +115,7 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     // @TODO:: Locate these variables in mTPostProcess
     scalnames.Push("Sw");
     scalnames.Push("So");
+    scalnames.Push("Sw_exact");
 
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();

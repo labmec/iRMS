@@ -365,6 +365,7 @@ void TRSLinearInterpolator::ReadData(std::string name, bool print_table_Q){
 
         if(data.Rows() == 0){
             std::cout<<"No data read."<<std::endl;
+
             DebugStop();
         }
 

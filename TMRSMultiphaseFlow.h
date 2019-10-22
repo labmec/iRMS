@@ -121,6 +121,13 @@ public:
     /// Read the element data from a stream
     void Read(TPZStream &buf, void *context) override;
     
+    void BuckleyLeveret(TPZVec<REAL> &pt,  TPZVec< STATE > &sw );
+    REAL S_Newton(REAL x, REAL t, REAL u, REAL Swr, REAL Sor, REAL phi, REAL s_shok, REAL mu_alpha, REAL mu_beta, REAL rho_alpha, REAL rho_beta, REAL epsilon);
+  
+    REAL dfdsw(REAL Sw, REAL Swr, REAL Sor, REAL mu_alpha, REAL mu_beta, REAL rho_alpha, REAL rho_beta);
+    
+    
+    REAL df2dsw(REAL Sw, REAL Swr, REAL Sor, REAL mu_alpha, REAL mu_beta, REAL rho_alpha, REAL rho_beta);
 };
 
 #endif /* TMRSMultiphaseFlow_h */
