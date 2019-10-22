@@ -72,11 +72,11 @@ TMRSDataTransfer Setting3D();
 
 
 int main(){
- 
+
     bool is_3D_Q = false;
     bool is_2D_Coarse_Q = true;
     TMRSDataTransfer sim_data;
-    
+
     std::string geometry_file, name;
     if (is_3D_Q) {
         geometry_file = "gmsh/reservoir_3d.msh";
@@ -86,7 +86,7 @@ int main(){
         if (is_2D_Coarse_Q) {
           // geometry_file = "gmsh/reservoir_2d_coarse.msh";
             geometry_file = "gmsh/simple_2D_coarse.msh";
-            
+
         }
         else{
             geometry_file = "gmsh/reservoir_2d_coarse.msh";
@@ -95,13 +95,13 @@ int main(){
         name = "reservoir_2d";
         sim_data = SettingSimple2D();
     }
-    
-    
+
+
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
-    
+
     int order = 1;
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
@@ -111,7 +111,7 @@ int main(){
 
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-    
+
     // Linking the memory between the operators
     {
         TMRSApproxSpaceGenerator::AdjustMemory(mixed_operator, transport_operator);
@@ -121,39 +121,33 @@ int main(){
             TMRSApproxSpaceGenerator::FillMaterialMemory(material_id, mixed_operator, transport_operator);
         }
     }
-    
+
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
-    
+
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
-    
+
     // Fill time steps vector
+
     TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
-    int n_reporting_times =(n_steps)/(time/dt) + 1;
-    REAL r_time =0.0;
-    for (int i =1; i<= n_reporting_times; i++) {
-        r_time += dt*(time/dt);
-        reporting_times.push_back(r_time);
-    }
-    
-    
+    reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
 
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
-    
+
     for (int it = 1; it <= n_steps; it++) {
         sfi_analysis->RunTimeStep();
         sim_time = it*dt;
+        sfi_analysis->m_transport_module->SetCurrentTime(sim_time);
         if (sim_time >=  current_report_time) {
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
             sfi_analysis->PostProcessTimeStep();
             pos++;
             current_report_time =reporting_times[pos];
-            
+
         }
     }
     
@@ -314,10 +308,21 @@ TMRSDataTransfer Setting2D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
-    sim_data.mTPostProcess.m_file_time_step = 500;
+    sim_data.mTPostProcess.m_file_time_step = 1.5;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
+    int n_steps = sim_data.mTNumerics.m_n_steps;
+    REAL dt = sim_data.mTNumerics.m_dt;
+    TPZStack<REAL,100> reporting_times;
+    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    int n_reporting_times =(n_steps)/(time/dt) + 1;
+    REAL r_time =0.0;
+    for (int i =1; i<= n_reporting_times; i++) {
+        r_time += dt*(time/dt);
+        reporting_times.push_back(r_time);
+    }
+    sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
     return sim_data;
 }
 
@@ -374,8 +379,8 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(2,N_Type,zero_flux);
     
     //domain pressure
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(4,D_Type,pressure_in);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(5,D_Type,pressure_out);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(5,D_Type,pressure_in);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(4,D_Type,pressure_out);
     
     //Transport boundary Conditions
     int bc_inlet = 0;
@@ -383,8 +388,8 @@ TMRSDataTransfer SettingSimple2D(){
     REAL sat_in = 1.0;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(3);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(2,bc_inlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(4,bc_inlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(5,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(5,bc_inlet,sat_in);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(4,bc_outlet,0.0);
     
     //Relative permermeabilities
     TRSLinearInterpolator krw, kro ;
@@ -516,8 +521,10 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
     sim_data.mTNumerics.m_res_tol_transport = 1.0e-7;
     sim_data.mTNumerics.m_corr_tol_transport = 1.0e-7;
-    sim_data.mTNumerics.m_n_steps = 15;
+    sim_data.mTNumerics.m_n_steps = 150;
     sim_data.mTNumerics.m_dt      = 1.5;
+    
+   
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -525,11 +532,20 @@ TMRSDataTransfer SettingSimple2D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
-    scalnames.Push("Sw_exact");
     sim_data.mTPostProcess.m_file_time_step = 1.5;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
+    int n_steps = sim_data.mTNumerics.m_n_steps;
+    REAL dt = sim_data.mTNumerics.m_dt;
+    TPZStack<REAL,100> reporting_times;
+    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    int n_reporting_times =(n_steps)/(time/dt) + 1;
+    REAL r_time =0.0;
+    for (int i =1; i<= n_reporting_times; i++) {
+        r_time += dt*(time/dt);
+        reporting_times.push_back(r_time);
+    }
+    sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
     return sim_data;
 }
-

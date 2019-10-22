@@ -26,6 +26,8 @@ private:
     /// Number of iterations
     int m_k_iteration;
     
+    REAL m_current_time;
+    
 public:
     
     /// Default constructor
@@ -43,6 +45,12 @@ public:
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer * sim_data);
     
+    //set Current time
+    void SetCurrentTime(REAL time){m_current_time = time;};
+    
+    //Get Current time
+    REAL GetCurrentTime(){return m_current_time;};
+    
     /// Get data transfer object
     TMRSDataTransfer * GetDataTransfer();
     
@@ -58,6 +66,7 @@ public:
     /// Perform a Newton iteration
     void NewtonIteration();
     
+   
 };
 
 #endif /* TMRSTransportAnalysis_h */

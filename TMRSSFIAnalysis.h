@@ -27,14 +27,15 @@ private:
     /// Mixed module
     TMRSMixedAnalysis * m_mixed_module;
     
-    /// Transport module
-    TMRSTransportAnalysis * m_transport_module;
+ 
     
     TPZFMatrix<STATE> m_x_mixed;
     
     TPZFMatrix<STATE> m_x_transport;
     
 public:
+    /// Transport module
+    TMRSTransportAnalysis * m_transport_module;
     
     /// Default constructor
     TMRSSFIAnalysis();

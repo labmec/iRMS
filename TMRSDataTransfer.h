@@ -249,6 +249,8 @@ public:
         /// Number of time steps
         int m_n_steps;
         
+        
+        
         TNumerics(){
             
             m_dt                    = 0.0;
@@ -259,7 +261,7 @@ public:
             m_max_iter_mixed        = 0;
             m_max_iter_transport    = 0;
             m_max_iter_sfi          = 0;
-            m_n_steps               = 0;
+            m_n_steps               = 0;   
             
         }
         
@@ -330,6 +332,7 @@ public:
             buf.Write(&m_max_iter_transport);
             buf.Write(&m_max_iter_sfi);
             buf.Write(&m_n_steps);
+          
         }
         
         void Read(TPZStream &buf, void *context){ //ok
@@ -342,6 +345,7 @@ public:
             buf.Read(&m_max_iter_transport);
             buf.Read(&m_max_iter_sfi);
             buf.Read(&m_n_steps);
+           
         }
         
         virtual int ClassId() const {

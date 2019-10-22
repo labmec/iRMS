@@ -104,7 +104,7 @@ template <class TMEM>
 int TMRSMultiphaseFlow<TMEM>::VariableIndex(const std::string &name) {
     if (!strcmp("Sw", name.c_str())) return 0;
     if (!strcmp("So", name.c_str())) return 1;
-    if (!strcmp("Sw_exact", name.c_str())) return 2;
+  
     
     return TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>::VariableIndex(name);
 }
@@ -116,8 +116,7 @@ int TMRSMultiphaseFlow<TMEM>::NSolutionVariables(int var) {
             return 1; // Scalar
         case 1:
             return 1; // Scalar
-        case 2:
-            return 1; // Scalar
+      
             
     }
     return TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>::NSolutionVariables(var);
@@ -140,13 +139,6 @@ void TMRSMultiphaseFlow<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int va
         case 1:
         {
             Solout[0] = 1.0-sw;
-        }
-            break;
-        case 2:
-        {
-            TPZVec<STATE> sw(1);
-            BuckleyLeveret(datavec[0].x, sw);
-            Solout[0] = sw[0];
         }
             break;
     }
@@ -411,92 +403,4 @@ template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::Read(TPZStream &buf, void *context) {
     DebugStop();
 }
-
-template <class TMEM>
-void TMRSMultiphaseFlow<TMEM>::BuckleyLeveret(TPZVec<REAL> &pt, TPZVec< STATE > &Saturation ) {
-    REAL Porosity = 0.2;
-    REAL x = pt[0];
-    
-    REAL x_shock        = 0.0;
-    REAL S_shock        = 0.0;
-    REAL epsilon        = 1.0e-8;
-    REAL u              = 0.1;
-    REAL mu_alpha       = 1.0;
-    REAL mu_beta        = 1.0;
-    REAL rho_alpha      = 1.0;
-    REAL rho_beta       = 1.0;
-    REAL Sor            = 0.0;
-    REAL Swr            = 0.0;
-    double time           = 1.5;
-    
-    S_shock = Swr + sqrt(mu_alpha*rho_beta*(mu_beta*rho_alpha + mu_alpha*rho_beta)*std::pow(-1.0 + Sor + Swr,2.0))/(mu_beta*rho_alpha + mu_alpha*rho_beta);
-    x_shock  =  (u*time)/(Porosity*rho_alpha)*dfdsw(S_shock, Swr, Sor, mu_alpha, mu_beta, rho_alpha, rho_beta);
-    
-    if(x < x_shock)
-    {
-        REAL Sw = S_Newton(x, time, u, Swr, Sor, Porosity, S_shock, mu_alpha, mu_beta, rho_alpha, rho_beta, epsilon);
-        Saturation[0] = Sw;
-        
-    }
-    else
-    {
-        Saturation[0] = Swr;
-    }
-    
-    return;
-}
-
- template <class TMEM>
- REAL TMRSMultiphaseFlow<TMEM>::S_Newton(REAL x, REAL t, REAL u, REAL Swr, REAL Sor, REAL phi, REAL s_shok, REAL mu_alpha, REAL mu_beta, REAL rho_alpha, REAL rho_beta, REAL epsilon)
-{
-    REAL S_trial = ((1.0-Sor) + s_shok)/2.0;
-    REAL jac    = 0.0;
-    REAL r      = 1.0;
-    REAL delta_S;
-    REAL ds;
-    REAL S_k = S_trial;
-    int max = 20;
-    int it = 0;
-    
-    
-    
-    while ( fabs(r) > epsilon && it < max){
-        
-        ds = dfdsw(S_k, Swr, Sor, mu_alpha, mu_beta, rho_alpha, rho_beta);
-        r = x - (u * t * ds)/(phi * rho_alpha);
-        
-        jac = - (u * t * df2dsw(S_k, Swr, Sor, mu_alpha, mu_beta, rho_alpha, rho_beta))/(phi * rho_alpha);
-        
-        delta_S = -r/jac;
-        S_k += delta_S;
-        
-        ds = dfdsw(S_k, Swr, Sor, mu_alpha, mu_beta, rho_alpha, rho_beta);
-        r = x - (u * t * ds)/(phi * rho_alpha);
-        it++;
-        
-    }
-    
-    return S_k;
-}
-
-template <class TMEM>
-REAL TMRSMultiphaseFlow<TMEM>::dfdsw(REAL Sw, REAL Swr, REAL Sor, REAL mu_alpha, REAL mu_beta, REAL rho_alpha, REAL rho_beta)
-{
-    REAL dfwdSwS;
-    
-    
-    dfwdSwS = (2.0*mu_alpha*mu_beta*rho_alpha*rho_beta*(-1.0 + Sor + Sw)*(Sw - Swr)*(-1.0 + Sor + Swr))/std::pow(mu_alpha*rho_beta*std::pow(-1.0 + Sor + Sw,2.0) + mu_beta*rho_alpha*std::pow(Sw - Swr,2.0),2.0);
-    
-    return (dfwdSwS);
-}
-template <class TMEM>
-REAL TMRSMultiphaseFlow<TMEM>::df2dsw(REAL Sw, REAL Swr, REAL Sor, REAL mu_alpha, REAL mu_beta, REAL rho_alpha, REAL rho_beta)
-{
-    REAL dfw2dSwS2;
-    
-    
-    dfw2dSwS2 = (2.0*mu_alpha*mu_beta*rho_alpha*rho_beta*(-1.0 + Sor + Swr)*(-(mu_beta*rho_alpha*std::pow(Sw - Swr,2.0)*(-3.0 + 3.0*Sor + 2.0*Sw + Swr)) + mu_alpha*rho_beta*std::pow(-1.0 + Sor + Sw,2.0)*(-1.0 + Sor - 2.0*Sw + 3.0*Swr)))/
-    std::pow(mu_alpha*rho_beta*std::pow(-1.0 + Sor + Sw,2.0) + mu_beta*rho_alpha*std::pow(Sw - Swr,2.0),3.0);
-    
-    return dfw2dSwS2;
-}
+ 

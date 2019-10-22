@@ -5,7 +5,7 @@
 //
 
 #include "TMRSTransportAnalysis.h"
-
+#include "pzfunction.h"
 
 TMRSTransportAnalysis::TMRSTransportAnalysis(){
     
@@ -120,6 +120,10 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();
     std::string file = m_sim_data->mTPostProcess.m_file_name_transport;
+    
     DefineGraphMesh(dim,scalnames,vecnames,file);
     PostProcess(div,dim);
+    
 }
+
+
