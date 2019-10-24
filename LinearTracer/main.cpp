@@ -103,7 +103,7 @@ int main(){
     aspace.SetDataTransfer(sim_data);
 
     int order = 1;
-    bool must_opt_band_width_Q = true;
+    bool must_opt_band_width_Q = false;
     int n_threads = 0;
     bool UsePardiso_Q = true;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
@@ -393,8 +393,8 @@ TMRSDataTransfer SettingSimple2D(){
     
     //Relative permermeabilities
     TRSLinearInterpolator krw, kro ;
-    std::string name_krw("PetroPhysics/krw_quadratic2.txt");
-    std::string name_kro("PetroPhysics/krow_quadratic2.txt");
+    std::string name_krw("PetroPhysics/krw_linear.txt");
+    std::string name_kro("PetroPhysics/krow_linear.txt");
     
     krw.ReadData(name_krw,true);
     kro.ReadData(name_kro,true);
@@ -410,8 +410,8 @@ TMRSDataTransfer SettingSimple2D(){
     kro.SetRightExtension(TRSLinearInterpolator::ELinear);
     krw.SetRightExtension(TRSLinearInterpolator::ELinear);
     
-    kro.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
-    krw.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
+//    kro.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
+//    krw.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
     
     sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.resize(1);
     sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel.resize(1);
@@ -521,9 +521,9 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
     sim_data.mTNumerics.m_res_tol_transport = 1.0e-7;
     sim_data.mTNumerics.m_corr_tol_transport = 1.0e-7;
-    sim_data.mTNumerics.m_n_steps = 150;
-    sim_data.mTNumerics.m_dt      = 1.5;
-    
+    sim_data.mTNumerics.m_n_steps = 10;
+    sim_data.mTNumerics.m_dt      = 1.0;
+    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
    
     
     // PostProcess controls
@@ -532,7 +532,9 @@ TMRSDataTransfer SettingSimple2D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
-    sim_data.mTPostProcess.m_file_time_step = 1.5;
+    scalnames.Push("g_average");
+    scalnames.Push("u_average");
+    sim_data.mTPostProcess.m_file_time_step = 1.0;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     

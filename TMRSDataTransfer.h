@@ -249,6 +249,7 @@ public:
         /// Number of time steps
         int m_n_steps;
         
+        bool m_four_approx_spaces_Q;
         
         
         TNumerics(){
@@ -261,7 +262,8 @@ public:
             m_max_iter_mixed        = 0;
             m_max_iter_transport    = 0;
             m_max_iter_sfi          = 0;
-            m_n_steps               = 0;   
+            m_n_steps               = 0;
+            m_four_approx_spaces_Q  = false;
             
         }
         
@@ -280,6 +282,7 @@ public:
             m_max_iter_transport    = other.m_max_iter_transport;
             m_max_iter_sfi          = other.m_max_iter_sfi;
             m_n_steps               = other.m_n_steps;
+            m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             
             
         }
@@ -300,6 +303,7 @@ public:
             m_max_iter_transport    = other.m_max_iter_transport;
             m_max_iter_sfi          = other.m_max_iter_sfi;
             m_n_steps               = other.m_n_steps;
+            m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             return *this;
         }
         
@@ -319,7 +323,8 @@ public:
             m_max_iter_mixed        == other.m_max_iter_mixed &&
             m_max_iter_transport    == other.m_max_iter_transport &&
             m_max_iter_sfi          == other.m_max_iter_sfi &&
-            m_n_steps               == other.m_n_steps;
+            m_n_steps               == other.m_n_steps &&
+            m_four_approx_spaces_Q  == other.m_four_approx_spaces_Q;
             
         }
         
@@ -332,6 +337,8 @@ public:
             buf.Write(&m_max_iter_transport);
             buf.Write(&m_max_iter_sfi);
             buf.Write(&m_n_steps);
+            int temp = m_four_approx_spaces_Q;
+            buf.Write(&temp);
           
         }
         
@@ -345,6 +352,9 @@ public:
             buf.Read(&m_max_iter_transport);
             buf.Read(&m_max_iter_sfi);
             buf.Read(&m_n_steps);
+            int temp;
+            buf.Read(&temp);
+            m_four_approx_spaces_Q = temp;
            
         }
         
@@ -362,6 +372,7 @@ public:
             std::cout << m_max_iter_transport << std::endl;
             std::cout << m_max_iter_sfi << std::endl;
             std::cout << m_n_steps << std::endl;
+            std::cout << m_four_approx_spaces_Q << std::endl;
         }
         
     };

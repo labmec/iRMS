@@ -108,6 +108,17 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
     TPZFMatrix<STATE> & p_dof = mixed_cmesh->MeshVector()[p_b]->Solution();
     transport_cmesh->MeshVector()[q_b]->LoadSolution(q_dof);
     transport_cmesh->MeshVector()[p_b]->LoadSolution(p_dof);
+    
+    if (m_sim_data->mTNumerics.m_four_approx_spaces_Q) {
+        // average flux and pressure are transferred to transport module
+        int qavg_b = 2;
+        int pavg_b = 3;
+        TPZFMatrix<STATE> & q_dof = mixed_cmesh->MeshVector()[qavg_b]->Solution();
+        TPZFMatrix<STATE> & p_dof = mixed_cmesh->MeshVector()[pavg_b]->Solution();
+        transport_cmesh->MeshVector()[qavg_b]->LoadSolution(q_dof);
+        transport_cmesh->MeshVector()[pavg_b]->LoadSolution(p_dof);
+    }
+    
     transport_cmesh->LoadSolutionFromMeshes();
     
 }

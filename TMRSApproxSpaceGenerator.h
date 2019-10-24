@@ -71,7 +71,15 @@ public:
     
     void BuildMixedMultiPhysicsCompMesh(int order);
     
+    void BuildMixed2SpacesMultiPhysicsCompMesh(int order);
+    
+    void BuildMixed4SpacesMultiPhysicsCompMesh(int order);
+    
     void BuildTransportMultiPhysicsCompMesh();
+    
+    void BuildTransport2SpacesMultiPhysicsCompMesh();
+    
+    void BuildTransport4SpacesMultiPhysicsCompMesh();
     
     TPZMultiphysicsCompMesh * GetMixedOperator();
     

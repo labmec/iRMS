@@ -89,6 +89,8 @@ int TMRSDarcyFlowWithMem<TMEM>::VariableIndex(const std::string &name) {
     if(!strcmp("Pressure",name.c_str()))        return  2;
     if(!strcmp("div_q",name.c_str()))           return  3;
     if(!strcmp("kappa",name.c_str()))           return  4;
+    if(!strcmp("g_average",name.c_str()))        return  5;
+    if(!strcmp("u_average",name.c_str()))        return  6;
     return TPZMatWithMem<TMEM>::VariableIndex(name);
 }
 
@@ -98,9 +100,10 @@ int TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(int var) {
     if(var == 2) return 1;
     if(var == 3) return 1;
     if(var == 4) return this->Dimension();
+    if(var == 5) return 1;
+    if(var == 6) return 1;
     return TPZMatWithMem<TMEM>::NSolutionVariables(var);
 }
-
 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout) {
@@ -137,6 +140,23 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int 
             Solout[i] = 0.0;
         }
         return;
+    }
+    
+    if (mSimData.mTNumerics.m_four_approx_spaces_Q) {
+        
+        int g_avgb = 2;
+        int p_avgb = 3;
+        
+        if(var ==5)
+        {
+            Solout[0] = datavec[g_avgb].sol[0][0];
+            return;
+        }
+        if(var ==6)
+        {
+            Solout[0] = datavec[p_avgb].sol[0][0];
+            return;
+        }
     }
     
     DebugStop();
@@ -238,7 +258,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     for (int ip = 0; ip < nphi_p; ip++)
     {
         
-        ef(ip + first_p) += weight * (div_q) * phi_ps(ip,0);
+        ef(ip + first_p) += -1.0 * weight * (div_q) * phi_ps(ip,0);
         
         for (int jq = 0; jq < nphi_q; jq++)
         {
@@ -246,6 +266,48 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
         }
         
     }
+    
+    if(mSimData.mTNumerics.m_four_approx_spaces_Q){
+        ContributeFourSpaces(datavec,weight,ek,ef);
+    }
+}
+
+template <class TMEM>
+void TMRSDarcyFlowWithMem<TMEM>::ContributeFourSpaces(TPZVec<TPZMaterialData> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
+    
+    int qb = 0;
+    int pb = 1;
+    int g_avgb = 2;
+    int p_avgb = 3;
+    
+    TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;
+    int nphi_q       = datavec[qb].fVecShapeIndex.NElements();
+    int nphi_p       = phi_ps.Rows();
+    
+    int nphi_gb = datavec[g_avgb].phi.Rows();
+    int nphi_pb = datavec[p_avgb].phi.Rows();
+    if(nphi_q+nphi_p+nphi_gb+nphi_pb != ek.Rows())
+    {
+        DebugStop();
+    }
+    
+    STATE p     = datavec[pb].sol[0][0];
+    STATE g_avg = datavec[g_avgb].sol[0][0];
+    STATE p_avg = datavec[p_avgb].sol[0][0];
+    
+    for(int ip=0; ip<nphi_p; ip++)
+    {
+        ef(nphi_q+ip,0) += weight * g_avg * phi_ps(ip,0);
+        ek(nphi_q+ip,nphi_q+nphi_p) += weight * phi_ps(ip,0);
+        
+        ek(nphi_q+nphi_p,nphi_q+ip) += weight * phi_ps(ip,0);
+    }
+    
+    ef(nphi_q+nphi_p+1,0) += -weight * g_avg;
+    ek(nphi_q+nphi_p+1,nphi_q+nphi_p) += -weight;
+    
+    ef(nphi_q+nphi_p,0) += weight * (p - p_avg);
+    ek(nphi_q+nphi_p,nphi_q+nphi_p+1) += -weight;
     
 }
 

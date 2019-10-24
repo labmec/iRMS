@@ -126,6 +126,9 @@ template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout) {
     
     int s_b    = 2;
+    if(mSimData.mTNumerics.m_four_approx_spaces_Q){
+        s_b = 4;
+    }
     REAL sw = datavec[s_b].sol[0][0];
     
     Solout.Resize(this->NSolutionVariables(var));
@@ -147,15 +150,28 @@ void TMRSMultiphaseFlow<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int va
 template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef) {
     
+    int s_b = 2;
 #ifdef PZDEBUG
+    
     int nref =  datavec.size();
-    if (nref != 3 ) {
-        std::cout << " Erro. The size of the datavec is different from 3 \n";
-        DebugStop();
+    if(mSimData.mTNumerics.m_four_approx_spaces_Q){
+        if (nref != 5 ) {
+            std::cout << " Erro. The size of the datavec is different from 3 \n";
+            DebugStop();
+        }
+    }else{
+        if (nref != 3 ) {
+            std::cout << " Erro. The size of the datavec is different from 3 \n";
+            DebugStop();
+        }
     }
+    
 #endif
     
-    int s_b = 2;
+    if(mSimData.mTNumerics.m_four_approx_spaces_Q){
+        s_b = 4;
+    }
+
     long gp_index = datavec[s_b].intGlobPtIndex;
     TMEM & memory = this->GetMemory().get()->operator[](gp_index);
     TPZFMatrix<REAL>  &phiS =  datavec[s_b].phi;
@@ -189,6 +205,9 @@ void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL
     
     if(TMRSMultiphaseFlow<TMEM>::fUpdateMem){
         int s_b = 2;
+        if(mSimData.mTNumerics.m_four_approx_spaces_Q){
+            s_b = 4;
+        }
         long gp_index = datavec[s_b].intGlobPtIndex;
         TMEM & memory = this->GetMemory().get()->operator[](gp_index);
         REAL sw_n = datavec[s_b].sol[0][0];
@@ -201,10 +220,13 @@ void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL
 template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, TPZVec<TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
     
-    int q_b = 0;
-//    int p_b = 1;
-    int s_b = 2;
     REAL dt = mSimData.mTNumerics.m_dt;
+    int q_b = 0;
+    int s_b = 2;
+    if(mSimData.mTNumerics.m_four_approx_spaces_Q){
+        s_b = 4;
+    }
+    
     
     TRSLinearInterpolator & Krw = mSimData.mTPetroPhysics.mLayer_Krw_RelPerModel[0];
     TRSLinearInterpolator & Kro = mSimData.mTPetroPhysics.mLayer_Kro_RelPerModel[0];
@@ -291,10 +313,11 @@ template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc) {
     
     REAL tol = 1.0e-10;
- //   REAL tol = 0.01;
     int q_b = 0;
     int s_b = 2;
-    
+    if(mSimData.mTNumerics.m_four_approx_spaces_Q){
+        s_b = 4;
+    }
     
     
     REAL dt = mSimData.mTNumerics.m_dt;
