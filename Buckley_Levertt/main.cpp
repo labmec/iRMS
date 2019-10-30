@@ -255,7 +255,6 @@ TMRSDataTransfer SettingSimple2D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
-    scalnames.Push("Sw_exact");
     sim_data.mTPostProcess.m_file_time_step = 1.5;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;

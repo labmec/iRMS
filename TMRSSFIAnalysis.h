@@ -14,6 +14,10 @@
 #include "TMRSTransportAnalysis.h"
 #include "TMRSApproxSpaceGenerator.h"
 
+#ifdef USING_BOOST
+#include "boost/date_time/posix_time/posix_time.hpp"
+#endif
+
 class TMRSSFIAnalysis {
     
 private:

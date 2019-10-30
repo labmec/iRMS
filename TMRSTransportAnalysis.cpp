@@ -115,7 +115,6 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     // @TODO:: Locate these variables in mTPostProcess
     scalnames.Push("Sw");
     scalnames.Push("So");
-    scalnames.Push("Sw_exact");
 
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();

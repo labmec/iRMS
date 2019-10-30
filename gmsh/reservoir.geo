@@ -59,8 +59,8 @@ sf=1.0;
 // element sizes at various Points
 cl1 = 1;
 cl2 = 0.1;
-cl3 = 5.0;
-cl4 = 50.0;
+cl3 = 0.5;
+cl4 = 25.0;
 cl5 = sf*5000.0;
 
 ////////////////////////////////////////////////////////////////////////////
@@ -126,14 +126,14 @@ EndIf
 rw = 1.0;
 wl = 40.0;
 
-wbr = 20.0;
+wbr = 10.0;
 ela = 40.0;
 rw_cell= 2.0;
-wr_cell= 10.0;
+wr_cell= 1.0;
 
 If(dimension == 2)
 rw = 0.2;
-rw_cell= 1.0;
+rw_cell= 0.25;
 EndIf
 
 // Orientation and length

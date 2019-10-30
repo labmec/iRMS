@@ -735,7 +735,7 @@ void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOpera
     }
     
     int nel = cel_pairs.size();
-#ifdef USING_TBB2
+#ifdef USING_TBB
     tbb::parallel_for(size_t(0), size_t(nel), size_t(1), [&cel_pairs,&cmesh_res,&cmesh_tra] (size_t & i)
       {
           int64_t cel_res_index = cel_pairs[i].first;
