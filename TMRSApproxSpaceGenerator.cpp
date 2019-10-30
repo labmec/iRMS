@@ -181,6 +181,16 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
     cmesh->AutoBuild();
     cmesh->InitializeBlock();
     
+    if (!mSimData.mTNumerics.m_four_approx_spaces_Q) {
+        int ncon = cmesh->NConnects();
+        //Set Lagrange multiplier
+        for(int i=0; i<ncon; i++){
+            TPZConnect &newnod = cmesh->ConnectVec()[i];
+            newnod.SetLagrangeMultiplier(1);
+        }
+    }
+
+    
 #ifdef PZDEBUG
     std::stringstream file_name;
     if (order == 0) {
@@ -204,7 +214,6 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     }else{
         BuildMixed2SpacesMultiPhysicsCompMesh(order);
     }
-    
 }
 
 void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
@@ -319,6 +328,43 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 #endif
     
 }
+
+void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
+    DebugStop();
+}
+
+void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
+    DebugStop();
+}
+
+void TMRSApproxSpaceGenerator::BuildMixedSCStructures(){
+    
+    std::cout << "DoF:: Before SC = " << mMixedOperator->NEquations() << std::endl;
+    
+    mMixedOperator->ComputeNodElCon();
+    if (mSimData.mTNumerics.m_four_approx_spaces_Q) {
+        int dim = mMixedOperator->Dimension();
+        int64_t nel = mMixedOperator->NElements();
+        for (int64_t el =0; el<nel; el++) {
+            TPZCompEl *cel = mMixedOperator->Element(el);
+            if(!cel) continue;
+            TPZGeoEl *gel = cel->Reference();
+            if(!gel) continue;
+            if(gel->Dimension() != dim) continue;
+            int nc = cel->NConnects();
+            cel->Connect(nc-1).IncrementElConnected();
+        }
+    }
+    
+    // Created condensed elements for the elements that have internal nodes
+    bool KeepOneLagrangianQ = true;
+    bool KeepMatrixQ = true;
+    TPZCompMeshTools::CreatedCondensedElements(mMixedOperator, KeepOneLagrangianQ, KeepMatrixQ);
+    mMixedOperator->ComputeNodElCon();
+    mMixedOperator->InitializeBlock();
+    std::cout << "DoF:: After SC = " << mMixedOperator->NEquations() << std::endl;
+}
+
 
 void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     
@@ -632,6 +678,15 @@ TPZMultiphysicsCompMesh * TMRSApproxSpaceGenerator::GetTransportOperator(){
     return mTransportOperator;
 }
 
+void TMRSApproxSpaceGenerator::LinkMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator){
+ 
+    AdjustMemory(MixedOperator, TransportOperator);
+    for (auto item : mSimData.mTGeometry.mDomainDimNameAndPhysicalTag[2]) {
+        int material_id = item.second;
+        UnifyMaterialMemory(material_id, MixedOperator, TransportOperator);
+        FillMaterialMemory(material_id, MixedOperator, TransportOperator);
+    }
+}
 
 void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator){
     
@@ -680,7 +735,7 @@ void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOpera
     }
     
     int nel = cel_pairs.size();
-#ifdef USING_TBB
+#ifdef USING_TBB2
     tbb::parallel_for(size_t(0), size_t(nel), size_t(1), [&cel_pairs,&cmesh_res,&cmesh_tra] (size_t & i)
       {
           int64_t cel_res_index = cel_pairs[i].first;

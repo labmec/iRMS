@@ -112,15 +112,8 @@ int main(){
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
 
-    // Linking the memory between the operators
-    {
-        TMRSApproxSpaceGenerator::AdjustMemory(mixed_operator, transport_operator);
-        for (auto item : sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]) {
-            int material_id = item.second;
-            TMRSApproxSpaceGenerator::UnifyMaterialMemory(material_id, mixed_operator, transport_operator);
-            TMRSApproxSpaceGenerator::FillMaterialMemory(material_id, mixed_operator, transport_operator);
-        }
-    }
+    aspace.LinkMemory(mixed_operator, transport_operator);
+    aspace.BuildMixedSCStructures();
 
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
@@ -523,7 +516,8 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_corr_tol_transport = 1.0e-7;
     sim_data.mTNumerics.m_n_steps = 10;
     sim_data.mTNumerics.m_dt      = 1.0;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
+    sim_data.mTNumerics.m_four_approx_spaces_Q = false;
+    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
    
     
     // PostProcess controls
@@ -532,8 +526,10 @@ TMRSDataTransfer SettingSimple2D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
-    scalnames.Push("g_average");
-    scalnames.Push("u_average");
+    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
+        scalnames.Push("g_average");
+        scalnames.Push("u_average");
+    }
     sim_data.mTPostProcess.m_file_time_step = 1.0;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;

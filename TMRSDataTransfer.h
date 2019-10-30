@@ -249,7 +249,11 @@ public:
         /// Number of time steps
         int m_n_steps;
         
+        /// Directive for the use of four spaces
         bool m_four_approx_spaces_Q;
+        
+        /// Directive MHM mixed approximation
+        bool m_mhm_mixed_Q;
         
         
         TNumerics(){
@@ -264,6 +268,7 @@ public:
             m_max_iter_sfi          = 0;
             m_n_steps               = 0;
             m_four_approx_spaces_Q  = false;
+            m_mhm_mixed_Q           = false;
             
         }
         
@@ -283,6 +288,7 @@ public:
             m_max_iter_sfi          = other.m_max_iter_sfi;
             m_n_steps               = other.m_n_steps;
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
+            m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
             
             
         }
@@ -304,6 +310,7 @@ public:
             m_max_iter_sfi          = other.m_max_iter_sfi;
             m_n_steps               = other.m_n_steps;
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
+            m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
             return *this;
         }
         
@@ -324,7 +331,8 @@ public:
             m_max_iter_transport    == other.m_max_iter_transport &&
             m_max_iter_sfi          == other.m_max_iter_sfi &&
             m_n_steps               == other.m_n_steps &&
-            m_four_approx_spaces_Q  == other.m_four_approx_spaces_Q;
+            m_four_approx_spaces_Q  == other.m_four_approx_spaces_Q &&
+            m_mhm_mixed_Q           == other.m_mhm_mixed_Q;
             
         }
         
@@ -338,6 +346,8 @@ public:
             buf.Write(&m_max_iter_sfi);
             buf.Write(&m_n_steps);
             int temp = m_four_approx_spaces_Q;
+            buf.Write(&temp);
+            temp = m_mhm_mixed_Q;
             buf.Write(&temp);
           
         }
@@ -355,6 +365,8 @@ public:
             int temp;
             buf.Read(&temp);
             m_four_approx_spaces_Q = temp;
+            buf.Read(&temp);
+            m_mhm_mixed_Q = temp;
            
         }
         
@@ -373,6 +385,7 @@ public:
             std::cout << m_max_iter_sfi << std::endl;
             std::cout << m_n_steps << std::endl;
             std::cout << m_four_approx_spaces_Q << std::endl;
+            std::cout << m_mhm_mixed_Q << std::endl;
         }
         
     };
@@ -400,7 +413,6 @@ public:
             m_vecnames.Resize(0);
             m_file_time_step = 0.0;
             m_vec_reporting_times.Resize(0);
-           
             
         }
         

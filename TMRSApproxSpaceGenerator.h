@@ -21,6 +21,7 @@
 #include "TMRSDataTransfer.h"
 #include "TPZTracerFlow.h"
 #include "pzl2projection.h"
+#include "TPZCompMeshTools.h"
 
 class TMRSApproxSpaceGenerator : public TMRSSavable {
     
@@ -75,6 +76,12 @@ public:
     
     void BuildMixed4SpacesMultiPhysicsCompMesh(int order);
     
+    void BuildMHMMixed2SpacesMultiPhysicsCompMesh();
+    
+    void BuildMHMMixed4SpacesMultiPhysicsCompMesh();
+    
+    void BuildMixedSCStructures();
+    
     void BuildTransportMultiPhysicsCompMesh();
     
     void BuildTransport2SpacesMultiPhysicsCompMesh();
@@ -84,6 +91,9 @@ public:
     TPZMultiphysicsCompMesh * GetMixedOperator();
     
     TPZMultiphysicsCompMesh * GetTransportOperator();
+    
+    // Linking the memory between the operators
+    void LinkMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
     
     static void AdjustMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
     
