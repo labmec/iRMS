@@ -93,8 +93,6 @@ void TMRSTransportAnalysis::RunTimeStep(){
             std::cout << "Transport operator: " << std::endl;
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
-//            x.Print("x = ",std::cout,EMathematicaInput);
-//            Rhs().Print("r = ",std::cout,EMathematicaInput);
             break;
         }
         if (m_k_iteration >= n) {
