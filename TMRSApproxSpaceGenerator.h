@@ -22,7 +22,9 @@
 #include "TPZTracerFlow.h"
 #include "pzl2projection.h"
 #include "TPZCompMeshTools.h"
-
+#include "pzgengrid.h"
+#include "TPZExtendGridDimension.h"
+#include "TPZMHMixedMeshControl.h"
 class TMRSApproxSpaceGenerator : public TMRSSavable {
     
 private:
@@ -56,15 +58,20 @@ public:
     
     void SetGeometry(TPZGeoMesh * geometry);
     
+    void LoadGeometry(std::string geometry_file);
+    
+    void CreateUniformMesh(int nx, REAL L, int ny=0, REAL h=0, int nz=0, REAL w=0);
+    void GenerateMHMUniformMesh(int nelref);
+    
+    void PrintGeometry(std::string name);
+    
     TPZGeoMesh * GetGeometry();
     
     void SetDataTransfer(TMRSDataTransfer & DataTransfer);
     
     TMRSDataTransfer & GetDataTransfer();
     
-    void LoadGeometry(std::string geometry_file);
-    
-    void PrintGeometry(std::string name);
+ 
     
     TPZCompMesh * HdivFluxCmesh(int order);
     
@@ -87,7 +94,7 @@ public:
     void BuildTransport2SpacesMultiPhysicsCompMesh();
     
     void BuildTransport4SpacesMultiPhysicsCompMesh();
-    
+   
     TPZMultiphysicsCompMesh * GetMixedOperator();
     
     TPZMultiphysicsCompMesh * GetTransportOperator();

@@ -12,6 +12,7 @@
 #endif
 
 using namespace std;
+void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices);
 
 TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator(){
     mGeometry = nullptr;
@@ -64,7 +65,130 @@ void TMRSApproxSpaceGenerator::LoadGeometry(std::string geometry_file){
     }
 #endif
 }
+void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h, int nz, REAL w){
+    
+    TPZVec<int> nels(3,0);
+    nels[0]=nx;         //Elements over x
+    nels[1]=ny;         //Elements over y
+    
+    TPZVec<REAL> x0(3,0.0);
+    TPZVec<REAL> x1(3,0.0);
+    x1[0]=L;
+    
+    if (ny!=0) {
+        x1[1]=h;
+    }
+    
+    TPZGeoMesh *gmesh = new TPZGeoMesh;
+    TPZGenGrid gen(nels,x0,x1);
+    gen.SetRefpatternElements(true);
+    
+    //    if (ny!=0) {
+    //        <#statements#>
+    //    }
+    //    gen.SetElementType(EQuadrilateral);
+    gen.Read(gmesh);
+    
+    if (nz!=0 ) {
+        double var = w/nz;
+        TPZExtendGridDimension extend(gmesh,var);
+        extend.SetElType(1);
+        gmesh = extend.ExtendedMesh(nz);
+    }
+    
+    if (nz!=0) {
+        for (auto gel:gmesh->ElementVec()) {
+            TPZFMatrix<REAL> coordinates;
+            gel->NodesCoordinates(coordinates);
+            if(coordinates(2,0)==0){
+                gel->CreateBCGeoEl(20, -1);
+            }
+            if(coordinates(2,4)==w){
+                gel->CreateBCGeoEl(25, -2);
+            }
+            
+            if(coordinates(0,0)==0.0 ){
+                gel->CreateBCGeoEl(24, -3);
+            }
+            if(coordinates(1,0)==0.0 ){
+                gel->CreateBCGeoEl(21, -4);
+            }
+            
+            if(coordinates(0,1)== L ){
+                gel->CreateBCGeoEl(22, -5);
+            }
+            if(coordinates(1,3)==h){
+                gel->CreateBCGeoEl(23, -6);
+            }
+        };
+        gmesh->SetDimension(3);
+    }
+    
+    if (ny!=0 && nz==0) {
+        //        gen.SetBC(gmesh, 4, -1);
+        //        gen.SetBC(gmesh, 5, -2);
+        //        gen.SetBC(gmesh, 6, -3);
+        //        gen.SetBC(gmesh, 7, -4);
+        gmesh->SetDimension(2);
+    }
+    
+    if (ny==0 && nz==0) {
+        double dh = L/nx;
+        int Domain_Mat_Id = 1;
+        int Inlet_bc_Id = -1;
+        int Outletbc_Id = -2;
+        TPZVec<REAL> xp(3,0.0);   //Creates vector nodes
+        
+        gmesh->NodeVec().Resize(nx+1);
+        for (int64_t i=0; i<nx+1; i++) {
+            xp[0] =(i)*dh;
+            gmesh->NodeVec()[i]= TPZGeoNode(i, xp, *gmesh);
+        }
+        
+        TPZVec<int64_t> cornerindexes(2);   //Creates elements
+        for (int64_t iel=0; iel<nx; iel++) {
+            cornerindexes[0]=iel;
+            cornerindexes[1]=iel+1;
+            gmesh->CreateGeoElement(EOned, cornerindexes, Domain_Mat_Id, iel);
+        }
+        gmesh->Element(0)->CreateBCGeoEl(0, Inlet_bc_Id);     //Sets BC
+        gmesh->Element(nx-1)->CreateBCGeoEl(1, Outletbc_Id);
+        gmesh->SetDimension(1);
+        gmesh->BuildConnectivity();
+    }
+    
+    gmesh->BuildConnectivity();
+    
+    mGeometry = gmesh;
+    
+   
+#ifdef PZDEBUG
+    if (!mGeometry)
+    {
+        std::cout << "The geometrical mesh was not generated." << std::endl;
+        DebugStop();
+    }
+#endif
+}
 
+void TMRSApproxSpaceGenerator::GenerateMHMUniformMesh(int nelref){
+    int nel = mGeometry->NElements();
+    
+    for (int iref=0; iref<nelref; iref++) {
+        for (int iel = 0; iel <nel; iel++) {
+            TPZGeoEl *gel = mGeometry->Element(iel);
+            if (!gel) {
+                continue;
+            }
+            if (gel->HasSubElement()) {
+                continue;
+            }
+            TPZVec<TPZGeoEl *> sons;
+            gel->Divide(sons);
+        }
+    }
+   
+}
 void TMRSApproxSpaceGenerator::PrintGeometry(std::string name)
 {
     if (!mGeometry) {
@@ -212,7 +336,12 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     if (mSimData.mTNumerics.m_four_approx_spaces_Q) {
         BuildMixed4SpacesMultiPhysicsCompMesh(order);
     }else{
+        if (mSimData.mTNumerics.m_mhm_mixed_Q) {
+            BuildMHMMixed2SpacesMultiPhysicsCompMesh();
+        }
+        else{
         BuildMixed2SpacesMultiPhysicsCompMesh(order);
+        }
     }
 }
 
@@ -330,7 +459,11 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 }
 
 void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
+
+  
     DebugStop();
+    
+   
 }
 
 void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
@@ -419,6 +552,7 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
         val2(0,0)   = get<2>(chunk);
         TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         mTransportOperator->InsertMaterialObject(face);
+        
     }
     
     int transport_matid = 100;
@@ -907,5 +1041,4 @@ void TMRSApproxSpaceGenerator::SetUpdateMemory(int dimension, TMRSDataTransfer &
         SetUpdateMaterialMemory(material_id, cmesh, update_memory_Q);
     }
 }
-
 
