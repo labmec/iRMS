@@ -24,10 +24,12 @@
 #include "TPZCompMeshTools.h"
 #include "pzgengrid.h"
 #include "TPZExtendGridDimension.h"
+#include "TMRSSFIAnalysis.h"
 #include "TPZMHMixedMeshControl.h"
+//#include "TPZMHMixedMeshWithTransportControl.h"
 class TMRSApproxSpaceGenerator : public TMRSSavable {
     
-private:
+public:
     
     TPZGeoMesh * mGeometry;
     
@@ -36,6 +38,7 @@ private:
     TPZMultiphysicsCompMesh * mMixedOperator;
     
     TPZMultiphysicsCompMesh * mTransportOperator;
+ 
     
 public:
     
@@ -86,6 +89,7 @@ public:
     void BuildMHMMixed2SpacesMultiPhysicsCompMesh();
     
     void BuildMHMMixed4SpacesMultiPhysicsCompMesh();
+    TPZMultiphysicsCompMesh *CreateMixedOperatorMHM();
     
     void BuildMixedSCStructures();
     
@@ -94,7 +98,7 @@ public:
     void BuildTransport2SpacesMultiPhysicsCompMesh();
     
     void BuildTransport4SpacesMultiPhysicsCompMesh();
-   
+    void InsertMaterialObjects(TPZMHMixedMeshControl &control);
     TPZMultiphysicsCompMesh * GetMixedOperator();
     
     TPZMultiphysicsCompMesh * GetTransportOperator();

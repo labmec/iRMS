@@ -73,14 +73,16 @@ TMRSDataTransfer Setting3D();
 TMRSDataTransfer SettingSimpleMHM2D();
 void MHMSimpleTest();
 void SimpleTest();
+//void InsertMaterialObjects(TPZMHMixedMeshControl &control);
 
-
-
+void TestMhmyorch();
+void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices);
+TPZGeoMesh *MHMMesh();
 int main(){
     
-     SimpleTest();
-    
-    
+//     SimpleTest();
+   MHMSimpleTest();
+//    TestMhmyorch();
     return 0;
 }
 
@@ -167,7 +169,90 @@ void SimpleTest(){
 void MHMSimpleTest(){
    
     
+    TMRSDataTransfer sim_data;
+    
    
+    sim_data = SettingSimpleMHM2D();
+    TMRSApproxSpaceGenerator aspace;
+    aspace.CreateUniformMesh(2, 2,2,2);
+    aspace.GenerateMHMUniformMesh(1);
+    aspace.SetDataTransfer(sim_data);
+    
+    int order = 1;
+    aspace.BuildMixedMultiPhysicsCompMesh(order);
+    
+    TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
+    TPZAnalysis an(mixed_operator,true);
+    
+    TPZSymetricSpStructMatrix strmat(mixed_operator);
+    strmat.SetNumThreads(8);
+    
+    an.SetStructuralMatrix(strmat);
+    TPZStepSolver<STATE> step;
+    step.SetDirect(ELDLt);
+    an.SetSolver(step);
+    std::cout << "Assembling\n";
+    an.Assemble();
+    std::ofstream filemate("MatrixCoarse.txt");
+    
+    
+    
+    std::cout << "Solving\n";
+    an.Solve();
+    std::cout << "Finished\n";
+    //    an.LoadSolution(); // compute internal dofs
+    
+    
+    TPZStack<std::string> scalar, vectors;
+    TPZManVector<std::string,10> scalnames(1), vecnames(1);
+    vecnames[0]  = "q";
+    scalnames[0] = "p";
+    
+    std::string name_coarse("Mixedresults.vtk");
+    
+    an.DefineGraphMesh(2, scalnames, vecnames, name_coarse);
+    an.PostProcess(0,2);
+    
+    
+    
+//    std::cout<<"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"<<std::endl;
+//    mixed_operator->Print();
+//
+//    std::ofstream mult("malhamultph.txt");
+//    mixed_operator->Print(mult);
+//    std::cout<<"Nel: "<<mixed_operator->NElements()<<std::endl;
+//    TPZAnalysis an(mixed_operator,true);
+//
+//    TPZSymetricSpStructMatrix strmat(mixed_operator);
+//    strmat.SetNumThreads(8);
+//
+//    an.SetStructuralMatrix(strmat);
+//    TPZStepSolver<STATE> step;
+//    step.SetDirect(ELDLt);
+//    an.SetSolver(step);
+//    std::cout << "Assembling\n";
+//    an.Assemble();
+//    std::ofstream filemate("MatrixCoarse.txt");
+//
+//
+//
+//    std::cout << "Solving\n";
+//    an.Solve();
+//    std::cout << "Finished\n";
+////    an.LoadSolution(); // compute internal dofs
+//
+//
+//    TPZStack<std::string> scalar, vectors;
+//    TPZManVector<std::string,10> scalnames(1), vecnames(1);
+//    vecnames[0]  = "state";
+//    scalnames[0] = "state";
+//
+//    std::string name_coarse("Mixedresults.vtk");
+//
+//    an.DefineGraphMesh(2, scalnames, vecnames, name_coarse);
+//    an.PostProcess(0,2);
+    
+    
 }
 
 TMRSDataTransfer Setting2D(){
@@ -685,7 +770,7 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_n_steps = 10;
     sim_data.mTNumerics.m_dt      = 1.0;
     sim_data.mTNumerics.m_four_approx_spaces_Q = false;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
+    sim_data.mTNumerics.m_mhm_mixed_Q          = false;
    
     
     // PostProcess controls
@@ -731,8 +816,9 @@ TMRSDataTransfer SettingSimpleMHM2D(){
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-3,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-2,D_Type,pressure_in);
+       sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-3,N_Type,zero_flux);
+ 
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-4,D_Type,pressure_out);
     
     
@@ -889,3 +975,228 @@ TMRSDataTransfer SettingSimpleMHM2D(){
     sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
     return sim_data;
 }
+
+void TestMhmyorch(){
+    
+    TMRSDataTransfer sim_data = SettingSimpleMHM2D();
+    TMRSApproxSpaceGenerator aspace;
+    aspace.CreateUniformMesh(2, 2,2,2);
+    aspace.GenerateMHMUniformMesh(2);
+    aspace.SetDataTransfer(sim_data);
+    
+   
+    TPZGeoMesh *gmeshcoarse = aspace.GetGeometry();
+   
+    
+    int interface_mat_id = 600;
+    int flux_order = 1;
+    int p_order = 1;
+    //aqui
+    TPZMHMixedMeshControl * MHMixed; //AutoPointer
+    
+    {
+        TPZGeoMesh * gmeshauto = new TPZGeoMesh(*gmeshcoarse); //Autopointer2
+        {
+            std::ofstream out("gmeshauto.txt");
+            gmeshauto->Print(out);
+        }
+        TPZMHMixedMeshControl *mhm = new TPZMHMixedMeshControl(gmeshauto);
+        TPZVec<int64_t> coarseindices;
+        ComputeCoarseIndices(gmeshauto, coarseindices); //operator->()
+        //        for(int i =0; i < coarseindices.size(); i++){
+        //            std::cout << "i = " << coarseindices[i] << std::endl;
+        //        }
+        gmeshauto->AddInterfaceMaterial(1, 2, interface_mat_id);
+        gmeshauto->AddInterfaceMaterial(2, 1, interface_mat_id);
+        
+        
+        // criam-se apenas elementos geometricos
+        mhm->DefinePartitionbyCoarseIndices(coarseindices);
+        //        MHMMixedPref << "MHMixed";
+        MHMixed = mhm;
+        
+        TPZMHMixedMeshControl &meshcontrol = *mhm;
+        {
+            std::set<int> matids;
+            matids.insert(1);
+          
+            mhm->fMaterialIds = matids;
+            matids.clear();
+            matids.insert(-1);
+            matids.insert(-2);
+            matids.insert(-3);
+            matids.insert(-4);
+    
+            mhm->fMaterialBCIds = matids;
+        }
+        
+        
+//        InsertMaterialObjects(*mhm);
+        
+#ifdef PZDEBUG2
+        if(1)
+        {
+            std::ofstream out("MixedMeshControlHDiv.txt");
+            meshcontrol.Print(out);
+        }
+#endif
+        meshcontrol.SetInternalPOrder(2);
+        meshcontrol.SetSkeletonPOrder(1);
+        
+        meshcontrol.DivideSkeletonElements(0);
+        meshcontrol.DivideBoundarySkeletonElements();
+        
+        //        std::ofstream file_geo("geometry.txt");
+        //        meshcontrol.GMesh()->Print(file_geo);
+        //
+        bool substructure = true;
+        //        std::ofstream filee("Submesh.txt");
+
+        
+        meshcontrol.BuildComputationalMesh(substructure);
+        
+    
+        
+        
+#ifdef PZDEBUG
+        if(1)
+        {
+            std::ofstream file("GMeshControlHDiv.vtk");
+            TPZVTKGeoMesh::PrintGMeshVTK(meshcontrol.GMesh().operator->(), file);
+        }
+#endif
+#ifdef PZDEBUG2
+        if(1)
+        {
+            std::ofstream out("MixedMeshControlHDiv.txt");
+            meshcontrol.Print(out);
+        }
+#endif
+        
+        std::cout << "MHM Hdiv Computational meshes created\n";
+#ifdef PZDEBUG2
+        if(1)
+        {
+            std::ofstream gfile("geometryMHMHdiv.txt");
+            gmeshauto->Print(gfile);
+            std::ofstream out_mhm("MHM_hdiv.txt");
+            meshcontrol.CMesh()->Print(out_mhm);
+            
+        }
+#endif
+        
+        std::cout << "Number of equations MHMixed " << MHMixed->CMesh()->NEquations() << std::endl;
+        
+        
+    }
+    
+    TPZCompMesh *MixedMesh = MHMixed->CMesh().operator->();
+    
+    TPZMultiphysicsCompMesh *cmeshtest = dynamic_cast<TPZMultiphysicsCompMesh*>(MixedMesh);
+    TPZAnalysis an(cmeshtest,true);
+    
+    TPZSymetricSpStructMatrix strmat(cmeshtest);
+    strmat.SetNumThreads(8);
+    
+    an.SetStructuralMatrix(strmat);
+    TPZStepSolver<STATE> step;
+    step.SetDirect(ELDLt);
+    an.SetSolver(step);
+    std::cout << "Assembling\n";
+    an.Assemble();
+    std::ofstream filemate("MatrixCoarse.txt");
+    
+    
+    
+    std::cout << "Solving\n";
+    an.Solve();
+    std::cout << "Finished\n";
+    //    an.LoadSolution(); // compute internal dofs
+    
+    
+    TPZStack<std::string> scalar, vectors;
+    TPZManVector<std::string,10> scalnames(1), vecnames(1);
+    vecnames[0]  = "q";
+    scalnames[0] = "p";
+    
+    std::string name_coarse("Mixedresults.vtk");
+    
+    an.DefineGraphMesh(2, scalnames, vecnames, name_coarse);
+    an.PostProcess(0,2);
+    
+    
+    
+    return 0;
+    
+    
+    
+}
+void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
+{
+    //    {
+    //        std::ofstream out("gmeshref.txt");
+    //        gmesh->Print(out);
+    //    }
+    coarseindices.Resize(gmesh->NElements());
+    int count = 0;
+    for (int64_t el=0; el<gmesh->NElements(); el++) {
+        TPZGeoEl *gel = gmesh->Element(el);
+        if(!gel || gel->Dimension() != gmesh->Dimension()) continue;
+        if(gel->Father()) continue;
+        coarseindices[count] = el;
+        count++;
+    }
+    coarseindices.Resize(count);
+}
+//void InsertMaterialObjects(TPZMHMixedMeshControl &control)
+//{
+//    TPZCompMesh &cmesh = control.CMesh();
+//    
+//    TPZGeoMesh &gmesh = control.GMesh();
+//    const int typeFlux = 1, typePressure = 0;
+//    TPZFMatrix<STATE> val1(1,1,0.), val2Flux(1,1,0.), val2Pressure(1,1,10.);
+//    
+//    
+//    int dim = gmesh.Dimension();
+//    cmesh.SetDimModel(dim);
+//    
+//    TPZCompMesh *MixedFluxPressureCmesh = &cmesh;
+//    
+//    // Material medio poroso
+//    TPZMixedDarcyFlow * mat = new TPZMixedDarcyFlow(1,dim);
+//
+//    mat->SetPermeability(1.);
+//    //    mat->SetForcingFunction(One);
+//    MixedFluxPressureCmesh->InsertMaterialObject(mat);
+//    
+//   
+//    
+//    // Bc N
+//    TPZBndCond * bcN = mat->CreateBC(mat, -1, typeFlux, val1, val2Flux);
+//    //    bcN->SetForcingFunction(0, force);
+//    
+//    MixedFluxPressureCmesh->InsertMaterialObject(bcN);
+//    bcN = mat->CreateBC(mat, -3, typeFlux, val1, val2Flux);
+//    //    bcN->SetForcingFunction(0, force);
+//    
+//    MixedFluxPressureCmesh->InsertMaterialObject(bcN);
+//    
+//    val2Pressure(0,0)=10;
+//    TPZBndCond * bcS = mat->CreateBC(mat, -2, typePressure, val1, val2Flux);
+//    
+//    MixedFluxPressureCmesh->InsertMaterialObject(bcS);
+//    val2Pressure(0,0)=1000;
+//    
+//    bcS = mat->CreateBC(mat, -4, typePressure, val1, val2Pressure);
+//    MixedFluxPressureCmesh->InsertMaterialObject(bcS);
+////    val2Pressure(0,0) = 100.;
+////    TPZBndCond * bcIn = mat->CreateBC(mat, -5, typePressure, val1, val2Pressure);
+////
+////    MixedFluxPressureCmesh->InsertMaterialObject(bcIn);
+////    val2Pressure(0,0) = 1.;
+////    TPZBndCond * bcOut = mat->CreateBC(mat, -6, typePressure, val1, val2Pressure);
+////
+////    MixedFluxPressureCmesh->InsertMaterialObject(bcOut);
+//    
+//}
+
