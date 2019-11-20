@@ -1249,48 +1249,47 @@ void TMRSApproxSpaceGenerator::SetUpdateMemory(int dimension, TMRSDataTransfer &
 
 void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &control)
 {
-    TPZCompMesh &cmesh = control.CMesh();
+  
+
+        TPZCompMesh &cmesh = control.CMesh();
     
-    TPZGeoMesh &gmesh = control.GMesh();
-    cmesh.SetDimModel(2);
-    const int typeFlux = 1, typePressure = 0;
-    TPZFMatrix<STATE> val1(1,1,0.), val2Flux(1,1,0.), val2Pressure(1,1,10.);
-
-
-    int dim = gmesh.Dimension();
-    cmesh.SetDimModel(dim);
-
-   TPZCompMesh *MixedFluxPressureCmesh = &cmesh;
-
-    // Material medio poroso
-    TPZMixedDarcyFlow * mat = new TPZMixedDarcyFlow(1,dim);
-//    TMRSDarcyFlowWithMem<TMRSMemory> * mat = new TMRSDarcyFlowWithMem<TMRSMemory>(1,dim);
-
+        TPZGeoMesh &gmesh = control.GMesh();
+        const int typeFlux = 1, typePressure = 0;
+        TPZFMatrix<STATE> val1(1,1,0.), val2Flux(1,1,0.), val2Pressure(1,1,10.);
     
-
-//    mat->SetPermeability(1.);
-    MixedFluxPressureCmesh->InsertMaterialObject(mat);
-
-
-
-    // Bc N
-    TPZBndCond * bcN = mat->CreateBC(mat, -1, typeFlux, val1, val2Flux);
-    //    bcN->SetForcingFunction(0, force);
-
-    MixedFluxPressureCmesh->InsertMaterialObject(bcN);
-    bcN = mat->CreateBC(mat, -3, typeFlux, val1, val2Flux);
-    //    bcN->SetForcingFunction(0, force);
-
-    MixedFluxPressureCmesh->InsertMaterialObject(bcN);
-
-    val2Pressure(0,0)=10;
-    TPZBndCond * bcS = mat->CreateBC(mat, -2, typePressure, val1, val2Flux);
-
-    MixedFluxPressureCmesh->InsertMaterialObject(bcS);
-    val2Pressure(0,0)=1000;
-
-    bcS = mat->CreateBC(mat, -4, typePressure, val1, val2Pressure);
-    MixedFluxPressureCmesh->InsertMaterialObject(bcS);
+    
+        int dim = gmesh.Dimension();
+        cmesh.SetDimModel(dim);
+    
+        TPZCompMesh *MixedFluxPressureCmesh = &cmesh;
+    
+        // Material medio poroso
+        TPZMixedDarcyFlow * mat = new TPZMixedDarcyFlow(1,dim);
+    
+        mat->SetPermeability(1.);
+        //    mat->SetForcingFunction(One);
+        MixedFluxPressureCmesh->InsertMaterialObject(mat);
+    
+    
+    
+        // Bc N
+        TPZBndCond * bcN = mat->CreateBC(mat, -1, typeFlux, val1, val2Flux);
+        //    bcN->SetForcingFunction(0, force);
+    
+        MixedFluxPressureCmesh->InsertMaterialObject(bcN);
+        bcN = mat->CreateBC(mat, -3, typeFlux, val1, val2Flux);
+        //    bcN->SetForcingFunction(0, force);
+    
+        MixedFluxPressureCmesh->InsertMaterialObject(bcN);
+    
+        val2Pressure(0,0)=10;
+        TPZBndCond * bcS = mat->CreateBC(mat, -2, typePressure, val1, val2Flux);
+    
+        MixedFluxPressureCmesh->InsertMaterialObject(bcS);
+        val2Pressure(0,0)=1000;
+    
+        bcS = mat->CreateBC(mat, -4, typePressure, val1, val2Pressure);
+        MixedFluxPressureCmesh->InsertMaterialObject(bcS);
     
 //
 //    //aqui
