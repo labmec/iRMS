@@ -476,7 +476,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
     int flux_order = 1;
     int p_order = 1;
     //aqui
-    TPZMHMixedMeshControl * MHMixed; //AutoPointer
+    TPZMHMixedMeshWithTransportControl * MHMixed; //AutoPointer
     
     {
         TPZGeoMesh * gmeshauto = new TPZGeoMesh(*gmeshcoarse); //Autopointer2
@@ -484,7 +484,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
             std::ofstream out("gmeshauto.txt");
             gmeshauto->Print(out);
         }
-        TPZMHMixedMeshControl *mhm = new TPZMHMixedMeshControl(gmeshauto);
+        TPZMHMixedMeshWithTransportControl *mhm = new TPZMHMixedMeshWithTransportControl(gmeshauto);
         TPZVec<int64_t> coarseindices;
         ComputeCoarseIndices(gmeshauto, coarseindices); //operator->()
         //        for(int i =0; i < coarseindices.size(); i++){
@@ -499,7 +499,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
         //        MHMMixedPref << "MHMixed";
         MHMixed = mhm;
         
-        TPZMHMixedMeshControl &meshcontrol = *mhm;
+        TPZMHMixedMeshWithTransportControl &meshcontrol = *mhm;
         {
             std::set<int> matids;
             matids.insert(1);
