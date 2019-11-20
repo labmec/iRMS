@@ -34,15 +34,14 @@
 class TPZMHMixedMeshWithTransportControl : public TPZMHMixedMeshControl
 {
     
-    TPZAutoPointer<TPZCompMesh> fcmeshPressureAverg;
-    TPZAutoPointer<TPZCompMesh> fcmeshFluxAverg ;
+    TPZAutoPointer<TPZCompMesh> fcmeshTransport;
     
 public:
     
     TPZMHMixedMeshWithTransportControl() : TPZMHMixedMeshControl()
     {
-        fcmeshPressureAverg = new TPZCompMesh;
-        fcmeshFluxAverg = new TPZCompMesh;
+        fcmeshTransport = new TPZCompMesh;
+      
     }
     
 //    TPZMHMixedMesh4SpacesControl(int dimension):TPZMHMixedMeshControl(dimension){
@@ -51,8 +50,7 @@ public:
 //    
 //    
     TPZMHMixedMeshWithTransportControl(TPZAutoPointer<TPZGeoMesh> gmesh, TPZVec<int64_t> &coarseindices):TPZMHMixedMeshControl( gmesh, coarseindices){
-        fcmeshPressureAverg = new TPZCompMesh(gmesh);
-        fcmeshFluxAverg = new TPZCompMesh(gmesh);
+        fcmeshTransport = new TPZCompMesh(gmesh);
     }
     TPZMHMixedMeshWithTransportControl(const TPZMHMixedMeshWithTransportControl &copy){
         TPZMHMixedMeshControl::operator=(copy);
@@ -61,8 +59,7 @@ public:
     
     TPZMHMixedMeshWithTransportControl operator=(const TPZMHMixedMeshWithTransportControl &cp) {
         
-        fcmeshPressureAverg = cp.fcmeshPressureAverg;
-        fcmeshFluxAverg =cp.fcmeshFluxAverg;
+        fcmeshTransport = cp.fcmeshTransport;
         TPZMHMixedMeshControl::operator=(cp);
         return *this;
     }
@@ -88,8 +85,7 @@ public:
 //    
     void BuildComputationalMesh(bool usersubstructure);
     void CreateHDivPressureMHMMesh();
-    void CreateAverageFlux();
-    void CreateAveragePressure();
+    void CreateTransport();
     void BuildMultiPhysicsMesh();
 //
 //    void HideTheElements();

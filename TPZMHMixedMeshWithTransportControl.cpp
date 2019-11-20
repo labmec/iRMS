@@ -22,7 +22,7 @@ void TPZMHMixedMeshWithTransportControl::BuildComputationalMesh(bool usersubstru
 #endif
     
     CreatePressureMHMMesh();
-//    CreateAverageFlux();
+    CreateTransport();
 //    CreateAveragePressure();
     
     if(fNState > 1)
@@ -70,17 +70,20 @@ void TPZMHMixedMeshWithTransportControl::BuildComputationalMesh(bool usersubstru
 }
 void TPZMHMixedMeshWithTransportControl::CreateHDivPressureMHMMesh()
 {
-    TPZManVector<TPZCompMesh *,2 > cmeshes(2);
+    TPZManVector<TPZCompMesh *,2 > cmeshes(3);
     cmeshes[0] = fFluxMesh.operator->();
     cmeshes[1] = fPressureFineMesh.operator->();
-//    cmeshes[2] = fcmeshFluxAverg.operator->();
+    cmeshes[2] = fcmeshTransport.operator->();
 //    cmeshes[3] = fcmeshPressureAverg.operator->();
     {
-        std::ofstream out("PressureMesh_MultiPhis.txt");
-        cmeshes[1] ->Print(out);
+        std::ofstream out("Flux_MultiPhisMHM.txt");
+        cmeshes[0] ->Print(out);
         
-        std::ofstream out2("FluxMesh_MultiPhis.txt");
-        cmeshes[0] ->Print(out2);
+        std::ofstream out2("Pressure_MultiPhisMHM.txt");
+        cmeshes[1] ->Print(out2);
+        
+        std::ofstream out3("Transport_MHM.txt");
+        cmeshes[2] ->Print(out3);
         
 //        std::ofstream out3("FluxAverage_MultiPhis.txt");
 //        cmeshes[2] ->Print(out3);
@@ -160,15 +163,16 @@ void TPZMHMixedMeshWithTransportControl::CreateHDivPressureMHMMesh()
     
 }
 
-void TPZMHMixedMeshWithTransportControl::CreateAverageFlux()
+
+void TPZMHMixedMeshWithTransportControl::CreateTransport()
 {
     TPZGeoMesh * gmesh = fGMesh.operator->();
     gmesh->Print();
     gmesh->ResetReference();
     TPZCompMesh * cmeshtemp = new TPZCompMesh(gmesh);
-    fcmeshFluxAverg = cmeshtemp;
+    fcmeshTransport = cmeshtemp;
     // the pressure mesh should be empty when calling this method
-    int64_t nskeletonconnects = fcmeshFluxAverg->NConnects();
+    int64_t nskeletonconnects = fcmeshTransport->NConnects();
     if(nskeletonconnects != 0){
         DebugStop();
     }
@@ -176,119 +180,14 @@ void TPZMHMixedMeshWithTransportControl::CreateAverageFlux()
     int porder = fpOrderInternal;
     // create and organize the pressure mesh
     // the pressure mesh is composed of discontinuous H1 elements
-    TPZCompMesh * cmeshfluxavg = fcmeshFluxAverg.operator->();
+    TPZCompMesh * cmeshTransport = fcmeshTransport.operator->();
     gmesh->ResetReference();
-    cmeshfluxavg->SetName("PressureMeshAverage");
-    cmeshfluxavg->SetDimModel(gmesh->Dimension());
-    cmeshfluxavg->SetAllCreateFunctionsDiscontinuous(); //AQUI
-    cmeshfluxavg->ApproxSpace().CreateDisconnectedElements(true);
-    cmeshfluxavg->SetDefaultOrder(0);
-    int meshdim = cmeshfluxavg->Dimension();
-    // generate elements for all material ids of meshdim
-    std::set<int> matids;
-//    for (auto it:fMaterialIds) {
-//        TPZMaterial *mat = fPressureFineMesh->FindMaterial(it);
-//        if (mat && mat->Dimension() == meshdim) {
-//            matids.insert(it);
-//            cmeshfluxavg->InsertMaterialObject(mat);
-//        }
-//    }
-    TPZNullMaterial * volume = new TPZNullMaterial(1);
-    cmeshfluxavg->InsertMaterialObject(volume);
-    TPZNullMaterial * volume2 = new TPZNullMaterial(2);
-    cmeshfluxavg->InsertMaterialObject(volume2);
-    matids.insert(1);
-    matids.insert(2);
-    cmeshfluxavg->AutoBuild(matids);
-    cmeshfluxavg->Print();
-    fcmeshFluxAverg->ExpandSolution();
-    
-    if(1)
-    {
-        std::ofstream out("PressureAVERAGEMesh.txt");
-        cmeshfluxavg->Print(out);
-    }
-    
-    
-#ifdef PZDEBUG
-    // a very strange check!! Why does material id 1 need to be volumetric?
-    {
-        int64_t nel = fGMesh->NElements();
-        for (int64_t el = 0; el<nel; el++) {
-            TPZGeoEl *gel = fGMesh->Element(el);
-            if (gel && gel->MaterialId() == 1) {
-                if (gel->Dimension() != fGMesh->Dimension()) {
-                    DebugStop();
-                }
-            }
-        }
-    }
-#endif
-    
-    // the lagrange multiplier level is set to one
-    int64_t nc = cmeshfluxavg->NConnects();
-    for (int64_t ic=nskeletonconnects; ic<nc; ic++) {
-        cmeshfluxavg->ConnectVec()[ic].SetLagrangeMultiplier(2);
-    }
-    // associate the connects with the proper subdomain
-    gmesh->ResetReference();
-    int64_t nel = cmeshfluxavg->NElements();
-    for (int64_t el=0; el<nel; el++)
-    {
-        TPZCompEl *cel = cmeshfluxavg->Element(el);
-#ifdef PZDEBUG
-        if (! cel) {
-            DebugStop();
-        }
-#endif
-        // if a computational element was created outside the range of material ids
-        // something very strange happened...
-        TPZGeoEl *gel = cel->Reference();
-        if(fMaterialIds.find (gel->MaterialId()) == fMaterialIds.end())
-        {
-            DebugStop();
-        }
-        int domain = fGeoToMHMDomain[gel->Index()];
-#ifdef PZDEBUG
-        if (domain == -1) {
-            DebugStop();
-        }
-#endif
-        
-        SetSubdomain(cel, domain);
-    }
-    
-    {
-        std::ofstream out("PressureFineMesh2AVERAGE.txt");
-        fcmeshFluxAverg->Print(out);
-    }
-    
-    return;
-}
-void TPZMHMixedMeshWithTransportControl::CreateAveragePressure()
-{
-    TPZGeoMesh * gmesh = fGMesh.operator->();
-    gmesh->Print();
-    gmesh->ResetReference();
-    TPZCompMesh * cmeshtemp = new TPZCompMesh(gmesh);
-    fcmeshPressureAverg = cmeshtemp;
-    // the pressure mesh should be empty when calling this method
-    int64_t nskeletonconnects = fcmeshPressureAverg->NConnects();
-    if(nskeletonconnects != 0){
-        DebugStop();
-    }
-    
-    int porder = fpOrderInternal;
-    // create and organize the pressure mesh
-    // the pressure mesh is composed of discontinuous H1 elements
-    TPZCompMesh * cmeshpressureavr = fcmeshPressureAverg.operator->();
-    gmesh->ResetReference();
-    cmeshpressureavr->SetName("PressureMeshAverage");
-    cmeshpressureavr->SetDimModel(gmesh->Dimension());
-    cmeshpressureavr->SetAllCreateFunctionsDiscontinuous(); //AQUI
-    cmeshpressureavr->ApproxSpace().CreateDisconnectedElements(true);
-    cmeshpressureavr->SetDefaultOrder(0);
-    int meshdim = cmeshpressureavr->Dimension();
+    cmeshTransport->SetName("PressureMeshAverage");
+    cmeshTransport->SetDimModel(gmesh->Dimension());
+    cmeshTransport->SetAllCreateFunctionsDiscontinuous(); //AQUI
+    cmeshTransport->ApproxSpace().CreateDisconnectedElements(true);
+    cmeshTransport->SetDefaultOrder(0);
+    int meshdim = cmeshTransport->Dimension();
     // generate elements for all material ids of meshdim
     std::set<int> matids;
     //    for (auto it:fMaterialIds) {
@@ -299,19 +198,19 @@ void TPZMHMixedMeshWithTransportControl::CreateAveragePressure()
     //        }
     //    }
     TPZNullMaterial * volume = new TPZNullMaterial(1);
-    cmeshpressureavr->InsertMaterialObject(volume);
+    cmeshTransport->InsertMaterialObject(volume);
     TPZNullMaterial * volume2 = new TPZNullMaterial(2);
-    cmeshpressureavr->InsertMaterialObject(volume2);
+    cmeshTransport->InsertMaterialObject(volume2);
     matids.insert(1);
     matids.insert(2);
-    cmeshpressureavr->AutoBuild(matids);
-    cmeshpressureavr->Print();
-    fcmeshPressureAverg->ExpandSolution();
+    cmeshTransport->AutoBuild(matids);
+    cmeshTransport->Print();
+    cmeshTransport->ExpandSolution();
     
     if(1)
     {
-        std::ofstream out("PressureAVERAGEMesh.txt");
-        cmeshpressureavr->Print(out);
+        std::ofstream out("TransportCmesh.txt");
+        cmeshTransport->Print(out);
     }
     
     
@@ -331,16 +230,16 @@ void TPZMHMixedMeshWithTransportControl::CreateAveragePressure()
 #endif
     
     // the lagrange multiplier level is set to one
-    int64_t nc = cmeshpressureavr->NConnects();
+    int64_t nc = cmeshTransport->NConnects();
     for (int64_t ic=nskeletonconnects; ic<nc; ic++) {
-        cmeshpressureavr->ConnectVec()[ic].SetLagrangeMultiplier(3);
+        cmeshTransport->ConnectVec()[ic].SetLagrangeMultiplier(1);
     }
     // associate the connects with the proper subdomain
     gmesh->ResetReference();
-    int64_t nel = cmeshpressureavr->NElements();
+    int64_t nel = cmeshTransport->NElements();
     for (int64_t el=0; el<nel; el++)
     {
-        TPZCompEl *cel = cmeshpressureavr->Element(el);
+        TPZCompEl *cel = cmeshTransport->Element(el);
 #ifdef PZDEBUG
         if (! cel) {
             DebugStop();
@@ -365,7 +264,7 @@ void TPZMHMixedMeshWithTransportControl::CreateAveragePressure()
     
     {
         std::ofstream out("PressureFineMesh2AVERAGE.txt");
-        fcmeshPressureAverg->Print(out);
+        cmeshTransport->Print(out);
     }
     
     return;
@@ -378,11 +277,11 @@ void TPZMHMixedMeshWithTransportControl::BuildMultiPhysicsMesh()
     fCMesh->SetAllCreateFunctionsMultiphysicElem();
     TPZMultiphysicsCompMesh *mphysics = dynamic_cast<TPZMultiphysicsCompMesh *>(fCMesh.operator->());
    
-    int vecsize = 2;
+    int vecsize = 3;
     TPZManVector<TPZCompMesh *> meshvec(vecsize);
     meshvec[0] = fFluxMesh.operator->();
     meshvec[1] = fPressureFineMesh.operator->();
-//    meshvec[2] = fcmeshFluxAverg.operator->();
+    meshvec[2] = fcmeshTransport.operator->();
 //    meshvec[3] = fcmeshPressureAverg.operator->();
 //    if(fNState > 1)
 //    {
@@ -450,6 +349,10 @@ void TPZMHMixedMeshWithTransportControl::BuildMultiPhysicsMesh()
         LOGPZ_DEBUG(logger, sout.str())
     }
 #endif
-    mphysics->BuildMultiphysicsSpace(meshvec,gelindexes);
+    
+    TPZVec<int> active_approx_spaces(3,1);
+    active_approx_spaces[2]=0;
+    mphysics->BuildMultiphysicsSpace(active_approx_spaces, meshvec);
+//    mphysics->BuildMultiphysicsSpace(meshvec,gelindexes);
     
 }
