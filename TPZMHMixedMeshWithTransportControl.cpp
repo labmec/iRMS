@@ -274,7 +274,8 @@ void TPZMHMixedMeshWithTransportControl::BuildMultiPhysicsMesh()
     if (fCMesh->NElements() != 0) {
         DebugStop();
     }
-    fCMesh->SetAllCreateFunctionsMultiphysicElem();
+    fCMesh->SetAllCreateFunctionsMultiphysicElemWithMem();
+//    fCMesh->SetAllCreateFunctionsMultiphysicElem();
     TPZMultiphysicsCompMesh *mphysics = dynamic_cast<TPZMultiphysicsCompMesh *>(fCMesh.operator->());
    
     int vecsize = 3;
