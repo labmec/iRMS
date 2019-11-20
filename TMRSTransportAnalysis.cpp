@@ -65,7 +65,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
     REAL corr_norm = 1.0;
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_transport;
-    
+  
     AssembleResidual();
     res_norm = Norm(Rhs());
     if (res_norm < res_tol) {

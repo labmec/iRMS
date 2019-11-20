@@ -49,9 +49,10 @@ int TMRSSFIAnalysis::GetNumberOfIterations(){
 }
 
 void TMRSSFIAnalysis::RunTimeStep(){
-
+    
     m_x_mixed = m_mixed_module->Solution();
     m_x_transport = m_transport_module->Solution();
+    
     
     int n_iterations = m_sim_data->mTNumerics.m_max_iter_sfi;
     bool stop_criterion_Q = false;

@@ -7,6 +7,8 @@
 #ifndef TPZMHMixedMeshWithTransportControl_hpp
 #define TPZMHMixedMeshWithTransportControl_hpp
 
+
+
 #include <stdio.h>
 
 #include "TPZMHMeshControl.h"
@@ -29,12 +31,14 @@
 
 #include "TPZVTKGeoMesh.h"
 #include "TPZNullMaterial.h"
+#include "TMRSApproxSpaceGenerator.h"
 
 /// class for creating TPZMHMM with Mixed Meshes
 class TPZMHMixedMeshWithTransportControl : public TPZMHMixedMeshControl
 {
     
     TPZAutoPointer<TPZCompMesh> fcmeshTransport;
+    TMRSApproxSpaceGenerator *faproxspace;
     
 public:
     
@@ -43,7 +47,12 @@ public:
         fcmeshTransport = new TPZCompMesh;
       
     }
-    
+    void SetApproxSpaceGenerator(TMRSApproxSpaceGenerator *aproxspace){
+        faproxspace =aproxspace;
+    }
+    TMRSApproxSpaceGenerator *GetApproxSpaceGenerator(){
+        return faproxspace;
+    }
 //    TPZMHMixedMesh4SpacesControl(int dimension):TPZMHMixedMeshControl(dimension){
 //        
 //    }

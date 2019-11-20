@@ -66,7 +66,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
     REAL corr_norm = 1.0;
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_mixed;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_mixed;
-    
+
     AssembleResidual();
     res_norm = Norm(Rhs());
     if (res_norm < res_tol) {

@@ -6,6 +6,7 @@
 //
 
 #include "TMRSApproxSpaceGenerator.h"
+#include "TPZMHMixedMeshWithTransportControl.h"
 
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
@@ -536,7 +537,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
         bool substructure = true;
         //        std::ofstream filee("Submesh.txt");
         
-        
+        meshcontrol.SetApproxSpaceGenerator(this);
         meshcontrol.BuildComputationalMesh(substructure);
         
         
@@ -992,7 +993,7 @@ void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOpera
         if (!cel_res) {
             continue;
         }
-        
+    
         TPZGeoEl * gel = cel_res->Reference();
         if (!gel) {
             continue;
@@ -1189,23 +1190,23 @@ void TMRSApproxSpaceGenerator::SetUpdateMemory(int dimension, TMRSDataTransfer &
 }
 
 //
-//void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
-//{
-//    //    {
-//    //        std::ofstream out("gmeshref.txt");
-//    //        gmesh->Print(out);
-//    //    }
-//    coarseindices.Resize(gmesh->NElements());
-//    int count = 0;
-//    for (int64_t el=0; el<gmesh->NElements(); el++) {
-//        TPZGeoEl *gel = gmesh->Element(el);
-//        if(!gel || gel->Dimension() != gmesh->Dimension()) continue;
-//        if(gel->Father()) continue;
-//        coarseindices[count] = el;
-//        count++;
-//    }
-//    coarseindices.Resize(count);
-//    }
+void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
+{
+    //    {
+    //        std::ofstream out("gmeshref.txt");
+    //        gmesh->Print(out);
+    //    }
+    coarseindices.Resize(gmesh->NElements());
+    int count = 0;
+    for (int64_t el=0; el<gmesh->NElements(); el++) {
+        TPZGeoEl *gel = gmesh->Element(el);
+        if(!gel || gel->Dimension() != gmesh->Dimension()) continue;
+        if(gel->Father()) continue;
+        coarseindices[count] = el;
+        count++;
+    }
+    coarseindices.Resize(count);
+    }
 //void  TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMeshControl &control)
 //{
 //    TPZCompMesh &cmesh = control.CMesh();
@@ -1264,9 +1265,9 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
         TPZCompMesh *MixedFluxPressureCmesh = &cmesh;
     
         // Material medio poroso
-        TPZMixedDarcyFlow * mat = new TPZMixedDarcyFlow(1,dim);
-    
-        mat->SetPermeability(1.);
+        TMRSDarcyFlowWithMem<TMRSMemory> * mat = new TMRSDarcyFlowWithMem<TMRSMemory>(1,dim);
+        mat->SetDataTransfer(mSimData);
+//        mat->SetPermeability(1.);
         //    mat->SetForcingFunction(One);
         MixedFluxPressureCmesh->InsertMaterialObject(mat);
     
@@ -1282,8 +1283,8 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
     
         MixedFluxPressureCmesh->InsertMaterialObject(bcN);
     
-        val2Pressure(0,0)=10;
-        TPZBndCond * bcS = mat->CreateBC(mat, -2, typePressure, val1, val2Flux);
+        val2Pressure(0,0)=50;
+        TPZBndCond * bcS = mat->CreateBC(mat, -2, typePressure, val1, val2Pressure);
     
         MixedFluxPressureCmesh->InsertMaterialObject(bcS);
         val2Pressure(0,0)=1000;

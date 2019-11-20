@@ -26,7 +26,6 @@
 #include "TPZExtendGridDimension.h"
 #include "TMRSSFIAnalysis.h"
 #include "TPZMHMixedMeshControl.h"
-#include "TPZMHMixedMeshWithTransportControl.h"
 class TMRSApproxSpaceGenerator : public TMRSSavable {
     
 public:

@@ -43,6 +43,15 @@ void TPZMHMixedMeshWithTransportControl::BuildComputationalMesh(bool usersubstru
     }
     CheckMeshConsistency();
 #endif
+    //+
+    
+    TPZMultiphysicsCompMesh *multcmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(fCMesh.operator->());
+    //Link Memory
+    faproxspace->mMixedOperator= multcmesh;
+    faproxspace->BuildTransportMultiPhysicsCompMesh();
+    TPZMultiphysicsCompMesh *cmeshtrans = faproxspace->GetTransportOperator();
+    faproxspace->LinkMemory(multcmesh, cmeshtrans);
+    //
     
     if (usersubstructure) {
         HideTheElements();
@@ -167,7 +176,7 @@ void TPZMHMixedMeshWithTransportControl::CreateHDivPressureMHMMesh()
 void TPZMHMixedMeshWithTransportControl::CreateTransport()
 {
     TPZGeoMesh * gmesh = fGMesh.operator->();
-    gmesh->Print();
+//    gmesh->Print();
     gmesh->ResetReference();
     TPZCompMesh * cmeshtemp = new TPZCompMesh(gmesh);
     fcmeshTransport = cmeshtemp;
@@ -204,7 +213,7 @@ void TPZMHMixedMeshWithTransportControl::CreateTransport()
     matids.insert(1);
     matids.insert(2);
     cmeshTransport->AutoBuild(matids);
-    cmeshTransport->Print();
+//    cmeshTransport->Print();
     cmeshTransport->ExpandSolution();
     
     if(1)
@@ -353,7 +362,8 @@ void TPZMHMixedMeshWithTransportControl::BuildMultiPhysicsMesh()
     
     TPZVec<int> active_approx_spaces(3,1);
     active_approx_spaces[2]=0;
-    mphysics->BuildMultiphysicsSpace(active_approx_spaces, meshvec);
+    mphysics->BuildMultiphysicsSpaceWithMemory(active_approx_spaces, meshvec);
+//    mphysics->BuildMultiphysicsSpace(active_approx_spaces, meshvec);
 //    mphysics->BuildMultiphysicsSpace(meshvec,gelindexes);
     
 }
