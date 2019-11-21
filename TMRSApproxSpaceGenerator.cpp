@@ -525,7 +525,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
             meshcontrol.Print(out);
         }
 #endif
-        meshcontrol.SetInternalPOrder(2);
+        meshcontrol.SetInternalPOrder(1);
         meshcontrol.SetSkeletonPOrder(1);
         
         meshcontrol.DivideSkeletonElements(0);
@@ -765,8 +765,37 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
                 TPZGeoElSide gelside(gel,iside);
                 TPZCompElSide celside_l(cel,iside);
                 TPZGeoElSide neig = gelside.Neighbour();
+                bool condition =false;
+                while (neig !=gelside && condition != true) {
+                    
+                    for (int d = 0; d <= dimension; d++) {
+                        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
+                            int material_id = chunk.second;
+                            if (neig.Element()->MaterialId() == material_id) {
+                                condition = true;
+                            }
+                            
+                        }
+                    }
+                    if (condition == false) {
+                        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+                            int bc_id   = get<0>(chunk);
+                            if (neig.Element()->MaterialId() == bc_id) {
+                                condition = true;
+                            }
+                        }
+                    }
+                   
+                    
+                    if (condition == false) {
+                        neig=neig.Neighbour();
+                    }
+                }
+                
                 TPZGeoEl *neihel = neig.Element();
                 TPZCompElSide celside_r = neig.Reference();
+                
+                
                 if ((neihel->Dimension() == gel->Dimension()) && (gel->Id() < neihel->Id()) ) {
                     TPZGeoElBC gbc(gelside,transport_matid);
                     
@@ -1283,7 +1312,7 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
     
         MixedFluxPressureCmesh->InsertMaterialObject(bcN);
     
-        val2Pressure(0,0)=1000;
+        val2Pressure(0,0)=100;
         TPZBndCond * bcS = mat->CreateBC(mat, -2, typePressure, val1, val2Pressure);
     
         MixedFluxPressureCmesh->InsertMaterialObject(bcS);

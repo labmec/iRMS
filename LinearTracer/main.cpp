@@ -181,6 +181,10 @@ void MHMSimpleTest(){
     aspace.CreateUniformMesh(2, 2,2,2);
     aspace.GenerateMHMUniformMesh(1);
     aspace.SetDataTransfer(sim_data);
+    std::ofstream gmeshinitial("gmeshinitial.txt");
+    
+    aspace.GetGeometry()->Print(gmeshinitial);
+    
     
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);

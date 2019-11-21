@@ -93,6 +93,16 @@ void TMRSSFIAnalysis::SFIIteration(){
 #endif
         m_mixed_module->RunTimeStep();
         
+        {
+            TPZStack<std::string> scalnames, vecnames;
+            std::string file("mixed.vtk");
+            scalnames.push_back("Pressure");
+            vecnames.push_back("Flux");
+            m_mixed_module->DefineGraphMesh(2, scalnames, vecnames, file);
+            m_mixed_module->PostProcess(0, 2);
+        }
+        
+      
 #ifdef USING_BOOST
         boost::posix_time::ptime mixed_process_t2 = boost::posix_time::microsec_clock::local_time();
         REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
@@ -103,6 +113,8 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     TransferToTransportModule();    // Transfer to transport
     m_transport_module->RunTimeStep();
+    
+
     TransferToMixedModule();        // Transfer to mixed
 }
 
@@ -152,6 +164,20 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
     int s_b = 2;
     TPZFMatrix<STATE> & s_dof = transport_cmesh->MeshVector()[s_b]->Solution();
     mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
+    //
+    
+    TPZMFSolutionTransfer trans;
+//    trans.BuildTransferData(m_mixed_module->Mesh());
+    
+//
+    
+    std::ofstream filemixed("mixedoperator.txt");
+    mixed_cmesh->Print(filemixed);
+    std::ofstream filePressure("pressureperator.txt");
+    mixed_cmesh->MeshVector()[1]->Print(filePressure);
+    std::ofstream fileflux("fluxperator.txt");
+    mixed_cmesh->MeshVector()[0]->Print(fileflux);
+   
     mixed_cmesh->LoadSolutionFromMeshes();
     
 }

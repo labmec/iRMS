@@ -13,6 +13,7 @@
 #include "TMRSMixedAnalysis.h"
 #include "TMRSTransportAnalysis.h"
 #include "TMRSApproxSpaceGenerator.h"
+#include "TPZMFSolutionTransfer.h"
 
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
