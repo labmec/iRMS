@@ -48,6 +48,7 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
         SetSolver(step);
         SetStructuralMatrix(matrix);
     }
+    Assemble();
 }
 
 void TMRSMixedAnalysis::RunTimeStep(){
@@ -74,17 +75,20 @@ void TMRSMixedAnalysis::RunTimeStep(){
         return;
     }
     
-    TPZFMatrix<STATE> dx,x(Solution());
+    TPZFMatrix<STATE> dx,x(cmesh->Solution());
+    
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
-        
-        x+=dx;
-        LoadSolution(x);
+        cmesh->UpdatePreviousState(-1);
         cmesh->LoadSolutionFromMultiPhysics();
-        
+
+//        {
+//            std::ofstream out("mixedcmesh.txt");
+//            cmesh->Print(out);
+//        }
         AssembleResidual();
         res_norm = Norm(Rhs());
         
@@ -109,7 +113,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
 void TMRSMixedAnalysis::NewtonIteration(){
     Assemble();
-    Rhs() *= -1.0;
+//    Rhs() *= -1.0;
     Solve();
 }
 

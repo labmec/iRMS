@@ -1,6 +1,10 @@
 
 #include "TPZMHMixedMeshWithTransportControl.h"
 
+#ifdef LOG4CXX
+static LoggerPtr logger(Logger::getLogger("iRMS.TPZMHMixedMeshWithTransportControl"));
+
+#endif
 
 void TPZMHMixedMeshWithTransportControl::BuildComputationalMesh(bool usersubstructure){
     

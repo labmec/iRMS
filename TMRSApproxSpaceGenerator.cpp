@@ -7,7 +7,7 @@
 
 #include "TMRSApproxSpaceGenerator.h"
 #include "TPZMHMixedMeshWithTransportControl.h"
-
+#include "TPZCompMeshTools.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -480,7 +480,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
     TPZMHMixedMeshWithTransportControl * MHMixed; //AutoPointer
     
     {
-        TPZGeoMesh * gmeshauto = new TPZGeoMesh(*gmeshcoarse); //Autopointer2
+        TPZGeoMesh * gmeshauto = gmeshcoarse; //Autopointer2
         {
             std::ofstream out("gmeshauto.txt");
             gmeshauto->Print(out);
@@ -662,7 +662,7 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
         DebugStop();
     }
     
-    TPZManVector<TPZCompMesh *,2> mixed_meshvec = mMixedOperator->MeshVector();
+    TPZManVector<TPZCompMesh *,3> mixed_meshvec = mMixedOperator->MeshVector();
     TPZManVector<TPZCompMesh *,3> transport_meshvec(3);
     
     transport_meshvec[0] = mixed_meshvec[0];
@@ -1283,7 +1283,7 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
     
         MixedFluxPressureCmesh->InsertMaterialObject(bcN);
     
-        val2Pressure(0,0)=50;
+        val2Pressure(0,0)=1000;
         TPZBndCond * bcS = mat->CreateBC(mat, -2, typePressure, val1, val2Pressure);
     
         MixedFluxPressureCmesh->InsertMaterialObject(bcS);

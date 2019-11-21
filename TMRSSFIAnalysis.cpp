@@ -92,6 +92,7 @@ void TMRSSFIAnalysis::SFIIteration(){
         boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
 #endif
         m_mixed_module->RunTimeStep();
+        
 #ifdef USING_BOOST
         boost::posix_time::ptime mixed_process_t2 = boost::posix_time::microsec_clock::local_time();
         REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
