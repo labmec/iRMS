@@ -94,14 +94,7 @@ void TMRSSFIAnalysis::SFIIteration(){
 #endif
         m_mixed_module->RunTimeStep();
         
-        {
-            TPZStack<std::string> scalnames, vecnames;
-            std::string file("mixed.vtk");
-            scalnames.push_back("Pressure");
-            vecnames.push_back("Flux");
-            m_mixed_module->DefineGraphMesh(2, scalnames, vecnames, file);
-            m_mixed_module->PostProcess(0, 2);
-        }
+        
         
       
 #ifdef USING_BOOST
@@ -117,7 +110,17 @@ void TMRSSFIAnalysis::SFIIteration(){
     
 
     TransferToMixedModule();        // Transfer to mixed
-}
+    {
+        TPZStack<std::string> scalnames, vecnames;
+        std::string file("mixed.vtk");
+        scalnames.push_back("Pressure");
+        vecnames.push_back("Flux");
+        m_mixed_module->DefineGraphMesh(2, scalnames, vecnames, file);
+        m_mixed_module->PostProcess(0, 2);
+    }
+    
+    
+ }
 
 void TMRSSFIAnalysis::TransferToTransportModule(){
     
@@ -167,8 +170,20 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
     mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
     //
     
-TPZMFSolutionTransfer trans;
-   trans.BuildTransferData(m_mixed_module->Mesh());
+   
+    
+    
+    
+    std::ofstream filemixed("mixedoperator.txt");
+    mixed_cmesh->Print(filemixed);
+    std::ofstream filePressure("pressureperator.txt");
+    mixed_cmesh->MeshVector()[1]->Print(filePressure);
+    std::ofstream fileflux("fluxperator.txt");
+    mixed_cmesh->MeshVector()[0]->Print(fileflux);
+    
+   
+    TPZMFSolutionTransfer trans;
+    trans.BuildTransferData(mixed_cmesh ) ;
     
     int count =0;
     int ncorrespond = trans.fmeshTransfers.size();
@@ -184,20 +199,14 @@ TPZMFSolutionTransfer trans;
         }
     }
     
-//
+    //
     
-    std::ofstream filemixed("mixedoperator.txt");
-    mixed_cmesh->Print(filemixed);
-    std::ofstream filePressure("pressureperator.txt");
-    mixed_cmesh->MeshVector()[1]->Print(filePressure);
-    std::ofstream fileflux("fluxperator.txt");
-    mixed_cmesh->MeshVector()[0]->Print(fileflux);
+    trans.TransferToMultiphysics();
     
-   
-    TPZMFSolutionTransfer soltrans;
-    soltrans.BuildTransferData(mixed_cmesh ) ;
     
-    mixed_cmesh->LoadSolutionFromMeshes();
+    
+//    mixed_cmesh->LoadSolutionFromMeshes();
+    
     
 }
 
