@@ -10,24 +10,27 @@
 
 #include <stdio.h>
 #include "TPZMultiphysicsCompMesh.h"
+#include "pzsubcmesh.h"
+#include "pzcondensedcompel.h"
 
 class TPZMFSolutionTransfer
 {
     struct Match{
         
-        int64_t fconnectindex; //index del connect de la malla multifisica
-        std::pair<TPZCompMesh*, int64_t> fconnectTarget; //index del connect de la atomica
+        int64_t fblocknumber; // sequence number
+        std::pair<TPZCompMesh*, int64_t> fblockTarget;// block target
         
         Match(){
             
         }
         
         Match(const Match & copy){
-            fconnectindex=copy.fconnectindex;
-            
+            fblocknumber=copy.fblocknumber;
+            fblockTarget = copy.fblockTarget;
         }
         Match &operator=(const Match &other){
-            fconnectindex=other.fconnectindex;
+            fblocknumber=other.fblocknumber;
+            fblockTarget = other.fblockTarget;
             return *this;
         }
         ~Match(){
@@ -39,14 +42,12 @@ class TPZMFSolutionTransfer
         
     };
     struct MeshTransferData{
-        TPZCompMesh * fmultiphysicsmesh;
+        TPZMultiphysicsCompMesh * fmultiphysicsmesh;
         TPZStack<Match> fconnecttransfer;
-        
         
         MeshTransferData(){
             
         }
-        
         MeshTransferData(const MeshTransferData & copy){
             fmultiphysicsmesh=copy.fmultiphysicsmesh;
             fconnecttransfer=copy.fconnecttransfer;
@@ -63,15 +64,89 @@ class TPZMFSolutionTransfer
         
         void TransferFromMultiphysics();
         void TransferToMultiphysics();
-        static void BuildTransferData(TPZCompMesh*, TPZStack<MeshTransferData>&){
+        
+//        void BuildTransferData(TPZCompMesh* cmesh, TPZStack<MeshTransferData>& ftansdata){
+        void BuildTransferData(TPZCompMesh* cmesh){
+            
+            TPZMultiphysicsCompMesh *multcmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(cmesh);
+            
+//            if(multcmesh){
+//                fmultiphysicsmesh = cmesh;
+//            }
+            TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cmesh);
+            
+            TPZCompMesh * targetmesh;
+            
+            if(subcmesh){
+                targetmesh =subcmesh;
+            }
+            if(multcmesh){
+                targetmesh =multcmesh;
+            }
+            TPZVec<TPZCompMesh*> mesh_vec = fmultiphysicsmesh->MeshVector();
+            TPZVec<int> actspaces= fmultiphysicsmesh->GetActiveApproximationSpaces();
+            
+            
+                for (int ispace =0; ispace <actspaces.size(); ispace++){
+                if(actspaces[ispace]==0){       //Computes only in actives spaces
+                    continue;
+                }
+                
+                    
+                int nels = targetmesh->NElements();
+                    
+                for (int iel =0; iel <nels; iel++){
+                    TPZCompEl *celtarget = cmesh->Element(iel);
+                    TPZMultiphysicsElement *mul = dynamic_cast<TPZMultiphysicsElement *>(celtarget);
+                    TPZCondensedCompEl *cond = dynamic_cast<TPZCondensedCompEl *>(celtarget);
+                    
+                    if(cond){
+                        mul =dynamic_cast<TPZMultiphysicsElement *>(cond->ReferenceCompEl());
+                    }
+                    if (!mul) {
+                        continue;       //Verifies if is it a submesh
+                    }
+                    Vector<int> initials(actspaces.size()+1,0);
+                    
+                    for (int ini=0; ini<ispace; ini++) {
+                        if(mul->Element(ini)){
+                            initials[ini+1] = initials[ini]+mul->Element(ini)->NConnects();
+                        }
+                    }
+                    
+                    
+                    int initial = initials[ispace];
+                    TPZCompEl *celfrom = mul->Element(ispace);
+                    if (!celfrom) {
+                        continue;
+                    }
+                    int nconnects = celfrom->NConnects();
+                    for (int icon = 0 ; icon < nconnects; icon++){
+                        TPZConnect &conectFrom = celfrom->Connect(icon);
+                        int seqnumberAto = conectFrom.SequenceNumber();
+                        int nconectsmult = mul->NConnects();
+                        TPZConnect &conectTarget = mul->Connect(initial + icon);
+                        int seqnumberMF = conectTarget.SequenceNumber();
+                        Match currentmatch;
+                        currentmatch.fblocknumber = seqnumberAto;
+                        std::pair<TPZCompMesh*, int> target = std::make_pair(mesh_vec[ispace],seqnumberMF);
+                        currentmatch.fblockTarget =target;
+                        fconnecttransfer.push_back(currentmatch);
+                    }
+                }
+            }
+            
             
         }
+            
+        
         void BuildConnectTransfers();
         
     };
     public:
     
         TPZStack<MeshTransferData> fmeshTransfers;
+    
         void TransferFromMultiphysics();
         void TransferToMultiphysics();
         void BuildTransferData(TPZCompMesh*);

@@ -5,6 +5,7 @@
 //
 
 #include "TMRSSFIAnalysis.h"
+#include "TPZMFSolutionTransfer.h"
 
 
 TMRSSFIAnalysis::TMRSSFIAnalysis(){
@@ -166,8 +167,22 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
     mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
     //
     
-    TPZMFSolutionTransfer trans;
-//    trans.BuildTransferData(m_mixed_module->Mesh());
+TPZMFSolutionTransfer trans;
+   trans.BuildTransferData(m_mixed_module->Mesh());
+    
+    int count =0;
+    int ncorrespond = trans.fmeshTransfers.size();
+    for (int icorres=0; icorres<ncorrespond; icorres++) {
+        int nmach = trans.fmeshTransfers[icorres].fconnecttransfer.size();
+        for (int imach=0; imach<nmach; imach++) {
+            std::cout<<"Correspond: "<<icorres<<" match number: "<<imach<<std::endl;
+            std::cout<<"inicial: "<<trans.fmeshTransfers[icorres].fconnecttransfer[imach].fblocknumber;
+            std::pair<TPZCompMesh*, int64_t> match =trans.fmeshTransfers[icorres].fconnecttransfer[imach].fblockTarget;
+            std::cout<<"target: "<<std::get<1>(match)<<std::endl;
+            std::cout<<"count: "<<count<<std::endl;
+            count++;
+        }
+    }
     
 //
     
@@ -177,7 +192,11 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
     mixed_cmesh->MeshVector()[1]->Print(filePressure);
     std::ofstream fileflux("fluxperator.txt");
     mixed_cmesh->MeshVector()[0]->Print(fileflux);
+    
    
+    TPZMFSolutionTransfer soltrans;
+    soltrans.BuildTransferData(mixed_cmesh ) ;
+    
     mixed_cmesh->LoadSolutionFromMeshes();
     
 }
