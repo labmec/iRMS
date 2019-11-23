@@ -81,7 +81,7 @@ TPZGeoMesh *MHMMesh();
 int main(){
     InitializePZLOG();
 //     SimpleTest();
-    MHMSimpleTest();
+   MHMSimpleTest();
     return 0;
 }
 
@@ -104,7 +104,7 @@ void SimpleTest(){
             geometry_file = "gmsh/simple_2D_coarse.msh";
             geometry_file = "gmsh/reservoir_2d_coarse.msh";
             name = "reservoir_2d";
-            sim_data = SettingSimple2DQuads();
+            sim_data = Setting2D();
         }
         else{
             //            geometry_file = "gmsh/reservoir_2d_coarse.msh";
@@ -115,9 +115,9 @@ void SimpleTest(){
     
     
     TMRSApproxSpaceGenerator aspace;
-//    aspace.LoadGeometry(geometry_file);
-    aspace.CreateUniformMesh(2, 2,2,2);
-//    aspace.GenerateMHMUniformMesh(1);
+    aspace.LoadGeometry(geometry_file);
+//    aspace.CreateUniformMesh(2, 2,2,2);
+    aspace.GenerateMHMUniformMesh(1);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
     
@@ -179,11 +179,8 @@ void MHMSimpleTest(){
     sim_data = SettingSimpleMHM2D();
     TMRSApproxSpaceGenerator aspace;
     aspace.CreateUniformMesh(2, 2,2,2);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(2);
     aspace.SetDataTransfer(sim_data);
-    std::ofstream gmeshinitial("gmeshinitial.txt");
-    
-    aspace.GetGeometry()->Print(gmeshinitial);
     
     
     int order = 1;
@@ -193,6 +190,15 @@ void MHMSimpleTest(){
 //    aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     std::ofstream file("mixed.vtk");
+    
+    TPZCompMesh *fluxcmesh_initial = mixed_operator->MeshVector()[0];
+    TPZCompMesh *pressure_initial = mixed_operator->MeshVector()[1];
+    std::ofstream fileflux("initial_flux.txt");
+    std::ofstream filepressure("initial_pressure.txt");
+    fluxcmesh_initial->Print(fileflux);
+    pressure_initial->Print(filepressure);
+    std::ofstream multimixed("multimixed.txt");
+    mixed_operator->Print(multimixed);
     
     TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
     {
@@ -453,7 +459,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_n_steps = 2;
     sim_data.mTNumerics.m_dt      = 1.0;
     sim_data.mTNumerics.m_four_approx_spaces_Q = false;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = false;
+    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
     
     // PostProcess controls
@@ -819,7 +825,7 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_n_steps = 10;
     sim_data.mTNumerics.m_dt      = 1.0;
     sim_data.mTNumerics.m_four_approx_spaces_Q = false;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = false;
+    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
    
     
     // PostProcess controls
@@ -854,13 +860,11 @@ TMRSDataTransfer SettingSimpleMHM2D(){
     TMRSDataTransfer sim_data;
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["d_rock"] = 1;
-    
-    
     //zero flux boundaries
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 1000.0;
+    REAL pressure_in = 100.0;
     REAL pressure_out = 1000.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
@@ -877,9 +881,9 @@ TMRSDataTransfer SettingSimpleMHM2D(){
     REAL sat_in = 1.0;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(-1,bc_inlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(-2,bc_inlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(-3,bc_inlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(-4,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(-2,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(-3,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(-4,bc_inlet,sat_in);
 
     
     //Relative permermeabilities
@@ -991,8 +995,8 @@ TMRSDataTransfer SettingSimpleMHM2D(){
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
     sim_data.mTNumerics.m_res_tol_transport = 1.0e-7;
     sim_data.mTNumerics.m_corr_tol_transport = 1.0e-7;
-    sim_data.mTNumerics.m_n_steps = 150;
-    sim_data.mTNumerics.m_dt      = 4.0;
+    sim_data.mTNumerics.m_n_steps = 5;
+    sim_data.mTNumerics.m_dt      = 0.0001;
     sim_data.mTNumerics.m_four_approx_spaces_Q = false;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
@@ -1007,7 +1011,7 @@ TMRSDataTransfer SettingSimpleMHM2D(){
         scalnames.Push("g_average");
         scalnames.Push("u_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 4.0;
+    sim_data.mTPostProcess.m_file_time_step = 0.0001;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
@@ -1033,7 +1037,7 @@ TMRSDataTransfer SettingSimple2DQuads(){
     int D_Type = 0;
     int N_Type = 1;
     REAL zero_flux=0.0;
-    REAL pressure_in = 30.0;
+    REAL pressure_in = 10.0;
     REAL pressure_out = 30.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);

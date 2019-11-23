@@ -28,6 +28,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     int n_transport_dof = m_transport_module->Solution().Rows();
     m_x_mixed.Resize(n_mixed_dof, 1);
     m_x_transport.Resize(n_transport_dof, 1);
+    
 }
 
 void TMRSSFIAnalysis::Configure(int n_threads, bool UsePardiso_Q){
@@ -89,10 +90,11 @@ void TMRSSFIAnalysis::PostProcessTimeStep(){
 void TMRSSFIAnalysis::SFIIteration(){
     
     {
+         m_mixed_module->RunTimeStep();
 #ifdef USING_BOOST
         boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
 #endif
-        m_mixed_module->RunTimeStep();
+       
         
         
         
@@ -103,21 +105,12 @@ void TMRSSFIAnalysis::SFIIteration(){
         std::cout << "Mixed approximation performed in :" << setw(10) <<  mixed_process_time/1000.0 << setw(5)   << " seconds." << std::endl;
 #endif
     }
-
     
-    TransferToTransportModule();    // Transfer to transport
     m_transport_module->RunTimeStep();
     
 
     TransferToMixedModule();        // Transfer to mixed
-    {
-        TPZStack<std::string> scalnames, vecnames;
-        std::string file("mixed.vtk");
-        scalnames.push_back("Pressure");
-        vecnames.push_back("Flux");
-        m_mixed_module->DefineGraphMesh(2, scalnames, vecnames, file);
-        m_mixed_module->PostProcess(0, 2);
-    }
+    
     
     
  }
@@ -168,44 +161,17 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
     int s_b = 2;
     TPZFMatrix<STATE> & s_dof = transport_cmesh->MeshVector()[s_b]->Solution();
     mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
-    //
     
-   
-    
-    
-    
-    std::ofstream filemixed("mixedoperator.txt");
-    mixed_cmesh->Print(filemixed);
-    std::ofstream filePressure("pressureperator.txt");
-    mixed_cmesh->MeshVector()[1]->Print(filePressure);
-    std::ofstream fileflux("fluxperator.txt");
-    mixed_cmesh->MeshVector()[0]->Print(fileflux);
-    
-   
-    TPZMFSolutionTransfer trans;
-    trans.BuildTransferData(mixed_cmesh ) ;
-    
-    int count =0;
-    int ncorrespond = trans.fmeshTransfers.size();
-    for (int icorres=0; icorres<ncorrespond; icorres++) {
-        int nmach = trans.fmeshTransfers[icorres].fconnecttransfer.size();
-        for (int imach=0; imach<nmach; imach++) {
-            std::cout<<"Correspond: "<<icorres<<" match number: "<<imach<<std::endl;
-            std::cout<<"inicial: "<<trans.fmeshTransfers[icorres].fconnecttransfer[imach].fblocknumber;
-            std::pair<TPZCompMesh*, int64_t> match =trans.fmeshTransfers[icorres].fconnecttransfer[imach].fblockTarget;
-            std::cout<<"target: "<<std::get<1>(match)<<std::endl;
-            std::cout<<"count: "<<count<<std::endl;
-            count++;
-        }
+    //loadsolfrommeshes
+
+    {
+        TPZStack<std::string> scalnames, vecnames;
+        std::string file("mixed.vtk");
+        scalnames.push_back("Pressure");
+        vecnames.push_back("Flux");
+        m_mixed_module->DefineGraphMesh(2, scalnames, vecnames, file);
+        m_mixed_module->PostProcess(0, 2);
     }
-    
-    //
-    
-    trans.TransferToMultiphysics();
-    
-    
-    
-//    mixed_cmesh->LoadSolutionFromMeshes();
     
     
 }

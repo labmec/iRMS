@@ -17,10 +17,13 @@ TMRSTransportAnalysis::~TMRSTransportAnalysis(){
 
 TMRSTransportAnalysis::TMRSTransportAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZAnalysis(cmesh_mult, must_opt_band_width_Q){
     
+//    m_soltransportTransfer->BuildTransferData(cmesh_mult);
+    
 }
 
 void TMRSTransportAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
+   
 }
 
 TMRSDataTransfer * TMRSTransportAnalysis::GetDataTransfer(){

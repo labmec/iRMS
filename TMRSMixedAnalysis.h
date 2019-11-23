@@ -15,6 +15,8 @@
 #include "TPZSkylineNSymStructMatrix.h"
 #include "pzstepsolver.h"
 #include "TMRSDataTransfer.h"
+#include "TPZMFSolutionTransfer.h"
+
 
 class TMRSMixedAnalysis : public TPZAnalysis {
     
@@ -23,6 +25,8 @@ private:
     /// Data transfer object
     TMRSDataTransfer * m_sim_data;
     
+    TPZMFSolutionTransfer m_soltransportTransfer;
+
     /// Number of iterations
     int m_k_iteration;
     

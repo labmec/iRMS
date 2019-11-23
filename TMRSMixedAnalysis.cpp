@@ -15,7 +15,7 @@ TMRSMixedAnalysis::~TMRSMixedAnalysis(){
 }
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZAnalysis(cmesh_mult, must_opt_band_width_Q){
-    
+//    m_soltransportTransfer.BuildTransferData(cmesh_mult);
 }
 
 void TMRSMixedAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
@@ -75,15 +75,55 @@ void TMRSMixedAnalysis::RunTimeStep(){
         return;
     }
     
-    TPZFMatrix<STATE> dx,x(cmesh->Solution());
+    TPZFMatrix<STATE> dx,x(Solution());
     
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
+       
+        std::ofstream filemixed("mixedoperatorBEFORE.txt");
+        cmesh->Print(filemixed);
+        std::ofstream fileflux("fluxperatorBEFORE.txt");
+        cmesh->MeshVector()[0]->Print(fileflux);
+        std::ofstream filePressure("pressureBEFORE.txt");
+        cmesh->MeshVector()[1]->Print(filePressure);
+        {
+            TPZStack<std::string> scalnames, vecnames;
+            std::string file("mixedBEFORE.vtk");
+            scalnames.push_back("Pressure");
+            vecnames.push_back("Flux");
+            DefineGraphMesh(2, scalnames, vecnames, file);
+            PostProcess(0, 2);
+        }
+        
+        
         dx = Solution();
         corr_norm = Norm(dx);
         cmesh->UpdatePreviousState(-1);
-        cmesh->LoadSolutionFromMultiPhysics();
+        
+//        cmesh->LoadSolutionFromMultiPhysics();
+        TPZMFSolutionTransfer Soltransfer;
+        Soltransfer.BuildTransferData(cmesh) ;
+        Soltransfer.TransferFromMultiphysics();
+        
+      
+        
+        std::ofstream filemixed1("mixedoperatorAFTER.txt");
+        cmesh->Print(filemixed1);
+        std::ofstream fileflux1("fluxperatorAFTER.txt");
+        cmesh->MeshVector()[0]->Print(fileflux1);
+        std::ofstream filePressure1("pressureAFTER.txt");
+        cmesh->MeshVector()[1]->Print(filePressure1);
+        
+        {
+            TPZStack<std::string> scalnames, vecnames;
+            std::string file("mixedAFTER.vtk");
+            scalnames.push_back("Pressure");
+            vecnames.push_back("Flux");
+            DefineGraphMesh(2, scalnames, vecnames, file);
+            PostProcess(0, 2);
+        }
+      
 
 //        {
 //            std::ofstream out("mixedcmesh.txt");
@@ -112,8 +152,9 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
 
 void TMRSMixedAnalysis::NewtonIteration(){
+    
     Assemble();
-//    Rhs() *= -1.0;
+//    Rhs() *= -1.0; PD
     Solve();
 }
 

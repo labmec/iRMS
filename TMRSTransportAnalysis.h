@@ -15,6 +15,7 @@
 #include "TPZSkylineNSymStructMatrix.h"
 #include "pzstepsolver.h"
 #include "TMRSDataTransfer.h"
+#include "TPZMFSolutionTransfer.h"
 
 class TMRSTransportAnalysis : public TPZAnalysis {
     
@@ -27,6 +28,8 @@ private:
     int m_k_iteration;
     
     REAL m_current_time;
+    
+    TPZMFSolutionTransfer *m_soltransportTransfer;
     
 public:
     
