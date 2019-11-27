@@ -80,7 +80,7 @@ int main(){
     
     
     BuckleyLeverettCase(SettingSimple2D());
-
+    
     
     return 0;
 }
@@ -95,8 +95,8 @@ TMRSDataTransfer SettingSimple2D(){
     int D_Type = 0;
     int N_Type = 1;
     REAL zero_flux=0.0;
-    REAL pressure_in = 30.0;
-    REAL pressure_out = 20.0;
+    REAL pressure_in = 1.0;
+    REAL pressure_out = 0.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(2,N_Type,zero_flux);
@@ -122,11 +122,11 @@ TMRSDataTransfer SettingSimple2D(){
     krw.ReadData(name_krw,true);
     kro.ReadData(name_kro,true);
     
-
-//    kro.SetLeftExtension(TRSLinearInterpolator::Enone,1.0);
-//    krw.SetLeftExtension(TRSLinearInterpolator::Enone,1.0);
-//    kro.SetRightExtension(TRSLinearInterpolator::Enone,1.0);
-//    krw.SetRightExtension(TRSLinearInterpolator::Enone,1.0);
+    
+    //    kro.SetLeftExtension(TRSLinearInterpolator::Enone,1.0);
+    //    krw.SetLeftExtension(TRSLinearInterpolator::Enone,1.0);
+    //    kro.SetRightExtension(TRSLinearInterpolator::Enone,1.0);
+    //    krw.SetRightExtension(TRSLinearInterpolator::Enone,1.0);
     
     kro.SetLeftExtension(TRSLinearInterpolator::ELinear);
     krw.SetLeftExtension(TRSLinearInterpolator::ELinear);
@@ -164,15 +164,15 @@ TMRSDataTransfer SettingSimple2D(){
         double dl_dswv   = dlw_dswv + dlo_dswv;
         double fwv  = lwv/lv;
         double dfw_dswv  = (dlw_dswv/lv) - lwv*(dl_dswv/(lv*lv));
-//        double fwv = ((sw * sw)/(1.0 + 2.0*(sw * sw - sw)));
-//        double dfw_dswv =(-2.0*(-1.0 + sw) * sw)/(pow(1.0 + 2.0 * (-1.0 + sw) * sw,2.0));
-
+        //        double fwv = ((sw * sw)/(1.0 + 2.0*(sw * sw - sw)));
+        //        double dfw_dswv =(-2.0*(-1.0 + sw) * sw)/(pow(1.0 + 2.0 * (-1.0 + sw) * sw,2.0));
+        
         std::tuple<double, double, double> fw_t(fwv, dfw_dswv, 0.0);
         return fw_t;
     };
     
     std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double sw, double p)> fo = [](TRSLinearInterpolator & krw, TRSLinearInterpolator & kro, double sw, double p) {
-
+        
         double mu_w = 1.0;
         double mu_o = 1.0;
         double Bw = 1.0;
@@ -192,9 +192,9 @@ TMRSDataTransfer SettingSimple2D(){
         double dl_dswv   = dlw_dswv + dlo_dswv;
         double fov  = lov/lv;
         double dfo_dswv  = (dlo_dswv/lv) - lov*(dl_dswv/(lv*lv));
-//        double fov=  pow(-1.0 + sw,2.0)/(1.0 + 2.0*(-1.0 + sw)*sw);
-//        double dfo_dswv = (2.0*(-1.0 + sw)*sw)/pow(1.0 + 2.0*(-1.0 + sw)*sw,2.0);
-
+        //        double fov=  pow(-1.0 + sw,2.0)/(1.0 + 2.0*(-1.0 + sw)*sw);
+        //        double dfo_dswv = (2.0*(-1.0 + sw)*sw)/pow(1.0 + 2.0*(-1.0 + sw)*sw,2.0);
+        
         std::tuple<double, double, double> fo_t(fov,dfo_dswv, 0.0);
         return fo_t;
     };
@@ -219,16 +219,16 @@ TMRSDataTransfer SettingSimple2D(){
         double dlo_dswv  = dkro_dswv/(mu_o*Bo);
         double lv   = lwv + lov;
         double dl_dswv   = dlw_dswv + dlo_dswv;
-//        double lv = pow(1.0 - sw,2.0) + pow(sw,2.0);
-//        double dl_dswv = -2.0 + 4.0*sw;
-
+        //        double lv = pow(1.0 - sw,2.0) + pow(sw,2.0);
+        //        double dl_dswv = -2.0 + 4.0*sw;
+        
         if (sw>1.0 || sw<0.0) {
             DebugStop();
         }
-
+        
         
         std::tuple<double, double, double> l_t(lv, dl_dswv, 0.0);
-
+        
         return l_t;
     };
     
@@ -244,10 +244,10 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
     sim_data.mTNumerics.m_res_tol_transport = 1.0e-7;
     sim_data.mTNumerics.m_corr_tol_transport = 1.0e-7;
-    sim_data.mTNumerics.m_n_steps = 150;
-    sim_data.mTNumerics.m_dt      = 1.5;
+    sim_data.mTNumerics.m_n_steps = 200;
+    sim_data.mTNumerics.m_dt      = 0.0005;
     
-   
+    
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -255,7 +255,8 @@ TMRSDataTransfer SettingSimple2D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
-    sim_data.mTPostProcess.m_file_time_step = 1.5;
+    scalnames.Push("Sw_exact");
+    sim_data.mTPostProcess.m_file_time_step = 0.0005;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
@@ -276,21 +277,21 @@ TMRSDataTransfer SettingSimple2D(){
 
 void BuckleyLeverett(REAL swf, REAL x_front, TPZVec<REAL> &pt,TPZVec<REAL> q, REAL phi,REAL time, TPZVec<REAL> &Saturation, TMRSDataTransfer sim_data){
     
-   
-  
-  
+    
+    
+    
     REAL val_x = pt[0];
     if (pt[0] > x_front) {
         Saturation[0] =0.0;
         return;
     }
     if (pt[0] < x_front){
-        Saturation[0] = S_Newton(pt[0], time, q[0], 0, 0, 0.1, swf, 1.0, 1.0, 1.0, 1.0, 0.0001);
+        Saturation[0] = S_Newton(pt[0], time, q[0], 0, 0, 0.1, swf, 1.0, 1.0, 1.0, 1.0, 0.001);
         double swval =Saturation[0];
         if (pt[0]==0.0) {
             Saturation[0] = 1.0;
         }
-       
+        
         return;
     }
     
@@ -304,6 +305,9 @@ void BuckleyLeverettCase(TMRSDataTransfer sim_data){
     geometry_file = "gmsh/simple_2D_fine.msh";
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
+    
+    aspace.CreateUniformMesh(100,1,1,1);
+    
     aspace.SetDataTransfer(sim_data);
     
     int order = 1;
@@ -356,7 +360,7 @@ void BuckleyLeverettCase(TMRSDataTransfer sim_data){
     }
     
     // calculo de la posicion en el frente
-    TPZVec<REAL> q(1,0.1);
+    TPZVec<REAL> q(1,1.0);
     REAL phi =0.1;
     
     
@@ -365,19 +369,17 @@ void BuckleyLeverettCase(TMRSDataTransfer sim_data){
     int n_reportingtimes = reporting_times.size();
     for (int i=0; i< n_reportingtimes; i++) {
         
-        
-        
         double x_front = (q[0] * reporting_times[i] /phi) * dfswswf;
         SetSolution(swf, x_front, cmesh, sim_data, reporting_times[i]);
         an->DefineGraphMesh(2, scalnames, vecnames, plotfile);
         an->PostProcess(0, 2);
         
     }
-
-   
     
     
-  
+    
+    
+    
     
     return 0;
     
@@ -393,7 +395,7 @@ void SetSolution(REAL swf, REAL xswf,TPZCompMesh *cmesh,TMRSDataTransfer simdata
         int n_conects = cel->NConnects();
         for(int j=0; j<n_conects; j++){
             int sec_number = cel->Connect(j).fSequenceNumber;
-            int fNElConnected = cel->Connect(j).NElConnected();
+
             //TEST
             if(sec_number > -1)
             {
@@ -405,7 +407,7 @@ void SetSolution(REAL swf, REAL xswf,TPZCompMesh *cmesh,TMRSDataTransfer simdata
                 cooridnates_vec[1] = cooridnates(1,j);
                 cooridnates_vec[2] = cooridnates(2,j);
                 TPZVec<REAL> Saturation(1,0.0);
-                TPZVec<REAL> q(1,0.1);
+                TPZVec<REAL> q(1,1.0);
                 
                 BuckleyLeverett(swf, xswf,cooridnates_vec, q, 0.1, sim_time, Saturation, simdata);
                 REAL sw_val =Saturation[0];
@@ -434,13 +436,16 @@ REAL S_Newton(REAL x, REAL t, REAL u, REAL Swr, REAL Sor, REAL phi, REAL s_shok,
     while ( fabs(r) > epsilon && it < max){
         
         ds = dfdsw(S_k, Swr, Sor, mu_alpha, mu_beta, rho_alpha, rho_beta);
+        
         r = x - (u * t * ds)/(phi * rho_alpha);
         
         jac = - (u * t * df2dsw(S_k, Swr, Sor, mu_alpha, mu_beta, rho_alpha, rho_beta))/(phi * rho_alpha);
         
         delta_S = -r/jac;
         S_k += delta_S;
-        
+        if (S_k < -1.5 || S_k > 1.5) {
+            DebugStop();
+        }
         ds = dfdsw(S_k, Swr, Sor, mu_alpha, mu_beta, rho_alpha, rho_beta);
         r = x - (u * t * ds)/(phi * rho_alpha);
         it++;

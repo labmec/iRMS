@@ -21,20 +21,15 @@
 #include "pzstepsolver.h"
 #include "pzgeopyramid.h"
 #include "TPZGeoLinear.h"
-
 #include <TPZRefPattern.h>
-
 #include "TPZMaterial.h"
 #include "pzelasmat.h"
 #include "pzlog.h"
-
 #include "pzgengrid.h"
-
 #include <time.h>
 #include <stdio.h>
 
 #include <math.h>
-
 #include <iostream>
 #include <fstream>
 #include <string.h>
@@ -178,8 +173,8 @@ void MHMSimpleTest(){
    
     sim_data = SettingSimpleMHM2D();
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(2, 2,2,2);
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.CreateUniformMesh(50,1,1,1);
+    aspace.GenerateMHMUniformMesh(1);
     aspace.SetDataTransfer(sim_data);
     
     
@@ -187,7 +182,7 @@ void MHMSimpleTest(){
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-//    aspace.BuildTransportMultiPhysicsCompMesh();
+ //   aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     std::ofstream file("mixed.vtk");
     
@@ -206,7 +201,7 @@ void MHMSimpleTest(){
         transport_operator->Print(transport);
     }
     
-//    aspace.LinkMemory(mixed_operator, transport_operator);
+  //  aspace.LinkMemory(mixed_operator, transport_operator);
     
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,true);
     sfi_analysis->Configure(0, true);
@@ -223,7 +218,17 @@ void MHMSimpleTest(){
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
+//    TPZFMatrix<STATE> matrix = transport_operator->Solution();
+//    int nrows = matrix.Rows();
+//    int ncols = matrix.Cols();
+//    for (int i=0; i< nrows; i++) {
+//        for (int j=0; j< ncols; j++) {
+//            matrix(i,j)=1.0/ (1.0-i);;
+//        }
+//    }
 
+//    transport_operator->LoadSolution(matrix);
+//    transport_operator->LoadSolutionFromMultiPhysics();
     for (int it = 1; it <= n_steps; it++) {
         sfi_analysis->RunTimeStep();
         sim_time = it*dt;
@@ -864,16 +869,17 @@ TMRSDataTransfer SettingSimpleMHM2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 100.0;
-    REAL pressure_out = 1000.0;
+    REAL pressure_in = 1.0;
+    REAL pressure_out = 0.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
-       sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
+    
+     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-2,D_Type,pressure_out);
+    
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-3,N_Type,zero_flux);
  
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-4,D_Type,pressure_out);
-    
+     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-4,D_Type,pressure_in);
     
     //Transport boundary Conditions
     int bc_inlet = 0;
@@ -888,19 +894,19 @@ TMRSDataTransfer SettingSimpleMHM2D(){
     
     //Relative permermeabilities
     TRSLinearInterpolator krw, kro ;
-    std::string name_krw("PetroPhysics/krw_linear.txt");
-    std::string name_kro("PetroPhysics/krow_linear.txt");
+    std::string name_krw("PetroPhysics/krw_quadratic2_range.txt");
+    std::string name_kro("PetroPhysics/krow_quadratic2_range.txt");
     
     krw.ReadData(name_krw,true);
     kro.ReadData(name_kro,true);
+    
+    kro.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
+    krw.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
     
     kro.SetLeftExtension(TRSLinearInterpolator::ELinear);
     krw.SetLeftExtension(TRSLinearInterpolator::ELinear);
     kro.SetRightExtension(TRSLinearInterpolator::ELinear);
     krw.SetRightExtension(TRSLinearInterpolator::ELinear);
-    
-    //    kro.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
-    //    krw.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
     
     sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.resize(1);
     sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel.resize(1);
@@ -918,6 +924,10 @@ TMRSDataTransfer SettingSimpleMHM2D(){
         
         std::tuple<double, double> krw_t = krw.ValDeriv(sw);
         std::tuple<double, double> kro_t = kro.ValDeriv(sw);
+//        double krwv = sw*sw;
+//        double krov = (1.0-sw)*(1.0-sw);
+//        double dkrw_dswv = 2.0*sw;
+//        double dkro_dswv = -2.0*(1.0-sw);
         double krwv = std::get<0>(krw_t);
         double krov = std::get<0>(kro_t);
         double dkrw_dswv = std::get<1>(krw_t);
@@ -943,6 +953,11 @@ TMRSDataTransfer SettingSimpleMHM2D(){
         
         std::tuple<double, double> krw_t = krw.ValDeriv(sw);
         std::tuple<double, double> kro_t = kro.ValDeriv(sw);
+//        double krwv = sw*sw;
+//        double krov = (1.0-sw)*(1.0-sw);
+//        double dkrw_dswv = 2.0*sw;
+//        double dkro_dswv = -2.0*(1.0-sw);
+        
         double krwv = std::get<0>(krw_t);
         double krov = std::get<0>(kro_t);
         double dkrw_dswv = std::get<1>(krw_t);
@@ -969,6 +984,10 @@ TMRSDataTransfer SettingSimpleMHM2D(){
         
         std::tuple<double, double> krw_t = krw.ValDeriv(sw);
         std::tuple<double, double> kro_t = kro.ValDeriv(sw);
+//        double krwv = sw*sw;
+//        double krov = (1.0-sw)*(1.0-sw);
+//        double dkrw_dswv = 2.0*sw;
+//        double dkro_dswv = -2.0*(1.0-sw);
         double krwv = std::get<0>(krw_t);
         double krov = std::get<0>(kro_t);
         double dkrw_dswv = std::get<1>(krw_t);
@@ -988,15 +1007,15 @@ TMRSDataTransfer SettingSimpleMHM2D(){
     sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
     
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 20;
-    sim_data.mTNumerics.m_max_iter_transport = 20;
-    sim_data.mTNumerics.m_max_iter_sfi = 20;
-    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-7;
-    sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-7;
-    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-7;
-    sim_data.mTNumerics.m_n_steps = 5;
-    sim_data.mTNumerics.m_dt      = 0.0001;
+    sim_data.mTNumerics.m_max_iter_mixed = 30;
+    sim_data.mTNumerics.m_max_iter_transport = 30;
+    sim_data.mTNumerics.m_max_iter_sfi = 30;
+    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-5;
+    sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-5;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-5;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-5;
+    sim_data.mTNumerics.m_n_steps = 250;
+    sim_data.mTNumerics.m_dt      = 0.0005;
     sim_data.mTNumerics.m_four_approx_spaces_Q = false;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
@@ -1011,7 +1030,7 @@ TMRSDataTransfer SettingSimpleMHM2D(){
         scalnames.Push("g_average");
         scalnames.Push("u_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 0.0001;
+    sim_data.mTPostProcess.m_file_time_step = 0.0005;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     

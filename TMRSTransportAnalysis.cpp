@@ -17,7 +17,7 @@ TMRSTransportAnalysis::~TMRSTransportAnalysis(){
 
 TMRSTransportAnalysis::TMRSTransportAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZAnalysis(cmesh_mult, must_opt_band_width_Q){
     
-//    m_soltransportTransfer->BuildTransferData(cmesh_mult);
+    m_soltransportTransfer.BuildTransferData(cmesh_mult);
     
 }
 
@@ -68,28 +68,34 @@ void TMRSTransportAnalysis::RunTimeStep(){
     REAL corr_norm = 1.0;
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_transport;
-  
     AssembleResidual();
+    
     res_norm = Norm(Rhs());
+    
+    
     if (res_norm < res_tol) {
         std::cout << "Already converged solution with res_norm = " << res_norm << std::endl;
         return;
     }
     
     TPZFMatrix<STATE> dx,x(Solution());
+    TPZMFSolutionTransfer Soltransfer;
+    Soltransfer.BuildTransferData(cmesh) ;
+    
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
+//        Soltransfer.TransferFromMultiphysics();
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
-        
-        x+=dx;
-        LoadSolution(x);
-        cmesh->LoadSolutionFromMultiPhysics();
-        
+        cmesh->UpdatePreviousState(-1);
+//        Soltransfer.BuildTransferData(cmesh) ;
+        m_soltransportTransfer.TransferFromMultiphysics();
+        std::ofstream fieltoprint("FluxATO.txt");
+        cmesh->MeshVector()[0]->Print(fieltoprint);
+//        Soltransfer.TransferFromMultiphysics();
         AssembleResidual();
         res_norm = Norm(Rhs());
-        
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
         if (stop_criterion_Q && stop_criterion_corr_Q) {
@@ -98,17 +104,18 @@ void TMRSTransportAnalysis::RunTimeStep(){
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             break;
         }
-        if (m_k_iteration >= n) {
-            std::cout << "Transport operator not converge " << std::endl;
-        }
+//        if (m_k_iteration >= n) {
+//            std::cout << "Transport operator not converge " << std::endl;
+//        }
     }
     
 }
 
 
 void TMRSTransportAnalysis::NewtonIteration(){
+    
     Assemble();
-    Rhs() *= -1.0;
+//    Rhs() *= -1.0;
     Solve();
 }
 

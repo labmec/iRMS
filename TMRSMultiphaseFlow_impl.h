@@ -195,6 +195,7 @@ void TMRSMultiphaseFlow<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL
         }
     }
     
+    
 }
 
 template <class TMEM>
@@ -243,6 +244,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
     REAL s_l = datavecleft[s_b].sol[0][0];
     int firsts_s_l    = 0;
     
+    
     // Getting phis and solution for right material data
     TPZFMatrix<REAL>  &phiS_r =  datavecright[s_b].phi;
     int n_phi_s_r = phiS_r.Rows();
@@ -269,13 +271,32 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
     REAL fw_lv = std::get<0>(fw_l);
     REAL dfw_dsw_lv = std::get<1>(fw_l);
     
+    if (std::isnan(fw_lv) ||std::isnan(dfw_dsw_lv)) {
+        std::cout<<"Nan Number: Extrapolation Krs error!."<<std::endl;
+        std::cout<<"Set Extrapolation Type -> TRSLinearInterpolator object!."<<std::endl;
+//        DebugStop();
+    }
     REAL fw_rv = std::get<0>(fw_r);
     REAL dfw_dsw_rv = std::get<1>(fw_r);
     
+    if (std::isnan(fw_rv) ||std::isnan(dfw_dsw_rv)) {
+        std::cout<<"Nan Number: Extrapolation Krs error!."<<std::endl;
+        std::cout<<"Set Extrapolation Type -> TRSLinearInterpolator object!."<<std::endl;
+//        DebugStop();
+    }
     
+    if(s_l<0.0 || s_l>1.0){
+        std::cout<<"Extrapolation: s_l ->"<<s_l<<std::endl;
+        std::cout<<"Extrapolation: ds_l ->"<<dfw_dsw_lv<<std::endl;
+    }
+    if(s_r<0.0 || s_r>1.0){
+        std::cout<<"Extrapolation: s_l ->"<<s_r<<std::endl;
+        std::cout<<"Extrapolation: ds_l ->"<<dfw_dsw_rv<<std::endl;
+    }
+//    
     for (int is = 0; is < n_phi_s_l; is++) {
         
-        ef(is + firsts_s_l) += +1.0 * dt * weight * (beta*fw_lv + (1.0-beta)*fw_rv)*phiS_l(is,0)*qn;
+        ef(is + firsts_s_l) += +1.0 * dt * weight * (beta * fw_lv + (1.0-beta)*fw_rv)*phiS_l(is,0)*qn;
         
         for (int js = 0; js < n_phi_s_l; js++) {
             ek(is + firsts_s_l, js + firsts_s_l) += +1.0* dt * weight * beta * dfw_dsw_lv * phiS_l(js,0) * phiS_l(is,0)*qn;
@@ -307,12 +328,13 @@ template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, TPZVec<TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ef) {
     TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
     this->ContributeInterface(data,datavecleft,datavecright, weight, ek_fake, ef);
+   
 }
 
 template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc) {
     
-    REAL tol = 1.0e-10;
+    REAL tol = 1.0e-8;
     int q_b = 0;
     int s_b = 2;
     if(mSimData.mTNumerics.m_four_approx_spaces_Q){
@@ -352,6 +374,9 @@ void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZV
     REAL fw_lv = std::get<0>(fw_l);
     REAL dfw_dsw_lv = std::get<1>(fw_l);
     
+//    if(s_l< -1.0 || s_l>2.0){
+//        DebugStop();
+//    }
     
     //
     switch (bc.Type()) {

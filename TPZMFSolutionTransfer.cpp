@@ -108,12 +108,14 @@ void TPZMFSolutionTransfer::MeshTransferData::BuildTransferData(TPZCompMesh* cme
                 int initialtest =0;
                 for (int iespacetes=0; iespacetes<act_spacesEl.size(); iespacetes++) {
                     if (act_spacesEl[iespacetes]==0) {
+//                        initialtest += mul->Element(iespacetes)->NConnects();
                         continue;
                     }
                     TPZCompEl *celfrom = mul->Element(iespacetes);
                     if (!celfrom) {
                         continue;
                     }
+                    
                     int nconnects = celfrom->NConnects();
                     for (int icon = 0 ; icon < nconnects; icon++){
                         TPZConnect &conectFrom = celfrom->Connect(icon);
@@ -122,7 +124,6 @@ void TPZMFSolutionTransfer::MeshTransferData::BuildTransferData(TPZCompMesh* cme
                         int seqnumberMF = conectTarget.SequenceNumber();
                         Match currentmatch;
                         currentmatch.fblocknumber = seqnumberAto;
-                        
                         TPZBlock<STATE> *blockAto = &celfrom->Mesh()->Block();
                         std::pair<TPZBlock<STATE> *, int> target = std::make_pair(blockAto,seqnumberMF);
                         currentmatch.fblockTarget = target;

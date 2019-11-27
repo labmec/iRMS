@@ -29,7 +29,7 @@ private:
     
     REAL m_current_time;
     
-    TPZMFSolutionTransfer *m_soltransportTransfer;
+    TPZMFSolutionTransfer m_soltransportTransfer;
     
 public:
     

@@ -76,60 +76,20 @@ void TMRSMixedAnalysis::RunTimeStep(){
     }
     
     TPZFMatrix<STATE> dx,x(Solution());
-    
+    TPZMFSolutionTransfer Soltransfer;
+    Soltransfer.BuildTransferData(cmesh) ;
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
-       
-        std::ofstream filemixed("mixedoperatorBEFORE.txt");
-        cmesh->Print(filemixed);
-        std::ofstream fileflux("fluxperatorBEFORE.txt");
-        cmesh->MeshVector()[0]->Print(fileflux);
-        std::ofstream filePressure("pressureBEFORE.txt");
-        cmesh->MeshVector()[1]->Print(filePressure);
-        {
-            TPZStack<std::string> scalnames, vecnames;
-            std::string file("mixedBEFORE.vtk");
-            scalnames.push_back("Pressure");
-            vecnames.push_back("Flux");
-            DefineGraphMesh(2, scalnames, vecnames, file);
-            PostProcess(0, 2);
-        }
-        
-        
         dx = Solution();
         corr_norm = Norm(dx);
         cmesh->UpdatePreviousState(-1);
         
 //        cmesh->LoadSolutionFromMultiPhysics();
-        TPZMFSolutionTransfer Soltransfer;
-        Soltransfer.BuildTransferData(cmesh) ;
+       
         Soltransfer.TransferFromMultiphysics();
         
-      
-        
-        std::ofstream filemixed1("mixedoperatorAFTER.txt");
-        cmesh->Print(filemixed1);
-        std::ofstream fileflux1("fluxperatorAFTER.txt");
-        cmesh->MeshVector()[0]->Print(fileflux1);
-        std::ofstream filePressure1("pressureAFTER.txt");
-        cmesh->MeshVector()[1]->Print(filePressure1);
-        
-        {
-            TPZStack<std::string> scalnames, vecnames;
-            std::string file("mixedAFTER.vtk");
-            scalnames.push_back("Pressure");
-            vecnames.push_back("Flux");
-            DefineGraphMesh(2, scalnames, vecnames, file);
-            PostProcess(0, 2);
-        }
-      
-
-//        {
-//            std::ofstream out("mixedcmesh.txt");
-//            cmesh->Print(out);
-//        }
-        AssembleResidual();
+           AssembleResidual();
         res_norm = Norm(Rhs());
         
         stop_criterion_Q = res_norm < res_tol;
@@ -147,7 +107,22 @@ void TMRSMixedAnalysis::RunTimeStep(){
         }
         
     }
-    
+   
+    TPZFMatrix<STATE> sol = cmesh->MeshVector()[0]->Solution();
+    int nrows = sol.Rows();
+    int ncols = sol.Cols();
+    for (int ir =0; ir<nrows; ir++){
+        for (int jr =0; jr<ncols; jr++){
+            if (sol(ir,jr)< -10.0) {
+                sol(ir,jr) = 225.0;
+            }
+        }
+    }
+    cmesh->MeshVector()[0]->LoadSolution(sol);
+    std::ofstream fileq("flux.txt");
+    cmesh->Print(fileq);
+    std::ofstream fileq2("fluxa.txt");
+    cmesh->MeshVector()[0]->Print(fileq2);
 }
 
 

@@ -166,8 +166,8 @@ std::tuple<double, double> TRSLinearInterpolator::ValDeriv(double x){
                 deriv = 0.0;
                 break;
             case EConstant:
-                returned = fvalLef;
-                deriv = 0.0;
+                returned = y1;
+                deriv = (y2-y1)/(x2-x1);
                 break;
             case ESlope:
                 returned = y1 - fvalLef*(x1 - x);
@@ -198,8 +198,8 @@ std::tuple<double, double> TRSLinearInterpolator::ValDeriv(double x){
                 deriv = (y2-y1)/(x2-x1);
                 break;
             case EConstant:
-                returned = fvalRight;
-                deriv =0.0;
+                returned = y2;
+                deriv = (y2-y1)/(x2-x1);
                 break;
             case ESlope:
                 returned = y2 + fvalRight*(x-x2);

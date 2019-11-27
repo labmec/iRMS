@@ -91,14 +91,11 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     {
          m_mixed_module->RunTimeStep();
+       
 #ifdef USING_BOOST
         boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
 #endif
        
-        
-        
-        
-      
 #ifdef USING_BOOST
         boost::posix_time::ptime mixed_process_t2 = boost::posix_time::microsec_clock::local_time();
         REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
@@ -106,12 +103,9 @@ void TMRSSFIAnalysis::SFIIteration(){
 #endif
     }
     
+    TransferToTransportModule();
     m_transport_module->RunTimeStep();
-    
-
     TransferToMixedModule();        // Transfer to mixed
-    
-    
     
  }
 
@@ -120,11 +114,20 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
     TPZMultiphysicsCompMesh * mixed_cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_mixed_module->Mesh());
     TPZMultiphysicsCompMesh * transport_cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_transport_module->Mesh());
     
+    
+    std::ofstream filetoprint("multransport.txt");
+    transport_cmesh->Print(filetoprint);
+    TPZMFSolutionTransfer SoltransferMixed;
+    SoltransferMixed.BuildTransferData(mixed_cmesh) ;
+    TPZMFSolutionTransfer SoltransferTransport;
+    SoltransferTransport.BuildTransferData(transport_cmesh) ;
+    
     if (!mixed_cmesh || !transport_cmesh) {
         DebugStop();
     }
     
-    mixed_cmesh->LoadSolutionFromMultiPhysics();
+//    mixed_cmesh->LoadSolutionFromMultiPhysics();
+    SoltransferMixed.TransferFromMultiphysics();
     // flux and pressure are transferred to transport module
     int q_b = 0;
     int p_b = 1;
@@ -143,7 +146,8 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
         transport_cmesh->MeshVector()[pavg_b]->LoadSolution(p_dof);
     }
     
-    transport_cmesh->LoadSolutionFromMeshes();
+//    transport_cmesh->LoadSolutionFromMeshes();
+    SoltransferTransport.TransferToMultiphysics();
     
 }
 
@@ -155,23 +159,31 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
     if (!mixed_cmesh || !transport_cmesh) {
         DebugStop();
     }
+    TPZMFSolutionTransfer Soltransfer;
+    Soltransfer.BuildTransferData(transport_cmesh) ;
+    Soltransfer.TransferFromMultiphysics();
     
-    transport_cmesh->LoadSolutionFromMultiPhysics();
+//    transport_cmesh->LoadSolutionFromMultiPhysics();
     // Saturations are transferred to mixed module
     int s_b = 2;
     TPZFMatrix<STATE> & s_dof = transport_cmesh->MeshVector()[s_b]->Solution();
     mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
     
+    TPZMFSolutionTransfer Soltransfermixed;
+    Soltransfermixed.BuildTransferData(mixed_cmesh) ;
+    Soltransfermixed.TransferToMultiphysics();
+    
+    
     //loadsolfrommeshes
 
-    {
-        TPZStack<std::string> scalnames, vecnames;
-        std::string file("mixed.vtk");
-        scalnames.push_back("Pressure");
-        vecnames.push_back("Flux");
-        m_mixed_module->DefineGraphMesh(2, scalnames, vecnames, file);
-        m_mixed_module->PostProcess(0, 2);
-    }
+//    {
+//        TPZStack<std::string> scalnames, vecnames;
+//        std::string file("mixed.vtk");
+//        scalnames.push_back("Pressure");
+//        vecnames.push_back("Flux");
+//        m_mixed_module->DefineGraphMesh(2, scalnames, vecnames, file);
+//        m_mixed_module->PostProcess(0, 2);
+//    }
     
     
 }
