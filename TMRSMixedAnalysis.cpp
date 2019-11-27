@@ -15,7 +15,7 @@ TMRSMixedAnalysis::~TMRSMixedAnalysis(){
 }
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZAnalysis(cmesh_mult, must_opt_band_width_Q){
-//    m_soltransportTransfer.BuildTransferData(cmesh_mult);
+    m_soltransportTransfer.BuildTransferData(cmesh_mult);
 }
 
 void TMRSMixedAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
@@ -76,20 +76,15 @@ void TMRSMixedAnalysis::RunTimeStep(){
     }
     
     TPZFMatrix<STATE> dx,x(Solution());
-    TPZMFSolutionTransfer Soltransfer;
-    Soltransfer.BuildTransferData(cmesh) ;
+  
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
         cmesh->UpdatePreviousState(-1);
-        
-//        cmesh->LoadSolutionFromMultiPhysics();
-       
-        Soltransfer.TransferFromMultiphysics();
-        
-           AssembleResidual();
+        m_soltransportTransfer.TransferFromMultiphysics();
+        AssembleResidual();
         res_norm = Norm(Rhs());
         
         stop_criterion_Q = res_norm < res_tol;
@@ -107,29 +102,13 @@ void TMRSMixedAnalysis::RunTimeStep(){
         }
         
     }
-   
-    TPZFMatrix<STATE> sol = cmesh->MeshVector()[0]->Solution();
-    int nrows = sol.Rows();
-    int ncols = sol.Cols();
-    for (int ir =0; ir<nrows; ir++){
-        for (int jr =0; jr<ncols; jr++){
-            if (sol(ir,jr)< -10.0) {
-                sol(ir,jr) = 225.0;
-            }
-        }
-    }
-    cmesh->MeshVector()[0]->LoadSolution(sol);
-    std::ofstream fileq("flux.txt");
-    cmesh->Print(fileq);
-    std::ofstream fileq2("fluxa.txt");
-    cmesh->MeshVector()[0]->Print(fileq2);
 }
 
 
 void TMRSMixedAnalysis::NewtonIteration(){
     
     Assemble();
-//    Rhs() *= -1.0; PD
+//    Rhs() *= -1.0; 
     Solve();
 }
 

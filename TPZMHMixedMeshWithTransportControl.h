@@ -53,11 +53,7 @@ public:
     TMRSApproxSpaceGenerator *GetApproxSpaceGenerator(){
         return faproxspace;
     }
-//    TPZMHMixedMesh4SpacesControl(int dimension):TPZMHMixedMeshControl(dimension){
-//        
-//    }
-//    
-//    
+ 
     TPZMHMixedMeshWithTransportControl(TPZAutoPointer<TPZGeoMesh> gmesh, TPZVec<int64_t> &coarseindices):TPZMHMixedMeshControl( gmesh, coarseindices){
         fcmeshTransport = new TPZCompMesh(gmesh);
     }
@@ -72,35 +68,17 @@ public:
         TPZMHMixedMeshControl::operator=(cp);
         return *this;
     }
-//    
+    
     TPZMHMixedMeshWithTransportControl(TPZAutoPointer<TPZGeoMesh> gmesh):TPZMHMixedMeshControl(gmesh)
     {
         
     }
-//
-//    
-//    TPZMHMixedMesh4SpacesControl(const TPZMHMixedMesh4SpacesControl &copy) : TPZMHMixedMeshControl(copy)
-//    {
-//        
-//        fFluxMesh = copy.fFluxMesh;
-//    }
-//    
-//    TPZMHMixedMesh4SpacesControl &operator=(const TPZMHMixedMesh4SpacesControl &cp)
-//    {
-//        fFluxMesh = cp.fFluxMesh;
-//        TPZMHMixedMeshControl::operator=(cp);
-//        return *this;
-//    }
-//    
+   
     void BuildComputationalMesh(bool usersubstructure);
     void CreateHDivPressureMHMMesh();
     void CreateTransport();
     void BuildMultiPhysicsMesh();
-//
-//    void HideTheElements();
-//    
-//    int64_t WhichSubdomain(TPZCompEl *cel);
-    
+
 };
 
 #endif /* TPZMHMixedMeshChannelControl_hpp */

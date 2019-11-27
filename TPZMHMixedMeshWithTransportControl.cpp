@@ -87,23 +87,7 @@ void TPZMHMixedMeshWithTransportControl::CreateHDivPressureMHMMesh()
     cmeshes[0] = fFluxMesh.operator->();
     cmeshes[1] = fPressureFineMesh.operator->();
     cmeshes[2] = fcmeshTransport.operator->();
-//    cmeshes[3] = fcmeshPressureAverg.operator->();
-    {
-        std::ofstream out("Flux_MultiPhisMHM.txt");
-        cmeshes[0] ->Print(out);
-        
-        std::ofstream out2("Pressure_MultiPhisMHM.txt");
-        cmeshes[1] ->Print(out2);
-        
-        std::ofstream out3("Transport_MHM.txt");
-        cmeshes[2] ->Print(out3);
-        
-//        std::ofstream out3("FluxAverage_MultiPhis.txt");
-//        cmeshes[2] ->Print(out3);
-//        
-//        std::ofstream out4("PressureAverage_MultiPhis.txt");
-//        cmeshes[3] ->Print(out4);
-    }
+   
     
     
     if(fNState > 1) {
@@ -150,8 +134,8 @@ void TPZMHMixedMeshWithTransportControl::CreateHDivPressureMHMMesh()
     TPZBuildMultiphysicsMesh::TransferFromMeshes(meshvector, MixedFluxPressureCmesh);
     
     std::pair<int,int> skelmatid(fSkeletonMatId,fSecondSkeletonMatId);
-    CreateMultiPhysicsInterfaceElements(fGMesh->Dimension()-1);
-    CreateMultiPhysicsInterfaceElements(fGMesh->Dimension()-2);
+//    CreateMultiPhysicsInterfaceElements(fGMesh->Dimension()-1);
+//    CreateMultiPhysicsInterfaceElements(fGMesh->Dimension()-2);
 #ifdef PZDEBUG
     if(0)
     {

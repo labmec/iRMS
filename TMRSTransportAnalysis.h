@@ -29,10 +29,11 @@ private:
     
     REAL m_current_time;
     
-    TPZMFSolutionTransfer m_soltransportTransfer;
     
 public:
     
+    TPZMFSolutionTransfer m_soltransportTransfer;
+
     /// Default constructor
     TMRSTransportAnalysis();
     

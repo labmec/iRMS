@@ -114,20 +114,13 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
     TPZMultiphysicsCompMesh * mixed_cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_mixed_module->Mesh());
     TPZMultiphysicsCompMesh * transport_cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_transport_module->Mesh());
     
-    
-    std::ofstream filetoprint("multransport.txt");
-    transport_cmesh->Print(filetoprint);
-    TPZMFSolutionTransfer SoltransferMixed;
-    SoltransferMixed.BuildTransferData(mixed_cmesh) ;
-    TPZMFSolutionTransfer SoltransferTransport;
-    SoltransferTransport.BuildTransferData(transport_cmesh) ;
-    
+   
     if (!mixed_cmesh || !transport_cmesh) {
         DebugStop();
     }
     
-//    mixed_cmesh->LoadSolutionFromMultiPhysics();
-    SoltransferMixed.TransferFromMultiphysics();
+     m_mixed_module->m_soltransportTransfer.TransferFromMultiphysics();
+
     // flux and pressure are transferred to transport module
     int q_b = 0;
     int p_b = 1;
@@ -145,10 +138,9 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
         transport_cmesh->MeshVector()[qavg_b]->LoadSolution(q_dof);
         transport_cmesh->MeshVector()[pavg_b]->LoadSolution(p_dof);
     }
-    
-//    transport_cmesh->LoadSolutionFromMeshes();
-    SoltransferTransport.TransferToMultiphysics();
-    
+
+    m_transport_module->m_soltransportTransfer.TransferToMultiphysics();
+
 }
 
 void TMRSSFIAnalysis::TransferToMixedModule(){
@@ -159,32 +151,16 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
     if (!mixed_cmesh || !transport_cmesh) {
         DebugStop();
     }
-    TPZMFSolutionTransfer Soltransfer;
-    Soltransfer.BuildTransferData(transport_cmesh) ;
-    Soltransfer.TransferFromMultiphysics();
-    
-//    transport_cmesh->LoadSolutionFromMultiPhysics();
+
+    m_transport_module->m_soltransportTransfer.TransferFromMultiphysics();
+
     // Saturations are transferred to mixed module
     int s_b = 2;
     TPZFMatrix<STATE> & s_dof = transport_cmesh->MeshVector()[s_b]->Solution();
     mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
     
-    TPZMFSolutionTransfer Soltransfermixed;
-    Soltransfermixed.BuildTransferData(mixed_cmesh) ;
-    Soltransfermixed.TransferToMultiphysics();
-    
-    
-    //loadsolfrommeshes
 
-//    {
-//        TPZStack<std::string> scalnames, vecnames;
-//        std::string file("mixed.vtk");
-//        scalnames.push_back("Pressure");
-//        vecnames.push_back("Flux");
-//        m_mixed_module->DefineGraphMesh(2, scalnames, vecnames, file);
-//        m_mixed_module->PostProcess(0, 2);
-//    }
-    
+     m_mixed_module->m_soltransportTransfer.TransferToMultiphysics();
     
 }
 

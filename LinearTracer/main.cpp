@@ -179,6 +179,9 @@ void MHMSimpleTest(){
     
     
     int order = 1;
+    
+    //IMPORTANT: When m_mhm_mixed_Q is true BuildMixedMultiPhysicsCompMesh build the multiphysic mixed mesh, the transport multiphysic mesh! and adjust teh memory. The constrution of those multiphysics meshes are in: TPZMHMixedMeshWithTransportControl.cpp in the method BuildComputationalMesh.
+    // Eso fue necesario porque debemos hacer aspace.LinkMemory antes de la creacion de las subestructuras.
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
@@ -186,22 +189,11 @@ void MHMSimpleTest(){
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     std::ofstream file("mixed.vtk");
     
-    TPZCompMesh *fluxcmesh_initial = mixed_operator->MeshVector()[0];
-    TPZCompMesh *pressure_initial = mixed_operator->MeshVector()[1];
-    std::ofstream fileflux("initial_flux.txt");
-    std::ofstream filepressure("initial_pressure.txt");
-    fluxcmesh_initial->Print(fileflux);
-    pressure_initial->Print(filepressure);
-    std::ofstream multimixed("multimixed.txt");
-    mixed_operator->Print(multimixed);
-    
     TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
     {
         std::ofstream transport("transport.txt");
         transport_operator->Print(transport);
     }
-    
-  //  aspace.LinkMemory(mixed_operator, transport_operator);
     
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,true);
     sfi_analysis->Configure(0, true);
@@ -218,17 +210,7 @@ void MHMSimpleTest(){
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
-//    TPZFMatrix<STATE> matrix = transport_operator->Solution();
-//    int nrows = matrix.Rows();
-//    int ncols = matrix.Cols();
-//    for (int i=0; i< nrows; i++) {
-//        for (int j=0; j< ncols; j++) {
-//            matrix(i,j)=1.0/ (1.0-i);;
-//        }
-//    }
 
-//    transport_operator->LoadSolution(matrix);
-//    transport_operator->LoadSolutionFromMultiPhysics();
     for (int it = 1; it <= n_steps; it++) {
         sfi_analysis->RunTimeStep();
         sim_time = it*dt;
@@ -241,78 +223,6 @@ void MHMSimpleTest(){
 
         }
     }
-    
-//    TPZAnalysis an(mixed_operator,true);
-//
-//    TPZSymetricSpStructMatrix strmat(mixed_operator);
-//    strmat.SetNumThreads(8);
-//
-//    an.SetStructuralMatrix(strmat);
-//    TPZStepSolver<STATE> step;
-//    step.SetDirect(ELDLt);
-//    an.SetSolver(step);
-//    std::cout << "Assembling\n";
-//    an.Assemble();
-//    std::ofstream filemate("MatrixCoarse.txt");
-//
-//
-//
-//    std::cout << "Solving\n";
-//    an.Solve();
-//    std::cout << "Finished\n";
-//    an.LoadSolution(); // compute internal dofs
-//
-//
-//    TPZStack<std::string> scalar, vectors;
-//    TPZManVector<std::string,10> scalnames(1), vecnames(1);
-//    vecnames[0]  = "Flux";
-//    scalnames[0] = "Pressure";
-//
-//    std::string name_coarse("Mixedresults.vtk");
-//
-//    an.DefineGraphMesh(2, scalnames, vecnames, name_coarse);
-//    an.PostProcess(0,2);
-
-    
-    
-//    std::cout<<"\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"<<std::endl;
-//    mixed_operator->Print();
-//
-//    std::ofstream mult("malhamultph.txt");
-//    mixed_operator->Print(mult);
-//    std::cout<<"Nel: "<<mixed_operator->NElements()<<std::endl;
-//    TPZAnalysis an(mixed_operator,true);
-//
-//    TPZSymetricSpStructMatrix strmat(mixed_operator);
-//    strmat.SetNumThreads(8);
-//
-//    an.SetStructuralMatrix(strmat);
-//    TPZStepSolver<STATE> step;
-//    step.SetDirect(ELDLt);
-//    an.SetSolver(step);
-//    std::cout << "Assembling\n";
-//    an.Assemble();
-//    std::ofstream filemate("MatrixCoarse.txt");
-//
-//
-//
-//    std::cout << "Solving\n";
-//    an.Solve();
-//    std::cout << "Finished\n";
-////    an.LoadSolution(); // compute internal dofs
-//
-//
-//    TPZStack<std::string> scalar, vectors;
-//    TPZManVector<std::string,10> scalnames(1), vecnames(1);
-//    vecnames[0]  = "state";
-//    scalnames[0] = "state";
-//
-//    std::string name_coarse("Mixedresults.vtk");
-//
-//    an.DefineGraphMesh(2, scalnames, vecnames, name_coarse);
-//    an.PostProcess(0,2);
-    
-    
 }
 
 TMRSDataTransfer Setting2D(){

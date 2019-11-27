@@ -79,23 +79,17 @@ void TMRSTransportAnalysis::RunTimeStep(){
     }
     
     TPZFMatrix<STATE> dx,x(Solution());
-    TPZMFSolutionTransfer Soltransfer;
-    Soltransfer.BuildTransferData(cmesh) ;
     
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
-//        Soltransfer.TransferFromMultiphysics();
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
         cmesh->UpdatePreviousState(-1);
-//        Soltransfer.BuildTransferData(cmesh) ;
         m_soltransportTransfer.TransferFromMultiphysics();
-        std::ofstream fieltoprint("FluxATO.txt");
-        cmesh->MeshVector()[0]->Print(fieltoprint);
-//        Soltransfer.TransferFromMultiphysics();
         AssembleResidual();
         res_norm = Norm(Rhs());
+        
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
         if (stop_criterion_Q && stop_criterion_corr_Q) {
@@ -104,9 +98,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             break;
         }
-//        if (m_k_iteration >= n) {
-//            std::cout << "Transport operator not converge " << std::endl;
-//        }
+
     }
     
 }
