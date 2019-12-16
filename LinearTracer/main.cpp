@@ -73,6 +73,7 @@ void SimpleTest();
 
 void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices);
 TPZGeoMesh *MHMMesh();
+
 int main(){
     InitializePZLOG();
 //     SimpleTest();
@@ -167,14 +168,16 @@ void SimpleTest(){
 
 void MHMSimpleTest(){
    
-    
+    std::string name, name_mhm;
+    name = "geo";
+    name_mhm = "geo_mhm";
     TMRSDataTransfer sim_data;
-    sim_data = SettingSimpleMHM2D();
-   
     sim_data = SettingSimpleMHM2D();
     TMRSApproxSpaceGenerator aspace;
     aspace.CreateUniformMesh(50,1,1,1);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.PrintGeometry(name);
+    aspace.GenerateMHMUniformMesh(2);
+    aspace.PrintGeometry(name_mhm);
     aspace.SetDataTransfer(sim_data);
     
     
@@ -957,6 +960,7 @@ TMRSDataTransfer SettingSimpleMHM2D(){
     sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
     return sim_data;
 }
+
 TMRSDataTransfer SettingSimple2DQuads(){
     TMRSDataTransfer sim_data;
     
