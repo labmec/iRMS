@@ -22,6 +22,7 @@ IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
 ELSE()
 	find_package( PZ REQUIRED )
+	find_package(libInterpolate REQUIRED)
 ENDIF (WIN32)
 
 
