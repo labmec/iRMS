@@ -88,6 +88,24 @@ void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
 void UNISIMHDiv();
 //
 int main(){
+    
+    std::vector<REAL> valoresX, valoresY;
+    valoresX.push_back(1);
+    valoresX.push_back(2);
+    valoresX.push_back(3);
+    
+    valoresY.push_back(1);
+    valoresY.push_back(4);
+    valoresY.push_back(9);
+
+    TRSLinearInterpolator interpolator;
+    interpolator.SetData2(valoresX, valoresY);
+    
+    interpolator.ValDeriv(2.5);
+    
+    
+    
+    
 //    InitializePZLOG();
     UNISIMHDiv();
 //     SimpleTest();
@@ -113,7 +131,6 @@ void UNISIMHDiv(){
     aspace.SetGeometry(gmesh);
     std::string name="NewMesh";
     std::cout<< gmesh->NElements();
-    aspace.GenerateMHMUniformMesh(1);
     aspace.PrintGeometry(name);
     
     TMRSDataTransfer sim_data = SettingHDivUNISIM();
@@ -132,14 +149,10 @@ void UNISIMHDiv(){
     std::ofstream file("mixed.vtk");
     
     TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
-    
     aspace.LinkMemory(mixed_operator, transport_operator);
     //
     aspace.BuildMixedSCStructures();
-//    mixed_operator->ComputeNodElCon();
-//    TPZCompMeshTools::GroupElements(mixed_operator);
-//    TPZCompMeshTools::CreatedCondensedElements(mixed_operator, true);
-//    
+
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
@@ -157,12 +170,19 @@ void UNISIMHDiv(){
     REAL current_report_time = reporting_times[pos];
     
     for (int it = 1; it <= n_steps; it++) {
+       
         sfi_analysis->RunTimeStep();
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(sim_time);
         if (sim_time >=  current_report_time) {
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
-            sfi_analysis->PostProcessTimeStep();
+            if(it == 1){
+            sfi_analysis->PostProcessTimeStep(1);
+            }
+            else{
+            sfi_analysis->PostProcessTimeStep(2);
+            }
+            
             pos++;
             current_report_time =reporting_times[pos];
             
@@ -214,9 +234,9 @@ void ModifyTopeAndBase(TPZGeoMesh * gmesh, std::string filename){
     ReadData(filename, true, x, y, z);
   
     
+    
     _2D::ThinPlateSplineInterpolator <double> interp;
     interp.setData(x,y,z);
-    
    
     int nCoordinates = gmesh->NodeVec().NElements();
     double sum=0.0;
@@ -642,7 +662,7 @@ TMRSDataTransfer SettingHDivUNISIM(){
     TMRSDataTransfer sim_data;
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["RockMatrix"] = 1;
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["RockMatrix2"] = 2;
+//    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["RockMatrix2"] = 2;
    
     
     //zero flux boundaries
@@ -676,10 +696,10 @@ TMRSDataTransfer SettingHDivUNISIM(){
    
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(6);
     
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(bcZeroFlux1,bc_outlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(bcZeroFlux2,bc_outlet,zero_flux);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux3,bc_outlet,0.0);
-        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux4,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(bcZeroFlux1,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(bcZeroFlux2,bc_inlet,zero_flux);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux3,bc_inlet,0.0);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux4,bc_inlet,0.0);
     
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(bcInlet,bc_inlet,sat_in);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(bcOutlet,bc_outlet,0.0);
@@ -701,8 +721,8 @@ TMRSDataTransfer SettingHDivUNISIM(){
     kro.SetRightExtension(TRSLinearInterpolator::ELinear);
     krw.SetRightExtension(TRSLinearInterpolator::ELinear);
     
-    //    kro.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
-    //    krw.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
+//        kro.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
+//        krw.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
     
     sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.resize(1);
     sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel.resize(1);
@@ -793,10 +813,10 @@ TMRSDataTransfer SettingHDivUNISIM(){
     sim_data.mTNumerics.m_max_iter_mixed = 20;
     sim_data.mTNumerics.m_max_iter_transport = 20;
     sim_data.mTNumerics.m_max_iter_sfi = 20;
-    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-4;
-    sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-4;
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-4;
-    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-4;
+    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-8;
+    sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-8;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-8;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-8;
     sim_data.mTNumerics.m_n_steps = 100;
     sim_data.mTNumerics.m_dt      = 100.0;
     sim_data.mTNumerics.m_four_approx_spaces_Q = false;
@@ -806,13 +826,15 @@ TMRSDataTransfer SettingHDivUNISIM(){
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator_3d.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator_3d.vtk";
-    TPZStack<std::string,10> scalnames, vecnames;
-    vecnames.Push("Flux");
-    scalnames.Push("Pressure");
-    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
-        scalnames.Push("u_average");
-    }
+    TPZStack<std::string,10>  scalnames, vecnames;
+    
+    vecnames.push_back("Flux");
+    scalnames.push_back("Pressure");
+    scalnames.push_back("kappa");
+//    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
+//        scalnames.Push("g_average");
+//        scalnames.Push("u_average");
+//    }
     sim_data.mTPostProcess.m_file_time_step = 100.0;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;

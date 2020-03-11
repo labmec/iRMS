@@ -70,7 +70,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
     AssembleResidual();
     res_norm = Norm(Rhs());
-    if (res_norm < res_tol) {
+    if (res_norm < res_tol && corr_norm<corr_tol) {
         std::cout << "Already converged solution with res_norm = " << res_norm << std::endl;
         return;
     }
@@ -83,6 +83,15 @@ void TMRSMixedAnalysis::RunTimeStep(){
         dx = Solution();
         corr_norm = Norm(dx);
         cmesh->UpdatePreviousState(-1);
+    
+//        int dimension=2;
+//        const TPZVec<std::string> scalnames(1),vecnames(1);
+//        scalnames[0]="Pressure";
+//        vecnames[0]="Flux";
+//        const std::string plotfile("firsttest.vtk");
+//        this->DefineGraphMesh(dimension, scalnames, vecnames, plotfile);
+//        this->PostProcess(0, 2);
+//
         m_soltransportTransfer.TransferFromMultiphysics();
         AssembleResidual();
         res_norm = Norm(Rhs());
@@ -90,6 +99,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
         if (stop_criterion_Q && stop_criterion_corr_Q) {
+//        if (stop_criterion_Q) {
+      
             std::cout << "Mixed operator: " << std::endl;
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
@@ -113,7 +124,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(){
-    TPZStack<std::string,10> scalnames, vecnames;
+    TPZManVector<std::string,10> scalnames, vecnames;
     // @TODO:: Locate these variables in mTPostProcess
     
     scalnames = m_sim_data->mTPostProcess.m_scalnames;

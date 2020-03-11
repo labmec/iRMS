@@ -18,6 +18,8 @@
 #include <tuple>
 #include "pzmatrix.h"
 //#include "tpanic.h"
+#include <libInterpolate/Interpolate.hpp>
+#include <libInterpolate/AnyInterpolator.hpp>
 
 
 
@@ -25,6 +27,9 @@ class TRSLinearInterpolator
 {
 private:
      TPZFMatrix<REAL> fdata;
+     std::vector<REAL> XData;
+     std::vector<REAL> YData;
+     std::vector<REAL> ZData;
 public:
    
 
@@ -68,6 +73,8 @@ public:
     
     
     void SetData(TPZFMatrix<REAL> data);
+    
+    void SetData2(std::vector<REAL> dataX, std::vector<REAL> dataY);
     
     /** @brief Function that returns the data
      * @return  The matrix(nx2 for Linear interpolation or nx3 for Hermite interpolation) with the one dimensional data to interpolate

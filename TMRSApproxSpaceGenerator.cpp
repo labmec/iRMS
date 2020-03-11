@@ -1096,6 +1096,7 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
         tbb::parallel_for(size_t(0), size_t(ndata), size_t(1), [&memory_vector] (size_t & i) {
             TMRSMemory &mem = memory_vector.get()->operator [](i);
             
+            
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
             
@@ -1115,22 +1116,69 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
 #else
         for (int i = 0; i < ndata; i++) {
             TMRSMemory &mem = memory_vector.get()->operator [](i);
-
-            
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
-            
             REAL kappa = 1.0;
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
             mem.m_kappa_inv.Zero();
-            for (int i = 0; i < 3; i++) {
-                mem.m_kappa(i,i) = kappa;
-                mem.m_kappa_inv(i,i) = 1.0/kappa;
+//            kappa *= rand() % 40 +1;
+            for (int j = 0; j < 3; j++) {
+                mem.m_kappa(j,j) = kappa;
+                mem.m_kappa_inv(j,j) = 1.0/kappa;
             }
-
         }
+        
+        
+        int nels = cmesh->NElements();
+        for (int iel = 0; iel< nels; iel++) {
+            TPZCompEl *cel = cmesh->Element(iel);
+            if(!cel){
+                continue;
+                
+            }
+            TPZGeoEl *gel = cel->Reference();
+            if (!gel || gel->HasSubElement()) {
+                continue;
+            }
+            if (cel->Dimension()!= cmesh->Dimension()) {
+                continue;
+            }
+            if (!MixedOperator->Element(iel)) {
+                continue;
+            }
+            TPZVec<int64_t> indices;
+            cel->GetMemoryIndices(indices);
+            TPZVec<REAL> qsi(3,0.25);
+            qsi[2]=0.0;
+            TPZVec<REAL> point(3,0.0);
+            gel->X(qsi, point);
+            REAL kappa = 1.0 + 0.0*(sin(point[0])*sin(point[1])+2);;
+            for (auto memIndex: indices) {
+                if (memIndex<=0) {
+                    continue;
+                }
+               
+                TMRSMemory &mem = memory_vector.get()->operator [](memIndex);
+                mem.m_sw = 0.0;
+                mem.m_phi = 0.1;
+                mem.m_kappa.Resize(3, 3);
+                mem.m_kappa.Zero();
+                mem.m_kappa_inv.Resize(3, 3);
+                mem.m_kappa_inv.Zero();
+                for (int j = 0; j < 3; j++) {
+                    mem.m_kappa(j,j) = kappa;
+                    mem.m_kappa_inv(j,j) = 1.0/kappa;
+                }
+            }
+            
+            
+        }
+        
+        
+        
+        
 #endif
         
         

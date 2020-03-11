@@ -285,15 +285,15 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
 //        DebugStop();
     }
     
-    if(s_l<0.0 || s_l>1.0){
-        std::cout<<"Extrapolation: s_l ->"<<s_l<<std::endl;
-        std::cout<<"Extrapolation: ds_l ->"<<dfw_dsw_lv<<std::endl;
-    }
-    if(s_r<0.0 || s_r>1.0){
-        std::cout<<"Extrapolation: s_l ->"<<s_r<<std::endl;
-        std::cout<<"Extrapolation: ds_l ->"<<dfw_dsw_rv<<std::endl;
-    }
-//    
+//    if(s_l<0.0 || s_l>1.0){
+//        std::cout<<"Extrapolation: s_l ->"<<s_l<<std::endl;
+//        std::cout<<"Extrapolation: ds_l ->"<<dfw_dsw_lv<<std::endl;
+//    }
+//    if(s_r<0.0 || s_r>1.0){
+//        std::cout<<"Extrapolation: s_l ->"<<s_r<<std::endl;
+//        std::cout<<"Extrapolation: ds_l ->"<<dfw_dsw_rv<<std::endl;
+//    }
+//
     for (int is = 0; is < n_phi_s_l; is++) {
         
         ef(is + firsts_s_l) += +1.0 * dt * weight * (beta * fw_lv + (1.0-beta)*fw_rv)*phiS_l(is,0)*qn;
