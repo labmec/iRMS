@@ -83,16 +83,14 @@ void TMRSMixedAnalysis::RunTimeStep(){
         dx = Solution();
         corr_norm = Norm(dx);
         cmesh->UpdatePreviousState(-1);
-    
-//        int dimension=2;
-//        const TPZVec<std::string> scalnames(1),vecnames(1);
-//        scalnames[0]="Pressure";
-//        vecnames[0]="Flux";
-//        const std::string plotfile("firsttest.vtk");
-//        this->DefineGraphMesh(dimension, scalnames, vecnames, plotfile);
-//        this->PostProcess(0, 2);
+        cmesh->LoadSolutionFromMultiPhysics();
+        
+        
+        
+      
 //
-        m_soltransportTransfer.TransferFromMultiphysics();
+//        m_soltransportTransfer.TransferFromMultiphysics();
+        
         AssembleResidual();
         res_norm = Norm(Rhs());
         
@@ -124,7 +122,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(){
-    TPZManVector<std::string,10> scalnames, vecnames;
+    TPZStack<std::string,10> scalnames, vecnames;
     // @TODO:: Locate these variables in mTPostProcess
     
     scalnames = m_sim_data->mTPostProcess.m_scalnames;

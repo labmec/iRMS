@@ -107,7 +107,7 @@ int main(){
     
     
 //    InitializePZLOG();
-    UNISIMHDiv();
+     UNISIMHDiv();
 //     SimpleTest();
 //   MHMSimpleTest();
     
@@ -135,8 +135,8 @@ void UNISIMHDiv(){
     
     TMRSDataTransfer sim_data = SettingHDivUNISIM();
     aspace.SetDataTransfer(sim_data);
-    int order = 1;
-    
+    int order = 2;
+    //Revisar match (   )
     
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
@@ -144,33 +144,34 @@ void UNISIMHDiv(){
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     
+    
+    
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     std::ofstream file("mixed.vtk");
-    
-    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
+
+    TPZVTKGeoMesh::PrintCMeshVTK(mixed_operator, file);
     aspace.LinkMemory(mixed_operator, transport_operator);
-    //
-    aspace.BuildMixedSCStructures();
+//    aspace.BuildMixedSCStructures();
 
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
-    
+
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
-    
+
     // Fill time steps vector
-    
+
     TPZStack<REAL,100> reporting_times;
     reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
-    
+
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
-    
+
     for (int it = 1; it <= n_steps; it++) {
-       
+
         sfi_analysis->RunTimeStep();
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(sim_time);
@@ -178,19 +179,20 @@ void UNISIMHDiv(){
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
             if(it == 1){
             sfi_analysis->PostProcessTimeStep(1);
+            sfi_analysis->PostProcessTimeStep(2);
             }
             else{
             sfi_analysis->PostProcessTimeStep(2);
             }
-            
+
             pos++;
             current_report_time =reporting_times[pos];
-            
+
         }
     }
     
     
-}
+    }
 
 TPZGeoMesh * CreateGeoMeshWithTopeAndBase(std::string geometry_file2D, int nLayers, bool print3DMesh, bool Is3DQ){
     
@@ -218,7 +220,7 @@ TPZGeoMesh * CreateGeoMeshWithTopeAndBase(std::string geometry_file2D, int nLaye
        
     }
     if (!Is3DQ){
-        std::string filename1 = "tope_unisim2.txt";
+        std::string filename1 = "Reservoir/tope_unisim2.txt";
         ModifyTopeAndBase(gmesh2d,filename1 );
         returnedMesh =gmesh2d;
        
@@ -265,8 +267,8 @@ void ModifyTopeAndBase(TPZGeoMesh * gmesh, std::string filename){
 }
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
     
-    std::string filename1 = "tope_unisim2.txt";
-    std::string filename2 = "base_unisim2.txt";
+    std::string filename1 = "Reservoir/tope_unisim2.txt";
+    std::string filename2 = "Reservoir/base_unisim2.txt";
     std::vector<double> x, y, z, x1,y1,z1;
     ReadData(filename1, true, x, y, z);
     ReadData(filename2, true, x1, y1, z1);
@@ -669,8 +671,8 @@ TMRSDataTransfer SettingHDivUNISIM(){
     int D_Type = 0;
     int N_Type = 1;
     REAL zero_flux=0.0;
-    REAL pressure_in = 600.0;
-    REAL pressure_out = 200.0;
+    REAL pressure_in = 30.0;
+    REAL pressure_out = 20.0;
     int bcInlet = 3;
     int bcOutlet = 4;
     int bcZeroFlux1=5;
@@ -678,15 +680,17 @@ TMRSDataTransfer SettingHDivUNISIM(){
     int bcZeroFlux3=7;
     int bcZeroFlux4=8;
     
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(6);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(bcZeroFlux1,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(bcZeroFlux2,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux3,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux4,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(bcInlet,D_Type,pressure_in);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(bcOutlet,D_Type,pressure_out);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(bcInlet,D_Type,pressure_in);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(bcOutlet,D_Type,pressure_out);
     
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux1,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux2,N_Type,zero_flux);
+//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(bcZeroFlux3,N_Type,zero_flux);
+//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(bcZeroFlux4,N_Type,zero_flux);
+//    
+
     
     
     //Transport boundary Conditions
@@ -694,15 +698,18 @@ TMRSDataTransfer SettingHDivUNISIM(){
     int bc_outlet = 1;
     REAL sat_in = 1.0;
    
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(6);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(4);
     
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(bcZeroFlux1,bc_inlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(bcZeroFlux2,bc_inlet,zero_flux);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux3,bc_inlet,0.0);
-        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux4,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(bcInlet,bc_inlet,sat_in);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(bcOutlet,bc_outlet,0.0);
     
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(bcInlet,bc_inlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(bcOutlet,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux1,bc_inlet,0.0);
+//    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux2,bc_inlet,0.0);
+    
+//    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux3,bc_inlet,0.0);
+//        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux4,bc_inlet,0.0);
+    
+
 
 
     
@@ -813,12 +820,12 @@ TMRSDataTransfer SettingHDivUNISIM(){
     sim_data.mTNumerics.m_max_iter_mixed = 20;
     sim_data.mTNumerics.m_max_iter_transport = 20;
     sim_data.mTNumerics.m_max_iter_sfi = 20;
-    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-8;
-    sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-8;
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-8;
-    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-8;
+    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-4;
+    sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-4;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-4;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-4;
     sim_data.mTNumerics.m_n_steps = 100;
-    sim_data.mTNumerics.m_dt      = 100.0;
+    sim_data.mTNumerics.m_dt      = 100000.0;
     sim_data.mTNumerics.m_four_approx_spaces_Q = false;
     sim_data.mTNumerics.m_mhm_mixed_Q          = false;
     
@@ -835,7 +842,7 @@ TMRSDataTransfer SettingHDivUNISIM(){
 //        scalnames.Push("g_average");
 //        scalnames.Push("u_average");
 //    }
-    sim_data.mTPostProcess.m_file_time_step = 100.0;
+    sim_data.mTPostProcess.m_file_time_step = 100000.0;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     

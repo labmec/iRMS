@@ -107,8 +107,12 @@ endif()
 file(GLOB mesh
   "gmsh/*.msh"
 )
+
 file(COPY ${mesh} DESTINATION ./LinearTracer/Debug/gmsh)
 file(COPY ${mesh} DESTINATION ./LinearTracer/Release/gmsh)
+
+file(COPY Reservoir DESTINATION ./LinearTracer/Debug)
+file(COPY Reservoir DESTINATION ./LinearTracer/Release)
 
 
 file (COPY PetroPhysics  DESTINATION ./LinearTracer/Debug)

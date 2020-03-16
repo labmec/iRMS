@@ -86,7 +86,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
         dx = Solution();
         corr_norm = Norm(dx);
         cmesh->UpdatePreviousState(-1);
-        m_soltransportTransfer.TransferFromMultiphysics();
+//        m_soltransportTransfer.TransferFromMultiphysics();
+        cmesh->LoadSolutionFromMultiPhysics();
         AssembleResidual();
         res_norm = Norm(Rhs());
         

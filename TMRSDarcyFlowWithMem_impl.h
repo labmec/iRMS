@@ -99,7 +99,7 @@ int TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(int var) {
     if(var == 1) return 3;
     if(var == 2) return 1;
     if(var == 3) return 1;
-    if(var == 4) return this->Dimension();
+    if(var == 4) return 1;
     if(var == 5) return 1;
     if(var == 6) return 1;
     return TPZMatWithMem<TMEM>::NSolutionVariables(var);
@@ -136,9 +136,24 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int 
     }
     
     if(var == 4){
-        for (int i  = 0; i < this->Dimension(); i++) {
-            Solout[i] = 0.0;
-        }
+     
+            TPZManVector<double, 3> point;
+        
+            point = datavec[qb].XCenter;
+        
+            int val = rand() % 100;
+            
+            REAL kappa = 1.0;
+            if (val<75) {
+                kappa =  10000;
+                
+            }
+            else{
+                kappa =  10;
+            }
+        
+            Solout[0] = kappa;
+        
         return;
     }
     

@@ -214,7 +214,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     if (!mGeometry) {
         DebugStop();
     }
-
+    
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
     TPZMixedDarcyFlow * volume = nullptr;
     int dimension = mGeometry->Dimension();
@@ -1142,6 +1142,7 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
             if (!gel || gel->HasSubElement()) {
                 continue;
             }
+          
             if (cel->Dimension()!= cmesh->Dimension()) {
                 continue;
             }
@@ -1154,11 +1155,26 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
             qsi[2]=0.0;
             TPZVec<REAL> point(3,0.0);
             gel->X(qsi, point);
-            REAL kappa = 1.0 + 0.0*(sin(point[0])*sin(point[1])+2);;
+//            if (gel->MaterialId()!=2){
+//                continue;
+//            }
+            
+//            int val = rand() % 100;
+           
+            
+            REAL kappa =  1000*(sin(point[0])*sin(point[1]) + 2);
+
+          
+            
+            
+//            REAL kappa = 100000.0 + 1*(sin(point[0])*sin(point[1])+2);
+            
+
             for (auto memIndex: indices) {
                 if (memIndex<=0) {
                     continue;
                 }
+            
                
                 TMRSMemory &mem = memory_vector.get()->operator [](memIndex);
                 mem.m_sw = 0.0;

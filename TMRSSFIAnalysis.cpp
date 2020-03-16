@@ -60,7 +60,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
     bool stop_criterion_Q = false;
     REAL error_rel_mixed = 1.0;
     REAL error_rel_transport = 1.0;
-    REAL eps_tol = 0.01;
+    REAL eps_tol = 10.0;
 
     for (int i = 1; i <= n_iterations; i++) {
         
@@ -102,11 +102,11 @@ void TMRSSFIAnalysis::SFIIteration(){
     {
          m_mixed_module->RunTimeStep();
        
-#ifdef USING_BOOST
+#ifdef USING_BOOST2
         boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
 #endif
        
-#ifdef USING_BOOST
+#ifdef USING_BOOST2
         boost::posix_time::ptime mixed_process_t2 = boost::posix_time::microsec_clock::local_time();
         REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
         std::cout << "Mixed approximation performed in :" << setw(10) <<  mixed_process_time/1000.0 << setw(5)   << " seconds." << std::endl;
@@ -129,7 +129,8 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
         DebugStop();
     }
     
-     m_mixed_module->m_soltransportTransfer.TransferFromMultiphysics();
+//     m_mixed_module->m_soltransportTransfer.TransferFromMultiphysics();
+    mixed_cmesh->LoadSolutionFromMultiPhysics();
 
     // flux and pressure are transferred to transport module
     int q_b = 0;
@@ -149,7 +150,8 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
         transport_cmesh->MeshVector()[pavg_b]->LoadSolution(p_dof);
     }
 
-    m_transport_module->m_soltransportTransfer.TransferToMultiphysics();
+//    m_transport_module->m_soltransportTransfer.TransferToMultiphysics();
+    transport_cmesh->LoadSolutionFromMeshes();
 
 }
 
@@ -162,7 +164,8 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
         DebugStop();
     }
 
-    m_transport_module->m_soltransportTransfer.TransferFromMultiphysics();
+//    m_transport_module->m_soltransportTransfer.TransferFromMultiphysics();
+    transport_cmesh->LoadSolutionFromMultiPhysics();
 
     // Saturations are transferred to mixed module
     int s_b = 2;
@@ -170,7 +173,8 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
     mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
     
 
-     m_mixed_module->m_soltransportTransfer.TransferToMultiphysics();
+//     m_mixed_module->m_soltransportTransfer.TransferToMultiphysics();
+    mixed_cmesh->LoadSolutionFromMeshes();
     
 }
 
