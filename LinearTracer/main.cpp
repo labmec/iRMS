@@ -135,7 +135,7 @@ void UNISIMHDiv(){
     
     TMRSDataTransfer sim_data = SettingHDivUNISIM();
     aspace.SetDataTransfer(sim_data);
-    int order = 2;
+    int order = 1;
     //Revisar match (   )
     
     bool must_opt_band_width_Q = true;
@@ -837,7 +837,7 @@ TMRSDataTransfer SettingHDivUNISIM(){
     
     vecnames.push_back("Flux");
     scalnames.push_back("Pressure");
-    scalnames.push_back("kappa");
+//    scalnames.push_back("kappa");
 //    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
 //        scalnames.Push("g_average");
 //        scalnames.Push("u_average");
