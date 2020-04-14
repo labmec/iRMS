@@ -148,12 +148,12 @@ void UNISIMHDiv(){
     
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-    std::ofstream file("mixed.vtk");
-
-    TPZVTKGeoMesh::PrintCMeshVTK(mixed_operator, file);
+    std::ofstream file("transport.txt");
+    transport_operator->Print(file);
+//    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
     aspace.LinkMemory(mixed_operator, transport_operator);
 //    aspace.BuildMixedSCStructures();
-
+    
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
@@ -686,7 +686,7 @@ TMRSDataTransfer SettingHDivUNISIM(){
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(bcOutlet,D_Type,pressure_out);
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux1,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux2,N_Type,zero_flux);
+//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux2,N_Type,zero_flux);
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(bcZeroFlux3,N_Type,zero_flux);
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(bcZeroFlux4,N_Type,zero_flux);
 //    
