@@ -6,6 +6,9 @@
 //
 
 #include "RSimulatorConfiguration.h"
+#include "MMeshType.h"
+#include "TPZGenGrid2D.h"
+
 void Ladoderecho_2D (const TPZVec<REAL> &pt, TPZVec<STATE> &disp);
 
 RSimulatorConfiguration::RSimulatorConfiguration(){
@@ -18,7 +21,7 @@ RSimulatorConfiguration::RSimulatorConfiguration(SimulationCase sim_case){
 RSimulatorConfiguration::RSimulatorConfiguration(TPZGeoMesh *gmesh){
     fGmesh = gmesh;
 }
-void RSimulatorConfiguration::CreateGeomesh(int nx, int ny, double l, double h, MElementType type){
+void RSimulatorConfiguration::CreateGeomesh(int nx, int ny, double l, double h, MMeshType type){
    
     TPZGeoMesh *gmesh = new TPZGeoMesh;
     
@@ -34,11 +37,13 @@ void RSimulatorConfiguration::CreateGeomesh(int nx, int ny, double l, double h, 
     x1[2]=0;
     
     //Setting boundary conditions (negative numbers to recognize them)
-    TPZGenGrid gen(nels,x0,x1);
+    TPZGenGrid2D gen(nels,x0,x1);
     gen.SetElementType(type);
+
     
     
     gmesh->SetDimension(2);
+  
     gen.Read(gmesh);
     gen.SetRefpatternElements(true);
     gen.SetBC(gmesh, 4, -1);
@@ -726,7 +731,7 @@ void RSimulatorConfiguration::PosProcess(){
 //#define Verbose_Q
 
 void RSimulatorConfiguration::Run(){
-    CreateGeomesh(10, 1, 2, 1, EQuadrilateral);
+    CreateGeomesh(10, 1, 2, 1, MMeshType::EQuadrilateral);
     fsim_case.order_p=1;
     fsim_case.order_q=1;
     TPZMultiphysicsCompMesh *c_mult = CreateMultiPhysicsCompMesh(fGmesh);

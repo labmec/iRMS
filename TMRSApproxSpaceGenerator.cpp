@@ -82,7 +82,7 @@ void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h,
     }
     
     TPZGeoMesh *gmesh = new TPZGeoMesh;
-    TPZGenGrid gen(nels,x0,x1);
+    TPZGenGrid2D gen(nels,x0,x1);
     gen.SetRefpatternElements(true);
     
     //    if (ny!=0) {

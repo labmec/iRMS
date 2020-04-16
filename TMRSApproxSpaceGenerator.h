@@ -22,7 +22,7 @@
 #include "TPZTracerFlow.h"
 #include "pzl2projection.h"
 #include "TPZCompMeshTools.h"
-#include "pzgengrid.h"
+#include "TPZGenGrid2D.h"
 #include "TPZExtendGridDimension.h"
 #include "TMRSSFIAnalysis.h"
 #include "TPZMHMixedMeshControl.h"

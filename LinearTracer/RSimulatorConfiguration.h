@@ -24,7 +24,7 @@ public:
     RSimulatorConfiguration(TPZGeoMesh *gmesh);
     RSimulatorConfiguration(RSimulatorConfiguration *conf);
     
-    void CreateGeomesh(int nx, int ny, double l, double h, MElementType type);
+    void CreateGeomesh(int nx, int ny, double l, double h, MMeshType type);
     TPZGeoMesh * GetGeomesh();
     
     TPZCompMesh * CreateFluxCmesh(TPZGeoMesh * gmesh, int order);

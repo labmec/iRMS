@@ -35,7 +35,7 @@
 #include "pzelasmat.h"
 #include "pzlog.h"
 
-#include "pzgengrid.h"
+//#include "pzgengrid.h"
 
 #include <time.h>
 #include <stdio.h>
@@ -63,6 +63,12 @@
 #include "TPZSSpStructMatrix.h"
 #include "pzskylstrmatrix.h"
 #include "TPZSkylineNSymStructMatrix.h"
+
+#include "TPZGeoMeshTools.h"
+//#include "pzgengrid.h"
+#include "TPZGenGrid2D.h"
+#include "MMeshType.h"
+
 //#include "TRSRibFrac.h"
 //#include "TRSRibs.h"
 //#include "TRSFace.h"

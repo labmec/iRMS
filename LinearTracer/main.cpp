@@ -26,6 +26,8 @@
 #include "pzelasmat.h"
 #include "pzlog.h"
 #include "pzgengrid.h"
+#include "TPZGenGrid2D.h"
+#include "MMeshType.h"
 #include <time.h>
 #include <stdio.h>
 
@@ -689,7 +691,6 @@ TMRSDataTransfer SettingHDivUNISIM(){
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux2,N_Type,zero_flux);
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(bcZeroFlux3,N_Type,zero_flux);
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(bcZeroFlux4,N_Type,zero_flux);
-//    
 
     
     
