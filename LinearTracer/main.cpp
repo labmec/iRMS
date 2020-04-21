@@ -121,7 +121,7 @@ void UNISIMHDiv(){
     std::string geometry_file2D ="gmsh/Contorno.msh";
     int nLayers = 3;
     bool print3DMesh = true;
-    TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, false);
+    TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, true);
     
     for (auto gel:gmesh->ElementVec()) {
         if (gel->MaterialId()==2) {
@@ -682,15 +682,15 @@ TMRSDataTransfer SettingHDivUNISIM(){
     int bcZeroFlux3=7;
     int bcZeroFlux4=8;
     
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(6);
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(bcInlet,D_Type,pressure_in);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(bcOutlet,D_Type,pressure_out);
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux1,N_Type,zero_flux);
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux2,N_Type,zero_flux);
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(bcZeroFlux3,N_Type,zero_flux);
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(bcZeroFlux4,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux2,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[4] = std::make_tuple(bcZeroFlux3,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[5] = std::make_tuple(bcZeroFlux4,N_Type,zero_flux);
 
     
     
@@ -699,16 +699,16 @@ TMRSDataTransfer SettingHDivUNISIM(){
     int bc_outlet = 1;
     REAL sat_in = 1.0;
    
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(4);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(6);
     
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(bcInlet,bc_inlet,sat_in);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(bcOutlet,bc_outlet,0.0);
     
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux1,bc_inlet,0.0);
-//    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux2,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux2,bc_inlet,0.0);
     
-//    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(bcZeroFlux3,bc_inlet,0.0);
-//        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(bcZeroFlux4,bc_inlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(bcZeroFlux3,bc_inlet,0.0);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(bcZeroFlux4,bc_inlet,0.0);
     
 
 
@@ -827,7 +827,7 @@ TMRSDataTransfer SettingHDivUNISIM(){
     sim_data.mTNumerics.m_corr_tol_transport = 1.0e-4;
     sim_data.mTNumerics.m_n_steps = 100;
     sim_data.mTNumerics.m_dt      = 100000.0;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = false;
+    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = false;
     
     
@@ -838,6 +838,10 @@ TMRSDataTransfer SettingHDivUNISIM(){
     
     vecnames.push_back("Flux");
     scalnames.push_back("Pressure");
+    scalnames.push_back("g_average");
+    scalnames.push_back("u_average");
+    
+  
 //    scalnames.push_back("kappa");
 //    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
 //        scalnames.Push("g_average");
