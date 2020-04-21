@@ -21,7 +21,7 @@ RSimulatorConfiguration::RSimulatorConfiguration(SimulationCase sim_case){
 RSimulatorConfiguration::RSimulatorConfiguration(TPZGeoMesh *gmesh){
     fGmesh = gmesh;
 }
-void RSimulatorConfiguration::CreateGeomesh(int nx, int ny, double l, double h, MElementType eltype){
+void RSimulatorConfiguration::CreateGeomesh(int nx, int ny, double l, double h, MMeshType eltype){
    
     TPZGeoMesh *gmesh = new TPZGeoMesh;
     
@@ -40,10 +40,11 @@ void RSimulatorConfiguration::CreateGeomesh(int nx, int ny, double l, double h, 
     TPZGenGrid2D gen(nels,x0,x1);
     switch(eltype)
     {
-        case ETriangle:
+        
+        case MMeshType::ETriangular:
             gen.SetElementType(MMeshType::ETriangular);
             break;
-        case EQuadrilateral:
+        case MMeshType::EQuadrilateral:
             gen.SetElementType(MMeshType::EQuadrilateral);
             break;
         default:

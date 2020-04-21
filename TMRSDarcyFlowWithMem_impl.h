@@ -90,7 +90,7 @@ int TMRSDarcyFlowWithMem<TMEM>::VariableIndex(const std::string &name) {
     if(!strcmp("div_q",name.c_str()))           return  3;
     if(!strcmp("kappa",name.c_str()))           return  4;
     if(!strcmp("g_average",name.c_str()))        return  5;
-    if(!strcmp("u_average",name.c_str()))        return  6;
+    if(!strcmp("p_average",name.c_str()))        return  6;
     return TPZMatWithMem<TMEM>::VariableIndex(name);
 }
 
