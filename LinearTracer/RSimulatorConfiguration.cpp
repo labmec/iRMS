@@ -21,7 +21,7 @@ RSimulatorConfiguration::RSimulatorConfiguration(SimulationCase sim_case){
 RSimulatorConfiguration::RSimulatorConfiguration(TPZGeoMesh *gmesh){
     fGmesh = gmesh;
 }
-void RSimulatorConfiguration::CreateGeomesh(int nx, int ny, double l, double h, MMeshType type){
+void RSimulatorConfiguration::CreateGeomesh(int nx, int ny, double l, double h, MElementType eltype){
    
     TPZGeoMesh *gmesh = new TPZGeoMesh;
     
@@ -38,8 +38,17 @@ void RSimulatorConfiguration::CreateGeomesh(int nx, int ny, double l, double h, 
     
     //Setting boundary conditions (negative numbers to recognize them)
     TPZGenGrid2D gen(nels,x0,x1);
-    gen.SetElementType(type);
-
+    switch(eltype)
+    {
+        case ETriangle:
+            gen.SetElementType(MMeshType::ETriangular);
+            break;
+        case EQuadrilateral:
+            gen.SetElementType(MMeshType::EQuadrilateral);
+            break;
+        default:
+            DebugStop();
+    }
     
     
     gmesh->SetDimension(2);
