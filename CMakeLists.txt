@@ -125,6 +125,12 @@ file(COPY ${mesh} DESTINATION ./Buckley_Levertt/Release/gmsh)
 file (COPY PetroPhysics  DESTINATION ./Buckley_Levertt/Debug)
 file (COPY PetroPhysics  DESTINATION ./Buckley_Levertt/Release)
 
+file(COPY ${mesh} DESTINATION ./FourSpacesTest/Debug/gmsh)
+file(COPY ${mesh} DESTINATION ./FourSpacesTest/Release/gmsh)
+
+file (COPY PetroPhysics  DESTINATION ./FourSpacesTest/Debug)
+file (COPY PetroPhysics  DESTINATION ./FourSpacesTest/Release)
+
 file(GLOB headers_files *.h)
 
 file(GLOB sources_files *.cpp)
@@ -136,6 +142,7 @@ set(common_dir ${CMAKE_CURRENT_SOURCE_DIR} )
 
 
 add_subdirectory(LinearTracer)
+add_subdirectory(FourSpacesTest)
 add_subdirectory(Buckley_Levertt)
 add_subdirectory(CGP)
 
