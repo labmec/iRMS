@@ -274,7 +274,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
     if (std::isnan(fw_lv) ||std::isnan(dfw_dsw_lv)) {
         std::cout<<"Nan Number: Extrapolation Krs error!."<<std::endl;
         std::cout<<"Set Extrapolation Type -> TRSLinearInterpolator object!."<<std::endl;
-//        DebugStop();
+        DebugStop();
     }
     REAL fw_rv = std::get<0>(fw_r);
     REAL dfw_dsw_rv = std::get<1>(fw_r);
@@ -282,7 +282,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
     if (std::isnan(fw_rv) ||std::isnan(dfw_dsw_rv)) {
         std::cout<<"Nan Number: Extrapolation Krs error!."<<std::endl;
         std::cout<<"Set Extrapolation Type -> TRSLinearInterpolator object!."<<std::endl;
-//        DebugStop();
+        DebugStop();
     }
     
 //    if(s_l<0.0 || s_l>1.0){

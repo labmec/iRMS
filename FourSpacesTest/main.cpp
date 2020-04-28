@@ -73,7 +73,7 @@ void SimpleTest();
 //
 int main(){
 
-//    InitializePZLOG();
+    InitializePZLOG();
 
      SimpleTest();
 

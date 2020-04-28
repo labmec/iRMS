@@ -215,6 +215,10 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
         DebugStop();
     }
     
+    // PHIL : nesta malha nao ha necessidade de inserir materiais "de verdade"
+    // poderia incluir "NullMaterial"...
+    // este observacao vale para todos as malhas atomicas
+    
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
     TPZMixedDarcyFlow * volume = nullptr;
     int dimension = mGeometry->Dimension();
@@ -235,6 +239,9 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     if (!volume) {
         DebugStop();
     }
+    
+    // PHIL : as malhas atomicas nao precisam ser BndCond
+    // poderiam ser null material...
     
     TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
@@ -287,6 +294,8 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
     if (!volume) {
         DebugStop();
     }
+    
+    // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
     
     if (order == 0) {
         TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
@@ -440,6 +449,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
         mMixedOperator->InsertMaterialObject(face);
     }
     
+    // PHIL : Vamos poder criar apenas 4 espacos...
     
     TPZManVector<TPZCompMesh *, 5> mesh_vec(5);
     mesh_vec[0] = HdivFluxCmesh(order);
