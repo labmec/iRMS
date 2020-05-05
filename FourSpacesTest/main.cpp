@@ -107,8 +107,8 @@ void SimpleTest(){
     
     TPZVTKGeoMesh::PrintCMeshVTK(mixed_operator, file);
     
-    aspace.LinkMemory(mixed_operator, transport_operator);
-    mixed_operator->ComputeNodElCon();
+//    aspace.LinkMemory(mixed_operator, transport_operator);
+//    mixed_operator->ComputeNodElCon();
 
     
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
@@ -164,8 +164,8 @@ TMRSDataTransfer Setting2D(){
     int bc_outlet = 1;
     REAL sat_in = 1.0;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(3);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(2,bc_outlet,1.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(4,bc_inlet,1.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(2,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(4,bc_inlet,sat_in);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(5,bc_outlet,0.0);
     
 
@@ -270,14 +270,14 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
     
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 1;
-    sim_data.mTNumerics.m_max_iter_transport = 2;
-    sim_data.mTNumerics.m_max_iter_sfi = 10;
+    sim_data.mTNumerics.m_max_iter_mixed = 5;
+    sim_data.mTNumerics.m_max_iter_transport = 5;
+    sim_data.mTNumerics.m_max_iter_sfi = 5;
     sim_data.mTNumerics.m_res_tol_mixed = 0.0000001;
     sim_data.mTNumerics.m_corr_tol_mixed = 0.0000001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_n_steps = 5;
     sim_data.mTNumerics.m_dt      = 100.0;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = false;
@@ -287,13 +287,13 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
     TPZStack<std::string,10> scalnames, vecnames;
-    vecnames.Push("Flux");
-    scalnames.Push("Pressure");
+    vecnames.Push("q");
+    scalnames.Push("p");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 100.0;
+    sim_data.mTPostProcess.m_file_time_step = 100;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     

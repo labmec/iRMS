@@ -114,7 +114,10 @@ void TMRSSFIAnalysis::SFIIteration(){
     }
     
     TransferToTransportModule();
-    m_transport_module->RunTimeStep();
+    TPZFMatrix<REAL> solution_n = m_transport_module->Solution();
+    solution_n.Print(std::cout);
+    m_transport_module->RunTimeStepWithoutMemory(solution_n);
+//    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
     TransferToMixedModule();        // Transfer to mixed
     
  }

@@ -8,6 +8,7 @@
 #include "TMRSApproxSpaceGenerator.h"
 #include "TPZMHMixedMeshWithTransportControl.h"
 #include "TPZCompMeshTools.h"
+#include "TPZMixedDarcyWithFourSpaces.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -421,16 +422,21 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     int dimension = mGeometry->Dimension();
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
+//    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
+    TPZMixedDarcyWithFourSpaces *volume = nullptr;
     mMixedOperator->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
-            int materia_id = chunk.second;
-            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
-            volume->SetDataTransfer(mSimData);
+            int material_id = chunk.second;
+//            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
+//            volume->SetDataTransfer(mSimData);
+            
+                volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
+                volume->SetPermeability(1.0);
+            
             mMixedOperator->InsertMaterialObject(volume);
         }
     }
@@ -450,6 +456,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     }
     
     // PHIL : Vamos poder criar apenas 4 espacos...
+  
     
     TPZManVector<TPZCompMesh *, 5> mesh_vec(5);
     mesh_vec[0] = HdivFluxCmesh(order);
@@ -464,7 +471,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     active_approx_spaces[3] = 1;
     active_approx_spaces[4] = 0;
     mMixedOperator->SetDimModel(dimension);
-    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
+//    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
+    mMixedOperator->BuildMultiphysicsSpace(active_approx_spaces,mesh_vec);
     
 #ifdef PZDEBUG
     std::stringstream file_name;
@@ -809,16 +817,21 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     int dimension = mGeometry->Dimension();
     mTransportOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
+//    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
+    TPZTracerFlow * volume = nullptr;
     mTransportOperator->SetDefaultOrder(0);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
-            int materia_id = chunk.second;
-            volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
-            volume->SetDataTransfer(mSimData);
+            int material_id = chunk.second;
+//            volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
+//            volume->SetDataTransfer(mSimData);
+            
+            volume = new TPZTracerFlow(material_id,d);
+//            volume->SetDataTransfer(mSimData);
+            
             mTransportOperator->InsertMaterialObject(volume);
         }
     }
@@ -839,8 +852,9 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     
     int transport_matid = 100;
     {
-        TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
-        interface->SetDataTransfer(mSimData);
+//        TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
+         TPZTracerFlow * interface = new TPZTracerFlow (transport_matid,dimension-1);
+//        interface->SetDataTransfer(mSimData);
         mTransportOperator->InsertMaterialObject(interface);
     }
     
@@ -851,8 +865,8 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     active_approx_spaces[2] = 0;
     active_approx_spaces[3] = 0;
     active_approx_spaces[4] = 1;
-    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
-    
+//    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
+    mTransportOperator->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
 #ifdef PZDEBUG
     std::ofstream transport_a("transport_cmesh_after.txt");
     mTransportOperator->Print(transport_a);

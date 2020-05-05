@@ -63,7 +63,7 @@ public:
     
     /// Run a time step
     void RunTimeStep();
-    
+    void RunTimeStepWithoutMemory(TPZFMatrix<REAL> solution_n);
     /// Render a vtk file with requested variables for a time step
     void PostProcessTimeStep();
     

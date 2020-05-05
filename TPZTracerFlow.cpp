@@ -12,8 +12,8 @@ TPZTracerFlow::TPZTracerFlow(int matid, int dimension) : TPZDiscontinuousGalerki
     m_mat_id = matid;
     m_dimension = dimension;
     m_mass_matrix_Q = false;
-    m_dt = 0.0;
-    m_phi = 0.0;
+    m_dt = 100.0;
+    m_phi = 1.0;
     m_fracture_epsilon = 0.0;
     
 }
@@ -130,6 +130,10 @@ int TPZTracerFlow::NSolutionVariables(int var){
 void TPZTracerFlow::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout){
 
     int s_b    = 2;
+    if (datavec.size() == 5) {
+        s_b=4;
+    }
+    
     REAL sw = datavec[s_b].sol[0][0];
 
     Solout.Resize(this->NSolutionVariables(var));
@@ -173,13 +177,16 @@ void TPZTracerFlow::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TP
 
 #ifdef PZDEBUG
     int nref =  datavec.size();
-    if (nref != 3 ) {
+    if (nref != 3 && nref !=5 ) {
         std::cout << " Erro. The size of the datavec is different from 3 \n";
         DebugStop();
     }
 #endif
-
-    int s_b = 2;
+    int s_b=2;
+    if (nref==5) {
+        s_b=4;
+    }
+ 
 
     REAL alpha = FractureFactor(datavec[s_b]);
     alpha =1.0;
@@ -237,8 +244,13 @@ void TPZTracerFlow::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMateria
         return;
     }
     
+    int nspaces = datavecleft.size();
     int q_b = 0;
     int s_b = 2;
+    
+    if ( nspaces == 5) {
+        s_b=4;
+    }
     
     // Getting phis and solution for left material data
     TPZFMatrix<REAL>  &phiS_l =  datavecleft[s_b].phi;
@@ -258,7 +270,7 @@ void TPZTracerFlow::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMateria
     for (int i = 0; i < 3; i++) {
         qn += q_l[i]*n[i];
     }
-    
+
     REAL beta = 0.0;
     // upwinding
     if (qn > 0.0) {
@@ -308,9 +320,14 @@ void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMater
     if (m_mass_matrix_Q) {
         return;
     }
-    
+    int nspaces = datavecleft.size();
     int q_b = 0;
     int s_b = 2;
+    
+    if ( nspaces == 5) {
+        s_b=4;
+    }
+  
     
     // Getting phis and solution for left material data
     TPZFMatrix<REAL>  &phiS_l =  datavecleft[s_b].phi;
@@ -322,10 +339,11 @@ void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMater
     TPZManVector<REAL,3> n = data.normal;
     TPZManVector<REAL,3> q_l =  datavecleft[q_b].sol[0];
     REAL qn = 0.0;
+    REAL tol = 10e-10;
     for (int i = 0; i < 3; i++) {
         qn += q_l[i]*n[i];
     }
-    
+ 
     switch (bc.Type()) {
             
         case 0 :    // BC inlet
@@ -345,7 +363,7 @@ void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMater
         case 1 :    // BC outlet
         {
             
-            if (qn > 0.0 || IsZero(qn)) {
+            if (qn > 0.0 || abs(qn)<tol) {
                 for (int is = 0; is < n_phi_s_l; is++) {
                     
                     ef(is + firsts_s_l) += +1.0* m_dt * weight * s_l*phiS_l(is,0)*qn;

@@ -30,6 +30,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     // THIS IS WRONG - Anxiously waiting for the theoretical development
     DebugStop();
     ef.fMat *= fSource;
+    
 }
 
 

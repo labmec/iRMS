@@ -85,12 +85,10 @@ void TMRSMixedAnalysis::RunTimeStep(){
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
-        cmesh->UpdatePreviousState(-1);
+        cmesh->UpdatePreviousState(1);
+     
         cmesh->LoadSolutionFromMultiPhysics();
-        
-        
-        
-      
+
 //
 //        m_soltransportTransfer.TransferFromMultiphysics();
         
@@ -99,8 +97,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
         
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
-        if (stop_criterion_Q && stop_criterion_corr_Q) {
-//        if (stop_criterion_Q) {
+//        if (stop_criterion_Q && stop_criterion_corr_Q) {
+        if (stop_criterion_corr_Q) {
       
             std::cout << "Mixed operator: " << std::endl;
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
