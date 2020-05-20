@@ -83,17 +83,18 @@ void TMRSMixedAnalysis::RunTimeStep(){
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
+        cmesh->UpdatePreviousState(1);
+//        Rhs() *=-1.0;
+        cmesh->LoadSolutionFromMultiPhysics();
+//        this->PostProcessTimeStep();
         dx = Solution();
         corr_norm = Norm(dx);
-        cmesh->UpdatePreviousState(1);
-     
-        cmesh->LoadSolutionFromMultiPhysics();
 
-//
 //        m_soltransportTransfer.TransferFromMultiphysics();
         
         AssembleResidual();
         res_norm = Norm(Rhs());
+        this->PostProcessTimeStep();
         
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
@@ -112,6 +113,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         }
         
     }
+    
 }
 
 

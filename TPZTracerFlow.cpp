@@ -12,7 +12,7 @@ TPZTracerFlow::TPZTracerFlow(int matid, int dimension) : TPZDiscontinuousGalerki
     m_mat_id = matid;
     m_dimension = dimension;
     m_mass_matrix_Q = false;
-    m_dt = 100.0;
+    m_dt = 0.01;
     m_phi = 1.0;
     m_fracture_epsilon = 0.0;
     
@@ -282,11 +282,15 @@ void TPZTracerFlow::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMateria
         ef(is + firsts_s_l) += +1.0 * m_dt * weight * (beta*s_l + (1.0-beta)*s_r)*phiS_l(is,0)*qn;
         
         for (int js = 0; js < n_phi_s_l; js++) {
+            std::cout<<"is + firsts_s_l "<<is + firsts_s_l<<std::endl;
+             std::cout<<"js + firsts_s_l"<<js + firsts_s_l<<std::endl;
             ek(is + firsts_s_l, js + firsts_s_l) += +1.0* m_dt * weight * beta * phiS_l(js,0) * phiS_l(is,0)*qn;
         }
         
         for (int js = 0; js < n_phi_s_r; js++) {
-            ek(is + firsts_s_l, js + firsts_s_r) += +1.0* m_dt * weight * (1.0-beta) * phiS_r(js,0) * phiS_l(is,0)*qn;
+            std::cout<<"is + firsts_s_l "<<is + firsts_s_l<<std::endl;
+            std::cout<<"js + firsts_s_l "<<js + firsts_s_r<<std::endl;
+            ek(is + firsts_s_l, js + firsts_s_r) += +1.0* m_dt * weight * (1.0-beta) * phiS_r(js,0) * phiS_r(is,0)*qn;
         }
         
     }
@@ -295,12 +299,15 @@ void TPZTracerFlow::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMateria
         
         ef(is + firsts_s_r) += -1.0* m_dt * weight * (beta*s_l + (1.0-beta)*s_r)*phiS_r(is,0)*qn;
         
+       
         for (int js = 0; js < n_phi_s_l; js++) {
-            ek(is + firsts_s_r, js + firsts_s_l) += -1.0* m_dt * weight * beta * phiS_l(js,0) * phiS_r(is,0)*qn;
+            std::cout<<"is + firsts_s_r "<<is + firsts_s_r<<std::endl;
+            std::cout<<"js + firsts_s_l "<<js + firsts_s_l<<std::endl;
+            ek(is + firsts_s_r, js + firsts_s_l) += -1.0* m_dt * weight * (1.0-beta) * phiS_l(js,0) * phiS_r(is,0)*qn;
         }
-        
+
         for (int js = 0; js < n_phi_s_r; js++) {
-            ek(is + firsts_s_r, js + firsts_s_r) += -1.0* m_dt * weight * (1.0-beta) * phiS_r(js,0) * phiS_r(is,0)*qn;
+            ek(is + firsts_s_r, js + firsts_s_l) += -1.0* m_dt * weight * (beta) * phiS_r(js,0) * phiS_l(is,0)*qn;
         }
         
     }
@@ -350,9 +357,9 @@ void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMater
         {
             
             REAL s_inlet = bc.Val2()(0,0);
-            if (qn > 0.0 || IsZero(qn)) {
-                std::cout << "TPZTracerFlow:: Outlet flux in inlet boundary condition qn = " << qn << std::endl;
-            }
+//            if (qn > 0.0 || IsZero(qn)) {
+//                std::cout << "TPZTracerFlow:: Outlet flux in inlet boundary condition qn = " << qn << std::endl;
+//            }
             for (int is = 0; is < n_phi_s_l; is++) {
                 ef(is + firsts_s_l) += +1.0* m_dt * weight * s_inlet * phiS_l(is,0)*qn;
             }
@@ -363,7 +370,7 @@ void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMater
         case 1 :    // BC outlet
         {
             
-            if (qn > 0.0 || abs(qn)<tol) {
+            if (qn > 0.0 || IsZero(qn)) {
                 for (int is = 0; is < n_phi_s_l; is++) {
                     
                     ef(is + firsts_s_l) += +1.0* m_dt * weight * s_l*phiS_l(is,0)*qn;

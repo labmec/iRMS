@@ -68,6 +68,7 @@
 
 
 TMRSDataTransfer Setting2D();
+TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL & dt, TPZFMatrix<STATE> & M_diag);
 
 void SimpleTest();
 //
@@ -91,6 +92,8 @@ void SimpleTest(){
     
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
+    aspace.CreateUniformMesh(100, 100, 1, 10);
+    
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
     
@@ -100,7 +103,8 @@ void SimpleTest(){
     bool UsePardiso_Q = true;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    
+    TPZCompMesh *mixed = dynamic_cast<TPZCompMesh*>(mixed_operator);
+   
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     std::ofstream file("mixed.vtk");
@@ -125,9 +129,16 @@ void SimpleTest(){
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
+    TPZFMatrix<REAL> solution_n;
+    solution_n = sfi_analysis->m_transport_module->Solution();
+
+    solution_n *= 0.0;
+   
+    
     
     for (int it = 1; it <= n_steps; it++) {
-        sfi_analysis->RunTimeStep();
+        sfi_analysis->RunTimeStepWithOutMemory(solution_n);
+        solution_n.Print(std::cout);
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(sim_time);
         if (sim_time >=  current_report_time) {
@@ -150,23 +161,29 @@ TMRSDataTransfer Setting2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 30.0;
-    REAL pressure_out = 20.0;
+    REAL pressure_in = 1100.0;
+    REAL pressure_out = 100.0;
     
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(2,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(4,D_Type,pressure_in);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(5,D_Type,pressure_out);
+//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
+//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(2,N_Type,zero_flux);
+//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(4,D_Type,pressure_in);
+//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(5,D_Type,pressure_out);
     
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
+      sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-3,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-4,D_Type,pressure_out);
  
     //Transport boundary Conditions
     int bc_inlet = 0;
     int bc_outlet = 1;
     REAL sat_in = 1.0;
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(3);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(2,bc_outlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(4,bc_inlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(5,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(4);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(-1,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(-2,bc_inlet,sat_in);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(-3,bc_outlet,0.0);
+     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(-4,bc_outlet,1.0);
     
 
     //Relative permermeabilities
@@ -273,12 +290,12 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_max_iter_mixed = 5;
     sim_data.mTNumerics.m_max_iter_transport = 5;
     sim_data.mTNumerics.m_max_iter_sfi = 5;
-    sim_data.mTNumerics.m_res_tol_mixed = 0.0000001;
-    sim_data.mTNumerics.m_corr_tol_mixed = 0.0000001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 5;
-    sim_data.mTNumerics.m_dt      = 100.0;
+    sim_data.mTNumerics.m_res_tol_mixed = 0.01;
+    sim_data.mTNumerics.m_corr_tol_mixed = 0.01;
+    sim_data.mTNumerics.m_res_tol_transport = 0.01;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.01;
+    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_dt      = 0.01;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = false;
     
@@ -293,7 +310,7 @@ TMRSDataTransfer Setting2D(){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 100;
+    sim_data.mTPostProcess.m_file_time_step = 0.01;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
@@ -309,5 +326,8 @@ TMRSDataTransfer Setting2D(){
     }
     sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
     return sim_data;
+}
+TPZGeoMesh *CreateUniformMesh(){
+    
 }
 

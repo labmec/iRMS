@@ -29,16 +29,18 @@ private:
     /// Number of iterations
     int m_k_iteration;
     
-    /// Mixed module
-    TMRSMixedAnalysis * m_mixed_module;
+  
     
     TPZFMatrix<STATE> m_x_mixed;
     
     TPZFMatrix<STATE> m_x_transport;
     
-   
+    
     
 public:
+    /// Mixed module
+    TMRSMixedAnalysis * m_mixed_module;
+    
     /// Transport module
     TMRSTransportAnalysis * m_transport_module;
     
@@ -65,13 +67,15 @@ public:
     
     /// Run a time step
     void RunTimeStep();
+    void RunTimeStepWithOutMemory(TPZFMatrix<REAL> &solution_n);
     
     /// Render a vtk file with requested variables for a time step
     void PostProcessTimeStep(int val=0);
     
     /// Perform a SFI iteration
     void SFIIteration();
-    
+    void SFIIterationWithOutMemory(TPZFMatrix<REAL> &solution_n);
+   
     void TransferToTransportModule();
     
     void TransferToMixedModule();

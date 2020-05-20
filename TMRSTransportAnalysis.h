@@ -29,6 +29,9 @@ private:
     
     REAL m_current_time;
     
+    TPZFMatrix<REAL> F_inlet ;
+    
+    TPZFMatrix<STATE>  M_diag;
     
 public:
     
@@ -45,7 +48,7 @@ public:
     
     /// Configurates iternal members
     void Configure(int n_threads, bool UsePardiso_Q);
-    
+    void ConfigureInitial();
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer * sim_data);
     
@@ -63,7 +66,7 @@ public:
     
     /// Run a time step
     void RunTimeStep();
-    void RunTimeStepWithoutMemory(TPZFMatrix<REAL> solution_n);
+    void RunTimeStepWithoutMemory(TPZFMatrix<REAL> &solution_n);
     /// Render a vtk file with requested variables for a time step
     void PostProcessTimeStep();
     

@@ -34,6 +34,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
 void TMRSSFIAnalysis::Configure(int n_threads, bool UsePardiso_Q){
     m_mixed_module->Configure(n_threads, UsePardiso_Q);
     m_transport_module->Configure(n_threads, UsePardiso_Q);
+   
 }
 
 void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
@@ -61,6 +62,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
     REAL error_rel_mixed = 1.0;
     REAL error_rel_transport = 1.0;
     REAL eps_tol = 10.0;
+    
 
     for (int i = 1; i <= n_iterations; i++) {
         
@@ -79,6 +81,44 @@ void TMRSSFIAnalysis::RunTimeStep(){
         
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
+ 
+        m_mixed_module->PostProcessTimeStep();
+    }
+    
+}
+void TMRSSFIAnalysis::RunTimeStepWithOutMemory(TPZFMatrix<REAL> &solution_n){
+    
+    m_x_mixed = m_mixed_module->Solution();
+    m_x_transport = m_transport_module->Solution();
+    
+    
+    int n_iterations = m_sim_data->mTNumerics.m_max_iter_sfi;
+    bool stop_criterion_Q = false;
+    REAL error_rel_mixed = 1.0;
+    REAL error_rel_transport = 1.0;
+    REAL eps_tol = 10.0;
+    
+  
+    for (int i = 1; i <= n_iterations; i++) {
+        
+        SFIIterationWithOutMemory(solution_n);
+        error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
+        
+        error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
+        
+        stop_criterion_Q = error_rel_mixed <= eps_tol && error_rel_transport <= eps_tol;
+        if (stop_criterion_Q) {
+            std::cout << "SFI converged " << std::endl;
+            std::cout << "Number of iterations = " << i << std::endl;
+            UpdateMemoryInModules();
+            break;
+        }
+        
+        m_x_mixed = m_mixed_module->Solution();
+        m_x_transport = m_transport_module->Solution();
+        solution_n =m_x_transport;
+        solution_n.Print(std::cout);
+        m_mixed_module->PostProcessTimeStep();
     }
     
 }
@@ -113,14 +153,44 @@ void TMRSSFIAnalysis::SFIIteration(){
 #endif
     }
     
-    TransferToTransportModule();
+//   m_mixed_module->PostProcessTimeStep();
+  
+//    TransferToTransportModule();
     TPZFMatrix<REAL> solution_n = m_transport_module->Solution();
-    solution_n.Print(std::cout);
-    m_transport_module->RunTimeStepWithoutMemory(solution_n);
+//    solution_n.Print(std::cout);
+    m_transport_module->RunTimeStep();
+//    m_transport_module->PostProcessTimeStep();
 //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
-    TransferToMixedModule();        // Transfer to mixed
+//    TransferToMixedModule();        // Transfer to mixed
     
  }
+void TMRSSFIAnalysis::SFIIterationWithOutMemory(TPZFMatrix<REAL> &solution_n){
+    
+    {
+        m_mixed_module->RunTimeStep();
+        
+#ifdef USING_BOOST2
+        boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
+#endif
+        
+#ifdef USING_BOOST2
+        boost::posix_time::ptime mixed_process_t2 = boost::posix_time::microsec_clock::local_time();
+        REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
+        std::cout << "Mixed approximation performed in :" << setw(10) <<  mixed_process_time/1000.0 << setw(5)   << " seconds." << std::endl;
+#endif
+    }
+    
+    m_mixed_module->PostProcessTimeStep();
+    
+    solution_n.Print(std::cout);
+    m_transport_module->RunTimeStepWithoutMemory(solution_n);
+    solution_n = m_transport_module->Solution();
+    solution_n.Print(std::cout);
+    m_transport_module->PostProcessTimeStep();
+    //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
+    //    TransferToMixedModule();        // Transfer to mixed
+    
+}
 
 void TMRSSFIAnalysis::TransferToTransportModule(){
     
@@ -211,6 +281,6 @@ void TMRSSFIAnalysis::UpdateMemoryTransportModule(){
 }
 
 void TMRSSFIAnalysis::UpdateMemoryInModules(){
-    UpdateMemoryMixedModule();
+//    UpdateMemoryMixedModule();
     UpdateMemoryTransportModule();
 }

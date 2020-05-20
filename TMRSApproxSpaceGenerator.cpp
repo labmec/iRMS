@@ -646,6 +646,8 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     mTransportOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
     TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
+//    TPZTracerFlow * volume = nullptr;
+    
     mTransportOperator->SetDefaultOrder(0);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
@@ -655,6 +657,7 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
             int materia_id = chunk.second;
             volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
             volume->SetDataTransfer(mSimData);
+//               volume = new  TPZTracerFlow(materia_id,d);
             mTransportOperator->InsertMaterialObject(volume);
         }
     }
@@ -679,6 +682,10 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
         TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
         interface->SetDataTransfer(mSimData);
         mTransportOperator->InsertMaterialObject(interface);
+        
+//        TPZTracerFlow * interface = new TPZTracerFlow(transport_matid,dimension-1);
+////        interface->SetDataTransfer(mSimData);
+//        mTransportOperator->InsertMaterialObject(interface);
     }
     
     mTransportOperator->SetDimModel(dimension);
@@ -687,6 +694,7 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     active_approx_spaces[1] = 0;
     active_approx_spaces[2] = 1;
     mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
+//    mTransportOperator->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
     
 #ifdef PZDEBUG
     std::ofstream transport_a("transport_cmesh_after.txt");
@@ -826,7 +834,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int material_id = chunk.second;
-//            volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
+//            volume = new TMRSMultiphaseFlow<TMRSMemory>(material_id,d);
 //            volume->SetDataTransfer(mSimData);
             
             volume = new TPZTracerFlow(material_id,d);
