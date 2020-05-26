@@ -436,7 +436,6 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
             
                 volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
                 volume->SetPermeability(1.0);
-            
             mMixedOperator->InsertMaterialObject(volume);
         }
     }
@@ -464,6 +463,28 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     mesh_vec[2] = DiscontinuousCmesh();
     mesh_vec[3] = DiscontinuousCmesh();
     mesh_vec[4] = DiscontinuousCmesh();
+    
+    int ncon = mesh_vec[1]->NConnects();
+    //Set Lagrange multiplier
+    for(int i=0; i<ncon; i++){
+        TPZConnect &newnod = mesh_vec[1]->ConnectVec()[i];
+        newnod.SetLagrangeMultiplier(1);
+    }
+     ncon = mesh_vec[2]->NConnects();
+    //Set Lagrange multiplier
+    for(int i=0; i<ncon; i++){
+        TPZConnect &newnod = mesh_vec[2]->ConnectVec()[i];
+        newnod.SetLagrangeMultiplier(2);
+    }
+    ncon = mesh_vec[3]->NConnects();
+    //Set Lagrange multiplier
+    for(int i=0; i<ncon; i++){
+        TPZConnect &newnod = mesh_vec[3]->ConnectVec()[i];
+        newnod.SetLagrangeMultiplier(3);
+        newnod.IncrementElConnected();
+    }
+    
+    
     TPZManVector<int,5> active_approx_spaces(5);
     active_approx_spaces[0] = 1;
     active_approx_spaces[1] = 1;

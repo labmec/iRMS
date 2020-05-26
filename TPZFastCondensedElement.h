@@ -16,6 +16,7 @@ class TPZFastCondensedElement : public TPZCondensedCompEl
 {
     // this will be the multiplying factor for the condensed stiffness matrix K11
     REAL fPermeability = 1.;
+     
     // this constant contains the source term
     REAL fSource = 0.;
     // this flag indicates whether the matrix of the father element has been computed
@@ -31,6 +32,7 @@ public:
     TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix = true) :
         TPZCondensedCompEl(ref,keepmatrix)
     {
+        
         
     }
     
@@ -60,6 +62,10 @@ public:
      * @param ef element load vector(s)
      */
     virtual void CalcResidual(TPZElementMatrix &ef) override;
+    
+    void SetPermeability(REAL perm);
+    REAL GetPermeability();
 
+    
 };
 #endif /* TPZFASTCONDENSEDELEMENT_h */

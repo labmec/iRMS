@@ -9,6 +9,7 @@
 
 #include "TPZFastCondensedElement.h"
 #include "pzcmesh.h"
+#include "pzmultiphysicselement.h"
 /**
  * @brief Computes the element stifness matrix and right hand side
  * @param ek element stiffness matrix
@@ -16,23 +17,40 @@
  */
 void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &ef)
 {
+
     if(this->fMatrixComputed == false)
     {
         TPZCondensedCompEl::CalcStiff(ek, ef);
         ShrinkElementMatrix(ek, fEK);
         ShrinkElementMatrix(ef, fEF);
         this->fMatrixComputed = true;
+        fEK=ek;
+        fEF=ef ;
     }
-    ek = fEK;
-    ef = fEF;
-    // THIS IS WRONG - ONLY THE FLUX EQUATIONS WILL BE MULTIPLIED
-    ek.fMat *= (1./fPermeability);
-    // THIS IS WRONG - Anxiously waiting for the theoretical development
-    DebugStop();
-    ef.fMat *= fSource;
+  
+        
+        ek = fEK;
+        ef = fEF;
+ 
+        
+        int nrows = ek.fMat.Rows();
+        int ncols = ek.fMat.Rows();
+    
+        
+        ek.fMat *= (1./fPermeability);
+        for (int icol=0; icol<ncols; icol++) {
+            ek.fMat(nrows-1,icol) *= fPermeability;
+        }
+        for (int irow=0; irow<nrows; irow++) {
+            ek.fMat(irow,ncols-1) *= fPermeability;
+        }
+        ek.fMat(nrows-1,ncols-1) *=fPermeability;
+        ek.Print(std::cout);
+
+ 
+//    ef.fMat *= fSource;
     
 }
-
 
 /**
  * @brief Computes the element right hand side
@@ -40,14 +58,13 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
  */
 void TPZFastCondensedElement::CalcResidual(TPZElementMatrix &ef)
 {
-    // dont know how to implement this. Lets see the theoretical derivation
-    DebugStop();
+    TPZCondensedCompEl::CalcResidual(ef);
+
 }
 
 void TPZFastCondensedElement::ShrinkElementMatrix(TPZElementMatrix &input, TPZElementMatrix &output)
 {
     output.fType = input.fType;
-    
     output.fMesh = input.fMesh;
     int nindep = 0;
     int64_t condense_size = 0;
@@ -83,34 +100,22 @@ void TPZFastCondensedElement::ShrinkElementMatrix(TPZElementMatrix &input, TPZEl
     {
         input.fMat.GetSub(row_orig-condense_size, 0, condense_size,
                           input.fMat.Cols(), output.fMat);
-
     }
-    output.fBlock.SetNBlocks(nindep);
-    for (int ic = nindep; ic < ncon; ic++) {
+    output.fBlock.SetNBlocks(ncon);
+    
+    for (int ic = nindep; ic < nindep; ic++) {
         output.fBlock.Set(ic-nindep, input.fBlock.Size(ic));
     }
     output.fBlock.Resequence();
     
-    // @TODO check if the rest of the datastructure is empty after calcstiff
-    /*
-    // @brief Vector of pointers to TPZConnect objects
-    TPZStack<int64_t> fConnect;
-    // @brief Pointer to a blocked matrix object
-    TPZFNMatrix<1000, STATE> fMat;
-    // @brief Block structure associated with fMat
-    TPZBlock<STATE> fBlock;
-    // @brief Vector of all nodes connected to the element
-    TPZStack<int64_t> fConstrConnect;
-    // @brief Pointer to the constrained matrix object
-    TPZFNMatrix<1000, STATE> fConstrMat;
-    // @brief Block structure associated with fConstrMat
-    TPZBlock<STATE> fConstrBlock;
-    
-    TPZManVector<int64_t> fDestinationIndex, fSourceIndex;
-    
-    /// list of one degree of freedom restraints
-    std::list<TPZOneShapeRestraint> fOneRestraints;
-    */
+   
 
+}
+
+void TPZFastCondensedElement::SetPermeability(REAL perm){
+    fPermeability = perm;
+}
+REAL TPZFastCondensedElement::GetPermeability(){
+    return fPermeability;
 }
 

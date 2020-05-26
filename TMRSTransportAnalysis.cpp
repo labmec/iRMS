@@ -63,7 +63,7 @@ void TMRSTransportAnalysis::ConfigureInitial(){
     {
         
         bool mass_matrix_Q = true;
-        std::set<int> volumetric_mat_ids = {1};
+        std::set<int> volumetric_mat_ids = {1,100};
         
         for (auto mat_id: volumetric_mat_ids) {
             TPZMaterial * mat = Mesh()->FindMaterial(mat_id);
@@ -71,7 +71,7 @@ void TMRSTransportAnalysis::ConfigureInitial(){
             if (!volume) {
                 continue;
             }
-            volume->SetTimeStep(0.01);
+            volume->SetTimeStep(0.5);
             volume->SetMassMatrixAssembly(mass_matrix_Q);
         }
         this->Mesh()->CleanUpUnconnectedNodes();
@@ -91,7 +91,7 @@ void TMRSTransportAnalysis::ConfigureInitial(){
     
     {
         bool mass_matrix_Q = false;
-        std::set<int> volumetric_mat_ids = {1,2};
+        std::set<int> volumetric_mat_ids = {1,100};
         
         for (auto mat_id: volumetric_mat_ids) {
             TPZMaterial * mat = Mesh()->FindMaterial(mat_id);
@@ -99,7 +99,7 @@ void TMRSTransportAnalysis::ConfigureInitial(){
             if (!volume) {
                 continue;
             }
-            volume->SetTimeStep(0.01);
+            volume->SetTimeStep(0.5);
             volume->SetMassMatrixAssembly(mass_matrix_Q);
         }
         
@@ -150,7 +150,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
-        cmesh->UpdatePreviousState(-1);
+        Rhs() *=-1.0;
+//        cmesh->UpdatePreviousState(1);
         cmesh->LoadSolutionFromMultiPhysics();
         this->PostProcessTimeStep();
         
@@ -227,10 +228,10 @@ void TMRSTransportAnalysis::RunTimeStepWithoutMemory(TPZFMatrix<REAL> &s_n){
                 this->Rhs().Print(std::cout);
 //
                 this->Rhs() *= -1.0;
-//                cmesh->UpdatePreviousState(1);
+            
                 this->Solver().Matrix()->Print(std::cout);
                 this->Solve(); /// (LU decomposition)
-            
+                cmesh->UpdatePreviousState(1.0);
                 s_np1 = this->Solution();
                 this->LoadSolution(s_np1);
                 s_n = s_np1;
