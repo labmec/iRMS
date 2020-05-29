@@ -28,8 +28,8 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
         
         //JOSE: nesse caso NAO estao sendo utilizados os valores de fEK e fEF calculado no Shrink.
         //JOSE: comentar as siguintes duas linhas e verificar o método ShrinkElementMatrix por favor.
-        fEK=ek;
-        fEF=ef ;
+//        fEK=ek;
+//        fEF=ef ;
         this->fMatrixComputed = true;
     }
     

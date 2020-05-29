@@ -8,6 +8,10 @@
 #include "TPZReservoirTools.h"
 //#include "ConfigurateCase.h"
 
+#ifdef LOG4CXX
+static LoggerPtr logger(Logger::getLogger("pz.MixedMeshSpaceControl"));
+#endif
+
 /**
  * @brief Build Computational Mesh
  * @param useSubstructure: wether use substructure
