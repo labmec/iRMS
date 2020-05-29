@@ -62,12 +62,11 @@
 #include "TMRSTransportAnalysis.h"
 #include "TPZExtendGridDimension.h"
 #include "TPZFastCondensedElement.h"
-//#include "TPZCondensedElement.h"
+#include "TPZReservoirTools.h"
 #include "pzcondensedcompel.h"
 #include <libInterpolate/Interpolate.hpp>   
 #include <libInterpolate/AnyInterpolator.hpp>
 
-void CreatedCondensedElements(TPZCompMesh *cmesh, bool KeepOneLagrangian, bool keepmatrix);
 TMRSDataTransfer Setting2D();
 TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL & dt, TPZFMatrix<STATE> & M_diag);
 
@@ -93,8 +92,8 @@ void SimpleTest(){
     
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
-    aspace.CreateUniformMesh(3, 100, 1, 10);
-    
+    aspace.CreateUniformMesh(2, 100, 1, 10);
+    aspace.GenerateMHMUniformMesh(0);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
     
@@ -105,22 +104,14 @@ void SimpleTest(){
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     TPZCompMesh *mixed = dynamic_cast<TPZCompMesh*>(mixed_operator);
-   
+    TPZVTKGeoMesh::PrintCMeshVTK(mixed_operator, file);
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     std::ofstream file("mixed.vtk");
     
-    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
+   
     
- 
-    
-//    aspace.LinkMemory(mixed_operator, transport_operator);
-//    mixed_operator->ComputeNodElCon();
-
-    std::ofstream file1("mixed_before.txt");
-    mixed_operator->Print(file1);
-//    CreatedCondensedElements(mixed_operator, false, true);
-    mixed_operator->CleanUpUnconnectedNodes();
+//    mixed_operator->CleanUpUnconnectedNodes();
     std::ofstream file2("mixed_after.txt");
     mixed_operator->Print(file2);
 //    
@@ -151,7 +142,7 @@ void SimpleTest(){
     
     for (int it = 1; it <= n_steps; it++) {
         sfi_analysis->RunTimeStepWithOutMemory(solution_n);
-//        solution_n.Print(std::cout);
+        solution_n.Print(std::cout);
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(sim_time);
         if (sim_time >=  current_report_time) {
@@ -215,10 +206,10 @@ TMRSDataTransfer Setting2D(){
     //    kro.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
 //    krw.SetInterpolationType(TRSLinearInterpolator::InterpType::THermite);
     
-    sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.resize(1);
-    sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel.resize(1);
-    sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel[0] = krw;
-    sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel[0] = kro;
+//    sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel.resize(1);
+//    sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel.resize(1);
+//    sim_data.mTPetroPhysics.mLayer_Krw_RelPerModel[0] = krw;
+//    sim_data.mTPetroPhysics.mLayer_Kro_RelPerModel[0] = kro;
     
     // Fractional flows composition
     
@@ -300,14 +291,14 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
     
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 2;
-    sim_data.mTNumerics.m_max_iter_transport = 2;
-    sim_data.mTNumerics.m_max_iter_sfi = 2;
+    sim_data.mTNumerics.m_max_iter_mixed = 5;
+    sim_data.mTNumerics.m_max_iter_transport = 5;
+    sim_data.mTNumerics.m_max_iter_sfi = 5;
     sim_data.mTNumerics.m_res_tol_mixed = 0.01;
     sim_data.mTNumerics.m_corr_tol_mixed = 0.01;
     sim_data.mTNumerics.m_res_tol_transport = 0.01;
     sim_data.mTNumerics.m_corr_tol_transport = 0.01;
-    sim_data.mTNumerics.m_n_steps = 5;
+    sim_data.mTNumerics.m_n_steps = 50;
     sim_data.mTNumerics.m_dt      = 0.01;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = false;
@@ -318,7 +309,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("q");
-    scalnames.Push("p");
+//    scalnames.Push("p");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
@@ -340,60 +331,5 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
     return sim_data;
 }
-
-/// created condensed elements for the elements that have internal nodes
-void CreatedCondensedElements(TPZCompMesh *cmesh, bool KeepOneLagrangian, bool keepmatrix)
-{
-    //    cmesh->ComputeNodElCon();
-    int64_t nel = cmesh->NElements();
-    for (int64_t el=0; el<nel; el++) {
-        TPZCompEl *cel = cmesh->Element(el);
-        if (!cel) {
-            continue;
-        }
-        int nc = cel->NConnects();
-        if (KeepOneLagrangian) {
-            int count = 0;
-            for (int ic=0; ic<nc; ic++) {
-                TPZConnect &c = cel->Connect(ic);
-                if (c.LagrangeMultiplier() > 0) {
-                    c.IncrementElConnected();
-                    count++;
-                    if(count == 1 && c.NState() == 1)
-                    {
-                        break;
-                    } else if(count == 2 && c.NState() == 2)
-                    {
-                        break;
-                    } else if(count == 3 && c.NState() == 3)
-                    {
-                        break;
-                    }
-                    
-                }
-            }
-        }
-        int ic;
-        for (ic=0; ic<nc; ic++) {
-            TPZConnect &c = cel->Connect(ic);
-            if (c.HasDependency() || c.NElConnected() > 1) {
-                continue;
-            }
-            break;
-        }
-        bool cancondense = (ic != nc);
-        if(cancondense)
-        {
-            TPZFastCondensedElement *cond = new TPZFastCondensedElement(cel, keepmatrix);
-            cond->SetPermeability(4.0);
-        }
-        
-    }
-    
-    cmesh->CleanUpUnconnectedNodes();
-    
-}
-
-
 
 

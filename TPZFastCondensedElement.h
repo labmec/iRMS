@@ -37,10 +37,12 @@ public:
     }
     
     /** @brief create a copy of the condensed computational element in the other mesh */
-    TPZFastCondensedElement(const TPZCondensedCompEl &copy, TPZCompMesh &mesh) :
+    TPZFastCondensedElement(const TPZFastCondensedElement &copy, TPZCompMesh &mesh) :
         TPZCondensedCompEl(copy, mesh)
     {
-        
+        fEK = copy.fEK;
+        fEF = copy.fEF;
+        fMatrixComputed = copy.fMatrixComputed;
     }
     
     

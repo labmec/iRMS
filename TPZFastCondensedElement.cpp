@@ -17,38 +17,43 @@
  */
 void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &ef)
 {
-
+    
     if(this->fMatrixComputed == false)
     {
+        //JOSE: A condensaçao esta sendo realizada na linha 514 de TMRSApproxSpaceGenerator.cpp
         TPZCondensedCompEl::CalcStiff(ek, ef);
+        
         ShrinkElementMatrix(ek, fEK);
         ShrinkElementMatrix(ef, fEF);
-        this->fMatrixComputed = true;
+        
+        //JOSE: nesse caso NAO estao sendo utilizados os valores de fEK e fEF calculado no Shrink.
+        //JOSE: comentar as siguintes duas linhas e verificar o método ShrinkElementMatrix por favor.
         fEK=ek;
         fEF=ef ;
+        this->fMatrixComputed = true;
     }
-  
-        
-        ek = fEK;
-        ef = fEF;
- 
-        
-        int nrows = ek.fMat.Rows();
-        int ncols = ek.fMat.Rows();
     
-        
-        ek.fMat *= (1./fPermeability);
-        for (int icol=0; icol<ncols; icol++) {
-            ek.fMat(nrows-1,icol) *= fPermeability;
-        }
-        for (int irow=0; irow<nrows; irow++) {
-            ek.fMat(irow,ncols-1) *= fPermeability;
-        }
-        ek.fMat(nrows-1,ncols-1) *=fPermeability;
-        ek.Print(std::cout);
-
- 
-//    ef.fMat *= fSource;
+    
+    ek = fEK;
+    ef = fEF;
+    
+    
+    int nrows = ek.fMat.Rows();
+    int ncols = ek.fMat.Rows();
+    
+    //JOSE: O valor de fPermmeability foi setado com o valor 20, na linha 47 do TPZReservoirTools.cpp
+    ek.fMat *= (1./fPermeability);
+    for (int icol=0; icol<ncols; icol++) {
+        ek.fMat(nrows-1,icol) *= fPermeability;
+    }
+    for (int irow=0; irow<nrows; irow++) {
+        ek.fMat(irow,ncols-1) *= fPermeability;
+    }
+    ek.fMat(nrows-1,ncols-1) *=fPermeability;
+//    ek.Print(std::cout);
+    
+    
+    ef.fMat *= fSource;
     
 }
 
@@ -58,8 +63,9 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
  */
 void TPZFastCondensedElement::CalcResidual(TPZElementMatrix &ef)
 {
+    //JOSE: ¿Como vai ser calculado o residuo agora?
     TPZCondensedCompEl::CalcResidual(ef);
-
+    
 }
 
 void TPZFastCondensedElement::ShrinkElementMatrix(TPZElementMatrix &input, TPZElementMatrix &output)
@@ -108,8 +114,8 @@ void TPZFastCondensedElement::ShrinkElementMatrix(TPZElementMatrix &input, TPZEl
     }
     output.fBlock.Resequence();
     
-   
-
+    
+    
 }
 
 void TPZFastCondensedElement::SetPermeability(REAL perm){
@@ -118,4 +124,3 @@ void TPZFastCondensedElement::SetPermeability(REAL perm){
 REAL TPZFastCondensedElement::GetPermeability(){
     return fPermeability;
 }
-

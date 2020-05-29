@@ -98,7 +98,7 @@ void TMRSSFIAnalysis::RunTimeStepWithOutMemory(TPZFMatrix<REAL> &solution_n){
     REAL error_rel_transport = 1.0;
     REAL eps_tol = 10.0;
     
-  
+    
     for (int i = 1; i <= n_iterations; i++) {
         
         SFIIterationWithOutMemory(solution_n);
@@ -140,12 +140,12 @@ void TMRSSFIAnalysis::PostProcessTimeStep(int val){
 void TMRSSFIAnalysis::SFIIteration(){
     
     {
-         m_mixed_module->RunTimeStep();
-       
+        m_mixed_module->RunTimeStep();
+        
 #ifdef USING_BOOST2
         boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
 #endif
-       
+        
 #ifdef USING_BOOST2
         boost::posix_time::ptime mixed_process_t2 = boost::posix_time::microsec_clock::local_time();
         REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
@@ -153,15 +153,15 @@ void TMRSSFIAnalysis::SFIIteration(){
 #endif
     }
     
-//   m_mixed_module->PostProcessTimeStep();
-  
-//    TransferToTransportModule();
+    //   m_mixed_module->PostProcessTimeStep();
+    
+    //    TransferToTransportModule();
     TPZFMatrix<REAL> solution_n = m_transport_module->Solution();
-//    solution_n.Print(std::cout);
-//    m_transport_module->RunTimeStep();
-//    m_transport_module->PostProcessTimeStep();
-//    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
-//    TransferToMixedModule();        // Transfer to mixed
+    //    solution_n.Print(std::cout);
+    //    m_transport_module->RunTimeStep();
+    //    m_transport_module->PostProcessTimeStep();
+    //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
+    //    TransferToMixedModule();        // Transfer to mixed
     
  }
 void TMRSSFIAnalysis::SFIIterationWithOutMemory(TPZFMatrix<REAL> &solution_n){
@@ -182,13 +182,14 @@ void TMRSSFIAnalysis::SFIIterationWithOutMemory(TPZFMatrix<REAL> &solution_n){
     
     m_mixed_module->PostProcessTimeStep();
     
-//    solution_n.Print(std::cout);
-//    m_transport_module->RunTimeStepWithoutMemory(solution_n);
-//    solution_n = m_transport_module->Solution();
-//    solution_n.Print(std::cout);
-//    m_transport_module->PostProcessTimeStep();
+    //    solution_n.Print(std::cout);
+        m_transport_module->RunTimeStepWithoutMemory(solution_n);
+    //    solution_n = m_transport_module->Solution();
+    //    solution_n.Print(std::cout);
+        m_transport_module->PostProcessTimeStep();
     //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
     //    TransferToMixedModule();        // Transfer to mixed
+    
     
 }
 

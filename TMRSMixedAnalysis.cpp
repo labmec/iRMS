@@ -53,7 +53,6 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
 
 void TMRSMixedAnalysis::RunTimeStep(){
     
-    
     TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
     if (!cmesh) {
         DebugStop();
@@ -69,42 +68,42 @@ void TMRSMixedAnalysis::RunTimeStep(){
     REAL corr_norm = 1.0;
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_mixed;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_mixed;
-
-//    AssembleResidual();
-//    res_norm = Norm(Rhs());
-//    if (res_norm < res_tol && corr_norm<corr_tol) {
-//        std::cout << "Already converged solution with res_norm = " << res_norm << std::endl;
-//        return;
-//    }
-//    
+    
+    //    AssembleResidual();
+    //    res_norm = Norm(Rhs());
+    //    if (res_norm < res_tol && corr_norm<corr_tol) {
+    //        std::cout << "Already converged solution with res_norm = " << res_norm << std::endl;
+    //        return;
+    //    }
+    //
     TPZFMatrix<STATE> dx,x(Solution());
-  
+    
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
-//        cmesh->UpdatePreviousState(1);
-//        Rhs() *=-1.0;
+        //        cmesh->UpdatePreviousState(1);
+        //        Rhs() *=-1.0;
         cmesh->LoadSolutionFromMultiPhysics();
-//        this->PostProcessTimeStep();
+        //        this->PostProcessTimeStep();
         dx = Solution();
         corr_norm = Norm(dx);
-
-//        m_soltransportTransfer.TransferFromMultiphysics();
         
-//        AssembleResidual();
+        //        m_soltransportTransfer.TransferFromMultiphysics();
+        
+        //        AssembleResidual();
         res_norm = Norm(Rhs());
-        this->PostProcessTimeStep();
+//        this->PostProcessTimeStep();
         
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
-//        if (stop_criterion_Q && stop_criterion_corr_Q) {
+        //        if (stop_criterion_Q && stop_criterion_corr_Q) {
         if (stop_criterion_corr_Q) {
-      
+            
             std::cout << "Mixed operator: " << std::endl;
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
-//            x.Print("x = ",std::cout,EMathematicaInput);
-//            Rhs().Print("r = ",std::cout,EMathematicaInput);
+            //            x.Print("x = ",std::cout,EMathematicaInput);
+            //            Rhs().Print("r = ",std::cout,EMathematicaInput);
             break;
         }
         if (m_k_iteration >= n) {
@@ -112,6 +111,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         }
         
     }
+    
     
 }
 

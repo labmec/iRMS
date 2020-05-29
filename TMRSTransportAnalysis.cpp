@@ -79,15 +79,15 @@ void TMRSTransportAnalysis::ConfigureInitial(){
         Assemble();
         std::cout << "Mass Matrix is computed." << std::endl;
         M = this->Solver().Matrix()->Clone();
-        M->Print("EK=",std::cout,EMathematicaInput);
+//        M->Print("EK=",std::cout,EMathematicaInput);
     }
     int n_rows = M->Rows();
     M_diag.Resize(n_rows,1);
-    
     for (int64_t i = 0; i < n_rows; i++) {
         M_diag(i,0) = M->Get(i, i);
         std::cout<<"Fila: "<<i<<" ,"<<M->Get(i, 0)<<"   "<<M->Get(i, 1)<<"   "<<M->Get(i, 2)<<";"<<std::endl;
     }
+    
     
     {
         bool mass_matrix_Q = false;
@@ -107,16 +107,13 @@ void TMRSTransportAnalysis::ConfigureInitial(){
         this->Assemble();
 //        M->Put(0, 0, 10333.333);
         M = this->Solver().Matrix()->Clone();
-        std::cout<<"fila 0: "<<M->Get(0,0)<<" "<<M->Get(0,1)<<"  "<<M->Get(0,2)<<std::endl;
-        std::cout<<"fila 1: "<<M->Get(1,0)<<" "<<M->Get(1,1)<<"  "<<M->Get(1,2)<<std::endl<<std::endl;
-        std::cout<<"fila 2: "<<M->Get(2,0)<<" "<<M->Get(2,1)<<"  "<<M->Get(2,2)<<std::endl;
        
         
         F_inlet = this->Rhs();
-//        F_inlet(2,0) = 10000;
+
     }
-    M_diag.Print(std::cout);
-    F_inlet.Print(std::cout);
+//    M_diag.Print(std::cout);
+//    F_inlet.Print(std::cout);
 }
 
 void TMRSTransportAnalysis::RunTimeStep(){
@@ -150,8 +147,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
-        Rhs() *=-1.0;
-//        cmesh->UpdatePreviousState(1);
+//        Rhs() *=-1.0;
+        cmesh->UpdatePreviousState(-1);
         cmesh->LoadSolutionFromMultiPhysics();
         this->PostProcessTimeStep();
         
@@ -206,7 +203,7 @@ void TMRSTransportAnalysis::RunTimeStepWithoutMemory(TPZFMatrix<REAL> &s_n){
     
   
     
-    for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
+    for(m_k_iteration = 1; m_k_iteration < n; m_k_iteration++){
         int64_t n_eq = this->Mesh()->NEquations();
         
         
@@ -219,23 +216,23 @@ void TMRSTransportAnalysis::RunTimeStepWithoutMemory(TPZFMatrix<REAL> &s_n){
             TPZFMatrix<REAL> last_state_mass(n_eq,1,0.0);
             TPZFMatrix<REAL> s_np1;
             
-            s_n.Print(std::cout);
+//            s_n.Print(std::cout);
             for (int64_t i = 0; i < n_eq; i++) {
                     last_state_mass(i,0) = M_diag(i,0)*s_n(i,0);
             }
           
                 this->Rhs() = F_inlet - last_state_mass;
-                this->Rhs().Print(std::cout);
+//                this->Rhs().Print(std::cout);
 //
                 this->Rhs() *= -1.0;
             
-                this->Solver().Matrix()->Print(std::cout);
+//                this->Solver().Matrix()->Print(std::cout);
                 this->Solve(); /// (LU decomposition)
                 cmesh->UpdatePreviousState(1.0);
                 s_np1 = this->Solution();
                 this->LoadSolution(s_np1);
                 s_n = s_np1;
-                s_n.Print(std::cout);
+//                s_n.Print(std::cout);
         }
         
         
