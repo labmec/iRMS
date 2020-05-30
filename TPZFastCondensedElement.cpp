@@ -22,8 +22,10 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     {
         //JOSE: A condensaçao esta sendo realizada na linha 514 de TMRSApproxSpaceGenerator.cpp
         TPZCondensedCompEl::CalcStiff(ek, ef);
+//        ek.fMat.Print("EK= ",std::cout,EMathematicaInput);
         
         ShrinkElementMatrix(ek, fEK);
+//        fEK.fMat.Print("EK= ",std::cout,EMathematicaInput);
         ShrinkElementMatrix(ef, fEF);
         
         //JOSE: nesse caso NAO estao sendo utilizados os valores de fEK e fEF calculado no Shrink.
@@ -42,15 +44,18 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
     
-    //JOSE: O valor de fPermmeability foi setado com o valor 20, na linha 47 do TPZReservoirTools.cpp
+//JOSE: O valor de fPermmeability foi setado com o valor 20, na linha 47 do TPZReservoirTools.cpp
+
+//JOSE: ¿Tendo restriçoes fica igual a multiplicaçao por 1/lambda?
+
 //    ek.fMat *= (1./fPermeability);
 //    for (int icol=0; icol<ncols; icol++) {
-//        ek.fMat(nrows-1,icol) *= fPermeability;
+//        ek.fMat(nrows-2,icol) *= fPermeability;
 //    }
 //    for (int irow=0; irow<nrows; irow++) {
-//        ek.fMat(irow,ncols-1) *= fPermeability;
+//        ek.fMat(irow,ncols-2) *= fPermeability;
 //    }
-//    ek.fMat(nrows-1,ncols-1) *=fPermeability;
+//    ek.fMat(nrows-2,ncols-2) *=fPermeability;
 //    ef.fMat *= fSource;
     
 }

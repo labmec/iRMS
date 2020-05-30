@@ -92,8 +92,8 @@ void SimpleTest(){
     
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
-    aspace.CreateUniformMesh(5, 100, 1, 10);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.CreateUniformMesh(2, 100, 1, 10);
+    aspace.GenerateMHMUniformMesh(1);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
     
@@ -299,7 +299,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_res_tol_transport = 0.01;
     sim_data.mTNumerics.m_corr_tol_transport = 0.01;
     sim_data.mTNumerics.m_n_steps = 5;
-    sim_data.mTNumerics.m_dt      = 0.01;
+    sim_data.mTNumerics.m_dt      = 0.2;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     

@@ -71,7 +71,7 @@ void TMRSTransportAnalysis::ConfigureInitial(){
             if (!volume) {
                 continue;
             }
-            volume->SetTimeStep(0.5);
+            volume->SetTimeStep(m_sim_data->mTNumerics.m_dt);
             volume->SetMassMatrixAssembly(mass_matrix_Q);
         }
         this->Mesh()->CleanUpUnconnectedNodes();
@@ -99,7 +99,7 @@ void TMRSTransportAnalysis::ConfigureInitial(){
             if (!volume) {
                 continue;
             }
-            volume->SetTimeStep(0.5);
+            volume->SetTimeStep(m_sim_data->mTNumerics.m_dt);
             volume->SetMassMatrixAssembly(mass_matrix_Q);
         }
         
