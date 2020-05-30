@@ -84,7 +84,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         //        cmesh->UpdatePreviousState(1);
         //        Rhs() *=-1.0;
         cmesh->LoadSolutionFromMultiPhysics();
-        //        this->PostProcessTimeStep();
+        this->PostProcessTimeStep();
         dx = Solution();
         corr_norm = Norm(dx);
         

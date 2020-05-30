@@ -28,8 +28,9 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
         
         //JOSE: nesse caso NAO estao sendo utilizados os valores de fEK e fEF calculado no Shrink.
         //JOSE: comentar as siguintes duas linhas e verificar o método ShrinkElementMatrix por favor.
-//        fEK=ek;
-//        fEF=ef ;
+        fEK=ek;
+        fEF=ef ;
+//        fEK.fMat.Print(std::cout);
         this->fMatrixComputed = true;
     }
     
@@ -42,18 +43,15 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     int ncols = ek.fMat.Rows();
     
     //JOSE: O valor de fPermmeability foi setado com o valor 20, na linha 47 do TPZReservoirTools.cpp
-    ek.fMat *= (1./fPermeability);
-    for (int icol=0; icol<ncols; icol++) {
-        ek.fMat(nrows-1,icol) *= fPermeability;
-    }
-    for (int irow=0; irow<nrows; irow++) {
-        ek.fMat(irow,ncols-1) *= fPermeability;
-    }
-    ek.fMat(nrows-1,ncols-1) *=fPermeability;
-//    ek.Print(std::cout);
-    
-    
-    ef.fMat *= fSource;
+//    ek.fMat *= (1./fPermeability);
+//    for (int icol=0; icol<ncols; icol++) {
+//        ek.fMat(nrows-1,icol) *= fPermeability;
+//    }
+//    for (int irow=0; irow<nrows; irow++) {
+//        ek.fMat(irow,ncols-1) *= fPermeability;
+//    }
+//    ek.fMat(nrows-1,ncols-1) *=fPermeability;
+//    ef.fMat *= fSource;
     
 }
 

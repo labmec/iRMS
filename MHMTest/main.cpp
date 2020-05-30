@@ -92,7 +92,7 @@ void SimpleTest(){
     
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
-    aspace.CreateUniformMesh(2, 100, 1, 10);
+    aspace.CreateUniformMesh(5, 100, 1, 10);
     aspace.GenerateMHMUniformMesh(0);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -104,7 +104,7 @@ void SimpleTest(){
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     TPZCompMesh *mixed = dynamic_cast<TPZCompMesh*>(mixed_operator);
-    TPZVTKGeoMesh::PrintCMeshVTK(mixed_operator, file);
+//    TPZVTKGeoMesh::PrintCMeshVTK(mixed_operator, file);
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     std::ofstream file("mixed.vtk");
@@ -291,17 +291,17 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
     
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 5;
-    sim_data.mTNumerics.m_max_iter_transport = 5;
-    sim_data.mTNumerics.m_max_iter_sfi = 5;
+    sim_data.mTNumerics.m_max_iter_mixed = 2;
+    sim_data.mTNumerics.m_max_iter_transport = 2;
+    sim_data.mTNumerics.m_max_iter_sfi = 2;
     sim_data.mTNumerics.m_res_tol_mixed = 0.01;
     sim_data.mTNumerics.m_corr_tol_mixed = 0.01;
     sim_data.mTNumerics.m_res_tol_transport = 0.01;
     sim_data.mTNumerics.m_corr_tol_transport = 0.01;
-    sim_data.mTNumerics.m_n_steps = 50;
+    sim_data.mTNumerics.m_n_steps = 5;
     sim_data.mTNumerics.m_dt      = 0.01;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = false;
+    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
     
     // PostProcess controls

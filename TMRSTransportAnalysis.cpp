@@ -85,7 +85,7 @@ void TMRSTransportAnalysis::ConfigureInitial(){
     M_diag.Resize(n_rows,1);
     for (int64_t i = 0; i < n_rows; i++) {
         M_diag(i,0) = M->Get(i, i);
-        std::cout<<"Fila: "<<i<<" ,"<<M->Get(i, 0)<<"   "<<M->Get(i, 1)<<"   "<<M->Get(i, 2)<<";"<<std::endl;
+//        std::cout<<"Fila: "<<i<<" ,"<<M->Get(i, 0)<<"   "<<M->Get(i, 1)<<"   "<<M->Get(i, 2)<<";"<<std::endl;
     }
     
     
@@ -216,7 +216,7 @@ void TMRSTransportAnalysis::RunTimeStepWithoutMemory(TPZFMatrix<REAL> &s_n){
             TPZFMatrix<REAL> last_state_mass(n_eq,1,0.0);
             TPZFMatrix<REAL> s_np1;
             
-//            s_n.Print(std::cout);
+            s_n.Print(std::cout);
             for (int64_t i = 0; i < n_eq; i++) {
                     last_state_mass(i,0) = M_diag(i,0)*s_n(i,0);
             }
@@ -232,7 +232,7 @@ void TMRSTransportAnalysis::RunTimeStepWithoutMemory(TPZFMatrix<REAL> &s_n){
                 s_np1 = this->Solution();
                 this->LoadSolution(s_np1);
                 s_n = s_np1;
-//                s_n.Print(std::cout);
+                s_n.Print(std::cout);
         }
         
         

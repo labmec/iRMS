@@ -980,65 +980,6 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
         
         int64_t nel = mTransportOperator->NElements();
         //vou melhorar essa codigo
-        for (int64_t el = 0; el < nel; el++) {
-            
-            TPZCompEl *cel = mTransportOperator->Element(el);
-            if(!cel) DebugStop();
-            TPZMultiphysicsElement *celmp = dynamic_cast<TPZMultiphysicsElement *>(cel);
-            if(!celmp) DebugStop();
-            TPZGeoEl *gel = cel->Reference();
-            if(!gel) DebugStop();
-            
-            int gel_dim = gel->Dimension();
-            cel_indexes[gel_dim].push_back(el);
-            
-        }
-        
-        for (auto cel_index: cel_indexes[dimension]) { // Higher dimension case
-            TPZCompEl *cel = mTransportOperator->Element(cel_index);
-            TPZMultiphysicsElement * celmult = dynamic_cast<TPZMultiphysicsElement *>(cel);
-            if (!celmult) {
-                DebugStop();
-            }
-            
-            if (!cel){continue;};
-            TPZGeoEl *gel = cel->Reference();
-            if (!gel){continue;};
-            int nsides = gel->NSides();
-            
-            for (int iside = gel->NNodes(); iside < nsides; iside++) {
-                
-                TPZGeoElSide gelside(gel,iside);
-                TPZCompElSide celside_l(cel,iside);
-                TPZGeoElSide neig = gelside.Neighbour();
-                TPZGeoEl *neihel = neig.Element();
-                TPZCompElSide celside_r = neig.Reference();
-                if ((neihel->Dimension() == gel->Dimension()) && (gel->Id() < neihel->Id()) ) {
-                    TPZGeoElBC gbc(gelside,transport_matid);
-                    
-                    int64_t index;
-                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-                }
-                if ((neihel->Dimension() == dimension - 1)) { // BC cases
-                    
-                    TPZGeoElBC gbc(gelside,neihel->MaterialId());
-                    
-                    int64_t index;
-                    
-                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-                    
-                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-                    
-                }
-                
-            }
-            
-        }
-        
-        
-        
-        
 //        for (int64_t el = 0; el < nel; el++) {
 //
 //            TPZCompEl *cel = mTransportOperator->Element(el);
@@ -1069,29 +1010,17 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
 //
 //                TPZGeoElSide gelside(gel,iside);
 //                TPZCompElSide celside_l(cel,iside);
-//                TPZGeoEl *neihel;
-//                TPZCompElSide celside_r;
-//                int verif =0;
 //                TPZGeoElSide neig = gelside.Neighbour();
-//                while (neig!= gelside) {
-//                    if (neig.Element()->Dimension() == gel->Dimension()){
-//                        neihel = neig.Element();
-//                        celside_r = neig.Reference();
-//                        verif=1;
-//                        break;
-//                    }
-//                    neig=neig.Neighbour();
-//                }
-//
-//
-//                if (verif && (gel->Id() < neihel->Id()) ) {
+//                TPZGeoEl *neihel = neig.Element();
+//                TPZCompElSide celside_r = neig.Reference();
+//                if ((neihel->Dimension() == gel->Dimension()) && (gel->Id() < neihel->Id()) ) {
 //                    TPZGeoElBC gbc(gelside,transport_matid);
 //
 //                    int64_t index;
 //                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
 //                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
 //                }
-//                if ((verif==0)) { // BC cases
+//                if ((neihel->Dimension() == dimension - 1)) { // BC cases
 //
 //                    TPZGeoElBC gbc(gelside,neihel->MaterialId());
 //
@@ -1106,6 +1035,97 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
 //            }
 //
 //        }
+        
+        
+        
+        
+        for (int64_t el = 0; el < nel; el++) {
+
+            TPZCompEl *cel = mTransportOperator->Element(el);
+            if(!cel) DebugStop();
+            TPZMultiphysicsElement *celmp = dynamic_cast<TPZMultiphysicsElement *>(cel);
+            if(!celmp) DebugStop();
+            TPZGeoEl *gel = cel->Reference();
+            if(!gel) DebugStop();
+
+            int gel_dim = gel->Dimension();
+            cel_indexes[gel_dim].push_back(el);
+
+        }
+
+        for (auto cel_index: cel_indexes[dimension]) { // Higher dimension case
+            TPZCompEl *cel = mTransportOperator->Element(cel_index);
+            TPZMultiphysicsElement * celmult = dynamic_cast<TPZMultiphysicsElement *>(cel);
+            if (!celmult) {
+                DebugStop();
+            }
+
+            if (!cel){continue;};
+            TPZGeoEl *gel = cel->Reference();
+            if (!gel){continue;};
+            int nsides = gel->NSides();
+
+            for (int iside = gel->NNodes(); iside < nsides-1; iside++) {
+
+                TPZGeoElSide gelside(gel,iside);
+                TPZCompElSide celside_l(cel,iside);
+                TPZGeoEl *neihel;
+                TPZCompElSide celside_r;
+                int verif =0;
+                TPZGeoElSide neig = gelside.Neighbour();
+                int bc_matid=0;
+                while (neig!= gelside) {
+                    if (neig.Element()->Dimension() == gel->Dimension()){
+                        neihel = neig.Element();
+                        celside_r = neig.Reference();
+                        verif=1;
+                        break;
+                    }
+                    if (neig.Element()->Dimension() == gel->Dimension() - 1){
+                        neihel = neig.Element();
+                        celside_r = neig.Reference();
+                        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+                        bool IsBoundary = false;
+                        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+                            int bc_id   = get<0>(chunk);
+                            int matid   =neihel->MaterialId();
+                            if (bc_id == matid) {
+                                IsBoundary = true;
+                                bc_matid =bc_id;
+                                break;
+                            }
+                        }
+                        if (IsBoundary==true) {
+                            break;
+                        }
+//                        break;
+                    }
+                    neig=neig.Neighbour();
+                }
+
+
+                if (verif && (gel->Id() < neihel->Id()) ) {
+                    TPZGeoElBC gbc(gelside,transport_matid);
+
+                    int64_t index;
+                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
+                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
+                }
+                if (verif==0) { // BC cases
+
+                    TPZGeoElBC gbc(gelside,bc_matid);
+
+                    int64_t index;
+
+                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
+
+                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
+
+                }
+
+            }
+
+        }
     }
     
 #ifdef PZDEBUG
