@@ -481,7 +481,8 @@ void TPZMHMixedMesh4SpacesControl::BuildMultiPhysicsMesh()
 void TPZMHMixedMesh4SpacesControl::HideTheElements()
 {
    
-    bool KeepOneLagrangian = true;
+    std::cout << "JOSE JOSE JOSE JOSE JOSE JOSE JOSE Put the right logic here!\n";
+    int KeepOneLagrangian = 3;
     if (fHybridize) {
         KeepOneLagrangian = false;
     }
@@ -554,7 +555,7 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElements()
         subcmesh->ComputeNodElCon();
 
         
-#ifdef LOG4CXX2
+#ifdef LOG4CXX
         if(logger->isDebugEnabled())
         {
             std::stringstream sout;
