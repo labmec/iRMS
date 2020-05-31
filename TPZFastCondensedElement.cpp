@@ -25,21 +25,18 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
 //        ek.fMat.Print("EK= ",std::cout,EMathematicaInput);
         
         ShrinkElementMatrix(ek, fEK);
-//        fEK.fMat.Print("EK= ",std::cout,EMathematicaInput);
         ShrinkElementMatrix(ef, fEF);
         
         //JOSE: nesse caso NAO estao sendo utilizados os valores de fEK e fEF calculado no Shrink.
         //JOSE: comentar as siguintes duas linhas e verificar o método ShrinkElementMatrix por favor.
-        fEK=ek;
-        fEF=ef ;
+//        fEK=ek;
+//        fEF=ef ;
 //        fEK.fMat.Print(std::cout);
         this->fMatrixComputed = true;
     }
     
-    
     ek = fEK;
     ef = fEF;
-    
     
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
@@ -110,10 +107,10 @@ void TPZFastCondensedElement::ShrinkElementMatrix(TPZElementMatrix &input, TPZEl
         input.fMat.GetSub(row_orig-condense_size, 0, condense_size,
                           input.fMat.Cols(), output.fMat);
     }
-    output.fBlock.SetNBlocks(ncon);
+    output.fBlock.SetNBlocks(nindep);
     
-    for (int ic = nindep; ic < nindep; ic++) {
-        output.fBlock.Set(ic-nindep, input.fBlock.Size(ic));
+    for (int ic = ncon-nindep; ic < ncon; ic++) {
+        output.fBlock.Set(ic-ncon+nindep, input.fBlock.Size(ic));
     }
     output.fBlock.Resequence();
     
