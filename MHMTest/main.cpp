@@ -92,7 +92,7 @@ void SimpleTest(){
     
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
-    aspace.CreateUniformMesh(2, 100, 1, 10);
+    aspace.CreateUniformMesh(4, 100, 1, 10);
     aspace.GenerateMHMUniformMesh(1);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -103,19 +103,8 @@ void SimpleTest(){
     bool UsePardiso_Q = true;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    TPZCompMesh *mixed = dynamic_cast<TPZCompMesh*>(mixed_operator);
-//    TPZVTKGeoMesh::PrintCMeshVTK(mixed_operator, file);
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-    std::ofstream file("mixed.vtk");
-    
-   
-    
-//    mixed_operator->CleanUpUnconnectedNodes();
-    std::ofstream file2("mixed_after.txt");
-    mixed_operator->Print(file2);
-//    
-    
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
