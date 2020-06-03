@@ -763,7 +763,7 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
         
     }
     
-    int transport_matid = 100;
+    int transport_matid = mSimData.mTGeometry.Interface_material_id;
     {
         TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
         interface->SetDataTransfer(mSimData);
@@ -944,7 +944,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
         mTransportOperator->InsertMaterialObject(face);
     }
     
-    int transport_matid = 100;
+    int transport_matid = mSimData.mTGeometry.Interface_material_id;
     {
 //        TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
          TPZTracerFlow * interface = new TPZTracerFlow (transport_matid,dimension-1);

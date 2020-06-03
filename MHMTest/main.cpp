@@ -149,7 +149,7 @@ TMRSDataTransfer Setting2D(){
     TMRSDataTransfer sim_data;
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["RockMatrix"] = 1;
-    
+    sim_data.mTGeometry.Interface_material_id = 100;
    
     int D_Type = 0;
     int N_Type = 1;
