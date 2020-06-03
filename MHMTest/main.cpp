@@ -64,7 +64,10 @@
 #include "TPZFastCondensedElement.h"
 #include "TPZReservoirTools.h"
 #include "pzcondensedcompel.h"
-#include <libInterpolate/Interpolate.hpp>   
+
+#include "AlgebraicDataTransfer.h"
+
+#include <libInterpolate/Interpolate.hpp>
 #include <libInterpolate/AnyInterpolator.hpp>
 
 TMRSDataTransfer Setting2D();

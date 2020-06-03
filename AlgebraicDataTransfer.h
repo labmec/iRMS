@@ -12,14 +12,35 @@
 #include <math.h>
 #include <iostream>
 #include <vector>
+#include "TPZMultiphysicsCompMesh.h"
+#include "AlgebraicTransport.h"
+
 class AlgebraicDataTransfer {
-    private:
-        std::vector<double> fSaturation;
-        std::vector<double> fPressure;
-        std::vector<double> fDensityOil;
-        std::vector<double> fDensityWater;
-        std::vector<double> fCompressibility;
-        std::vector<double> flambdas;
+    
+public:
+    TPZMultiphysicsCompMesh *fFluxMesh;
+    
+    TPZMultiphysicsCompMesh *fTransportMesh;
+    
+    struct TInterfaceWithVolume
+    {
+        // geometric element index of the interface element
+        int64_t fInterface;
+        // left right geometric element index of the associated volume elements
+        std::pair<int64_t, int64_t> fLeftRightGelIndex;
+        // left right volume index in the AlgebraicTransport data structure
+        std::pair<int64_t, int64_t> fLeftRightVolIndex;
+        
+        TInterfaceWithVolume() : fInterface(-1), fLeftRightGelIndex(-1,-1), fLeftRightVolIndex(-1,-1)
+        {
+            
+        }
+    };
+    // The indexes of the geometric elements corresponding to internal interfaces
+    std::map<int,TPZVec<TInterfaceWithVolume>> fInterfaceGelIndexes;
+    
+    
+    
     public:
     
     /// Default constructor
@@ -34,21 +55,20 @@ class AlgebraicDataTransfer {
     /// Default desconstructor
     ~AlgebraicDataTransfer();
     
-    void CalcLambdas();
-    void CalcDensities();
-    double CalcLambda(double sw, double paverage, double densityo, double densityw);
-    double CalcDensity(double paverage,double compress, double reff,  double pref);
+    void SetMeshes(TPZMultiphysicsCompMesh &fluxmesh, TPZMultiphysicsCompMesh &transportmesh)
+    {
+        fFluxMesh = &fluxmesh;
+        fTransportMesh = &transportmesh;
+    }
     
-    void SetSaturation(std::vector<double> saturation);
-    void SetPressure(std::vector<double> pressure);
-    void SetDensities(std::vector<double> densityo, std::vector<double> densityw);
-    void SetCompressibility(std::vector<double> compressibility);
+    // compute the data transfer data structures between the fluxmesh and transport class
+    void BuildTransportDataStructure(AlgebraicTransport &transport);
     
-    std::vector<double> GetSaturation();
-    std::vector<double> GetPressure();
-    std::vector<double> GetWaterDensity();
-    std::vector<double> GetOilDensity();
-    std::vector<double> GetCompressibility();
+    // Identify the geometric elements corresponding to interface elements. Order them as
+    // a function of the number of corner nodes
+    void IdentifyInterfaceGeometricElements();
     
+    // print the datastructure
+    void Print(std::ostream &out = std::cout);
 };
 #endif /* AlgebraicDataTransfer_h */
