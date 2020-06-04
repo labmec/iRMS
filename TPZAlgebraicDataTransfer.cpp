@@ -15,11 +15,16 @@ TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer() : fFluxMesh(0), fTransportM
 }
 
 /// Copy constructor
-TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer(const TPZAlgebraicDataTransfer & other){
+TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer(const TPZAlgebraicDataTransfer & other) : fFluxMesh(other.fFluxMesh), fTransportMesh(other.fTransportMesh), fInterfaceGelIndexes(other.fInterfaceGelIndexes), fVolumeElements(other.fVolumeElements)
+{
 }
 
 /// Assignement constructor
 const TPZAlgebraicDataTransfer & TPZAlgebraicDataTransfer::operator=(const TPZAlgebraicDataTransfer & other){
+    fFluxMesh = other.fFluxMesh;
+    fTransportMesh = other.fTransportMesh;
+    fInterfaceGelIndexes = other.fInterfaceGelIndexes;
+    fVolumeElements = other.fVolumeElements;
     return *this;
     
 }
@@ -33,6 +38,7 @@ const TPZAlgebraicDataTransfer & TPZAlgebraicDataTransfer::operator=(const TPZAl
 void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport &transport)
 {
     IdentifyInterfaceGeometricElements();
+    this->IdentifyVolumeGeometricElements();
     Print();
 }
 
@@ -121,10 +127,56 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
     int64_t nel = gmesh->NElements();
     TPZVec<int64_t> geometricvolume(nel,0);
+    std::map<int,int64_t> volumecount_matid;
+    TPZVec<int64_t> VolumeElementIndex(fTransportMesh->NElements(),-1);
+    
     for(auto it = fInterfaceGelIndexes.begin(); it != fInterfaceGelIndexes.end(); it++)
     {
         TPZVec<TInterfaceWithVolume> &facevec = it->second;
-        
+        int64_t nfaces = facevec.size();
+        for(int64_t iface = 0; iface<nfaces; iface++)
+        {
+            int64_t gelindex = facevec[iface].fInterface_gelindex;
+            int64_t celindex = facevec[iface].fInterface_celindex;
+            TPZCompEl *cel = fTransportMesh->Element(celindex);
+            TPZMultiphysicsInterfaceElement *intface = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
+            TPZCompEl* left = intface->LeftElement();
+            TPZGeoEl *leftgel = left->Reference();
+            int leftmatid = left->Reference()->MaterialId();
+            int64_t leftindex = left->Index();
+            if(VolumeElementIndex[leftindex] == -1)
+            {
+                VolumeElementIndex[leftindex] = volumecount_matid[leftmatid];
+                volumecount_matid[leftmatid]++;
+            }
+            TPZCompEl *right = intface->RightElement();
+            TPZGeoEl *rightgel = right->Reference();
+            int rightmatid = right->Reference()->MaterialId();
+            int64_t rightindex = right->Index();
+            if(VolumeElementIndex[rightindex] == -1)
+            {
+                VolumeElementIndex[rightindex] = volumecount_matid[rightmatid];
+                volumecount_matid[rightmatid]++;
+            }
+            facevec[iface].fLeftRightGelIndex = {leftgel->Index(),rightgel->Index()};
+            facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
+        }
+    }
+    
+    for(auto it = volumecount_matid.begin(); it != volumecount_matid.end(); it++)
+    {
+        fVolumeElements[it->first].Resize(it->second, -1);
+    }
+    
+    int64_t nelcomp = fTransportMesh->NElements();
+    for(int64_t el = 0; el<nelcomp; el++)
+    {
+        if(VolumeElementIndex[el] == -1) continue;
+        TPZCompEl *cel = fTransportMesh->Element(el);
+        TPZGeoEl *gel = cel->Reference();
+        int matid = gel->MaterialId();
+        int64_t volindex = VolumeElementIndex[el];
+        fVolumeElements[matid][volindex] = el;
     }
 }
 
@@ -144,7 +196,27 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
             TPZGeoEl *gel = gmesh->Element(gelindex[el].fInterface_gelindex);
             int matid = gel->MaterialId();
             int ncorner = gel->NCornerNodes();
-            out << "gel index " << gelindex[el].fInterface_gelindex << " ncorner " << ncorner << " matid " << matid << std::endl;
+            TInterfaceWithVolume &intface = gelindex[el];
+            out << "el = " << el << " gel index " << intface.fInterface_gelindex << " ncorner " << ncorner << " matid " << matid << std::endl;
+            out << "         cel index " << intface.fInterface_celindex << " leftright gelindex " <<
+            intface.fLeftRightGelIndex.first << " " << intface.fLeftRightGelIndex.second << std::endl;
+            out << "         leftright alg vol index " << intface.fLeftRightVolIndex << std::endl;
+        }
+    }
+    out << "Number of volume materials " << fVolumeElements.size() << std::endl;
+    
+    for(auto it = fVolumeElements.begin(); it != fVolumeElements.end(); it++)
+    {
+        out << "Volume elements for material id = " << it->first << std::endl;
+        TPZVec<int64_t> &volel_indexes = it->second;
+        int64_t nel = volel_indexes.size();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            int64_t celindex = volel_indexes[el];
+            TPZCompEl *cel = fTransportMesh->Element(celindex);
+            TPZGeoEl *gel = cel->Reference();
+            int64_t gelindex = gel->Index();
+            out << "el = " << el << " gel index " << gelindex << " matid " << gel->MaterialId() << " dim " << gel->Dimension() << std::endl;
         }
     }
 }

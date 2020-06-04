@@ -38,10 +38,10 @@ public:
             
         }
     };
-    // The indexes of the geometric elements corresponding to internal interfaces
+    // Interface data structure, one material at a time
     std::map<int,TPZVec<TInterfaceWithVolume>> fInterfaceGelIndexes;
     
-    // The volume elements identified by material id
+    // The index of the computational volume elements in the transport mesh identified by material id
     std::map<int,TPZVec<int64_t>> fVolumeElements;
     
     

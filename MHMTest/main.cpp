@@ -108,6 +108,13 @@ void SimpleTest(){
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
+    
+    TPZAlgebraicTransport transport;
+    TPZAlgebraicDataTransfer transfer;
+    transfer.SetMeshes(*mixed_operator, *transport_operator);
+    transfer.BuildTransportDataStructure(transport);
+    exit(0);
+    
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
