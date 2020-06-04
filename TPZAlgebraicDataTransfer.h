@@ -13,9 +13,9 @@
 #include <iostream>
 #include <vector>
 #include "TPZMultiphysicsCompMesh.h"
-#include "AlgebraicTransport.h"
+#include "TPZAlgebraicTransport.h"
 
-class AlgebraicDataTransfer {
+class TPZAlgebraicDataTransfer {
     
 public:
     TPZMultiphysicsCompMesh *fFluxMesh;
@@ -49,16 +49,16 @@ public:
     public:
     
     /// Default constructor
-    AlgebraicDataTransfer();
+    TPZAlgebraicDataTransfer();
     
     /// Copy constructor
-    AlgebraicDataTransfer(const AlgebraicDataTransfer & other);
+    TPZAlgebraicDataTransfer(const TPZAlgebraicDataTransfer & other);
     
     /// Assignement constructor
-    const AlgebraicDataTransfer & operator=(const AlgebraicDataTransfer & other);
+    const TPZAlgebraicDataTransfer & operator=(const TPZAlgebraicDataTransfer & other);
     
     /// Default desconstructor
-    ~AlgebraicDataTransfer();
+    ~TPZAlgebraicDataTransfer();
     
     void SetMeshes(TPZMultiphysicsCompMesh &fluxmesh, TPZMultiphysicsCompMesh &transportmesh)
     {
@@ -67,7 +67,7 @@ public:
     }
     
     // compute the data transfer data structures between the fluxmesh and transport class
-    void BuildTransportDataStructure(AlgebraicTransport &transport);
+    void BuildTransportDataStructure(TPZAlgebraicTransport &transport);
     
     // Identify the geometric elements corresponding to interface elements. Order them as
     // a function of the number of corner nodes

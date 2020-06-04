@@ -14,7 +14,7 @@
 
 #include "TPZMultiphysicsCompMesh.h"
 
-class AlgebraicTransport {
+class TPZAlgebraicTransport {
     
 public:
     int fNFluxCoefficients;
@@ -32,7 +32,6 @@ public:
     // CELL DATA
     // Volume of the cells
     std::vector<REAL> fVolumes;
-    
     std::vector<double> fSaturation;
     std::vector<double> fPressure;
     std::vector<double> fDensityOil;
@@ -42,16 +41,16 @@ public:
 
 public:
      /// Default constructor
-    AlgebraicTransport();
+    TPZAlgebraicTransport();
     
     /// Copy constructor
-    AlgebraicTransport(const AlgebraicTransport & other);
+    TPZAlgebraicTransport(const TPZAlgebraicTransport & other);
     
     /// Assignement constructor
-    const AlgebraicTransport & operator=(const AlgebraicTransport & other);
+    const TPZAlgebraicTransport & operator=(const TPZAlgebraicTransport & other);
     
     /// Default desconstructor
-    ~AlgebraicTransport();
+    ~TPZAlgebraicTransport();
     
     void BuildDataStructures(TPZMultiphysicsCompMesh &transportmesh);
     

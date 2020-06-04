@@ -65,7 +65,7 @@
 #include "TPZReservoirTools.h"
 #include "pzcondensedcompel.h"
 
-#include "AlgebraicDataTransfer.h"
+#include "TPZAlgebraicDataTransfer.h"
 
 #include <libInterpolate/Interpolate.hpp>
 #include <libInterpolate/AnyInterpolator.hpp>
@@ -95,8 +95,8 @@ void SimpleTest(){
     
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
-    aspace.CreateUniformMesh(4, 100, 1, 10);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.CreateUniformMesh(2, 100, 1, 10);
+    aspace.GenerateMHMUniformMesh(0);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
     
@@ -113,7 +113,8 @@ void SimpleTest(){
     sfi_analysis->SetDataTransfer(&sim_data);
 //    sfi_analysis->m_mixed_module->RunTimeStep();
   
-    
+    TPZAlgebraicTransport trans;
+    trans.BuildDataStructures(*transport_operator);
     
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;

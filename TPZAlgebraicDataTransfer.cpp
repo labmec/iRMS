@@ -5,32 +5,32 @@
 //  Created by Jose on 6/1/20.
 //
 
-#include "AlgebraicDataTransfer.h"
+#include "TPZAlgebraicDataTransfer.h"
 
 
 /// Default constructor
-AlgebraicDataTransfer::AlgebraicDataTransfer() : fFluxMesh(0), fTransportMesh(0)
+TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer() : fFluxMesh(0), fTransportMesh(0)
 {
     
 }
 
 /// Copy constructor
-AlgebraicDataTransfer::AlgebraicDataTransfer(const AlgebraicDataTransfer & other){
+TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer(const TPZAlgebraicDataTransfer & other){
 }
 
 /// Assignement constructor
-const AlgebraicDataTransfer & AlgebraicDataTransfer::operator=(const AlgebraicDataTransfer & other){
+const TPZAlgebraicDataTransfer & TPZAlgebraicDataTransfer::operator=(const TPZAlgebraicDataTransfer & other){
     return *this;
     
 }
 
 /// Default desconstructor
- AlgebraicDataTransfer::~AlgebraicDataTransfer(){
+ TPZAlgebraicDataTransfer::~TPZAlgebraicDataTransfer(){
     
 }
 
 // compute the data transfer data structures between the fluxmesh and transport class
-void AlgebraicDataTransfer::BuildTransportDataStructure(AlgebraicTransport &transport)
+void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport &transport)
 {
     IdentifyInterfaceGeometricElements();
     Print();
@@ -38,7 +38,7 @@ void AlgebraicDataTransfer::BuildTransportDataStructure(AlgebraicTransport &tran
 
 // Identify the geometric elements corresponding to interface elements. Order them as
 // a function of the number of corner nodes
-void AlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
+void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
 {
     // look for the geometric elements corresponding to interface elements
     // order them as a function of the number of corner nodes
@@ -116,7 +116,7 @@ void AlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
 }
 
 // Identify volume information to the interface data structure (TInterfaceWithVolume)
-void AlgebraicDataTransfer::IdentifyVolumeGeometricElements()
+void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
 {
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
     int64_t nel = gmesh->NElements();
@@ -130,7 +130,7 @@ void AlgebraicDataTransfer::IdentifyVolumeGeometricElements()
 
 
 // print the datastructure
-void AlgebraicDataTransfer::Print(std::ostream &out)
+void TPZAlgebraicDataTransfer::Print(std::ostream &out)
 {
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
     out << "Number of interface materials " << fInterfaceGelIndexes.size();
