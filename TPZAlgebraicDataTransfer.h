@@ -14,6 +14,7 @@
 #include <vector>
 #include "TPZMultiphysicsCompMesh.h"
 #include "TPZAlgebraicTransport.h"
+class TPZSubCompMesh;
 
 class TPZAlgebraicDataTransfer {
     
@@ -29,22 +30,62 @@ public:
         // computational element index of the interface element
         int64_t fInterface_celindex;
         // left right geometric element index of the associated volume elements
-        std::pair<int64_t, int64_t> fLeftRightGelIndex;
+        std::pair<TPZGeoElSideIndex, TPZGeoElSideIndex> fLeftRightGelSideIndex;
         // left right volume index in the AlgebraicTransport data structure
         std::pair<int64_t, int64_t> fLeftRightVolIndex;
         
-        TInterfaceWithVolume() : fInterface_gelindex(-1), fInterface_celindex(-1), fLeftRightGelIndex(-1,-1), fLeftRightVolIndex(-1,-1)
+        TInterfaceWithVolume() : fInterface_gelindex(-1), fInterface_celindex(-1), fLeftRightGelSideIndex(), fLeftRightVolIndex(-1,-1)
         {
             
         }
     };
+    
+    struct TFromMixedToTransport
+    {
+        /// material id associated with this transfer structure
+        int fMatid;
+        /// integer of the flux data structure
+        int flux_sequence;
+        /// gather vector with respect to the solution of the mixed mesh
+        std::vector<int64_t> fGather;
+        /// scatter vector with respect to the transport interface
+        std::vector<int64_t> fScatter;
+        /// pointer to the matrix data structure
+        TPZFMatrix<REAL> *fFrom;
+        /// pointer to the vector data structure
+        std::vector<REAL> *fTarget;
+        /// pointer to the computational mesh
+        TPZCompMesh *fMixedMesh;
+        
+        TFromMixedToTransport();
+        
+        TFromMixedToTransport(const TFromMixedToTransport &copy);
+        
+        TFromMixedToTransport &operator=(const TFromMixedToTransport &copy);
+        
+        ~TFromMixedToTransport()
+        {
+            
+        }
+        
+        void Print(std::ostream &out);
+        
+        void TransferSolution();
+    };
+    
     // Interface data structure, one material at a time
     std::map<int,TPZVec<TInterfaceWithVolume>> fInterfaceGelIndexes;
     
     // The index of the computational volume elements in the transport mesh identified by material id
     std::map<int,TPZVec<int64_t>> fVolumeElements;
     
+    /// Interface element associated with each volumetric geometric element/side when applicable
+    // the size of this data structure is Number Geometric Elements x 6
+    // the interface index is related to the algebraic data structure
+    TPZFMatrix<int64_t> fInterfaceByGeom;
     
+    /// List of transfer information from the mixed mesh to the transport mesh
+    std::map<int,std::list<TFromMixedToTransport>> fTransferMixedToTransport;
     
     public:
     
@@ -74,9 +115,31 @@ public:
     void IdentifyInterfaceGeometricElements();
     
     // Identify volume information to the interface data structure (TInterfaceWithVolume)
+    // will loop over the interface elements, identify left and right elements and
+    // initialize the fInterfaceByGeom data structure
     void IdentifyVolumeGeometricElements();
     
     // print the datastructure
     void Print(std::ostream &out = std::cout);
+    
+    // identify material of a face which is connected to a given geometric element
+    int IdentifyMaterial(TPZGeoElSideIndex gelsideindex, int64_t faceindex);
+
+    // identify material of a face which is connected to a given geometric element
+    int IdentifyMaterial(const TPZGeoElSide &gelside);
+    
+    // find the neighbouring interface element
+    TPZGeoElSide IdentifyInterfaceElement(const TPZGeoElSide &gelside);
+
+    /// extract the list of computational element from a substructured computational mesh
+    // this method also searches for elements in element groups and condensed elements
+    // each computational element has an associated geometric element
+    static void GetElementAndSubmeshPointers(TPZCompMesh &mixedmesh, std::list<TPZCompEl *> &elpointers, std::list<TPZSubCompMesh *> &submeshes);
+    
+    /// build the data structure from mixed to transport
+    // this method finds the correspondence between the connects of the volume
+    // elements and the interfaces of the transport mesh
+    void BuildMixedToTransportDataStructures(TPZCompMesh *fluxmesh);
+    
 };
 #endif /* AlgebraicDataTransfer_h */

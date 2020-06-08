@@ -109,6 +109,10 @@ void SimpleTest(){
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     
+    {
+        std::ofstream out("fluxmesh.txt");
+        mixed_operator->MeshVector()[0]->Print(out);
+    }
     TPZAlgebraicTransport transport;
     TPZAlgebraicDataTransfer transfer;
     transfer.SetMeshes(*mixed_operator, *transport_operator);
