@@ -379,6 +379,8 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
             if(nc == 1)
             {
                 // a boundary condition element
+                // boundary elements are not considered
+                continue;
                 int64_t cindex = cel->ConnectIndex(0);
                 if(shouldtransfer[cindex] != 0) continue;
                 TPZGeoElSide gelside(gel,gel->NSides()-1);
