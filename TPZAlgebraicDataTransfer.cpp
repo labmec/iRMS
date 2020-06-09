@@ -10,6 +10,7 @@
 #include "pzcondensedcompel.h"
 #include "pzelementgroup.h"
 #include "pzmultiphysicselement.h"
+#include "TPZFastCondensedElement.h"
 
 /// Default constructor
 TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer() : fFluxMesh(0), fTransportMesh(0)
@@ -44,6 +45,8 @@ void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport
     IdentifyInterfaceGeometricElements();
     this->IdentifyVolumeGeometricElements();
     BuildMixedToTransportDataStructures(fFluxMesh);
+    TPZVec<int64_t> Volume_Index;
+    BuildTransportToMixedCorrespondenceDatastructure(fFluxMesh, Volume_Index);
     Print();
     BuildTransportData(transport);
     
@@ -557,6 +560,90 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
                 TFromMixedToTransport &transport = itlist;
                 transport.Print(out);
             }
+        }
+    }
+}
+
+// Build the data structure which defines the correspondence between
+// algebraic transport cells and indexes of mixed fast condensed elements
+void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(TPZCompMesh *fluxmesh,
+                                                                                TPZVec<int64_t> &Volume_Index)
+{
+    // build a vector of the size of the geometric elements
+    // where applicable the value of the vector is the index of the
+    // algebraic transport volume
+    TPZGeoMesh *gmesh = fTransportMesh->Reference();
+    int64_t nel_geo = gmesh->NElements();
+//    TPZVec<int64_t> Volume_Index(nel_geo,-10);
+    if(Volume_Index.size() != nel_geo)
+    {
+        Volume_Index.Resize(nel_geo);
+        Volume_Index.Fill(-10);
+        for(auto imat_it : fVolumeElements)
+        {
+            for(auto vec_it : imat_it.second)
+            {
+                TPZCompEl *cel = fTransportMesh->Element(vec_it);
+                if(cel->NConnects() != 0)
+                {
+                    TPZGeoEl *gel = cel->Reference();
+                    int64_t geo_index = gel->Index();
+                    int matid = gel->MaterialId();
+                    if(matid != imat_it.first) DebugStop();
+                    Volume_Index[geo_index] = vec_it;
+                }
+            }
+        }
+    }
+    if(!fluxmesh) DebugStop();
+    std::list<TPZCompEl *> cellist;
+    std::list<TPZSubCompMesh *> submeshes;
+    GetElementAndSubmeshPointers(*fluxmesh,cellist,submeshes);
+    if(cellist.size())
+    {
+        int64_t num_elements = 0;
+        // first count the number of volume cells in the mesh
+        for(auto cel : cellist)
+        {
+            // skip boundary elements
+            if(cel->NConnects() == 1) continue;
+            int64_t celindex = cel->Index();
+            int64_t gelindex = cel->Reference()->Index();
+            if(Volume_Index[gelindex] < 0) continue;
+            TPZCompEl *celcondensed = fluxmesh->Element(celindex);
+            TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(celcondensed);
+            if(!fast) DebugStop();
+            num_elements++;
+        }
+        if (num_elements > 0) {
+            TransportToMixedCorrespondence transport;
+            transport.fMixedMesh = fluxmesh;
+            transport.fMixedCell.resize(num_elements);
+            transport.fTransportCell.resize(num_elements);
+            int64_t count = 0;
+            for(auto cel : cellist)
+            {
+                // skip boundary elements
+                if(cel->NConnects() == 1) continue;
+                int64_t celindex = cel->Index();
+                int64_t gelindex = cel->Reference()->Index();
+                if(Volume_Index[gelindex] < 0) continue;
+                TPZCompEl *celcondensed = fluxmesh->Element(celindex);
+                TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(celcondensed);
+                if(!fast) DebugStop();
+                transport.fMixedCell[count] = fast;
+                transport.fTransportCell[count] = Volume_Index[gelindex];
+                count++;
+            }
+            if(count != num_elements) DebugStop();
+            fTransportMixedCorrespondence.push_back(transport);
+        }
+    }
+    if(submeshes.size() != 0)
+    {
+        for(auto sub : submeshes)
+        {
+            BuildTransportToMixedCorrespondenceDatastructure(sub, Volume_Index);
         }
     }
 }

@@ -15,6 +15,7 @@
 #include "TPZMultiphysicsCompMesh.h"
 #include "TPZAlgebraicTransport.h"
 class TPZSubCompMesh;
+class TPZFastCondensedElement;
 
 class TPZAlgebraicDataTransfer {
     
@@ -73,6 +74,31 @@ public:
         void TransferSolution();
     };
     
+    struct TransportToMixedCorrespondence
+    {
+        
+        TPZCompMesh *fMixedMesh;
+        
+        
+        std::vector<int64_t> fTransportCell;
+        
+        std::vector<TPZFastCondensedElement *> fMixedCell;
+        
+        TransportToMixedCorrespondence() : fMixedMesh(0) {}
+        
+        TransportToMixedCorrespondence(const TransportToMixedCorrespondence &cp) : fMixedMesh(cp.fMixedMesh), fTransportCell(cp.fTransportCell),
+        fMixedCell(cp.fMixedCell) {}
+        
+        TransportToMixedCorrespondence &operator=(const TransportToMixedCorrespondence &cp)
+        {
+            fMixedMesh = cp.fMixedMesh;
+            fTransportCell = cp.fTransportCell;
+            fMixedCell = cp.fMixedCell;
+            return *this;
+        }
+        
+    };
+    
     // Interface data structure, one material at a time
     std::map<int,TPZVec<TInterfaceWithVolume>> fInterfaceGelIndexes;
     
@@ -86,6 +112,9 @@ public:
     
     /// List of transfer information from the mixed mesh to the transport mesh
     std::map<int,std::list<TFromMixedToTransport>> fTransferMixedToTransport;
+    
+    /// List of correspondence of transport volumes and mixed elements for each mesh
+    std::list<TransportToMixedCorrespondence> fTransportMixedCorrespondence;
     
     public:
     
@@ -109,7 +138,15 @@ public:
     
     // compute the data transfer data structures between the fluxmesh and transport class
     void BuildTransportDataStructure(TPZAlgebraicTransport &transport);
+    
+    // Resizes the datastructures of the transport object
     void BuildTransportData(TPZAlgebraicTransport &transport);
+    
+    // Build the data structure which defines the correspondence between
+    // algebraic transport cells and indexes of mixed fast condensed elements
+    // @param Volume_indexes : for each geometric element the algebraic volume index, if applicable, otherwise -10
+    void BuildTransportToMixedCorrespondenceDatastructure(TPZCompMesh *fluxmesh, TPZVec<int64_t> &Volume_indexes);
+    
     // Identify the geometric elements corresponding to interface elements. Order them as
     // a function of the number of corner nodes
     void IdentifyInterfaceGeometricElements();
