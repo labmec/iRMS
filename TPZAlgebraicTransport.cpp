@@ -14,34 +14,18 @@ TPZAlgebraicTransport::TPZAlgebraicTransport(){
 
 /// Copy constructor
 TPZAlgebraicTransport::TPZAlgebraicTransport(const TPZAlgebraicTransport & other){
-//    fNFluxCoefficients = other.fNFluxCoefficients;
-//    fCoefficientsFlux = other.fCoefficientsFlux;
-//    fIntegralFluxFunctions = other.fIntegralFluxFunctions;
-//    fIntegralFlux = other.fIntegralFlux;
-//    fFluxSing = other.fFluxSing;
-//    fNormalFaceDirection = other.fNormalFaceDirection;
-//    fSaturation= other.fSaturation;
-//    fPressure = other.fPressure;
-//    fDensityOil = other.fDensityOil;
-//    fDensityWater = other.fDensityWater;
-//    fCompressibility = other.fCompressibility;
-//    flambdas = other.flambdas;
+    fNFluxCoefficients = other.fNFluxCoefficients;
+    fNVolumesTransport = other.fNVolumesTransport;
+    fCellsData = other.fCellsData;
+    fInterfaceData = other.fInterfaceData;
 }
 
 /// Assignement constructor
 const TPZAlgebraicTransport & TPZAlgebraicTransport::operator=(const TPZAlgebraicTransport & other){
-//    fNFluxCoefficients = other.fNFluxCoefficients;
-//    fCoefficientsFlux = other.fCoefficientsFlux;
-//    fIntegralFluxFunctions = other.fIntegralFluxFunctions;
-//    fIntegralFlux = other.fIntegralFlux;
-//    fFluxSing = other.fFluxSing;
-//    fNormalFaceDirection = other.fNormalFaceDirection;
-//    fSaturation= other.fSaturation;
-//    fPressure = other.fPressure;
-//    fDensityOil = other.fDensityOil;
-//    fDensityWater = other.fDensityWater;
-//    fCompressibility = other.fCompressibility;
-//    flambdas = other.flambdas;
+    fNFluxCoefficients = other.fNFluxCoefficients;
+    fNVolumesTransport = other.fNVolumesTransport;
+    fCellsData = other.fCellsData;
+    fInterfaceData = other.fInterfaceData;
     return *this;
 }
 TPZAlgebraicTransport::~TPZAlgebraicTransport(){
@@ -162,7 +146,7 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
     out<<"DensityOil = "<<this->fDensityOil<<std::endl;
     out<<"Saturation = "<<this->fSaturation<<std::endl;
     out<<"Lambda = "<<this->flambda<<std::endl;
-    
+    out <<std::endl;
 }
 void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){
     
@@ -180,4 +164,5 @@ void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){
     out << "fNormalFaceDirection :";
     for (auto const& value : this->fNormalFaceDirection) out << value << ' ';
     out << std::endl;
+    out <<" " <<std::endl;
 }
