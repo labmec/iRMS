@@ -17,29 +17,60 @@
 class TPZAlgebraicTransport {
     
 public:
-    int fNFluxCoefficients;
-    //vector for each multiplying coefficient of fluxes
-    std::vector< std::vector<REAL> > fCoefficientsFlux;
-    //Integral of the flux functions associated with faces
-    std::vector< std::vector<REAL> > fIntegralFluxFunctions;
-    //  Integral of the flux
-    std::vector<REAL>  fIntegralFlux;
-    //Sign with respect to the natural orientation of the flux (+1 or -1)
-    std::vector<REAL> fFluxSing;
-    //Direction of the normal to the face
-    std::vector<REAL> fNormalFaceDirection;
+    
+    struct TInterfaceDataTransport
+    {
+        int64_t gelIndex;
+        //vector for each multiplying coefficient of fluxes
+        std::vector<REAL> fCoefficientsFlux;
+        //Integral of the flux functions associated with faces
+        std::vector<REAL> fIntegralFluxFunctions;
+        //  Integral of the flux
+        std::vector<REAL>  fIntegralFlux;
+        //Sign with respect to the natural orientation of the flux (+1 or -1)
+        REAL fFluxSing;
+        //Direction of the normal to the face
+        std::vector<REAL> fNormalFaceDirection;
+        
+        TInterfaceDataTransport(){
+            
+        }
+        void Print(std::ostream &out);
+    };
     
     // CELL DATA
-    // Volume of the cells
-    std::vector<REAL> fVolumes;
-    std::vector<double> fSaturation;
-    std::vector<double> fPressure;
-    std::vector<double> fDensityOil;
-    std::vector<double> fDensityWater;
-    std::vector<double> fCompressibility;
-    std::vector<double> flambdas;
+    struct TCellData{
+        int  index;
+        REAL fVolume;
+        REAL fSaturation;
+        REAL fPressure;
+        REAL fDensityOil;
+        REAL fDensityWater;
+        REAL flambda;
+        
+        TCellData() : index(-1), fVolume(-1), fSaturation(0.0), fPressure(-1), fDensityOil(800.00),fDensityWater(1000.00), flambda(1)
+        {
+            
+        }
+        
+        void Print(std::ostream &out);
+    };
+    // fCompressibility[0] = water, fCompressibility[1]=oil, fCompressibility[2]=gas etc.
+    std::vector<REAL> fCompressibility;
+    std::vector<REAL> fReferencePressures;
+    std::vector<REAL> fReferenceDensity;
+    
+    int fNFluxCoefficients;
+    
+    // Cells data structure, one material at a time
+    std::map<int, std::vector<TCellData>> fCellsData;
+    
+    // Interface data structure, by material, element and side
+    std::map<int, std::map<int, std::vector<TInterfaceDataTransport>>> fInterfaceData;
 
+    
 public:
+    
      /// Default constructor
     TPZAlgebraicTransport();
     
@@ -49,38 +80,23 @@ public:
     /// Assignement constructor
     const TPZAlgebraicTransport & operator=(const TPZAlgebraicTransport & other);
     
+
     /// Default desconstructor
     ~TPZAlgebraicTransport();
     
     void BuildDataStructures(TPZMultiphysicsCompMesh &transportmesh);
-    
-    void SetCoefficientsFlux(std::vector< std::vector<REAL> > &fluxCoefficients);
-    void SetIntegralFluxFunctions(std::vector< std::vector<REAL> > &fluxIntegralFunctions);
-    void SetIntegralFlux(std::vector<REAL> &fluxIntegral);
-    void SetSingFlux(std::vector<REAL> &fluxIntegral);
-    void SetNormalFaceDirection(std::vector<REAL> &NormalFaceDirection);
-    
-    std::vector< std::vector<REAL> > &GetCoefficientsFlux();
-    std::vector< std::vector<REAL> > &GetIntegralFluxFunctions();
-    std::vector<REAL> &GetIntegralFlux();
-    std::vector<REAL> &GetSingFlux();
-    std::vector<REAL> &GetNormalFaceDirection();
+    void Assamble(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef );
+    void AssambleResidual(TPZFNMatrix<100, REAL> &ef);
+    void Contribute();
+    void ContributeInterface();
+    void ContributeBCInterface();
+   
     
     void CalcLambdas();
     void CalcDensities();
     double CalcLambda(double sw, double paverage, double densityo, double densityw);
     double CalcDensity(double paverage,double compress, double reff,  double pref);
     
-    void SetSaturation(std::vector<double> &saturation);
-    void SetPressure(std::vector<double> &pressure);
-    void SetDensities(std::vector<double> &densityoil, std::vector<double> &densitywater);
-    void SetCompressibility(std::vector<double> &compressibility);
-    
-    std::vector<double> &GetSaturation();
-    std::vector<double> &GetPressure();
-    std::vector<double> &GetWaterDensity();
-    std::vector<double> &GetOilDensity();
-    std::vector<double> &GetCompressibility();
     
 
 };

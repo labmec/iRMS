@@ -109,7 +109,7 @@ public:
     
     // compute the data transfer data structures between the fluxmesh and transport class
     void BuildTransportDataStructure(TPZAlgebraicTransport &transport);
-    
+    void BuildTransportData(TPZAlgebraicTransport &transport);
     // Identify the geometric elements corresponding to interface elements. Order them as
     // a function of the number of corner nodes
     void IdentifyInterfaceGeometricElements();
