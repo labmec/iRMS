@@ -62,6 +62,8 @@ public:
     
     int fNFluxCoefficients;
     
+    //number of volumetric elements in the transport mesh
+    int fNVolumesTransport = 0;
     // Cells data structure, one material at a time
     std::map<int, std::vector<TCellData>> fCellsData;
     
@@ -87,9 +89,9 @@ public:
     void BuildDataStructures(TPZMultiphysicsCompMesh &transportmesh);
     void Assamble(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef );
     void AssambleResidual(TPZFNMatrix<100, REAL> &ef);
-    void Contribute();
-    void ContributeInterface();
-    void ContributeBCInterface();
+    void Contribute(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef);
+    void ContributeInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef);
+    void ContributeBCInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef);
    
     
     void CalcLambdas();

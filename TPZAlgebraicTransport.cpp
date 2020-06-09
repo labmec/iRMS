@@ -118,6 +118,40 @@ void TPZAlgebraicTransport::BuildDataStructures(TPZMultiphysicsCompMesh &transpo
 //    fCompressibility[0] = 0.0; //Water compressibility
 //    fCompressibility[1] = 0.0; //Oil compressibility
 }
+void TPZAlgebraicTransport::Assamble(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef ){
+    if (fNVolumesTransport <= 0) {
+        DebugStop();
+    }
+    ek.Resize(fNVolumesTransport, fNVolumesTransport);
+    ek.Zero();
+    std::cout<<"NRows: "<<ek.Rows()<<"NCols: "<<ek.Cols();
+    this->Contribute(ek, ef);
+    ek.Print(std::cout);
+}
+void TPZAlgebraicTransport::AssambleResidual(TPZFNMatrix<100, REAL> &ef){
+    
+}
+void TPZAlgebraicTransport::Contribute(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
+    
+    
+    for (auto celDatabyID: fCellsData) {
+        for (auto CelData : celDatabyID.second) {
+            CelData.Print(std::cout);
+            int index = CelData.index;
+            if (CelData.fVolume<0) {
+                continue;
+            }
+            REAL vol = CelData.fVolume;
+            ek(index, index) = vol;
+        }
+    }
+}
+void TPZAlgebraicTransport::ContributeInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
+    
+}
+void TPZAlgebraicTransport::ContributeBCInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
+    
+}
 
 void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
     

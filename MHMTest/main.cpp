@@ -96,7 +96,7 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
     aspace.CreateUniformMesh(2, 100, 1, 10);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(1);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
     
@@ -117,6 +117,8 @@ void SimpleTest(){
     TPZAlgebraicDataTransfer transfer;
     transfer.SetMeshes(*mixed_operator, *transport_operator);
     transfer.BuildTransportDataStructure(transport);
+    TPZFNMatrix<100, REAL> ek, ef;
+    transport.Assamble(ek, ef);
     exit(0);
     
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);

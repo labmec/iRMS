@@ -44,8 +44,9 @@ void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport
     IdentifyInterfaceGeometricElements();
     this->IdentifyVolumeGeometricElements();
     BuildMixedToTransportDataStructures(fFluxMesh);
-    BuildTransportData(transport);
     Print();
+    BuildTransportData(transport);
+    
     
 }
 
@@ -583,20 +584,20 @@ void TPZAlgebraicDataTransfer::BuildTransportData(TPZAlgebraicTransport &transpo
                 if (!resize) {
                     transport.fInterfaceData[mat_id][iel].resize(6);
                 }
-                std::list<TFromMixedToTransport> transf = fTransferMixedToTransport[mat_id];
-                auto transf_front = transf.begin();
-                std::advance(transf_front, iel);
-                TFromMixedToTransport mixtotrans= transf_front.operator*();
-                int size = mixtotrans.fGather.size();
+//                std::list<TFromMixedToTransport> transf = fTransferMixedToTransport[mat_id];
+//                auto transf_front = transf.begin();
+//                std::advance(transf_front, iel);
+//                TFromMixedToTransport *mixtotrans= &transf_front.operator*();
+//                int size = mixtotrans->fGather.size();
                 transport.fInterfaceData[mat_id][iel][i].gelIndex = iel;
-                transport.fInterfaceData[mat_id][iel][i].fCoefficientsFlux.resize(size);
-                transport.fInterfaceData[mat_id][iel][i].fIntegralFluxFunctions.resize(size);
+//                transport.fInterfaceData[mat_id][iel][i].fCoefficientsFlux.resize(size);
+//                transport.fInterfaceData[mat_id][iel][i].fIntegralFluxFunctions.resize(size);
             }
         }
         
     }
     
-    
+   
     for (auto volData : fVolumeElements) {
         int Volmat_id = volData.first;
         int nvols = volData.second.size();
@@ -613,6 +614,7 @@ void TPZAlgebraicDataTransfer::BuildTransportData(TPZAlgebraicTransport &transpo
 //            REAL VOL = cel->VolumeOfEl(); 
             transport.fCellsData[Volmat_id][volIndex].fVolume = ek.fMat(0,0);
             transport.fCellsData[Volmat_id][volIndex].Print(std::cout);
+            transport.fNVolumesTransport++;
         }
     }
 }
