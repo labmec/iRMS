@@ -32,15 +32,27 @@ public:
         //Direction of the normal to the face
         std::vector<std::tuple<REAL,REAL,REAL>> fNormalFaceDirection;
         
-        TInterfaceDataTransport(){
-            DebugStop();
+        TInterfaceDataTransport() : fMatid(0), fCoefficientsFlux(0), fIntegralFluxFunctions(0), fIntegralFlux(0),fFluxSign(0), fNormalFaceDirection(0) {
+           
         }
         TInterfaceDataTransport(const TInterfaceDataTransport &copy){
-            DebugStop();
+            fMatid = copy.fMatid;
+            fCoefficientsFlux = copy.fCoefficientsFlux;
+            fIntegralFluxFunctions = copy.fIntegralFluxFunctions;
+            fIntegralFlux = copy.fIntegralFlux;
+            fFluxSign= copy.fFluxSign;
+            fNormalFaceDirection = copy.fNormalFaceDirection;
+            
         }
         TInterfaceDataTransport &operator=(const TInterfaceDataTransport &copy)
         {
-            DebugStop();
+            fMatid = copy.fMatid;
+            fCoefficientsFlux = copy.fCoefficientsFlux;
+            fIntegralFluxFunctions = copy.fIntegralFluxFunctions;
+            fIntegralFlux = copy.fIntegralFlux;
+            fFluxSign= copy.fFluxSign;
+            fNormalFaceDirection = copy.fNormalFaceDirection;
+            
             return *this;
         }
         void Print(std::ostream &out);
@@ -56,7 +68,7 @@ public:
         std::vector<REAL> fDensityWater;
         std::vector<REAL> flambda;
         
-        TCellData() : fMatId(-1), fVolume(), fSaturation(), fPressure(), fDensityOil(),fDensityWater(), flambda()
+        TCellData() : fMatId(-1), fVolume(0), fSaturation(0), fPressure(0), fDensityOil(0),fDensityWater(0), flambda(0)
         {
             
         }
@@ -117,7 +129,7 @@ public:
     void Contribute(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef);
     void ContributeInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef);
     void ContributeBCInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef);
-   
+    std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL Sw, REAL rhoW,REAL rhoO);
     
     void CalcLambdas();
     void CalcDensities();

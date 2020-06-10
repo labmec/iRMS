@@ -104,7 +104,7 @@ void TPZAlgebraicTransport::BuildDataStructures(TPZMultiphysicsCompMesh &transpo
 }
 void TPZAlgebraicTransport::Assamble(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef ){
     if (fNVolumesTransport <= 0) {
-        DebugStop();
+//        DebugStop();
     }
     ek.Resize(fNVolumesTransport, fNVolumesTransport);
     ek.Zero();
@@ -120,7 +120,6 @@ void TPZAlgebraicTransport::Contribute(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<10
     
     for (auto celDatabyID: fCellsData) {
         celDatabyID.second.Print(std::cout);
-        int64_t ncells = celDatabyID.second.fVolume.size();
         for(int64_t ivol = 0; ivol < celDatabyID.second.fVolume.size(); ivol++)
         {
             REAL vol = celDatabyID.second.fVolume[ivol];
@@ -129,6 +128,12 @@ void TPZAlgebraicTransport::Contribute(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<10
     }
 }
 void TPZAlgebraicTransport::ContributeInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
+    
+    for (auto interfId : fInterfaceData) {
+        int matid = interfId.first;
+        interfId.second.fIntegralFlux[0];
+        
+    }
     
 }
 void TPZAlgebraicTransport::ContributeBCInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
@@ -148,6 +153,20 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
     out<<"Lambda = "<<this->flambda<<std::endl;
     out <<std::endl;
      */
+}
+
+std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal(REAL Sw, REAL rhoW,REAL rhoO){
+    std::vector<REAL> fwData(2), foData(2);
+    REAL Krw = Sw*Sw;
+    REAL Kro = (1-Sw)*(1-Sw);
+    REAL fw = (Krw)/(Krw+Kro);
+    REAL fo = (Kro)/(Krw+Kro);
+    fwData[0] = fw;
+    fwData[1] = (2.0*(Sw)/(Kro+Krw)) - (Krw*(4*Sw - 2))/((Krw+Kro)*(Krw+Kro));
+    foData[0] = fo;
+    foData[1]=(2.0*(Sw-1)/(Kro+Krw)) - (Kro*(4*Sw - 2))/((Krw+Kro)*(Krw+Kro));
+    std::pair<std::vector<REAL>,std::vector<REAL>> fracflows = std::make_pair(fwData, foData);
+    return fracflows;
 }
 void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){
     
