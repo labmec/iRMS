@@ -74,11 +74,22 @@ public:
         }
         TCellData(const TCellData &copy)
         {
-            DebugStop();
+            fVolume = copy.fVolume;
+            fSaturation= copy.fSaturation;
+            fPressure = copy.fPressure;
+            fDensityOil = copy.fDensityOil;
+            fDensityWater = copy.fDensityWater;
+            flambda = copy.flambda;
         }
         TCellData &operator=(const TCellData &copy)
         {
-            DebugStop();
+            fVolume = copy.fVolume;
+            fSaturation= copy.fSaturation;
+            fPressure = copy.fPressure;
+            fDensityOil = copy.fDensityOil;
+            fDensityWater = copy.fDensityWater;
+            flambda = copy.flambda;
+          
             return *this;
         }
         void SetNumCells(int64_t ncells)

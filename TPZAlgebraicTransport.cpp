@@ -117,23 +117,19 @@ void TPZAlgebraicTransport::AssambleResidual(TPZFNMatrix<100, REAL> &ef){
 }
 void TPZAlgebraicTransport::Contribute(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
     
-    
-    for (auto celDatabyID: fCellsData) {
-        celDatabyID.second.Print(std::cout);
-        for(int64_t ivol = 0; ivol < celDatabyID.second.fVolume.size(); ivol++)
-        {
-            REAL vol = celDatabyID.second.fVolume[ivol];
-            ek(ivol, ivol) = vol;
-        }
-    }
+//
+//    for (auto celDatabyID: fCellsData) {
+//        celDatabyID.second.Print(std::cout);
+//        for(int64_t ivol = 0; ivol < celDatabyID.second.fVolume.size(); ivol++)
+//        {
+//            REAL vol = celDatabyID.second.fVolume[ivol];
+//            ek(ivol, ivol) = vol;
+//        }
+//    }
 }
 void TPZAlgebraicTransport::ContributeInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
     
-    for (auto interfId : fInterfaceData) {
-        int matid = interfId.first;
-        interfId.second.fIntegralFlux[0];
-        
-    }
+ 
     
 }
 void TPZAlgebraicTransport::ContributeBCInterface(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
@@ -142,7 +138,18 @@ void TPZAlgebraicTransport::ContributeBCInterface(TPZFNMatrix<100, REAL> &ek,TPZ
 
 void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
     
-    DebugStop();
+    int nels = this->fVolume.size();
+    for (int iel =0; iel< nels; iel++) {
+        out<<"Material_Id: "<<this->fMatId<<std::endl;
+        out<<"Volume : "<<this->fVolume[iel]<<std::endl;
+        out<<"Oil density: "<<this->fDensityOil[iel]<<std::endl;
+        out<<"Water density: "<<this->fDensityWater[iel]<<std::endl;
+        out<<"Pressure: "<<this->fPressure[iel]<<std::endl;
+        out<<"Saturation: "<<this->fSaturation[iel]<<std::endl;
+        out<<"Lambda: "<<this->flambda[iel]<<std::endl;
+        
+    }
+//    DebugStop();
     /*
     out<<"Element index: "<<this->index<<" : "<<std::endl;
     out<<"Volume = "<<this->fVolume<<std::endl;
