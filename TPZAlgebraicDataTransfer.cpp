@@ -503,6 +503,16 @@ void TPZAlgebraicDataTransfer::InitializeVectorPointersMixedToTransport(TPZAlgeb
     }
 }
 
+// Initialize the pointers from the transport data structure in the list TransportToMixedCorrespondence
+void TPZAlgebraicDataTransfer::InitializeVectorPointersTranportToMixed(TPZAlgebraicTransport &transport)
+{
+    for(auto mesh_iter : fTransportMixedCorrespondence)
+    {
+        mesh_iter.fPermData = &transport.fCellsData.flambda;
+    }
+}
+
+
 // print the datastructure
 void TPZAlgebraicDataTransfer::Print(std::ostream &out)
 {
@@ -690,11 +700,9 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         InterfaceVec.fNormalFaceDirection.resize(numfaces[0]);
     }
     
-    for (auto volData : fVolumeElements) {
-        int Volmat_id = volData.first;
-        int64_t nvols = volData.second.size();
-        transport.fCellsData[Volmat_id].SetNumCells(nvols);
-    }
+    auto volData = fVolumeElements.rbegin();
+    int64_t nvols = volData->second.size();
+    transport.fCellsData.SetNumCells(nvols);
 }
 
 TPZAlgebraicDataTransfer::TFromMixedToTransport::TFromMixedToTransport() : fMatid(-1),
@@ -731,4 +739,31 @@ void TPZAlgebraicDataTransfer::TFromMixedToTransport::Print(std::ostream &out)
     out << "Scatter vector ";
     for (auto const& value : fScatter) out << value << ' ';
     out << std::endl;
+}
+
+// transfer the solution from the mixed mesh fluxes to the interfaces
+void TPZAlgebraicDataTransfer::TransferMixedMeshMultiplyingCoefficients()
+{
+    for(auto matit : fTransferMixedToTransport)
+    {
+        for(auto mixed : matit.second)
+        {
+            int64_t nel = mixed.fGather.size();
+            for (int64_t el = 0; el< nel; el++) {
+                (*mixed.fTarget)[mixed.fScatter[el]] = (*mixed.fFrom)(mixed.fGather[el],0);
+            }
+        }
+    }
+}
+
+// transfer the permeability multiplier from the transport mesh to the mixed mesh elements
+void TPZAlgebraicDataTransfer::TransferPermeabilityCoefficients()
+{
+    for(auto meshit : fTransportMixedCorrespondence)
+    {
+        int64_t ncells = meshit.fTransportCell.size();
+        for (int icell = 0; icell < ncells; icell++) {
+            meshit.fMixedCell[icell]->SetPermeability((*meshit.fPermData)[meshit.fTransportCell[icell]]);
+        }
+    }
 }

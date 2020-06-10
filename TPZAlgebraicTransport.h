@@ -113,7 +113,7 @@ public:
     //number of volumetric elements in the transport mesh
     int fNVolumesTransport = 0;
     // Cells data structure, one material at a time
-    std::map<int, TCellData> fCellsData;
+    TCellData fCellsData;
     
     // Interface data structure, by material, element and side
     std::map<int, TInterfaceDataTransport> fInterfaceData;

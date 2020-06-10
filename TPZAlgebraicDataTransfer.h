@@ -81,6 +81,8 @@ public:
         
         std::vector<int64_t> fTransportCell;
         
+        std::vector<REAL> *fPermData;
+        
         std::vector<TPZFastCondensedElement *> fMixedCell;
         
         TransportToMixedCorrespondence() : fMixedMesh(0) {}
@@ -181,5 +183,14 @@ public:
     // Initialize the pointers to the transport data structure in the
     // list fTransferMixedToTransport
     void InitializeVectorPointersMixedToTransport(TPZAlgebraicTransport &transport);
+    
+    // Initialize the pointers from the transport data structure in the list TransportToMixedCorrespondence
+    void InitializeVectorPointersTranportToMixed(TPZAlgebraicTransport &transport);
+
+    // transfer the solution from the mixed mesh fluxes to the interfaces
+    void TransferMixedMeshMultiplyingCoefficients();
+    
+    // transfer the permeability multiplier from the transport mesh to the mixed mesh elements
+    void TransferPermeabilityCoefficients();
 };
 #endif /* AlgebraicDataTransfer_h */
