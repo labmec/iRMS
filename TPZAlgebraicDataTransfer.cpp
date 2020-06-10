@@ -34,7 +34,7 @@ const TPZAlgebraicDataTransfer & TPZAlgebraicDataTransfer::operator=(const TPZAl
 }
 
 /// Default desconstructor
- TPZAlgebraicDataTransfer::~TPZAlgebraicDataTransfer(){
+TPZAlgebraicDataTransfer::~TPZAlgebraicDataTransfer(){
     
 }
 
@@ -47,8 +47,9 @@ void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport
     BuildMixedToTransportDataStructures(fFluxMesh);
     TPZVec<int64_t> Volume_Index;
     BuildTransportToMixedCorrespondenceDatastructure(fFluxMesh, Volume_Index);
+    InitializeTransportDataStructure(transport);
+    InitializeVectorPointersMixedToTransport(transport);
     Print();
-    BuildTransportData(transport);
     
     
 }
@@ -138,7 +139,7 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
         intface.fInterface_celindex = celindex;
         count_interfaces[matid][ncornernodes]++;
     }
-
+    
 }
 
 int SideLowerIndex(TPZGeoEl *gel, int side)
@@ -246,7 +247,7 @@ int TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex gelindex, int64
         }
     }
     std::cout << __PRETTY_FUNCTION__ << "couldnt find a material corresponding to gelindex " << gelindex <<
-            " and faceindex " << faceindex << std::endl;
+    " and faceindex " << faceindex << std::endl;
     DebugStop();
     return -10000;
 }
@@ -428,7 +429,7 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     {
                         ncontransfer[matid].Resize(4, 0);
                     }
-
+                    
                     connectindexes[matid].Push(cindex);
                     int nshape = cel->Connect(ic).NShape();
                     for(int is=0; is<nshape; is++)
@@ -484,6 +485,23 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
     }
 }
 
+// Initialize the pointers to the transport data structure in the
+// list fTransferMixedToTransport
+void TPZAlgebraicDataTransfer::InitializeVectorPointersMixedToTransport(TPZAlgebraicTransport &transport)
+{
+    for(auto mat_iter : fTransferMixedToTransport)
+    {
+        int matid = mat_iter.first;
+        if(transport.fInterfaceData.find(matid) == transport.fInterfaceData.end()) DebugStop();
+        for(auto list_iter : mat_iter.second)
+        {
+            int flux_index = list_iter.flux_sequence;
+            if(transport.fInterfaceData[matid].fCoefficientsFlux.size() <= flux_index) DebugStop();
+            auto vecptr = &transport.fInterfaceData[matid].fCoefficientsFlux[flux_index];
+            list_iter.fTarget = vecptr;
+        }
+    }
+}
 
 // print the datastructure
 void TPZAlgebraicDataTransfer::Print(std::ostream &out)
@@ -574,7 +592,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
     // algebraic transport volume
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
     int64_t nel_geo = gmesh->NElements();
-//    TPZVec<int64_t> Volume_Index(nel_geo,-10);
+    //    TPZVec<int64_t> Volume_Index(nel_geo,-10);
     if(Volume_Index.size() != nel_geo)
     {
         Volume_Index.Resize(nel_geo);
@@ -649,72 +667,45 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
 }
 
 
-void TPZAlgebraicDataTransfer::BuildTransportData(TPZAlgebraicTransport &transport){
-   
-    int nels = fInterfaceByGeom.Rows();
-    for (int iel=0; iel<nels; iel++) {
-        TPZGeoEl *gel = fTransportMesh->Reference()->Element(iel);
-        bool hasface = false;
-        for(int i=0; i<6; i++) if(fInterfaceByGeom(iel,i) != -1)
+void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTransport &transport){
+    
+    TPZGeoMesh *gmesh = fTransportMesh->Reference();
+    for(auto mat_iter : fInterfaceGelIndexes)
+    {
+        TPZManVector<int,6> numfaces(4,0);
+        int ncormax = 0;
+        for(auto face_it : mat_iter.second)
         {
-            hasface=true;
+            TPZGeoEl *gel = gmesh->Element(face_it.fInterface_gelindex);
+            int ncorner = gel->NCornerNodes();
+            if(ncorner > ncormax) ncormax = ncorner;
+            for(int i=0; i<ncorner; i++) numfaces[i]++;
         }
-        if(hasface)
-        {
-            int resize = false;
-            for(int i=0; i<6; i++) if(fInterfaceByGeom(iel,i) != -1)
-            {
-                
-                int side = SideOriginalIndex(gel,i);
-                TPZGeoElSideIndex gelside(iel,side);
-                int mat_id = IdentifyMaterial(gelside,fInterfaceByGeom(iel,i));
-                if (!resize) {
-                    transport.fInterfaceData[mat_id][iel].resize(6);
-                }
-//                std::list<TFromMixedToTransport> transf = fTransferMixedToTransport[mat_id];
-//                auto transf_front = transf.begin();
-//                std::advance(transf_front, iel);
-//                TFromMixedToTransport *mixtotrans= &transf_front.operator*();
-//                int size = mixtotrans->fGather.size();
-                transport.fInterfaceData[mat_id][iel][i].gelIndex = iel;
-//                transport.fInterfaceData[mat_id][iel][i].fCoefficientsFlux.resize(size);
-//                transport.fInterfaceData[mat_id][iel][i].fIntegralFluxFunctions.resize(size);
-            }
-        }
-        
+        TPZAlgebraicTransport::TInterfaceDataTransport &InterfaceVec = transport.fInterfaceData[mat_iter.first];
+        InterfaceVec.fMatid = mat_iter.first;
+        InterfaceVec.fCoefficientsFlux.resize(ncormax);
+        for(int i=0; i<ncormax; i++) InterfaceVec.fCoefficientsFlux[i].resize(numfaces[i]);
+        InterfaceVec.fIntegralFlux.resize(numfaces[0]);
+        InterfaceVec.fFluxSign.resize(numfaces[0]);
+        InterfaceVec.fNormalFaceDirection.resize(numfaces[0]);
     }
     
-   
     for (auto volData : fVolumeElements) {
         int Volmat_id = volData.first;
-        int nvols = volData.second.size();
-        transport.fCellsData[Volmat_id].resize(nvols);
-        for (auto volIndex : volData.second) {
-            transport.fCellsData[Volmat_id][volIndex].index = volIndex;
-            if (fTransportMesh->Element(volIndex)->Dimension() != fTransportMesh->Dimension()) {
-                continue;
-            }
-            
-            TPZCompEl *cel = fTransportMesh->Element(volIndex);
-            TPZElementMatrix ek, ef;
-            cel->CalcStiff(ek, ef);
-//            REAL VOL = cel->VolumeOfEl(); 
-            transport.fCellsData[Volmat_id][volIndex].fVolume = ek.fMat(0,0);
-            transport.fCellsData[Volmat_id][volIndex].Print(std::cout);
-            transport.fNVolumesTransport++;
-        }
+        int64_t nvols = volData.second.size();
+        transport.fCellsData[Volmat_id].SetNumCells(nvols);
     }
 }
 
 TPZAlgebraicDataTransfer::TFromMixedToTransport::TFromMixedToTransport() : fMatid(-1),
-    flux_sequence(-1), fFrom(0), fTarget(0), fMixedMesh(0)
+flux_sequence(-1), fFrom(0), fTarget(0), fMixedMesh(0)
 {
     
 }
 
 TPZAlgebraicDataTransfer::TFromMixedToTransport::TFromMixedToTransport(const TFromMixedToTransport &copy) : fMatid(copy.fMatid), flux_sequence(copy.flux_sequence),
-    fGather(copy.fGather), fScatter(copy.fScatter), fFrom(copy.fFrom),
-    fTarget(copy.fTarget), fMixedMesh(copy.fMixedMesh)
+fGather(copy.fGather), fScatter(copy.fScatter), fFrom(copy.fFrom),
+fTarget(copy.fTarget), fMixedMesh(copy.fMixedMesh)
 {
     fMixedMesh = copy.fMixedMesh;
 }

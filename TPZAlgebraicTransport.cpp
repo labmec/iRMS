@@ -119,14 +119,12 @@ void TPZAlgebraicTransport::Contribute(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<10
     
     
     for (auto celDatabyID: fCellsData) {
-        for (auto CelData : celDatabyID.second) {
-            CelData.Print(std::cout);
-            int index = CelData.index;
-            if (CelData.fVolume<0) {
-                continue;
-            }
-            REAL vol = CelData.fVolume;
-            ek(index, index) = vol;
+        celDatabyID.second.Print(std::cout);
+        int64_t ncells = celDatabyID.second.fVolume.size();
+        for(int64_t ivol = 0; ivol < celDatabyID.second.fVolume.size(); ivol++)
+        {
+            REAL vol = celDatabyID.second.fVolume[ivol];
+            ek(ivol, ivol) = vol;
         }
     }
 }
@@ -139,6 +137,8 @@ void TPZAlgebraicTransport::ContributeBCInterface(TPZFNMatrix<100, REAL> &ek,TPZ
 
 void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
     
+    DebugStop();
+    /*
     out<<"Element index: "<<this->index<<" : "<<std::endl;
     out<<"Volume = "<<this->fVolume<<std::endl;
     out<<"Pressure = "<<this->fPressure<<std::endl;
@@ -147,12 +147,18 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
     out<<"Saturation = "<<this->fSaturation<<std::endl;
     out<<"Lambda = "<<this->flambda<<std::endl;
     out <<std::endl;
+     */
 }
 void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){
     
-    out<<"Gel index: "<<this->gelIndex<<" : "<<std::endl;
+    out<<"Material id: "<<this->fMatid<<" : "<<std::endl;
     out << "fCoefficientsFlux :";
-    for (auto const& value : this->fCoefficientsFlux) out << value << ' ';
+    for(int vecindex = 0; vecindex < fCoefficientsFlux.size(); vecindex++)
+    {
+        out << "vector index " << vecindex << std::endl;
+        for (auto value : fCoefficientsFlux[vecindex]) out << value << ' ';
+        out << std::endl;
+    }
     out << std::endl;
     out << "fIntegralFluxFunctions :";
     for (auto const& value : this->fIntegralFluxFunctions) out << value << ' ';
@@ -160,9 +166,10 @@ void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){
     out << "fIntegralFlux :";
     for (auto const& value : this->fIntegralFlux) out << value << ' ';
     out << std::endl;
-    out<<"fFluxSing = "<<this->fFluxSing<<std::endl;
+    out<<"fFluxSign = ";
+    for(auto it : fFluxSign) out << it << ' ';
+    out <<std::endl;
     out << "fNormalFaceDirection :";
-    for (auto const& value : this->fNormalFaceDirection) out << value << ' ';
-    out << std::endl;
-    out <<" " <<std::endl;
+    for (auto const& value : this->fNormalFaceDirection) out << std::get<0>(value) << ' '
+        << std::get<1>(value) << ' ' << std::get<2>(value) << std::endl;
 }

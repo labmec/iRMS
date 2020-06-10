@@ -20,39 +20,64 @@ public:
     
     struct TInterfaceDataTransport
     {
-        int64_t gelIndex;
+        int64_t fMatid;
         //vector for each multiplying coefficient of fluxes
-        std::vector<REAL> fCoefficientsFlux;
+        std::vector<std::vector<REAL> > fCoefficientsFlux;
         //Integral of the flux functions associated with faces
         std::vector<REAL> fIntegralFluxFunctions;
         //  Integral of the flux
         std::vector<REAL>  fIntegralFlux;
         //Sign with respect to the natural orientation of the flux (+1 or -1)
-        REAL fFluxSing;
+        std::vector<REAL> fFluxSign;
         //Direction of the normal to the face
-        std::vector<REAL> fNormalFaceDirection;
+        std::vector<std::tuple<REAL,REAL,REAL>> fNormalFaceDirection;
         
         TInterfaceDataTransport(){
-            
+            DebugStop();
+        }
+        TInterfaceDataTransport(const TInterfaceDataTransport &copy){
+            DebugStop();
+        }
+        TInterfaceDataTransport &operator=(const TInterfaceDataTransport &copy)
+        {
+            DebugStop();
+            return *this;
         }
         void Print(std::ostream &out);
     };
     
     // CELL DATA
     struct TCellData{
-        int  index;
-        REAL fVolume;
-        REAL fSaturation;
-        REAL fPressure;
-        REAL fDensityOil;
-        REAL fDensityWater;
-        REAL flambda;
+        int  fMatId;
+        std::vector<REAL> fVolume;
+        std::vector<REAL> fSaturation;
+        std::vector<REAL> fPressure;
+        std::vector<REAL> fDensityOil;
+        std::vector<REAL> fDensityWater;
+        std::vector<REAL> flambda;
         
-        TCellData() : index(-1), fVolume(-1), fSaturation(0.0), fPressure(-1), fDensityOil(800.00),fDensityWater(1000.00), flambda(1)
+        TCellData() : fMatId(-1), fVolume(), fSaturation(), fPressure(), fDensityOil(),fDensityWater(), flambda()
         {
             
         }
-        
+        TCellData(const TCellData &copy)
+        {
+            DebugStop();
+        }
+        TCellData &operator=(const TCellData &copy)
+        {
+            DebugStop();
+            return *this;
+        }
+        void SetNumCells(int64_t ncells)
+        {
+            fVolume.resize(ncells);
+            fSaturation.resize(ncells);
+            fPressure.resize(ncells);
+            fDensityOil.resize(ncells);
+            fDensityWater.resize(ncells);
+            flambda.resize(ncells);
+        }
         void Print(std::ostream &out);
     };
     // fCompressibility[0] = water, fCompressibility[1]=oil, fCompressibility[2]=gas etc.
@@ -65,10 +90,10 @@ public:
     //number of volumetric elements in the transport mesh
     int fNVolumesTransport = 0;
     // Cells data structure, one material at a time
-    std::map<int, std::vector<TCellData>> fCellsData;
+    std::map<int, TCellData> fCellsData;
     
     // Interface data structure, by material, element and side
-    std::map<int, std::map<int, std::vector<TInterfaceDataTransport>>> fInterfaceData;
+    std::map<int, TInterfaceDataTransport> fInterfaceData;
 
     
 public:

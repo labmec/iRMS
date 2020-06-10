@@ -79,7 +79,6 @@ public:
         
         TPZCompMesh *fMixedMesh;
         
-        
         std::vector<int64_t> fTransportCell;
         
         std::vector<TPZFastCondensedElement *> fMixedCell;
@@ -139,8 +138,8 @@ public:
     // compute the data transfer data structures between the fluxmesh and transport class
     void BuildTransportDataStructure(TPZAlgebraicTransport &transport);
     
-    // Resizes the datastructures of the transport object
-    void BuildTransportData(TPZAlgebraicTransport &transport);
+    // Initialize the datastructures of the transport object
+    void InitializeTransportDataStructure(TPZAlgebraicTransport &transport);
     
     // Build the data structure which defines the correspondence between
     // algebraic transport cells and indexes of mixed fast condensed elements
@@ -176,7 +175,11 @@ public:
     /// build the data structure from mixed to transport
     // this method finds the correspondence between the connects of the volume
     // elements and the interfaces of the transport mesh
+    // this method fills in the fTransferMixedToTransport variable
     void BuildMixedToTransportDataStructures(TPZCompMesh *fluxmesh);
     
+    // Initialize the pointers to the transport data structure in the
+    // list fTransferMixedToTransport
+    void InitializeVectorPointersMixedToTransport(TPZAlgebraicTransport &transport);
 };
 #endif /* AlgebraicDataTransfer_h */
