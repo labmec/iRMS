@@ -514,6 +514,8 @@ void TPZAlgebraicDataTransfer::InitializeVectorPointersMixedToTransport(TPZAlgeb
             if(transport.fInterfaceData[matid].fCoefficientsFlux.size() <= flux_index) DebugStop();
             auto vecptr = &transport.fInterfaceData[matid].fCoefficientsFlux[flux_index];
             list_iter.fTarget = vecptr;
+            auto matptr = &(list_iter.fMixedMesh->Solution());
+            list_iter.fFrom = matptr;
         }
     }
 }

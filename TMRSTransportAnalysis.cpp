@@ -74,6 +74,7 @@ void TMRSTransportAnalysis::Assemble(){
         this->CalcDestinationIndex(cel, destinationindex);
         TPZFMatrix<double> elmat, ef;
         elmat.Resize(1, 1);
+        ef.Resize(1,1);
         std::cout<<elmat<<std::endl;
         std::cout<<"index: "<<destinationindex[0]<<std::endl;
         fAlgebraicTransport.Contribute(ivol, elmat, ef);
