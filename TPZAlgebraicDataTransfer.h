@@ -85,7 +85,7 @@ public:
         
         std::vector<TPZFastCondensedElement *> fMixedCell;
         
-        TransportToMixedCorrespondence() : fMixedMesh(0) {}
+        TransportToMixedCorrespondence() : fMixedMesh(0), fPermData(0) {}
         
         TransportToMixedCorrespondence(const TransportToMixedCorrespondence &cp) {
             fMixedMesh = cp.fMixedMesh;
@@ -102,6 +102,8 @@ public:
             fMixedCell = cp.fMixedCell;
             return *this;
         }
+        
+        void Print(std::ostream &out = std::cout);
         
     };
     
