@@ -707,6 +707,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
             TPZGeoEl *gel = gmesh->Element(face_it.fInterface_gelindex);
             int ncorner = gel->NCornerNodes();
             InterfaceVec.fLeftRightVolIndex.push_back(face_it.fLeftRightVolIndex);
+            InterfaceVec.fcelindex.push_back(face_it.fInterface_celindex);
             if(ncorner > ncormax) ncormax = ncorner;
             for(int i=0; i<ncorner; i++) numfaces[i]++;
         }
@@ -717,6 +718,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         InterfaceVec.fIntegralFlux.resize(numfaces[0]);
         InterfaceVec.fFluxSign.resize(numfaces[0]);
         InterfaceVec.fNormalFaceDirection.resize(numfaces[0]);
+        InterfaceVec.fcelindex.resize(numfaces[0]);
         InterfaceVec.fIntegralFluxFunctions.resize(numfaces[0]);
     
     }
@@ -735,6 +737,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         REAL volume = gel->Volume();
         int side = gel->NSides()-1;
         transport.fCellsData.fVolume[i]=volume;
+        transport.fCellsData.fCompIndexes[i]=celindex;
         transport.fCellsData.fDensityOil[i]=800.00;
         transport.fCellsData.fDensityWater[i]=1000.00;
         transport.fCellsData.fSaturation[i]=0.0;

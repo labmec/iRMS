@@ -55,6 +55,75 @@ void TMRSTransportAnalysis::Configure(int n_threads, bool UsePardiso_Q){
     }
 }
 
+void TMRSTransportAnalysis::Assemble(){
+    int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
+    if(!this->fSolver){
+        DebugStop();
+    }
+  
+    TPZMatrix<STATE> *mat = fStructMatrix->CreateAssemble(fRhs,fGuiInterface);
+    fSolver->SetMatrix(mat);
+    mat->Resize(ncells, ncells);
+    mat->Zero();
+
+    //Volumetric Elements
+    for (int ivol = 0; ivol<ncells; ivol++) {
+        int index = fAlgebraicTransport.fCellsData.fCompIndexes[ivol];
+        TPZCompEl *cel = this->fCompMesh->Element(index);
+        TPZVec<int64_t> destinationindex;
+        this->CalcDestinationIndex(cel, destinationindex);
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(1, 1);
+        std::cout<<elmat<<std::endl;
+        std::cout<<"index: "<<destinationindex[0]<<std::endl;
+        fAlgebraicTransport.Contribute(ivol, elmat, ef);
+        mat->AddKel(elmat, destinationindex);
+    }
+   
+    //Interface Elements
+    int interID = m_sim_data->mTGeometry.Interface_material_id;
+    int ninterfaces = fAlgebraicTransport.fInterfaceData[interID].fFluxSign.size();
+    if (ninterfaces<1) {
+        DebugStop();
+    }
+    for (int interf = 0; interf<ninterfaces; interf++) {
+        int index = fAlgebraicTransport.fInterfaceData[interID].fcelindex[interf];
+        TPZCompEl *cel = this->fCompMesh->Element(index);
+        TPZVec<int64_t> destinationindex;
+        this->CalcDestinationIndex(cel, destinationindex);
+        int n = destinationindex.size();
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(n, n);
+        std::cout<<destinationindex[0]<<std::endl;
+        std::cout<<destinationindex[1]<<std::endl;
+        fAlgebraicTransport.ContributeInterface(interf, elmat, ef);
+        mat->AddKel(elmat, destinationindex);
+    }
+    for (int i=0; i< ncells; i++) {
+        for (int j=0; j< ncells; j++) {
+            std::cout<<"i= "<<i<<" j= "<<j<<" val= "<<mat->Get(i, j)<<std::endl;
+        }
+    }
+    
+    DebugStop();
+}
+
+void TMRSTransportAnalysis::CalcDestinationIndex(TPZCompEl *cel, TPZVec<int64_t> &destinationindex){
+    int64_t destindex = 0;
+    const int numnod = cel->NConnects();
+    destinationindex.resize(numnod);
+    for(int in = 0; in < numnod; in++){
+        const int64_t npindex = cel->ConnectIndex(in);
+        TPZConnect &np = this->fCompMesh->ConnectVec()[npindex];
+        int64_t blocknumber = np.SequenceNumber();
+        int64_t firsteq = this->fCompMesh->Block().Position(blocknumber);
+        int ndf = this->fCompMesh->Block().Size(blocknumber);
+        for(int idf=0; idf<ndf; idf++){
+            destinationindex[destindex++] = firsteq+idf;
+        }//for idf
+    }//for in
+}
+
 void TMRSTransportAnalysis::ConfigureInitial(){
     
     /// Compute mass matrix M.

@@ -62,16 +62,17 @@ void TPZAlgebraicTransport::BuildDataStructures(TPZMultiphysicsCompMesh &transpo
 {
 
 }
-void TPZAlgebraicTransport::Assamble(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef ){
+void TPZAlgebraicTransport::Assemble(TPZFMatrix<double> &ek,TPZFMatrix<double> &ef ){
 
 }
-void TPZAlgebraicTransport::AssambleResidual(TPZFNMatrix<100, REAL> &ef){
+void TPZAlgebraicTransport::AssembleResidual(TPZFMatrix<double> &ef){
     
 }
-void TPZAlgebraicTransport::Contribute(int index, TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
+void TPZAlgebraicTransport::Contribute(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
     ek(0,0) = fCellsData.fVolume[index];
+    ef(0) = fCellsData.fVolume[index]*fCellsData.fSaturation[index];
 }
-void TPZAlgebraicTransport::ContributeInterface(int index, TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
+void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
     
     int ninternInterrf = fInterfaceData[100].fFluxSign.size();
     if (ninternInterrf<=0) {
@@ -86,34 +87,19 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFNMatrix<100, REAL
     if (fluxint>0) {
         beta = 1.0;
     }
+    //            ek(0,0) = dfwSwL * beta * fluxint;
+    //            ek(0,1) = dfwSwR * (1-beta) * fluxint;
+    //            ek(1,0) = -1.0 * dfwSwL * beta * fluxint;
+    //            ek(1,1) = -1.0*dfwSwR*(1-beta)*fluxint;
     
     ek(0,0) = dfwSwL * beta * fluxint;
     ek(0,1) = dfwSwR * (1-beta) * fluxint;
     ek(1,0) = -1.0 * dfwSwL * beta * fluxint;
     ek(1,1) = -1.0*dfwSwR*(1-beta)*fluxint;
-    for (auto inter_bymat : fInterfaceData) {
-        int ninter = inter_bymat.second.fIntegralFlux.size();
-        for (int inter = 0; inter<ninter; inter++) {
-            REAL fluxint = inter_bymat.second.fIntegralFlux[inter];
-            
-            REAL dfwSwL = fCellsData.fOilfractionalflow[lr_index.first][1];
-            REAL dfwSwR = fCellsData.fOilfractionalflow[lr_index.second][1];
-           
-            REAL beta =0;
-            //upwind
-            if (fluxint>0) {
-                beta = 1.0;
-            }
-            
-            ek(0,0) = dfwSwL * beta * fluxint;
-            ek(0,1) = dfwSwR * (1-beta) * fluxint;
-            ek(1,0) = -1.0 * dfwSwL * beta * fluxint;
-            ek(1,1) = -1.0*dfwSwR*(1-beta)*fluxint;
-        }
-    }
-    ek.Print(std::cout);
+   
+//    ek.Print(std::cout);
 }
-void TPZAlgebraicTransport::ContributeBCInterface(int index, TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef){
+void TPZAlgebraicTransport::ContributeBCInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
     
 }
 

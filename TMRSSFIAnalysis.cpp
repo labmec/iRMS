@@ -146,8 +146,9 @@ void TMRSSFIAnalysis::PostProcessTimeStep(int val){
 void TMRSSFIAnalysis::SFIIteration(){
     
     {
-        fAlgebraicDataTransfer.InitializeVectorPointersTranportToMixed(m_transport_module->fAlgebraicTransport);
+
         fAlgebraicDataTransfer.TransferPermeabilityCoefficients();
+        
         m_mixed_module->RunTimeStep();
         
 #ifdef USING_BOOST2
@@ -163,10 +164,9 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     //   m_mixed_module->PostProcessTimeStep();
     
-    //    TransferToTransportModule();
-    TPZFMatrix<REAL> solution_n = m_transport_module->Solution();
-    //    solution_n.Print(std::cout);
-    //    m_transport_module->RunTimeStep();
+  
+    fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
+    m_transport_module->RunTimeStep();
     //    m_transport_module->PostProcessTimeStep();
     //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
     //    TransferToMixedModule();        // Transfer to mixed

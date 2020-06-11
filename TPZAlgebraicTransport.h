@@ -21,12 +21,12 @@ public:
     struct TInterfaceDataTransport
     {
         int64_t fMatid;
+        
+        std::vector<int64_t> fcelindex;
         //vector for each multiplying coefficient of fluxes
         std::vector<std::vector<REAL> > fCoefficientsFlux;
-        
         // left right volume index in the AlgebraicTransport data structure
         std::vector<std::pair<int64_t, int64_t>> fLeftRightVolIndex;
-        
         //Integral of the flux functions associated with faces
         std::vector<REAL> fIntegralFluxFunctions;
         //  Integral of the flux
@@ -36,7 +36,7 @@ public:
         //Direction of the normal to the face
         std::vector<std::tuple<REAL,REAL,REAL>> fNormalFaceDirection;
         
-        TInterfaceDataTransport() : fMatid(0), fCoefficientsFlux(0), fIntegralFluxFunctions(0), fIntegralFlux(0),fFluxSign(0), fNormalFaceDirection(0) {
+        TInterfaceDataTransport() : fMatid(0), fcelindex(0), fCoefficientsFlux(0), fIntegralFluxFunctions(0), fIntegralFlux(0),fFluxSign(0), fNormalFaceDirection(0) {
            
         }
         TInterfaceDataTransport(const TInterfaceDataTransport &copy){
@@ -46,7 +46,7 @@ public:
             fIntegralFlux = copy.fIntegralFlux;
             fFluxSign= copy.fFluxSign;
             fNormalFaceDirection = copy.fNormalFaceDirection;
-            
+            fcelindex=copy.fcelindex;
         }
         TInterfaceDataTransport &operator=(const TInterfaceDataTransport &copy)
         {
@@ -65,6 +65,7 @@ public:
     // CELL DATA
     struct TCellData{
         int  fMatId;
+        std::vector<REAL> fCompIndexes;
         std::vector<REAL> fVolume;
         std::vector<REAL> fSaturation;
         std::vector<REAL> fPressure;
@@ -83,7 +84,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fMatId(-1), fVolume(0), fSaturation(0), fPressure(0), fDensityOil(0),fDensityWater(0), flambda(0),fporosity(0), fWaterfractionalflow(0),fOilfractionalflow(0), fCenterCordinate(0),
+        TCellData() : fMatId(-1), fCompIndexes(0),fVolume(0), fSaturation(0), fPressure(0), fDensityOil(0),fDensityWater(0), flambda(0),fporosity(0), fWaterfractionalflow(0),fOilfractionalflow(0), fCenterCordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -92,6 +93,7 @@ public:
         TCellData(const TCellData &copy)
         {
             fVolume = copy.fVolume;
+            fCompIndexes=copy.fCompIndexes;
             fSaturation= copy.fSaturation;
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
@@ -109,6 +111,7 @@ public:
         TCellData &operator=(const TCellData &copy)
         {
             fVolume = copy.fVolume;
+            fCompIndexes=copy.fCompIndexes;
             fSaturation= copy.fSaturation;
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
@@ -127,6 +130,7 @@ public:
         void SetNumCells(int64_t ncells)
         {
             fVolume.resize(ncells);
+            fCompIndexes.resize(ncells);
             fSaturation.resize(ncells);
             fporosity.resize(ncells);
             fPressure.resize(ncells);
@@ -170,11 +174,11 @@ public:
     ~TPZAlgebraicTransport();
     
     void BuildDataStructures(TPZMultiphysicsCompMesh &transportmesh);
-    void Assamble(TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef );
-    void AssambleResidual(TPZFNMatrix<100, REAL> &ef);
-    void Contribute(int index, TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef);
-    void ContributeInterface(int index, TPZFNMatrix< 100, REAL> &ek,TPZFNMatrix<100, REAL> &ef);
-    void ContributeBCInterface(int index, TPZFNMatrix<100, REAL> &ek,TPZFNMatrix<100, REAL> &ef);
+    void Assemble(TPZFMatrix<double> &ek,TPZFMatrix<double> &ef );
+    void AssembleResidual(TPZFMatrix<double> &ef);
+    void Contribute(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
+    void ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
+    void ContributeBCInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     static std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL Sw, REAL rhoW,REAL rhoO);
     
     void CalcLambdas();

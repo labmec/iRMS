@@ -51,6 +51,8 @@ public:
     
     /// Configurates iternal members
     void Configure(int n_threads, bool UsePardiso_Q);
+    void Assemble();
+    void CalcDestinationIndex(TPZCompEl *cel, TPZVec<int64_t> &destinationindex);
     void ConfigureInitial();
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer * sim_data);
