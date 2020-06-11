@@ -87,13 +87,18 @@ public:
         
         TransportToMixedCorrespondence() : fMixedMesh(0) {}
         
-        TransportToMixedCorrespondence(const TransportToMixedCorrespondence &cp) : fMixedMesh(cp.fMixedMesh), fTransportCell(cp.fTransportCell),
-        fMixedCell(cp.fMixedCell) {}
+        TransportToMixedCorrespondence(const TransportToMixedCorrespondence &cp) {
+            fMixedMesh = cp.fMixedMesh;
+            fTransportCell = cp.fTransportCell;
+            fPermData = cp.fPermData;
+            fMixedCell = cp.fMixedCell;
+        }
         
         TransportToMixedCorrespondence &operator=(const TransportToMixedCorrespondence &cp)
         {
             fMixedMesh = cp.fMixedMesh;
             fTransportCell = cp.fTransportCell;
+            fPermData = cp.fPermData;
             fMixedCell = cp.fMixedCell;
             return *this;
         }

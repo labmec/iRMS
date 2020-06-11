@@ -16,6 +16,7 @@
 #include "pzstepsolver.h"
 #include "TMRSDataTransfer.h"
 #include "TPZMFSolutionTransfer.h"
+#include "TPZAlgebraicTransport.h"
 
 class TMRSTransportAnalysis : public TPZAnalysis {
     
@@ -34,6 +35,8 @@ private:
     TPZFMatrix<STATE>  M_diag;
     
 public:
+    
+    TPZAlgebraicTransport fAlgebraicTransport;
     
     TPZMFSolutionTransfer m_soltransportTransfer;
 

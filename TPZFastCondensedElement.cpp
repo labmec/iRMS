@@ -45,15 +45,15 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
 
 //JOSE: ¿Tendo restriçoes fica igual a multiplicaçao por 1/lambda?
 
-//    ek.fMat *= (1./fPermeability);
-//    for (int icol=0; icol<ncols; icol++) {
-//        ek.fMat(nrows-2,icol) *= fPermeability;
-//    }
-//    for (int irow=0; irow<nrows; irow++) {
-//        ek.fMat(irow,ncols-2) *= fPermeability;
-//    }
-//    ek.fMat(nrows-2,ncols-2) *=fPermeability;
-//    ef.fMat *= fSource;
+    ek.fMat *= (1./fPermeability);
+    for (int icol=0; icol<ncols; icol++) {
+        ek.fMat(nrows-1,icol) *= fPermeability;
+    }
+    for (int irow=0; irow<nrows; irow++) {
+        ek.fMat(irow,ncols-1) *= fPermeability;
+    }
+    ek.fMat(nrows-1,ncols-1) *=fPermeability;
+    ef.fMat *= fSource;
     
 }
 

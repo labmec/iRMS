@@ -24,10 +24,16 @@ TMRSSFIAnalysis::~TMRSSFIAnalysis(){
 TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q){
     m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
-    int n_mixed_dof = m_mixed_module->Solution().Rows();
-    int n_transport_dof = m_transport_module->Solution().Rows();
-    m_x_mixed.Resize(n_mixed_dof, 1);
-    m_x_transport.Resize(n_transport_dof, 1);
+    
+    fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
+    fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+ 
+    
+    
+//    int n_mixed_dof = m_mixed_module->Solution().Rows();
+//    int n_transport_dof = m_transport_module->Solution().Rows();
+//    m_x_mixed.Resize(n_mixed_dof, 1);
+//    m_x_transport.Resize(n_transport_dof, 1);
     
 }
 
@@ -140,6 +146,8 @@ void TMRSSFIAnalysis::PostProcessTimeStep(int val){
 void TMRSSFIAnalysis::SFIIteration(){
     
     {
+        fAlgebraicDataTransfer.InitializeVectorPointersTranportToMixed(m_transport_module->fAlgebraicTransport);
+        fAlgebraicDataTransfer.TransferPermeabilityCoefficients();
         m_mixed_module->RunTimeStep();
         
 #ifdef USING_BOOST2

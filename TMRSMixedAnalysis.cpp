@@ -48,7 +48,7 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
         SetSolver(step);
         SetStructuralMatrix(matrix);
     }
-    Assemble();
+//    Assemble();
 }
 
 void TMRSMixedAnalysis::RunTimeStep(){

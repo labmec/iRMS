@@ -481,7 +481,6 @@ void TPZMHMixedMesh4SpacesControl::BuildMultiPhysicsMesh()
 void TPZMHMixedMesh4SpacesControl::HideTheElements()
 {
    
-    std::cout << "JOSE JOSE JOSE JOSE JOSE JOSE JOSE Put the right logic here!\n";
     int KeepOneLagrangian = 3;
     if (fHybridize) {
         KeepOneLagrangian = false;

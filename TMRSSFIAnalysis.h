@@ -14,6 +14,7 @@
 #include "TMRSTransportAnalysis.h"
 #include "TMRSApproxSpaceGenerator.h"
 #include "TPZMFSolutionTransfer.h"
+#include "TPZAlgebraicDataTransfer.h"
 
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -28,11 +29,7 @@ private:
     
     /// Number of iterations
     int m_k_iteration;
-    
-  
-    
     TPZFMatrix<STATE> m_x_mixed;
-    
     TPZFMatrix<STATE> m_x_transport;
     
     
@@ -43,6 +40,7 @@ public:
     
     /// Transport module
     TMRSTransportAnalysis * m_transport_module;
+    TPZAlgebraicDataTransfer fAlgebraicDataTransfer;
     
     /// Default constructor
     TMRSSFIAnalysis();

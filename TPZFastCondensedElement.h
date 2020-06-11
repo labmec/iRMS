@@ -32,8 +32,15 @@ public:
     TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix = true) :
         TPZCondensedCompEl(ref,keepmatrix)
     {
+       
         
-        
+    }
+    
+    
+    /// Assignement constructor
+    const TPZFastCondensedElement & operator=(const TPZFastCondensedElement & other){
+        fPermeability = other.fPermeability;
+        return *this;
     }
     
     /** @brief create a copy of the condensed computational element in the other mesh */
@@ -42,6 +49,7 @@ public:
     {
         fEK = copy.fEK;
         fEF = copy.fEF;
+        fPermeability = copy.fPermeability;
         fMatrixComputed = copy.fMatrixComputed;
     }
     

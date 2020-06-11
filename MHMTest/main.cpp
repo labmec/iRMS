@@ -96,7 +96,7 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
     aspace.CreateUniformMesh(2, 100, 1, 10);
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.GenerateMHMUniformMesh(0);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
     
@@ -113,22 +113,22 @@ void SimpleTest(){
         std::ofstream out("fluxmesh.txt");
         mixed_operator->MeshVector()[0]->Print(out);
     }
-    TPZAlgebraicTransport transport;
-    TPZAlgebraicDataTransfer transfer;
-    transfer.SetMeshes(*mixed_operator, *transport_operator);
-    transfer.BuildTransportDataStructure(transport);
-    TPZFNMatrix<100, REAL> ek, ef;
-    transport.Assamble(ek, ef);
-    exit(0);
+//    TPZAlgebraicTransport transport;
+//    TPZAlgebraicDataTransfer transfer;
+//    transfer.SetMeshes(*mixed_operator, *transport_operator);
+//    transfer.BuildTransportDataStructure(transport);
+//    
+   
     
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+    
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
+    sfi_analysis->RunTimeStep();
+    exit(0);
 //    sfi_analysis->m_mixed_module->RunTimeStep();
   
-    TPZAlgebraicTransport trans;
-    trans.BuildDataStructures(*transport_operator);
-    
+
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     

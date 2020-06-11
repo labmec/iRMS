@@ -508,7 +508,9 @@ void TPZAlgebraicDataTransfer::InitializeVectorPointersTranportToMixed(TPZAlgebr
 {
     for(auto mesh_iter : fTransportMixedCorrespondence)
     {
+        
         mesh_iter.fPermData = &transport.fCellsData.flambda;
+        
     }
 }
 
@@ -683,26 +685,59 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     for(auto mat_iter : fInterfaceGelIndexes)
     {
         TPZManVector<int,6> numfaces(4,0);
+        TPZAlgebraicTransport::TInterfaceDataTransport &InterfaceVec = transport.fInterfaceData[mat_iter.first];
         int ncormax = 0;
         for(auto face_it : mat_iter.second)
         {
+            
             TPZGeoEl *gel = gmesh->Element(face_it.fInterface_gelindex);
             int ncorner = gel->NCornerNodes();
+            InterfaceVec.fLeftRightVolIndex.push_back(face_it.fLeftRightVolIndex);
             if(ncorner > ncormax) ncormax = ncorner;
             for(int i=0; i<ncorner; i++) numfaces[i]++;
         }
-        TPZAlgebraicTransport::TInterfaceDataTransport &InterfaceVec = transport.fInterfaceData[mat_iter.first];
+
         InterfaceVec.fMatid = mat_iter.first;
         InterfaceVec.fCoefficientsFlux.resize(ncormax);
         for(int i=0; i<ncormax; i++) InterfaceVec.fCoefficientsFlux[i].resize(numfaces[i]);
         InterfaceVec.fIntegralFlux.resize(numfaces[0]);
         InterfaceVec.fFluxSign.resize(numfaces[0]);
         InterfaceVec.fNormalFaceDirection.resize(numfaces[0]);
+        InterfaceVec.fIntegralFluxFunctions.resize(numfaces[0]);
+    
     }
     
     auto volData = fVolumeElements.rbegin();
     int64_t nvols = volData->second.size();
+   
     transport.fCellsData.SetNumCells(nvols);
+    transport.fCellsData.fViscosity.resize(2);
+    transport.fCellsData.fViscosity[0] = 0.01;
+    transport.fCellsData.fViscosity[1] = 0.01;
+    for (int64_t i=0 ; i<nvols; i++) {
+        int64_t celindex = volData->second[i];
+        TPZCompEl *cel = fTransportMesh->Element(celindex);
+        TPZGeoEl *gel = cel->Reference();
+        REAL volume = gel->Volume();
+        int side = gel->NSides()-1;
+        transport.fCellsData.fVolume[i]=volume;
+        transport.fCellsData.fDensityOil[i]=800.00;
+        transport.fCellsData.fDensityWater[i]=1000.00;
+        transport.fCellsData.fSaturation[i]=0.0;
+        int dim= gel->Dimension();
+        transport.fCellsData.fCenterCordinate[i].resize(dim);
+        TPZVec<REAL> ximasscent(dim);
+        gel->CenterPoint(side, ximasscent);
+        std::vector<REAL> center(dim,0.0);
+        TPZVec<REAL> result(dim,0.0);
+        gel->X(ximasscent, result);
+        for (int ic =0; ic<dim; ic++) {center[ic]=result[ic];};
+        transport.fCellsData.fCenterCordinate[i] =center;
+    }
+    transport.fCellsData.fMatId = 1;
+    transport.fCellsData.UpdateFractionalFlowsAndLambda();
+    this->InitializeVectorPointersTranportToMixed(transport);
+    
 }
 
 TPZAlgebraicDataTransfer::TFromMixedToTransport::TFromMixedToTransport() : fMatid(-1),
