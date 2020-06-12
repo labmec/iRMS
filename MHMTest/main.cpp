@@ -297,14 +297,14 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
     
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 2;
-    sim_data.mTNumerics.m_max_iter_transport = 2;
-    sim_data.mTNumerics.m_max_iter_sfi = 2;
+    sim_data.mTNumerics.m_max_iter_mixed = 1;
+    sim_data.mTNumerics.m_max_iter_transport = 5;
+    sim_data.mTNumerics.m_max_iter_sfi = 3;
     sim_data.mTNumerics.m_res_tol_mixed = 0.01;
     sim_data.mTNumerics.m_corr_tol_mixed = 0.01;
     sim_data.mTNumerics.m_res_tol_transport = 0.01;
     sim_data.mTNumerics.m_corr_tol_transport = 0.01;
-    sim_data.mTNumerics.m_n_steps = 5;
+    sim_data.mTNumerics.m_n_steps = 10;
     sim_data.mTNumerics.m_dt      = 0.2;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;

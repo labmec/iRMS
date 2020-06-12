@@ -165,7 +165,7 @@ void TMRSSFIAnalysis::SFIIteration(){
     //   m_mixed_module->PostProcessTimeStep();
     
   
-    fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
+//    fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
     m_transport_module->RunTimeStep();
     //    m_transport_module->PostProcessTimeStep();
     //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;

@@ -310,6 +310,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
     
     for (int is = 0; is < n_phi_s_r; is++) {
         
+        
         ef(is + firsts_s_r) += -1.0* dt * weight * (beta*fw_lv + (1.0-beta)*fw_rv)*phiS_r(is,0)*qn;
         
         for (int js = 0; js < n_phi_s_l; js++) {

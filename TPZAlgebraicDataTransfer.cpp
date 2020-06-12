@@ -715,7 +715,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         InterfaceVec.fMatid = mat_iter.first;
         InterfaceVec.fCoefficientsFlux.resize(ncormax);
         for(int i=0; i<ncormax; i++) InterfaceVec.fCoefficientsFlux[i].resize(numfaces[i]);
-        InterfaceVec.fIntegralFlux.resize(numfaces[0]);
+        InterfaceVec.fIntegralFlux.resize(numfaces[0],10);
         InterfaceVec.fFluxSign.resize(numfaces[0]);
         InterfaceVec.fNormalFaceDirection.resize(numfaces[0]);
         InterfaceVec.fcelindex.resize(numfaces[0]);

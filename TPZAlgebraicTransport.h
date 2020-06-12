@@ -141,12 +141,14 @@ public:
             fOilfractionalflow.resize(ncells);
             fCenterCordinate.resize(ncells);
         }
+        void UpdateSaturations(TPZFMatrix<STATE> &dsx);
         void UpdateFractionalFlowsAndLambda();
+        
         void Print(std::ostream &out);
     };
     
     
-    REAL fdt;
+    REAL fdt =10.0;
     int fNFluxCoefficients;
     
     //number of volumetric elements in the transport mesh
@@ -174,11 +176,10 @@ public:
     ~TPZAlgebraicTransport();
     
     void BuildDataStructures(TPZMultiphysicsCompMesh &transportmesh);
-    void Assemble(TPZFMatrix<double> &ek,TPZFMatrix<double> &ef );
-    void AssembleResidual(TPZFMatrix<double> &ef);
     void Contribute(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     void ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
-    void ContributeBCInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
+    void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef);
+    void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef);
     static std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL Sw, REAL rhoW,REAL rhoO);
     
     void CalcLambdas();
