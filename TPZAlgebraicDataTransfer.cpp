@@ -740,7 +740,14 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         REAL volume = gel->Volume();
         int side = gel->NSides()-1;
         transport.fCellsData.fVolume[i]=volume;
-        transport.fCellsData.fCompIndexes[i]=celindex;
+        //EqNumber
+        if (cel->NConnects()!=1) {
+            DebugStop();
+        }
+        TPZConnect &con = cel->Connect(0);
+        int block_num = con.SequenceNumber();
+        int eq_number = fTransportMesh->Block().Position(block_num);
+        transport.fCellsData.fEqNumber[i]=eq_number;
         transport.fCellsData.fDensityOil[i]=800.00;
         transport.fCellsData.fDensityWater[i]=1000.00;
         transport.fCellsData.fSaturation[i]=0.0;

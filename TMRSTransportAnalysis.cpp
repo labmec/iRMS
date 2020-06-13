@@ -68,13 +68,13 @@ void TMRSTransportAnalysis::Assemble(){
     fRhs.Zero();
     //Volumetric Elements
     for (int ivol = 0; ivol<ncells; ivol++) {
-        int index = fAlgebraicTransport.fCellsData.fCompIndexes[ivol];
+        int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
         TPZFMatrix<double> elmat, ef;
         elmat.Resize(1, 1);
         ef.Resize(1,1);
         fAlgebraicTransport.Contribute(ivol, elmat, ef);
-        mat->AddSub(index, index, elmat);
-        fRhs.AddSub(index, 0,ef);
+        mat->AddSub(eqindex, eqindex, elmat);
+        fRhs.AddSub(eqindex, 0,ef);
     }
    
     //Interface Elements
@@ -87,9 +87,11 @@ void TMRSTransportAnalysis::Assemble(){
         std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[interID].fLeftRightVolIndex[interf];
         int left = lrindex.first;
         int right = lrindex.second;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+        int righteq = fAlgebraicTransport.fCellsData.fEqNumber[right];
         TPZVec<int64_t> destinationindex(2);
-        destinationindex[0]=left;
-        destinationindex[1]=right;
+        destinationindex[0]=lefteq;
+        destinationindex[1]=righteq;
         TPZFMatrix<double> elmat, ef;
         elmat.Resize(2, 2);
         ef.Resize(2, 1);
@@ -104,9 +106,10 @@ void TMRSTransportAnalysis::Assemble(){
     for (int interf = 0; interf<ninterfaces; interf++) {
         std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[inlet_mat_id].fLeftRightVolIndex[interf];
         int left = lrindex.first;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
 //        int right = lrindex.second;
         TPZVec<int64_t> destinationindex(1);
-        destinationindex[0]=left;
+        destinationindex[0]=lefteq;
         TPZFMatrix<double> elmat, ef;
         ef.Resize(1, 1);
         fAlgebraicTransport.ContributeBCInletInterface(interf,ef);
@@ -118,8 +121,9 @@ void TMRSTransportAnalysis::Assemble(){
     for (int interf = 0; interf<ninterfaces; interf++) {
         std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[outlet_mat_id].fLeftRightVolIndex[interf];
         int left = lrindex.first;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
         TPZVec<int64_t> destinationindex(1);
-        destinationindex[0]=left;
+        destinationindex[0]=lefteq;
         TPZFMatrix<double> elmat, ef;
         elmat.Resize(1, 1);
         ef.Resize(1, 1);

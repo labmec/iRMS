@@ -91,7 +91,7 @@ void SimpleTest(){
     
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
-    aspace.CreateUniformMesh(10, 100, 1, 10);
+    aspace.CreateUniformMesh(10, 100, 2, 10);
     aspace.GenerateMHMUniformMesh(0);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -192,8 +192,8 @@ TMRSDataTransfer Setting2D(){
      sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(-4,bc_outlet,1.0);
     
     //Fluid Properties
-    sim_data.mTFluidProperties.mWaterViscosity = 0.1;
-    sim_data.mTFluidProperties.mOilViscosity = 0.2;
+    sim_data.mTFluidProperties.mWaterViscosity = 1.0;
+    sim_data.mTFluidProperties.mOilViscosity = 1.0;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
     sim_data.mTFluidProperties.mOilDensity = 800.0;
     

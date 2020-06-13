@@ -64,7 +64,7 @@ public:
     // CELL DATA
     struct TCellData{
         int  fMatId;
-        std::vector<REAL> fCompIndexes;
+        std::vector<REAL> fEqNumber;
         std::vector<REAL> fVolume;
         std::vector<REAL> fSaturation;
         std::vector<REAL> fPressure;
@@ -83,7 +83,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fMatId(-1), fCompIndexes(0),fVolume(0), fSaturation(0), fPressure(0), fDensityOil(0),fDensityWater(0), flambda(0),fporosity(0), fWaterfractionalflow(0),fOilfractionalflow(0), fCenterCordinate(0),
+        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0), fPressure(0), fDensityOil(0),fDensityWater(0), flambda(0),fporosity(0), fWaterfractionalflow(0),fOilfractionalflow(0), fCenterCordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -92,7 +92,7 @@ public:
         TCellData(const TCellData &copy)
         {
             fVolume = copy.fVolume;
-            fCompIndexes=copy.fCompIndexes;
+            fEqNumber=copy.fEqNumber;
             fSaturation= copy.fSaturation;
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
@@ -110,7 +110,7 @@ public:
         TCellData &operator=(const TCellData &copy)
         {
             fVolume = copy.fVolume;
-            fCompIndexes=copy.fCompIndexes;
+            fEqNumber=copy.fEqNumber;
             fSaturation= copy.fSaturation;
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
@@ -129,7 +129,7 @@ public:
         void SetNumCells(int64_t ncells)
         {
             fVolume.resize(ncells);
-            fCompIndexes.resize(ncells);
+            fEqNumber.resize(ncells);
             fSaturation.resize(ncells);
             fporosity.resize(ncells);
             fPressure.resize(ncells);
