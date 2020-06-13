@@ -84,7 +84,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         //        cmesh->UpdatePreviousState(1);
         //        Rhs() *=-1.0;
         cmesh->LoadSolutionFromMultiPhysics();
-        this->PostProcessTimeStep();
+//        this->PostProcessTimeStep();
         dx = Solution();
         corr_norm = Norm(dx);
         
@@ -106,9 +106,9 @@ void TMRSMixedAnalysis::RunTimeStep(){
             //            Rhs().Print("r = ",std::cout,EMathematicaInput);
             break;
         }
-        if (m_k_iteration >= n) {
-            std::cout << "Mixed operator not converge " << std::endl;
-        }
+//        if (m_k_iteration >= n) {
+//            std::cout << "Mixed operator not converge " << std::endl;
+//        }
         
     }
     

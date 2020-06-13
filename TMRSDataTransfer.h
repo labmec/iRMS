@@ -143,6 +143,40 @@ public:
     class TFluidProperties : public TMRSSavable {
         
     public:
+        REAL mOilViscosity;
+        REAL mWaterViscosity;
+        REAL mOilDensity;
+        REAL mWaterDensity;
+        /** @brief Default constructor */
+        TFluidProperties(){
+            mOilViscosity= 1.0;
+            mWaterViscosity=1.0;
+            mOilDensity = 800;
+            mWaterDensity = 1000;
+        }
+        
+        /** @brief Destructor */
+        ~TFluidProperties(){
+            
+        }
+        
+        /** @brief Copy constructor */
+        TFluidProperties(const TFluidProperties &other){
+            mOilViscosity = other.mOilViscosity;
+            mWaterViscosity = other.mWaterViscosity;
+            mOilDensity = other.mOilDensity;
+            mWaterDensity = other.mWaterDensity;
+        }
+        
+        /** @brief Copy assignment operator*/
+        TFluidProperties &operator=(const TFluidProperties &other){
+            mOilViscosity = other.mOilViscosity;
+            mWaterViscosity = other.mWaterViscosity;
+            mOilDensity = other.mOilDensity;
+            mWaterDensity = other.mWaterDensity;
+            return *this;
+        }
+        
         
     };
     

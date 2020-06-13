@@ -730,8 +730,8 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
    
     transport.fCellsData.SetNumCells(nvols);
     transport.fCellsData.fViscosity.resize(2);
-    transport.fCellsData.fViscosity[0] = 1.0;
-    transport.fCellsData.fViscosity[1] = 0.3;
+    transport.fCellsData.fViscosity[0] = 0.5;
+    transport.fCellsData.fViscosity[1] = 0.1;
     for (int64_t i=0 ; i<nvols; i++) {
         int64_t celindex = volData->second[i];
         TPZCompEl *cel = fTransportMesh->Element(celindex);

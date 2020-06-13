@@ -28,11 +28,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
 
-    m_transport_module->fAlgebraicTransport.interfaceid = 100;
-    m_transport_module->fAlgebraicTransport.inletmatid = -2;
-    m_transport_module->fAlgebraicTransport.outletmatid = -4;
-  
-    
+   
 //    int n_mixed_dof = m_mixed_module->Solution().Rows();
 //    int n_transport_dof = m_transport_module->Solution().Rows();
 //    m_x_mixed.Resize(n_mixed_dof, 1);
@@ -50,6 +46,22 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
     m_mixed_module->SetDataTransfer(sim_data);
     m_transport_module->SetDataTransfer(sim_data);
+    
+    m_transport_module->fAlgebraicTransport.interfaceid = 100;
+    m_transport_module->fAlgebraicTransport.inletmatid = -2;
+    m_transport_module->fAlgebraicTransport.outletmatid = -4;
+   
+    //Set initial properties
+    std::cout<<m_sim_data->mTGeometry.Interface_material_id;
+    std::cout<<m_sim_data->mTFluidProperties.mWaterViscosity;
+    m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[0] = m_sim_data->mTFluidProperties.mWaterViscosity;
+    m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[1] = m_sim_data->mTFluidProperties.mOilViscosity;
+    int ncells = m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil.size();
+    REAL rhow = m_sim_data->mTFluidProperties.mWaterDensity;
+    REAL rhoo = m_sim_data->mTFluidProperties.mOilDensity;
+    for (int icell =0; icell<ncells; icell++) {
+        m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
+    }
 }
 
 TMRSDataTransfer * TMRSSFIAnalysis::GetDataTransfer(){
