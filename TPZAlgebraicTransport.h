@@ -21,7 +21,6 @@ public:
     struct TInterfaceDataTransport
     {
         int64_t fMatid;
-        
         std::vector<int64_t> fcelindex;
         //vector for each multiplying coefficient of fluxes
         std::vector<std::vector<REAL> > fCoefficientsFlux;
@@ -148,9 +147,11 @@ public:
     };
     
     
-    REAL fdt =10.0;
+    REAL fdt =0.1;
     int fNFluxCoefficients;
-    
+    int inletmatid;
+    int outletmatid;
+    int interfaceid;
     //number of volumetric elements in the transport mesh
     int fNVolumesTransport = 0;
     // Cells data structure, one material at a time
@@ -181,6 +182,7 @@ public:
     void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef);
     void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef);
     static std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL Sw, REAL rhoW,REAL rhoO);
+    void UpdateIntegralFlux(int matid);
     
     void CalcLambdas();
     void CalcDensities();

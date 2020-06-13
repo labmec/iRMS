@@ -44,7 +44,7 @@ void TPZReservoirTools::CreatedCondensedElements(TPZCompMesh *cmesh, bool KeepOn
         if(cancondense)
         {
             TPZFastCondensedElement *cond = new TPZFastCondensedElement(cel, keepmatrix);
-            cond->SetPermeability(20.0);
+            cond->SetPermeability(1.0);
         }
         
     }

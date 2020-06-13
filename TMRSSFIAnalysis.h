@@ -65,15 +65,13 @@ public:
     
     /// Run a time step
     void RunTimeStep();
-    void RunTimeStepWithOutMemory(TPZFMatrix<REAL> &solution_n);
     
     /// Render a vtk file with requested variables for a time step
     void PostProcessTimeStep(int val=0);
     
     /// Perform a SFI iteration
     void SFIIteration();
-    void SFIIterationWithOutMemory(TPZFMatrix<REAL> &solution_n);
-   
+    
     void TransferToTransportModule();
     
     void TransferToMixedModule();

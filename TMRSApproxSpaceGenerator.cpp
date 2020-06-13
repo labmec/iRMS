@@ -1526,7 +1526,7 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
             std::cout << "physical name = " << material_name << std::endl;
             int material_id = chunk.second;
             volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
-            volume->SetPermeability(100.0);
+            volume->SetPermeability(1.0);
             MixedFluxPressureCmesh->InsertMaterialObject(volume);
         }
     }

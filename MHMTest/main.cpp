@@ -76,12 +76,8 @@ TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL
 void SimpleTest();
 //
 int main(){
-
     InitializePZLOG();
-
-     SimpleTest();
-
-    
+    SimpleTest();
     return 0;
 }
 
@@ -95,7 +91,7 @@ void SimpleTest(){
     
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
-    aspace.CreateUniformMesh(3, 100, 1, 10);
+    aspace.CreateUniformMesh(10, 100, 1, 10);
     aspace.GenerateMHMUniformMesh(0);
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -124,8 +120,10 @@ void SimpleTest(){
     
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
-    sfi_analysis->RunTimeStep();
-    exit(0);
+//    sfi_analysis->RunTimeStep();
+    
+    
+//    exit(0);
 //    sfi_analysis->m_mixed_module->RunTimeStep();
   
 
@@ -141,16 +139,14 @@ void SimpleTest(){
     REAL current_report_time = reporting_times[pos];
     TPZFMatrix<REAL> solution_n;
     solution_n = sfi_analysis->m_transport_module->Solution();
-
-    solution_n *= 0.0;
+    
+//    solution_n *= 0.0;
    
-    
-    
     for (int it = 1; it <= n_steps; it++) {
-        sfi_analysis->RunTimeStepWithOutMemory(solution_n);
-        solution_n.Print(std::cout);
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(sim_time);
+        sfi_analysis->RunTimeStep();
+       
         if (sim_time >=  current_report_time) {
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
             sfi_analysis->PostProcessTimeStep();
@@ -297,15 +293,15 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTMultiphaseFunctions.mLayer_lambda[0] = lambda;
     
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 1;
-    sim_data.mTNumerics.m_max_iter_transport = 5;
-    sim_data.mTNumerics.m_max_iter_sfi = 3;
+    sim_data.mTNumerics.m_max_iter_mixed = 3;
+    sim_data.mTNumerics.m_max_iter_transport = 30;
+    sim_data.mTNumerics.m_max_iter_sfi = 20;
     sim_data.mTNumerics.m_res_tol_mixed = 0.01;
     sim_data.mTNumerics.m_corr_tol_mixed = 0.01;
     sim_data.mTNumerics.m_res_tol_transport = 0.01;
     sim_data.mTNumerics.m_corr_tol_transport = 0.01;
-    sim_data.mTNumerics.m_n_steps = 10;
-    sim_data.mTNumerics.m_dt      = 0.2;
+    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_dt      = 0.1;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
@@ -320,7 +316,7 @@ TMRSDataTransfer Setting2D(){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 0.01;
+    sim_data.mTPostProcess.m_file_time_step = 0.1;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     

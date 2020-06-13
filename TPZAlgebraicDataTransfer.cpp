@@ -514,6 +514,8 @@ void TPZAlgebraicDataTransfer::InitializeVectorPointersMixedToTransport(TPZAlgeb
             if(transport.fInterfaceData[matid].fCoefficientsFlux.size() <= flux_index) DebugStop();
             auto vecptr = &transport.fInterfaceData[matid].fCoefficientsFlux[flux_index];
             list_iter.fTarget = vecptr;
+            auto matptr = &(list_iter.fMixedMesh->Solution());
+            list_iter.fFrom = matptr;
         }
     }
 }
@@ -602,7 +604,7 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
             for(auto itlist : list)
             {
                 TFromMixedToTransport &transport = itlist;
-                transport.Print(out);
+//                transport.Print(out);
             }
         }
     }
@@ -720,7 +722,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         InterfaceVec.fNormalFaceDirection.resize(numfaces[0]);
         InterfaceVec.fcelindex.resize(numfaces[0]);
         InterfaceVec.fIntegralFluxFunctions.resize(numfaces[0]);
-    
+        
     }
     
     auto volData = fVolumeElements.rbegin();
@@ -728,11 +730,12 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
    
     transport.fCellsData.SetNumCells(nvols);
     transport.fCellsData.fViscosity.resize(2);
-    transport.fCellsData.fViscosity[0] = 0.01;
-    transport.fCellsData.fViscosity[1] = 0.01;
+    transport.fCellsData.fViscosity[0] = 1.0;
+    transport.fCellsData.fViscosity[1] = 0.3;
     for (int64_t i=0 ; i<nvols; i++) {
         int64_t celindex = volData->second[i];
         TPZCompEl *cel = fTransportMesh->Element(celindex);
+        
         TPZGeoEl *gel = cel->Reference();
         REAL volume = gel->Volume();
         int side = gel->NSides()-1;

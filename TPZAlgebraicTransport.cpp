@@ -18,6 +18,10 @@ TPZAlgebraicTransport::TPZAlgebraicTransport(const TPZAlgebraicTransport & other
     fNVolumesTransport = other.fNVolumesTransport;
     fCellsData = other.fCellsData;
     fInterfaceData = other.fInterfaceData;
+    fNFluxCoefficients =other.fNFluxCoefficients;
+    inletmatid=other.inletmatid;
+    outletmatid=other.outletmatid;
+    interfaceid=other.interfaceid;
 }
 
 /// Assignement constructor
@@ -26,6 +30,9 @@ const TPZAlgebraicTransport & TPZAlgebraicTransport::operator=(const TPZAlgebrai
     fNVolumesTransport = other.fNVolumesTransport;
     fCellsData = other.fCellsData;
     fInterfaceData = other.fInterfaceData;
+    inletmatid=other.inletmatid;
+    outletmatid=other.outletmatid;
+    interfaceid=other.interfaceid;
     return *this;
 }
 TPZAlgebraicTransport::~TPZAlgebraicTransport(){
@@ -70,25 +77,19 @@ void TPZAlgebraicTransport::Contribute(int index, TPZFMatrix<double> &ek,TPZFMat
 }
 void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
     
-    std::pair<int64_t, int64_t> lr_index = fInterfaceData[100].fLeftRightVolIndex[index];
-    REAL fluxint  = fInterfaceData[100].fIntegralFlux[index];
+    std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceid].fLeftRightVolIndex[index];
+    REAL fluxint  = fInterfaceData[interfaceid].fIntegralFlux[index];
     std::vector<REAL> leftinf= fCellsData.fWaterfractionalflow[lr_index.first];
     std::vector<REAL> rightinf= fCellsData.fWaterfractionalflow[lr_index.second];
     REAL fw_L = leftinf[0];
     REAL fw_R = rightinf[0];
     REAL dfwSw_L = leftinf[1];
     REAL dfwSw_R = rightinf[1];
-    REAL s_l = fCellsData.fSaturation[lr_index.first];
-    REAL s_r = fCellsData.fSaturation[lr_index.second];
     REAL beta =0.0;
     //upwind
     if (fluxint>0.0) {
         beta = 1.0;
     }
-    //            ek(0,0) = dfwSwL * beta * fluxint;
-    //            ek(0,1) = dfwSwR * (1-beta) * fluxint;
-    //            ek(1,0) = -1.0 * dfwSwL * beta * fluxint;
-    //            ek(1,1) = -1.0*dfwSwR*(1-beta)*fluxint;
     
     ek(0,0) = +1.0*dfwSw_L * fdt * beta * fluxint;
     ek(0,1) = +1.0*dfwSw_R * fdt *(1-beta) * fluxint;
@@ -96,27 +97,22 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     ek(1,1) = -1.0*dfwSw_R*fdt*(1-beta)*fluxint;
     ef(0) = +1.0*fdt*(beta*fw_L + (1-beta)*fw_R)*fluxint;
     ef(1) = -1.0*fdt*(beta*fw_L + (1-beta)*fw_R)*fluxint;
-//    ek.Print(std::cout);
+
 }
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef){
    
     int s_inlet =1.0;
-    REAL fluxint  = fInterfaceData[-2].fIntegralFlux[index];
+    REAL fluxint  = fInterfaceData[inletmatid].fIntegralFlux[index];
     ef(0,0) = 1.0*fdt*s_inlet*fluxint;
 }
 void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef){
   
-    std::pair<int64_t, int64_t> lr_index = fInterfaceData[-4].fLeftRightVolIndex[index];
-    REAL fluxint  = fInterfaceData[-4].fIntegralFlux[index];
+    std::pair<int64_t, int64_t> lr_index = fInterfaceData[outletmatid].fLeftRightVolIndex[index];
+    REAL fluxint  = fInterfaceData[outletmatid].fIntegralFlux[index];
     std::vector<REAL> leftinf= fCellsData.fWaterfractionalflow[lr_index.first];
     std::vector<REAL> rightinf= fCellsData.fWaterfractionalflow[lr_index.second];
     REAL fw_L = leftinf[0];
-    REAL fw_R = rightinf[0];
     REAL dfwSw_L = leftinf[1];
-    REAL dfwSw_R = rightinf[1];
-    
-    int left = fInterfaceData[-1].fLeftRightVolIndex[index].first;
-    REAL s_l = this->fCellsData.fSaturation[left];
     ef(0,0) = 1.0*fdt*fw_L*fluxint;
     ek(0,0) = dfwSw_L*fdt*fluxint;
 }
@@ -146,27 +142,49 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
 
 }
 
-std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal(REAL Sw, REAL rhoW,REAL rhoO){
+std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal(REAL sw, REAL muw,REAL muo){
     std::vector<REAL> fwData(2), foData(2);
-//    REAL Krw = Sw*Sw;
-//    REAL Kro = (1-Sw)*(1-Sw);
+    REAL Krw = sw*sw ;
+    REAL Kro = (1-sw)*(1-sw) ;
 //    REAL fw = (Krw)/(Krw+Kro);
 //    REAL fo = (Kro)/(Krw+Kro);
 //    fwData[0] = fw;
-//    fwData[1] = (2.0*(Sw)/(Kro+Krw)) - (Krw*(4*Sw - 2))/((Krw+Kro)*(Krw+Kro));
+//    fwData[1] = (2.0*(sw)/(Kro+Krw)) - (Krw*(4*sw - 2))/((Krw+Kro)*(Krw+Kro));
 //    foData[0] = fo;
-//    foData[1]=(2.0*(Sw-1)/(Kro+Krw)) - (Kro*(4*Sw - 2))/((Krw+Kro)*(Krw+Kro));
-    
-    REAL Krw = Sw;
-    REAL Kro = (1-Sw);
-    REAL fw = (Krw)/(Krw+Kro);
-    REAL fo = (Kro)/(Krw+Kro);
+//    foData[1]=(2.0*(sw-1)/(Kro+Krw)) - (Kro*(4*sw - 2))/((Krw+Kro)*(Krw+Kro));
+    REAL fw = (muo*sw*sw)/(muw*(sw-1.0)*(sw-1.0) + (muo*sw*sw));
+    REAL num = -2.0*(muo*muw*(sw-1.0)*sw);
+    REAL dem = ((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw))*((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw));
     fwData[0] = fw;
-    fwData[1] = 1.0;
-    foData[0] = fo;
-    foData[1]=-1.0;
+    fwData[1] = num/dem;
+    foData[0] = 1.0;
+    foData[1]=1.0;
+  
+//    REAL Krw = Sw;
+//    REAL Kro = (1-Sw);
+//    REAL fw = (Krw)/(Krw+Kro);
+//    REAL fo = (Kro)/(Krw+Kro);
+//    fwData[0] = fw;
+//    fwData[1] = 1.0;
+//    foData[0] = fo;
+//    foData[1]=-1.0;
     std::pair<std::vector<REAL>,std::vector<REAL>> fracflows = std::make_pair(fwData, foData);
     return fracflows;
+}
+void TPZAlgebraicTransport::UpdateIntegralFlux(int matid){
+    
+    
+    int nels = fInterfaceData[matid].fCoefficientsFlux.size();
+    for (int i = 0; i<nels; i++) {
+        int np =fInterfaceData[matid].fCoefficientsFlux[i].size();
+        for (int index =0; index<np; index++) {
+            REAL val =fInterfaceData[matid].fCoefficientsFlux[i][index];
+            fInterfaceData[matid].fIntegralFlux[index] +=val;
+        }
+
+    }
+
+    
 }
 void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){
     
@@ -197,18 +215,20 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(){
     int nvols = this->fVolume.size();
     for (int ivol =0 ; ivol< nvols; ivol++) {
         std::pair<std::vector<REAL>,std::vector<REAL>> fWandFo=
-        fwAndfoVal(fSaturation[ivol], fDensityWater[ivol], fDensityOil[ivol]);
+        fwAndfoVal(fSaturation[ivol], fViscosity[0], fViscosity[1]);
         this->fWaterfractionalflow[ivol] = fWandFo.first;
         this->fOilfractionalflow[ivol] = fWandFo.second;
         REAL sw =this->fSaturation[ivol];
         REAL krw = sw*sw;
         REAL kro = (1-sw)*(1-sw);
         this->flambda[ivol] = (krw/(fViscosity[0]))+(kro/(fViscosity[1]));
+//        this->flambda[ivol] = (krw)+(kro);
+
     }
 }
 void TPZAlgebraicTransport::TCellData::UpdateSaturations(TPZFMatrix<STATE> &dsw){
     int ncells = this->fVolume.size();
     for (int icel =0; icel<ncells; icel++) {
-        fSaturation[icel] += dsw(icel,0);
+        fSaturation[icel] = dsw(icel,0);
     }
 }

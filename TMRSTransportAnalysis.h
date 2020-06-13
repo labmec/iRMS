@@ -52,8 +52,7 @@ public:
     /// Configurates iternal members
     void Configure(int n_threads, bool UsePardiso_Q);
     void Assemble();
-    void CalcDestinationIndex(TPZCompEl *cel, TPZVec<int64_t> &destinationindex);
-    void ConfigureInitial();
+    
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer * sim_data);
     
@@ -71,7 +70,7 @@ public:
     
     /// Run a time step
     void RunTimeStep();
-    void RunTimeStepWithoutMemory(TPZFMatrix<REAL> &solution_n);
+    
     /// Render a vtk file with requested variables for a time step
     void PostProcessTimeStep();
     

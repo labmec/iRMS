@@ -27,8 +27,11 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
- 
-    
+
+    m_transport_module->fAlgebraicTransport.interfaceid = 100;
+    m_transport_module->fAlgebraicTransport.inletmatid = -2;
+    m_transport_module->fAlgebraicTransport.outletmatid = -4;
+  
     
 //    int n_mixed_dof = m_mixed_module->Solution().Rows();
 //    int n_transport_dof = m_transport_module->Solution().Rows();
@@ -67,7 +70,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
     bool stop_criterion_Q = false;
     REAL error_rel_mixed = 1.0;
     REAL error_rel_transport = 1.0;
-    REAL eps_tol = 10.0;
+    REAL eps_tol = 1.0;
     
 
     for (int i = 1; i <= n_iterations; i++) {
@@ -77,54 +80,18 @@ void TMRSSFIAnalysis::RunTimeStep(){
         
         error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         
-        stop_criterion_Q = error_rel_mixed <= eps_tol && error_rel_transport <= eps_tol;
+        stop_criterion_Q = error_rel_mixed < eps_tol && error_rel_transport < eps_tol;
         if (stop_criterion_Q) {
             std::cout << "SFI converged " << std::endl;
             std::cout << "Number of iterations = " << i << std::endl;
-            UpdateMemoryInModules();
+//            UpdateMemoryInModules();
             break;
         }
         
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
  
-        m_mixed_module->PostProcessTimeStep();
-    }
-    
-}
-void TMRSSFIAnalysis::RunTimeStepWithOutMemory(TPZFMatrix<REAL> &solution_n){
-    
-    m_x_mixed = m_mixed_module->Solution();
-    m_x_transport = m_transport_module->Solution();
-    
-    
-    int n_iterations = m_sim_data->mTNumerics.m_max_iter_sfi;
-    bool stop_criterion_Q = false;
-    REAL error_rel_mixed = 1.0;
-    REAL error_rel_transport = 1.0;
-    REAL eps_tol = 10.0;
-    
-    
-    for (int i = 1; i <= n_iterations; i++) {
-        
-        SFIIterationWithOutMemory(solution_n);
-        error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
-        
-        error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
-        
-        stop_criterion_Q = error_rel_mixed <= eps_tol && error_rel_transport <= eps_tol;
-        if (stop_criterion_Q) {
-            std::cout << "SFI converged " << std::endl;
-            std::cout << "Number of iterations = " << i << std::endl;
-            UpdateMemoryInModules();
-            break;
-        }
-        
-        m_x_mixed = m_mixed_module->Solution();
-        m_x_transport = m_transport_module->Solution();
-        solution_n =m_x_transport;
-        solution_n.Print(std::cout);
-        m_mixed_module->PostProcessTimeStep();
+//        m_mixed_module->PostProcessTimeStep();
     }
     
 }
@@ -165,41 +132,19 @@ void TMRSSFIAnalysis::SFIIteration(){
     //   m_mixed_module->PostProcessTimeStep();
     
   
-//    fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
+    fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
+    m_transport_module->fAlgebraicTransport.fdt = m_transport_module->GetCurrentTime();
     m_transport_module->RunTimeStep();
+//    m_transport_module->PostProcessTimeStep();
     //    m_transport_module->PostProcessTimeStep();
     //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
     //    TransferToMixedModule();        // Transfer to mixed
     
  }
-void TMRSSFIAnalysis::SFIIterationWithOutMemory(TPZFMatrix<REAL> &solution_n){
-    
-    {
-        m_mixed_module->RunTimeStep();
-        
-#ifdef USING_BOOST2
-        boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
-#endif
-        
-#ifdef USING_BOOST2
-        boost::posix_time::ptime mixed_process_t2 = boost::posix_time::microsec_clock::local_time();
-        REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
-        std::cout << "Mixed approximation performed in :" << setw(10) <<  mixed_process_time/1000.0 << setw(5)   << " seconds." << std::endl;
-#endif
-    }
-    
-    m_mixed_module->PostProcessTimeStep();
-    
-    //    solution_n.Print(std::cout);
-        m_transport_module->RunTimeStepWithoutMemory(solution_n);
-    //    solution_n = m_transport_module->Solution();
-    //    solution_n.Print(std::cout);
-        m_transport_module->PostProcessTimeStep();
-    //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
-    //    TransferToMixedModule();        // Transfer to mixed
-    
-    
-}
+
 
 void TMRSSFIAnalysis::TransferToTransportModule(){
     
