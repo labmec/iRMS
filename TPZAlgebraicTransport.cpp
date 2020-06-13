@@ -144,41 +144,43 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
 
 std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal(REAL sw, REAL muw,REAL muo){
     std::vector<REAL> fwData(2), foData(2);
-    REAL Krw = sw*sw ;
-    REAL Kro = (1-sw)*(1-sw) ;
+//    REAL Krw = sw*sw ;
+//    REAL Kro = (1-sw)*(1-sw) ;
 //    REAL fw = (Krw)/(Krw+Kro);
 //    REAL fo = (Kro)/(Krw+Kro);
 //    fwData[0] = fw;
 //    fwData[1] = (2.0*(sw)/(Kro+Krw)) - (Krw*(4*sw - 2))/((Krw+Kro)*(Krw+Kro));
 //    foData[0] = fo;
 //    foData[1]=(2.0*(sw-1)/(Kro+Krw)) - (Kro*(4*sw - 2))/((Krw+Kro)*(Krw+Kro));
-    REAL fw = (muo*sw*sw)/(muw*(sw-1.0)*(sw-1.0) + (muo*sw*sw));
-    REAL num = -2.0*(muo*muw*(sw-1.0)*sw);
-    REAL dem = ((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw))*((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw));
-    fwData[0] = fw;
-    fwData[1] = num/dem;
-    foData[0] = 1.0;
-    foData[1]=1.0;
-  
-//    REAL Krw = Sw;
-//    REAL Kro = (1-Sw);
-//    REAL fw = (Krw)/(Krw+Kro);
-//    REAL fo = (Kro)/(Krw+Kro);
+//    REAL fw = (muo*sw*sw)/(muw*(sw-1.0)*(sw-1.0) + (muo*sw*sw));
+//    REAL num = -2.0*(muo*muw*(sw-1.0)*sw);
+//    REAL dem = ((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw))*((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw));
 //    fwData[0] = fw;
-//    fwData[1] = 1.0;
-//    foData[0] = fo;
-//    foData[1]=-1.0;
+//    fwData[1] = num/dem;
+//    foData[0] = 1.0;
+//    foData[1]=1.0;
+  
+    REAL Krw = sw;
+    REAL Kro = (1-sw);
+    REAL fw = (Krw)/(Krw+Kro);
+    REAL fo = (Kro)/(Krw+Kro);
+    fwData[0] = fw;
+    fwData[1] = 1.0;
+    foData[0] = fo;
+    foData[1]=-1.0;
     std::pair<std::vector<REAL>,std::vector<REAL>> fracflows = std::make_pair(fwData, foData);
     return fracflows;
 }
 void TPZAlgebraicTransport::UpdateIntegralFlux(int matid){
     
-    
+    if(fInterfaceData.find(matid) == fInterfaceData.end()) DebugStop();
     int nels = fInterfaceData[matid].fCoefficientsFlux.size();
-    for (int i = 0; i<nels; i++) {
+    if(nels == 0) DebugStop();
+    fInterfaceData[matid].fIntegralFlux= fInterfaceData[matid].fCoefficientsFlux[0];
+    for (int i = 1; i<nels; i++) {
         int np =fInterfaceData[matid].fCoefficientsFlux[i].size();
-        for (int index =0; index<np; index++) {
-            REAL val =fInterfaceData[matid].fCoefficientsFlux[i][index];
+        for (int index = 0; index<np; index++) {
+            REAL val = fInterfaceData[matid].fCoefficientsFlux[i][index];
             fInterfaceData[matid].fIntegralFlux[index] +=val;
         }
 
@@ -219,8 +221,8 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(){
         this->fWaterfractionalflow[ivol] = fWandFo.first;
         this->fOilfractionalflow[ivol] = fWandFo.second;
         REAL sw =this->fSaturation[ivol];
-        REAL krw = sw*sw;
-        REAL kro = (1-sw)*(1-sw);
+        REAL krw = sw;
+        REAL kro = (1-sw);
         this->flambda[ivol] = (krw/(fViscosity[0]))+(kro/(fViscosity[1]));
 //        this->flambda[ivol] = (krw)+(kro);
 
