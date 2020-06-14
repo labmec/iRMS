@@ -22,7 +22,7 @@ IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
 ELSE()
 	find_package( PZ REQUIRED )
-	find_package(libInterpolate REQUIRED)
+	#find_package(libInterpolate REQUIRED)
 ENDIF (WIN32)
 
 
@@ -147,8 +147,8 @@ set(common_dir ${CMAKE_CURRENT_SOURCE_DIR} )
 
 
 
-add_subdirectory(LinearTracer)
-add_subdirectory(FourSpacesTest)
+#add_subdirectory(LinearTracer)
+#add_subdirectory(FourSpacesTest)
 add_subdirectory(Buckley_Levertt)
 add_subdirectory(MHMTest)
 add_subdirectory(CGP)

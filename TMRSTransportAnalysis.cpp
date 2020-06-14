@@ -66,6 +66,7 @@ void TMRSTransportAnalysis::Assemble(){
     fRhs.Resize(ncells,1);
     mat->Zero();
     fRhs.Zero();
+    
     //Volumetric Elements
     for (int ivol = 0; ivol<ncells; ivol++) {
         int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
@@ -99,7 +100,7 @@ void TMRSTransportAnalysis::Assemble(){
         mat->AddKel(elmat, destinationindex);
         fRhs.AddFel(ef, destinationindex);
     }
-
+    
     int inlet_mat_id = -2;
     //INLET
     ninterfaces = fAlgebraicTransport.fInterfaceData[inlet_mat_id].fFluxSign.size();
@@ -115,6 +116,7 @@ void TMRSTransportAnalysis::Assemble(){
         fAlgebraicTransport.ContributeBCInletInterface(interf,ef);
         fRhs.AddFel(ef, destinationindex);
     }
+    
     int outlet_mat_id = -4;
     //outlet
     ninterfaces = fAlgebraicTransport.fInterfaceData[outlet_mat_id].fFluxSign.size();
@@ -135,6 +137,80 @@ void TMRSTransportAnalysis::Assemble(){
     
 }
 
+void TMRSTransportAnalysis::AssembleResidual(){
+    int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
+    if(!this->fSolver){
+        DebugStop();
+    }
+    fRhs.Resize(ncells,1);
+    fRhs.Zero();
+    
+    //Volumetric Elements
+    for (int ivol = 0; ivol<ncells; ivol++) {
+        int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(1, 1);
+        ef.Resize(1,1);
+        fAlgebraicTransport.Contribute(ivol, elmat, ef); // @jose -> res at element level
+        fRhs.AddSub(eqindex, 0,ef);
+    }
+   
+    //Interface Elements
+    int interID = m_sim_data->mTGeometry.Interface_material_id;
+    int ninterfaces = fAlgebraicTransport.fInterfaceData[interID].fFluxSign.size();
+    if (ninterfaces<1) {
+        DebugStop();
+    }
+    for (int interf = 0; interf<ninterfaces; interf++) {
+        std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[interID].fLeftRightVolIndex[interf];
+        int left = lrindex.first;
+        int right = lrindex.second;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+        int righteq = fAlgebraicTransport.fCellsData.fEqNumber[right];
+        TPZVec<int64_t> destinationindex(2);
+        destinationindex[0]=lefteq;
+        destinationindex[1]=righteq;
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(2, 2);
+        ef.Resize(2, 1);
+        fAlgebraicTransport.ContributeInterface(interf,elmat, ef);
+        fRhs.AddFel(ef, destinationindex);
+    }
+    
+    int inlet_mat_id = -2;
+    //INLET
+    ninterfaces = fAlgebraicTransport.fInterfaceData[inlet_mat_id].fFluxSign.size();
+    for (int interf = 0; interf<ninterfaces; interf++) {
+        std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[inlet_mat_id].fLeftRightVolIndex[interf];
+        int left = lrindex.first;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+//        int right = lrindex.second;
+        TPZVec<int64_t> destinationindex(1);
+        destinationindex[0]=lefteq;
+        TPZFMatrix<double> elmat, ef;
+        ef.Resize(1, 1);
+        fAlgebraicTransport.ContributeBCInletInterface(interf,ef);
+        fRhs.AddFel(ef, destinationindex);
+    }
+    
+    int outlet_mat_id = -4;
+    //outlet
+    ninterfaces = fAlgebraicTransport.fInterfaceData[outlet_mat_id].fFluxSign.size();
+    for (int interf = 0; interf<ninterfaces; interf++) {
+        std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[outlet_mat_id].fLeftRightVolIndex[interf];
+        int left = lrindex.first;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+        TPZVec<int64_t> destinationindex(1);
+        destinationindex[0]=lefteq;
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(1, 1);
+        ef.Resize(1, 1);
+        fAlgebraicTransport.ContributeBCOutletInterface(interf,elmat,ef);
+        fRhs.AddFel(ef, destinationindex);
+    }
+    
+    
+}
 
 void TMRSTransportAnalysis::RunTimeStep(){
     
@@ -155,21 +231,14 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> dx(Solution()),x(Solution());
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
-    {
-        fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
-        NewtonIteration();
-        dx = Solution();
-        x += dx;
-        LoadSolution(x);
-        cmesh->LoadSolutionFromMultiPhysics();
-        PostProcessTimeStep();
-    }
+    
+//    ComputeInitialGuess(x);
+    
+    fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
-//        AssembleResidual();
-        REAL normr = Norm(Rhs());
         dx = Solution();
 
         x += dx;
@@ -182,6 +251,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
         cmesh->LoadSolutionFromMultiPhysics();
         PostProcessTimeStep();
         
+        AssembleResidual();
+        res_norm = Norm(Rhs());
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
         if (stop_criterion_corr_Q) {
@@ -196,6 +267,23 @@ void TMRSTransportAnalysis::RunTimeStep(){
     
 }
 
+void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
+    
+    TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
+    if (!cmesh) {
+        DebugStop();
+    }
+    
+    fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+
+    NewtonIteration();
+    x += Solution();
+
+    LoadSolution(x);
+    cmesh->LoadSolutionFromMultiPhysics();
+//    PostProcessTimeStep();
+}
 
 void TMRSTransportAnalysis::NewtonIteration(){
     

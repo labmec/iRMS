@@ -67,8 +67,8 @@
 
 #include "TPZAlgebraicDataTransfer.h"
 
-#include <libInterpolate/Interpolate.hpp>
-#include <libInterpolate/AnyInterpolator.hpp>
+//#include <libInterpolate/Interpolate.hpp>
+//#include <libInterpolate/AnyInterpolator.hpp>
 
 TMRSDataTransfer Setting2D();
 TPZFMatrix<STATE> TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL & dt, TPZFMatrix<STATE> & M_diag);
@@ -92,7 +92,7 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-    aspace.CreateUniformMesh(20 , 100, 1, 10);
+    aspace.CreateUniformMesh(20, 100, 1, 10);
     aspace.GenerateMHMUniformMesh(1);
 
     aspace.PrintGeometry(name);
@@ -142,15 +142,11 @@ void SimpleTest(){
     TPZFMatrix<REAL> solution_n;
     solution_n = sfi_analysis->m_transport_module->Solution();
     solution_n.Zero();
-    
-sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturationsLastState(solution_n);
-    
-//    solution_n *= 0.0;
-   
+    sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturationsLastState(solution_n);
     
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
-        sfi_analysis->m_transport_module->SetCurrentTime(sim_time);
+        sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
         
        

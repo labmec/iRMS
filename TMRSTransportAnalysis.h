@@ -52,6 +52,7 @@ public:
     /// Configurates iternal members
     void Configure(int n_threads, bool UsePardiso_Q);
     void Assemble();
+    void AssembleResidual();
     
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer * sim_data);
@@ -76,6 +77,8 @@ public:
     
     /// Perform a Newton iteration
     void NewtonIteration();
+    
+    void ComputeInitialGuess(TPZFMatrix<STATE> &x);
     
    
 };

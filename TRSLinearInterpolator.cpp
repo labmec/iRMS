@@ -111,7 +111,7 @@ std::tuple<double, double> TRSLinearInterpolator::ValDeriv(double x){
     if (x >= XData[0] && x< XData[XData.size() -1] ){
         
         auto rng = std::make_pair( XData.data()+1, XData.data()+XData.size() );
-        int i = boost::lower_bound( rng, x) - XData.data() - 1;
+        int i = 0;//boost::lower_bound( rng, x) - XData.data() - 1;
         
                 //fdata.Print(std::cout);
                 double x1 = XData[i];

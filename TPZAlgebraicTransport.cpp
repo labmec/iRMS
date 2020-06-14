@@ -92,12 +92,14 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
         beta = 1.0;
     }
     
+    ef(0) = +1.0*fdt*(beta*fw_L + (1-beta)*fw_R)*fluxint;
+    ef(1) = -1.0*fdt*(beta*fw_L + (1-beta)*fw_R)*fluxint;
+    
     ek(0,0) = +1.0*dfwSw_L * fdt * beta * fluxint;
     ek(0,1) = +1.0*dfwSw_R * fdt *(1-beta) * fluxint;
     ek(1,0) = -1.0*dfwSw_L * fdt* beta * fluxint;
     ek(1,1) = -1.0*dfwSw_R*fdt*(1-beta)*fluxint;
-    ef(0) = +1.0*fdt*(beta*fw_L + (1-beta)*fw_R)*fluxint;
-    ef(1) = -1.0*fdt*(beta*fw_L + (1-beta)*fw_R)*fluxint;
+
 
 }
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef){
@@ -147,8 +149,7 @@ std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal
     std::vector<REAL> fwData(2), foData(2);
 //    REAL Krw = sw*sw ;
 //    REAL Kro = (1-sw)*(1-sw) ;
-
-
+    
     REAL fw = (muo*sw*sw)/(muw*(sw-1.0)*(sw-1.0) + (muo*sw*sw));
     REAL num = -2.0*(muo*muw*(sw-1.0)*sw);
     REAL dem = ((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw))*((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw));
