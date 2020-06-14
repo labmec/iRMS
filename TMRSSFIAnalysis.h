@@ -14,6 +14,7 @@
 #include "TMRSTransportAnalysis.h"
 #include "TMRSApproxSpaceGenerator.h"
 #include "TPZMFSolutionTransfer.h"
+#include "TPZAlgebraicDataTransfer.h"
 
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -28,19 +29,18 @@ private:
     
     /// Number of iterations
     int m_k_iteration;
+    TPZFMatrix<STATE> m_x_mixed;
+    TPZFMatrix<STATE> m_x_transport;
     
+    
+    
+public:
     /// Mixed module
     TMRSMixedAnalysis * m_mixed_module;
     
-    TPZFMatrix<STATE> m_x_mixed;
-    
-    TPZFMatrix<STATE> m_x_transport;
-    
-   
-    
-public:
     /// Transport module
     TMRSTransportAnalysis * m_transport_module;
+    TPZAlgebraicDataTransfer fAlgebraicDataTransfer;
     
     /// Default constructor
     TMRSSFIAnalysis();
@@ -67,7 +67,7 @@ public:
     void RunTimeStep();
     
     /// Render a vtk file with requested variables for a time step
-    void PostProcessTimeStep();
+    void PostProcessTimeStep(int val=0);
     
     /// Perform a SFI iteration
     void SFIIteration();
