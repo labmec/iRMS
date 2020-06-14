@@ -22,7 +22,7 @@
 #include "TPZTracerFlow.h"
 #include "pzl2projection.h"
 #include "TPZCompMeshTools.h"
-#include "TPZGenGrid2D.h"
+#include "pzgengrid.h"
 #include "TPZExtendGridDimension.h"
 #include "TMRSSFIAnalysis.h"
 #include "TPZMHMixedMeshControl.h"
@@ -115,8 +115,7 @@ public:
     
     static void SetUpdateMemory(int dimension, TMRSDataTransfer & sim_data, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q = true);
 
- 
-   
+    
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

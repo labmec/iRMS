@@ -27,7 +27,7 @@
 #include "TPZMaterial.h"
 //#include "pzelasmat.h"
 //#include "pzlog.h"
-#include "TPZGenGrid2D.h"
+#include "pzgengrid.h"
 
 //#include <time.h>
 //#include <stdio.h>
@@ -528,8 +528,8 @@ TPZGeoMesh * GenerateGmesh2D(int nx, int ny, double l, double h){
     x1[2]=0;
     
     //Setting boundary conditions (negative numbers to recognize them)
-    TPZGenGrid2D gen(nels,x0,x1);
-    gen.SetElementType(MMeshType::EQuadrilateral);
+    TPZGenGrid gen(nels,x0,x1);
+    gen.SetElementType(EQuadrilateral);
     gen.Read(gmesh);
     gen.SetBC(gmesh, 4, -1);
     gen.SetBC(gmesh, 5, -2);
@@ -562,8 +562,8 @@ TPZGeoMesh * GenerateGmesh3D(int nx, int ny, int nz, double l, double h, double 
     
     TPZGeoMesh *gmesh = new TPZGeoMesh;
     
-    TPZGenGrid2D gen(nels,x0,x1);
-    gen.SetElementType(MMeshType::EQuadrilateral);
+    TPZGenGrid gen(nels,x0,x1);
+    gen.SetElementType(EQuadrilateral);
     gen.Read(gmesh);
     double var = w/nz;
     TPZExtendGridDimension extend(gmesh,var);

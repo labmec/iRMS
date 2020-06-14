@@ -24,44 +24,22 @@ TMRSSFIAnalysis::~TMRSSFIAnalysis(){
 TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q){
     m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
-    
-    fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
-    fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-
-   
-//    int n_mixed_dof = m_mixed_module->Solution().Rows();
-//    int n_transport_dof = m_transport_module->Solution().Rows();
-//    m_x_mixed.Resize(n_mixed_dof, 1);
-//    m_x_transport.Resize(n_transport_dof, 1);
+    int n_mixed_dof = m_mixed_module->Solution().Rows();
+    int n_transport_dof = m_transport_module->Solution().Rows();
+    m_x_mixed.Resize(n_mixed_dof, 1);
+    m_x_transport.Resize(n_transport_dof, 1);
     
 }
 
 void TMRSSFIAnalysis::Configure(int n_threads, bool UsePardiso_Q){
     m_mixed_module->Configure(n_threads, UsePardiso_Q);
     m_transport_module->Configure(n_threads, UsePardiso_Q);
-   
 }
 
 void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
     m_mixed_module->SetDataTransfer(sim_data);
     m_transport_module->SetDataTransfer(sim_data);
-    
-    m_transport_module->fAlgebraicTransport.interfaceid = 100;
-    m_transport_module->fAlgebraicTransport.inletmatid = -2;
-    m_transport_module->fAlgebraicTransport.outletmatid = -4;
-   
-    //Set initial properties
-    std::cout<<m_sim_data->mTGeometry.Interface_material_id;
-    std::cout<<m_sim_data->mTFluidProperties.mWaterViscosity;
-    m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[0] = m_sim_data->mTFluidProperties.mWaterViscosity;
-    m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[1] = m_sim_data->mTFluidProperties.mOilViscosity;
-    int ncells = m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil.size();
-    REAL rhow = m_sim_data->mTFluidProperties.mWaterDensity;
-    REAL rhoo = m_sim_data->mTFluidProperties.mOilDensity;
-    for (int icell =0; icell<ncells; icell++) {
-        m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
-    }
 }
 
 TMRSDataTransfer * TMRSSFIAnalysis::GetDataTransfer(){
@@ -82,81 +60,54 @@ void TMRSSFIAnalysis::RunTimeStep(){
     bool stop_criterion_Q = false;
     REAL error_rel_mixed = 1.0;
     REAL error_rel_transport = 1.0;
-    REAL eps_tol = 1.0;
-    
+    REAL eps_tol = 0.01;
 
     for (int i = 1; i <= n_iterations; i++) {
         
         SFIIteration();
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
-        
         error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         
-        stop_criterion_Q = error_rel_mixed < eps_tol && error_rel_transport < eps_tol;
+        stop_criterion_Q = error_rel_mixed <= eps_tol && error_rel_transport <= eps_tol;
         if (stop_criterion_Q) {
             std::cout << "SFI converged " << std::endl;
             std::cout << "Number of iterations = " << i << std::endl;
-//            UpdateMemoryInModules();
+            UpdateMemoryInModules();
             break;
         }
         
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
- 
-//        m_mixed_module->PostProcessTimeStep();
     }
     
 }
 
-void TMRSSFIAnalysis::PostProcessTimeStep(int val){
-    if (val == 0) {
-        m_mixed_module->PostProcessTimeStep();
-        m_transport_module->PostProcessTimeStep();
-    }
-    if (val == 1) {
-        m_mixed_module->PostProcessTimeStep();
-    }
-    if (val == 2) {
-        m_transport_module->PostProcessTimeStep();
-    }
-   
+void TMRSSFIAnalysis::PostProcessTimeStep(){
+    m_mixed_module->PostProcessTimeStep();
+    m_transport_module->PostProcessTimeStep();
 }
 
 void TMRSSFIAnalysis::SFIIteration(){
     
     {
-
-        fAlgebraicDataTransfer.TransferPermeabilityCoefficients();
-        
-        m_mixed_module->RunTimeStep();
-        
-#ifdef USING_BOOST2
+         m_mixed_module->RunTimeStep();
+       
+#ifdef USING_BOOST
         boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
 #endif
-        
-#ifdef USING_BOOST2
+       
+#ifdef USING_BOOST
         boost::posix_time::ptime mixed_process_t2 = boost::posix_time::microsec_clock::local_time();
         REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
-        std::cout << "Mixed approximation performed in :" << setw(10) <<  mixed_process_time/1000.0 << setw(5)   << " seconds." << std::endl;
+        std::cout << "Mixed approximation performed in :" << std::setw(10) <<  mixed_process_time/1000.0 << std::setw(5)   << " seconds." << std::endl;
 #endif
     }
     
-    //   m_mixed_module->PostProcessTimeStep();
-    
-  
-    fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
-    m_transport_module->fAlgebraicTransport.fdt = m_transport_module->GetCurrentTime();
+    TransferToTransportModule();
     m_transport_module->RunTimeStep();
-//    m_transport_module->PostProcessTimeStep();
-    //    m_transport_module->PostProcessTimeStep();
-    //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
-    //    TransferToMixedModule();        // Transfer to mixed
+    TransferToMixedModule();        // Transfer to mixed
     
  }
-
 
 void TMRSSFIAnalysis::TransferToTransportModule(){
     
@@ -168,8 +119,7 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
         DebugStop();
     }
     
-//     m_mixed_module->m_soltransportTransfer.TransferFromMultiphysics();
-    mixed_cmesh->LoadSolutionFromMultiPhysics();
+     m_mixed_module->m_soltransportTransfer.TransferFromMultiphysics();
 
     // flux and pressure are transferred to transport module
     int q_b = 0;
@@ -189,8 +139,7 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
         transport_cmesh->MeshVector()[pavg_b]->LoadSolution(p_dof);
     }
 
-//    m_transport_module->m_soltransportTransfer.TransferToMultiphysics();
-    transport_cmesh->LoadSolutionFromMeshes();
+    m_transport_module->m_soltransportTransfer.TransferToMultiphysics();
 
 }
 
@@ -203,8 +152,7 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
         DebugStop();
     }
 
-//    m_transport_module->m_soltransportTransfer.TransferFromMultiphysics();
-    transport_cmesh->LoadSolutionFromMultiPhysics();
+    m_transport_module->m_soltransportTransfer.TransferFromMultiphysics();
 
     // Saturations are transferred to mixed module
     int s_b = 2;
@@ -212,8 +160,7 @@ void TMRSSFIAnalysis::TransferToMixedModule(){
     mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
     
 
-//     m_mixed_module->m_soltransportTransfer.TransferToMultiphysics();
-    mixed_cmesh->LoadSolutionFromMeshes();
+     m_mixed_module->m_soltransportTransfer.TransferToMultiphysics();
     
 }
 
@@ -247,6 +194,6 @@ void TMRSSFIAnalysis::UpdateMemoryTransportModule(){
 }
 
 void TMRSSFIAnalysis::UpdateMemoryInModules(){
-//    UpdateMemoryMixedModule();
+    UpdateMemoryMixedModule();
     UpdateMemoryTransportModule();
 }

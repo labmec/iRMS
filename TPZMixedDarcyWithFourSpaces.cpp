@@ -68,7 +68,7 @@ void TPZMixedDarcyWithFourSpaces::Contribute(TPZVec<TPZMaterialData> &datavec,RE
 
 int TPZMixedDarcyWithFourSpaces::VariableIndex(const std::string &name) {
     if(!strcmp("g_average",name.c_str()))        return  5;
-    if(!strcmp("p_average",name.c_str()))        return  6;
+    if(!strcmp("u_average",name.c_str()))        return  6;
     return TPZMixedDarcyFlow::VariableIndex(name);
 }
 

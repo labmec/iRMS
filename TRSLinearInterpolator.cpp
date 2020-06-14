@@ -28,22 +28,15 @@ TRSLinearInterpolator::TRSLinearInterpolator(TPZFMatrix<REAL> data){
 /** @brief Constructor based on a TPZTracerFlow object */
 TRSLinearInterpolator::TRSLinearInterpolator(const TRSLinearInterpolator &other){
     fdata = other.fdata;
-    XData =other.XData;
-    YData = other.YData;
-    ZData = other.ZData;
     fextLeft = other.fextLeft;
     fextRight = other.fextRight;
     fvalLef = other.fvalLef;
     fvalRight = other.fvalRight;
     fInterType = other.fInterType;
-    
 }
 
 TRSLinearInterpolator & TRSLinearInterpolator::operator=(const TRSLinearInterpolator &other){
     fdata = other.fdata;
-    XData =other.XData;
-    YData = other.YData;
-    ZData = other.ZData;
     fextLeft = other.fextLeft;
     fextRight = other.fextRight;
     fvalLef = other.fvalLef;
@@ -65,10 +58,6 @@ void TRSLinearInterpolator::SetData(TPZFMatrix<REAL> data){
     }
 }
 
-void TRSLinearInterpolator::SetData2(std::vector<REAL> dataX, std::vector<REAL> dataY){
-    XData = dataX;
-    YData = dataY;
-}
 /** @brief Function that returns a matrix (nx2 for Linear interpolation or nx3 for Hermite interpolation) with one dimensional data to interpolate
  * @return  The matrix (nx2) with one dimensional data to interpolate
  */
@@ -104,27 +93,29 @@ std::tuple<double, double> TRSLinearInterpolator::ValDeriv(double x){
     
     //Linear Interpolation
     
-    switch (fInterType)
+     switch (fInterType)
     {
+            
     case TLinear:
     {
-    if (x >= XData[0] && x< XData[XData.size() -1] ){
-        
-        auto rng = std::make_pair( XData.data()+1, XData.data()+XData.size() );
-        int i = boost::lower_bound( rng, x) - XData.data() - 1;
-        
+    if (x >= fdata(0,0) && x<= fdata(npoints-1,0) ){
+        for(int i=0;  i<npoints-1; i++){
+            if(x >= fdata(i,0) && x<= fdata(i+1,0)){
                 //fdata.Print(std::cout);
-                double x1 = XData[i];
-                double x2 = XData[i+1];
-                double y1 = YData[i];
-                double y2 = YData[i+1];
+                double x1 = fdata(i,0);
+                double x2 = fdata(i+1,0);
+                double y1 = fdata(i,1);
+                double y2 = fdata(i+1,1);
                 double a = (x - x2)/(x1 - x2);
                 double b = (x - x1)/(x2 - x1);
                 returned = a*y1 + b*y2;
                // std::cout<<"sw: "<<x<< "kr_ :"<<returned<<std::endl;
                 deriv = (y2-y1)/(x2-x1);
                 return {returned,deriv};
-        
+                
+                }
+            }
+        break;
         }
         break;
     }
@@ -163,10 +154,10 @@ std::tuple<double, double> TRSLinearInterpolator::ValDeriv(double x){
     //
     //Extrapolation left
     if (x < fdata(0,0)){
-        double x1 = XData[0];
-        double x2 = XData[1];
-        double y1 = YData[0];
-        double y2 = YData[1];
+        double x1 = fdata(0,0);
+        double x2 = fdata(1,0);
+        double y1 = fdata(0,1);
+        double y2 = fdata(1,1);
         
         switch (fextLeft)
         {
@@ -192,10 +183,10 @@ std::tuple<double, double> TRSLinearInterpolator::ValDeriv(double x){
     
     // Extrapolation Right
     if (x > fdata(npoints-1,0)){
-        double x1 = XData[XData.size()-2];
-        double x2 = XData[XData.size()-1];
-        double y1 = YData[YData.size()-2];
-        double y2 = YData[YData.size()-1];
+        double x1 = fdata(npoints-2,0);
+        double x2 = fdata(npoints-1,0);
+        double y1 = fdata(npoints-2,1);
+        double y2 = fdata(npoints-1,1);
         
         switch (fextRight) {
             case Enone:
@@ -358,8 +349,6 @@ void TRSLinearInterpolator::ReadData(std::string name, bool print_table_Q){
                 if(iss >> a >> b) ;
                 data(i-1,0)=a;
                 data(i-1,1)=b;
-                XData.push_back(a);
-                YData.push_back(b);
                 i=i+1;
             }
             if (n_cols==3) {
@@ -370,10 +359,6 @@ void TRSLinearInterpolator::ReadData(std::string name, bool print_table_Q){
                 data(i-1,1)=b;
                 data(i-1,2)=c;
                 i=i+1;
-                
-                XData.push_back(a);
-                YData.push_back(b);
-                ZData.push_back(c);
                 }
             }
          }
@@ -389,7 +374,6 @@ void TRSLinearInterpolator::ReadData(std::string name, bool print_table_Q){
             std::cout<<"Reading file... ok!"<<std::endl;
             std::cout<<"*************************"<<std::endl;
             SetData(data);
-//            SetData2(XData, YData);
             data.Print(std::cout);
         }
         

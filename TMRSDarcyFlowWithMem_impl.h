@@ -66,7 +66,7 @@ void TMRSDarcyFlowWithMem<TMEM>::FillBoundaryConditionDataRequirement(int type, 
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
         datavec[idata].fNeedsSol = true;
-        datavec[idata].fDeformedDirections = true;
+        datavec[idata].fNormalVec = true;
     }
 }
 
@@ -90,7 +90,7 @@ int TMRSDarcyFlowWithMem<TMEM>::VariableIndex(const std::string &name) {
     if(!strcmp("div_q",name.c_str()))           return  3;
     if(!strcmp("kappa",name.c_str()))           return  4;
     if(!strcmp("g_average",name.c_str()))        return  5;
-    if(!strcmp("p_average",name.c_str()))        return  6;
+    if(!strcmp("u_average",name.c_str()))        return  6;
     return TPZMatWithMem<TMEM>::VariableIndex(name);
 }
 
@@ -99,7 +99,7 @@ int TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(int var) {
     if(var == 1) return 3;
     if(var == 2) return 1;
     if(var == 3) return 1;
-    if(var == 4) return 1;
+    if(var == 4) return this->Dimension();
     if(var == 5) return 1;
     if(var == 6) return 1;
     return TPZMatWithMem<TMEM>::NSolutionVariables(var);
@@ -136,24 +136,9 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int 
     }
     
     if(var == 4){
-     
-            TPZManVector<double, 3> point;
-        
-            point = datavec[qb].XCenter;
-        
-            int val = rand() % 100;
-            
-            REAL kappa = 1.0;
-            if (val<75) {
-                kappa =  10000;
-                
-            }
-            else{
-                kappa =  10;
-            }
-        
-            Solout[0] = kappa;
-        
+        for (int i  = 0; i < this->Dimension(); i++) {
+            Solout[i] = 0.0;
+        }
         return;
     }
     
@@ -237,7 +222,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
         
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
-            phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
+            phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fNormalVec(i,v_i);
             kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
         }
         
@@ -252,7 +237,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fNormalVec(j,v_j);
                 }
             }
             

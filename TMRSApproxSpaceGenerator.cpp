@@ -8,10 +8,6 @@
 #include "TMRSApproxSpaceGenerator.h"
 #include "TPZMHMixedMeshWithTransportControl.h"
 #include "TPZCompMeshTools.h"
-#include "TPZMixedDarcyWithFourSpaces.h"
-#include "TPZMHMixedMesh4SpacesControl.h"
-#include "TPZFastCondensedElement.h"
-#include "TPZReservoirTools.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -86,7 +82,7 @@ void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h,
     }
     
     TPZGeoMesh *gmesh = new TPZGeoMesh;
-    TPZGenGrid2D gen(nels,x0,x1);
+    TPZGenGrid gen(nels,x0,x1);
     gen.SetRefpatternElements(true);
     
     //    if (ny!=0) {
@@ -218,11 +214,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     if (!mGeometry) {
         DebugStop();
     }
-    
-    // PHIL : nesta malha nao ha necessidade de inserir materiais "de verdade"
-    // poderia incluir "NullMaterial"...
-    // este observacao vale para todos as malhas atomicas
-    
+
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
     TPZMixedDarcyFlow * volume = nullptr;
     int dimension = mGeometry->Dimension();
@@ -243,9 +235,6 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     if (!volume) {
         DebugStop();
     }
-    
-    // PHIL : as malhas atomicas nao precisam ser BndCond
-    // poderiam ser null material...
     
     TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
@@ -299,8 +288,6 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
         DebugStop();
     }
     
-    // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
-    
     if (order == 0) {
         TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
         TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
@@ -349,22 +336,16 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
 
 void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     
-    bool cond1 = mSimData.mTNumerics.m_four_approx_spaces_Q;
-    bool cond2 = mSimData.mTNumerics.m_mhm_mixed_Q;
-    
-    if (cond1 && !cond2) {
+    if (mSimData.mTNumerics.m_four_approx_spaces_Q) {
         BuildMixed4SpacesMultiPhysicsCompMesh(order);
-    }
-    if (cond1 && cond2) {
-        BuildMHMMixed4SpacesMultiPhysicsCompMesh();
-    }
-    if (!cond1 && cond2) {
-        BuildMHMMixed2SpacesMultiPhysicsCompMesh();
-    }
-    if (!cond1 && !cond2) {
+    }else{
+        if (mSimData.mTNumerics.m_mhm_mixed_Q) {
+            BuildMHMMixed2SpacesMultiPhysicsCompMesh();
+        }
+        else{
         BuildMixed2SpacesMultiPhysicsCompMesh(order);
+        }
     }
-  
 }
 
 void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
@@ -372,7 +353,6 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
     int dimension = mGeometry->Dimension();
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-//    TPZMixedDarcyFlow *volume = nullptr;
     mMixedOperator->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
@@ -381,11 +361,8 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
             volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
-//            volume = new TPZMixedDarcyFlow(materia_id, d);
-//             volume->SetPermeability(1.0);
             volume->SetDataTransfer(mSimData);
             mMixedOperator->InsertMaterialObject(volume);
-           
         }
     }
     
@@ -413,9 +390,7 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
     active_approx_spaces[1] = 1;
     active_approx_spaces[2] = 0;
     mMixedOperator->SetDimModel(dimension);
-//    mMixedOperator->BuildMultiphysicsSpace(active_approx_spaces,mesh_vec);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
-
     
 #ifdef PZDEBUG
     std::stringstream file_name;
@@ -431,20 +406,16 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     int dimension = mGeometry->Dimension();
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-//    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-    TPZMixedDarcyWithFourSpaces *volume = nullptr;
+    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
     mMixedOperator->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
-            int material_id = chunk.second;
-//            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
-//            volume->SetDataTransfer(mSimData);
-            
-                volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
-                volume->SetPermeability(1.0);
+            int materia_id = chunk.second;
+            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
+            volume->SetDataTransfer(mSimData);
             mMixedOperator->InsertMaterialObject(volume);
         }
     }
@@ -458,14 +429,11 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
-        REAL val = get<2>(chunk);
-        val2(0,0) =val;
+        val2(0,0)   = get<2>(chunk);
         TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         mMixedOperator->InsertMaterialObject(face);
     }
     
-    // PHIL : Vamos poder criar apenas 4 espacos...
-  
     
     TPZManVector<TPZCompMesh *, 5> mesh_vec(5);
     mesh_vec[0] = HdivFluxCmesh(order);
@@ -473,28 +441,6 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     mesh_vec[2] = DiscontinuousCmesh();
     mesh_vec[3] = DiscontinuousCmesh();
     mesh_vec[4] = DiscontinuousCmesh();
-    
-    int ncon = mesh_vec[1]->NConnects();
-    //Set Lagrange multiplier
-    for(int i=0; i<ncon; i++){
-        TPZConnect &newnod = mesh_vec[1]->ConnectVec()[i];
-        newnod.SetLagrangeMultiplier(1);
-    }
-     ncon = mesh_vec[2]->NConnects();
-    //Set Lagrange multiplier
-    for(int i=0; i<ncon; i++){
-        TPZConnect &newnod = mesh_vec[2]->ConnectVec()[i];
-        newnod.SetLagrangeMultiplier(2);
-    }
-    ncon = mesh_vec[3]->NConnects();
-    //Set Lagrange multiplier
-    for(int i=0; i<ncon; i++){
-        TPZConnect &newnod = mesh_vec[3]->ConnectVec()[i];
-        newnod.SetLagrangeMultiplier(3);
-        newnod.IncrementElConnected();
-    }
-    
-    
     TPZManVector<int,5> active_approx_spaces(5);
     active_approx_spaces[0] = 1;
     active_approx_spaces[1] = 1;
@@ -502,8 +448,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     active_approx_spaces[3] = 1;
     active_approx_spaces[4] = 0;
     mMixedOperator->SetDimModel(dimension);
-//    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
-    mMixedOperator->BuildMultiphysicsSpace(active_approx_spaces,mesh_vec);
+    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
     
 #ifdef PZDEBUG
     std::stringstream file_name;
@@ -511,7 +456,6 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::ofstream sout(file_name.str().c_str());
     mMixedOperator->Print(sout);
 #endif
-    TPZReservoirTools::CreatedCondensedElements(mMixedOperator, false, true);
     
 }
 
@@ -618,61 +562,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
 }
 
 void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
-   
-    int dimension = mGeometry->Dimension();
-    TPZMHMixedMesh4SpacesControl *mhm = new TPZMHMixedMesh4SpacesControl(mGeometry);
-    TPZVec<int64_t> coarseindices;
-    ComputeCoarseIndices(mGeometry, coarseindices);
-    
-    mhm->DefinePartitionbyCoarseIndices(coarseindices);
-    // Create geometric elements
-    
-    {
-        std::set<int> matids;
-        for (auto omId:mSimData.mTGeometry.mDomainDimNameAndPhysicalTag[dimension] ) {      //Materials
-            int valor = omId.second;
-            matids.insert(omId.second);
-        } ;
-        mhm->fMaterialIds = matids;
-        matids.clear();
-        
-        for (auto omId:mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue ) {      //BC
-         
-            int MatId = get<0>(omId);
-            matids.insert(MatId);
-        } ;
-        mhm->fMaterialBCIds = matids;
-    }
-    
-    InsertMaterialObjects(*mhm);
-    
-    mhm->SetInternalPOrder(1);
-    mhm->SetSkeletonPOrder(1);
-    
-    if (0) {
-        std::ofstream filemesh("AfterInterface.txt");
-        mhm->Print(filemesh);
-    }
-    
-    mhm->DivideSkeletonElements(0);
-    mhm->DivideBoundarySkeletonElements();
-    if (0) {
-        std::ofstream file_geo("geometry.txt");
-        mhm->CMesh()->Reference()->Print(file_geo);
-    }
-    
-    bool substructure = true;
-    
-    mhm->BuildComputationalMesh(substructure);
-    std::cout << "Number of equations MHMixed " << mhm->CMesh()->NEquations() << std::endl;
-    
- 
-        TPZCompMesh *MixedMesh = mhm->CMesh().operator->();
-        std::ofstream multcmesh("multcompmesh.txt");
-        MixedMesh->Print(multcmesh);
-    mMixedOperator = dynamic_cast<TPZMultiphysicsCompMesh *>(MixedMesh);
-    
-    
+    DebugStop();
 }
 
 void TMRSApproxSpaceGenerator::BuildMixedSCStructures(){
@@ -732,8 +622,6 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     mTransportOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
     TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
-//    TPZTracerFlow * volume = nullptr;
-    
     mTransportOperator->SetDefaultOrder(0);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
@@ -743,7 +631,6 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
             int materia_id = chunk.second;
             volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
             volume->SetDataTransfer(mSimData);
-//               volume = new  TPZTracerFlow(materia_id,d);
             mTransportOperator->InsertMaterialObject(volume);
         }
     }
@@ -763,15 +650,11 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
         
     }
     
-    int transport_matid = mSimData.mTGeometry.Interface_material_id;
+    int transport_matid = 100;
     {
         TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
         interface->SetDataTransfer(mSimData);
         mTransportOperator->InsertMaterialObject(interface);
-        
-//        TPZTracerFlow * interface = new TPZTracerFlow(transport_matid,dimension-1);
-////        interface->SetDataTransfer(mSimData);
-//        mTransportOperator->InsertMaterialObject(interface);
     }
     
     mTransportOperator->SetDimModel(dimension);
@@ -780,7 +663,6 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     active_approx_spaces[1] = 0;
     active_approx_spaces[2] = 1;
     mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
-//    mTransportOperator->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
     
 #ifdef PZDEBUG
     std::ofstream transport_a("transport_cmesh_after.txt");
@@ -911,21 +793,16 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     int dimension = mGeometry->Dimension();
     mTransportOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-//    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
-    TPZTracerFlow * volume = nullptr;
+    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
     mTransportOperator->SetDefaultOrder(0);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
-            int material_id = chunk.second;
-//            volume = new TMRSMultiphaseFlow<TMRSMemory>(material_id,d);
-//            volume->SetDataTransfer(mSimData);
-            
-            volume = new TPZTracerFlow(material_id,d);
-//            volume->SetDataTransfer(mSimData);
-            
+            int materia_id = chunk.second;
+            volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
+            volume->SetDataTransfer(mSimData);
             mTransportOperator->InsertMaterialObject(volume);
         }
     }
@@ -944,11 +821,10 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
         mTransportOperator->InsertMaterialObject(face);
     }
     
-    int transport_matid = mSimData.mTGeometry.Interface_material_id;
+    int transport_matid = 100;
     {
-//        TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
-         TPZTracerFlow * interface = new TPZTracerFlow (transport_matid,dimension-1);
-//        interface->SetDataTransfer(mSimData);
+        TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
+        interface->SetDataTransfer(mSimData);
         mTransportOperator->InsertMaterialObject(interface);
     }
     
@@ -959,8 +835,8 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     active_approx_spaces[2] = 0;
     active_approx_spaces[3] = 0;
     active_approx_spaces[4] = 1;
-//    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
-    mTransportOperator->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
+    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
+    
 #ifdef PZDEBUG
     std::ofstream transport_a("transport_cmesh_after.txt");
     mTransportOperator->Print(transport_a);
@@ -979,152 +855,60 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
         right_mesh_indexes[0] = 4;
         
         int64_t nel = mTransportOperator->NElements();
-        //vou melhorar essa codigo
-//        for (int64_t el = 0; el < nel; el++) {
-//
-//            TPZCompEl *cel = mTransportOperator->Element(el);
-//            if(!cel) DebugStop();
-//            TPZMultiphysicsElement *celmp = dynamic_cast<TPZMultiphysicsElement *>(cel);
-//            if(!celmp) DebugStop();
-//            TPZGeoEl *gel = cel->Reference();
-//            if(!gel) DebugStop();
-//
-//            int gel_dim = gel->Dimension();
-//            cel_indexes[gel_dim].push_back(el);
-//
-//        }
-//
-//        for (auto cel_index: cel_indexes[dimension]) { // Higher dimension case
-//            TPZCompEl *cel = mTransportOperator->Element(cel_index);
-//            TPZMultiphysicsElement * celmult = dynamic_cast<TPZMultiphysicsElement *>(cel);
-//            if (!celmult) {
-//                DebugStop();
-//            }
-//
-//            if (!cel){continue;};
-//            TPZGeoEl *gel = cel->Reference();
-//            if (!gel){continue;};
-//            int nsides = gel->NSides();
-//
-//            for (int iside = gel->NNodes(); iside < nsides; iside++) {
-//
-//                TPZGeoElSide gelside(gel,iside);
-//                TPZCompElSide celside_l(cel,iside);
-//                TPZGeoElSide neig = gelside.Neighbour();
-//                TPZGeoEl *neihel = neig.Element();
-//                TPZCompElSide celside_r = neig.Reference();
-//                if ((neihel->Dimension() == gel->Dimension()) && (gel->Id() < neihel->Id()) ) {
-//                    TPZGeoElBC gbc(gelside,transport_matid);
-//
-//                    int64_t index;
-//                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-//                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-//                }
-//                if ((neihel->Dimension() == dimension - 1)) { // BC cases
-//
-//                    TPZGeoElBC gbc(gelside,neihel->MaterialId());
-//
-//                    int64_t index;
-//
-//                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-//
-//                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-//
-//                }
-//
-//            }
-//
-//        }
-        
-        
-        
-        
         for (int64_t el = 0; el < nel; el++) {
-
+            
             TPZCompEl *cel = mTransportOperator->Element(el);
             if(!cel) DebugStop();
             TPZMultiphysicsElement *celmp = dynamic_cast<TPZMultiphysicsElement *>(cel);
             if(!celmp) DebugStop();
             TPZGeoEl *gel = cel->Reference();
             if(!gel) DebugStop();
-
+            
             int gel_dim = gel->Dimension();
             cel_indexes[gel_dim].push_back(el);
-
+            
         }
-
+        
         for (auto cel_index: cel_indexes[dimension]) { // Higher dimension case
             TPZCompEl *cel = mTransportOperator->Element(cel_index);
             TPZMultiphysicsElement * celmult = dynamic_cast<TPZMultiphysicsElement *>(cel);
             if (!celmult) {
                 DebugStop();
             }
-
+            
             if (!cel){continue;};
             TPZGeoEl *gel = cel->Reference();
             if (!gel){continue;};
             int nsides = gel->NSides();
-
-            for (int iside = gel->NNodes(); iside < nsides-1; iside++) {
-
+            
+            for (int iside = gel->NNodes(); iside < nsides; iside++) {
+                
                 TPZGeoElSide gelside(gel,iside);
                 TPZCompElSide celside_l(cel,iside);
-                TPZGeoEl *neihel;
-                TPZCompElSide celside_r;
-                int verif =0;
                 TPZGeoElSide neig = gelside.Neighbour();
-                int bc_matid=0;
-                while (neig!= gelside) {
-                    if (neig.Element()->Dimension() == gel->Dimension()){
-                        neihel = neig.Element();
-                        celside_r = neig.Reference();
-                        verif=1;
-                        break;
-                    }
-                    if (neig.Element()->Dimension() == gel->Dimension() - 1){
-                        neihel = neig.Element();
-                        celside_r = neig.Reference();
-                        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
-                        bool IsBoundary = false;
-                        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-                            int bc_id   = get<0>(chunk);
-                            int matid   =neihel->MaterialId();
-                            if (bc_id == matid) {
-                                IsBoundary = true;
-                                bc_matid =bc_id;
-                                break;
-                            }
-                        }
-                        if (IsBoundary==true) {
-                            break;
-                        }
-//                        break;
-                    }
-                    neig=neig.Neighbour();
-                }
-
-
-                if (verif && (gel->Id() < neihel->Id()) ) {
+                TPZGeoEl *neihel = neig.Element();
+                TPZCompElSide celside_r = neig.Reference();
+                if ((neihel->Dimension() == gel->Dimension()) && (gel->Id() < neihel->Id()) ) {
                     TPZGeoElBC gbc(gelside,transport_matid);
-
+                    
                     int64_t index;
                     TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
                     mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
                 }
-                if (verif==0) { // BC cases
-
-                    TPZGeoElBC gbc(gelside,bc_matid);
-
+                if ((neihel->Dimension() == dimension - 1)) { // BC cases
+                    
+                    TPZGeoElBC gbc(gelside,neihel->MaterialId());
+                    
                     int64_t index;
-
+                    
                     TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-
+                    
                     mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-
+                    
                 }
-
+                
             }
-
+            
         }
     }
     
@@ -1306,7 +1090,6 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
         tbb::parallel_for(size_t(0), size_t(ndata), size_t(1), [&memory_vector] (size_t & i) {
             TMRSMemory &mem = memory_vector.get()->operator [](i);
             
-            
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
             
@@ -1326,85 +1109,22 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
 #else
         for (int i = 0; i < ndata; i++) {
             TMRSMemory &mem = memory_vector.get()->operator [](i);
+
+            
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
+            
             REAL kappa = 1.0;
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
             mem.m_kappa_inv.Zero();
-//            kappa *= rand() % 40 +1;
-            for (int j = 0; j < 3; j++) {
-                mem.m_kappa(j,j) = kappa;
-                mem.m_kappa_inv(j,j) = 1.0/kappa;
+            for (int i = 0; i < 3; i++) {
+                mem.m_kappa(i,i) = kappa;
+                mem.m_kappa_inv(i,i) = 1.0/kappa;
             }
+
         }
-        
-        
-//        int nels = cmesh->NElements();
-//        for (int iel = 0; iel< nels; iel++) {
-//            TPZCompEl *cel = cmesh->Element(iel);
-//            if(!cel){
-//                continue;
-//
-//            }
-//            TPZGeoEl *gel = cel->Reference();
-//            if (!gel || gel->HasSubElement()) {
-//                continue;
-//            }
-//
-//            if (cel->Dimension()!= cmesh->Dimension()) {
-//                continue;
-//            }
-//            if (!MixedOperator->Element(iel)) {
-//                continue;
-//            }
-//            TPZVec<int64_t> indices;
-//            cel->GetMemoryIndices(indices);
-//            TPZVec<REAL> qsi(3,0.25);
-//            qsi[2]=0.0;
-//            TPZVec<REAL> point(3,0.0);
-//            gel->X(qsi, point);
-////            if (gel->MaterialId()!=2){
-////                continue;
-////            }
-//
-////            int val = rand() % 100;
-//
-//
-//            REAL kappa =  1000*(sin(point[0])*sin(point[1]) + 2);
-//
-//
-//
-//
-////            REAL kappa = 100000.0 + 1*(sin(point[0])*sin(point[1])+2);
-//
-//
-//            for (auto memIndex: indices) {
-//                if (memIndex<=0) {
-//                    continue;
-//                }
-//
-//
-//                TMRSMemory &mem = memory_vector.get()->operator [](memIndex);
-//                mem.m_sw = 0.0;
-//                mem.m_phi = 0.1;
-//                mem.m_kappa.Resize(3, 3);
-//                mem.m_kappa.Zero();
-//                mem.m_kappa_inv.Resize(3, 3);
-//                mem.m_kappa_inv.Zero();
-//                for (int j = 0; j < 3; j++) {
-//                    mem.m_kappa(j,j) = kappa;
-//                    mem.m_kappa_inv(j,j) = 1.0/kappa;
-//                }
-//            }
-//
-//        
-//        }
-//        
-        
-        
-        
 #endif
         
         
@@ -1507,43 +1227,79 @@ void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
 void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &control)
 {
   
-    TPZCompMesh &cmesh = control.CMesh();
-    TPZGeoMesh &gmesh = control.GMesh();
-    TPZCompMesh *MixedFluxPressureCmesh =  &cmesh;
+
+        TPZCompMesh &cmesh = control.CMesh();
     
-    int dim = gmesh.Dimension();
-    MixedFluxPressureCmesh->SetDimModel(dim);
+        TPZGeoMesh &gmesh = control.GMesh();
+        const int typeFlux = 1, typePressure = 0;
+        TPZFMatrix<STATE> val1(1,1,0.), val2Flux(1,1,0.), val2Pressure(1,1,0.);
     
     
-    int dimension = mGeometry->Dimension();
+        int dim = gmesh.Dimension();
+        cmesh.SetDimModel(dim);
     
-    TPZMixedDarcyWithFourSpaces *volume = nullptr;
+        TPZCompMesh *MixedFluxPressureCmesh = &cmesh;
     
-    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
-    for (int d = 0; d <= dimension; d++) {
-        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
-            std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << std::endl;
-            int material_id = chunk.second;
-            volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
-            volume->SetPermeability(1.0);
-            MixedFluxPressureCmesh->InsertMaterialObject(volume);
-        }
-    }
+        // Material medio poroso
+        TMRSDarcyFlowWithMem<TMRSMemory> * mat = new TMRSDarcyFlowWithMem<TMRSMemory>(1,dim);
+        mat->SetDataTransfer(mSimData);
+//        mat->SetPermeability(1.);
+        //    mat->SetForcingFunction(One);
+        MixedFluxPressureCmesh->InsertMaterialObject(mat);
     
-    if (!volume) {
-        DebugStop();
-    }
     
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        std::cout<<"val: "<<val2(0,0)<<std::endl;
-        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        MixedFluxPressureCmesh->InsertMaterialObject(face);
-    }
+    
+        // Bc N
+        TPZBndCond * bcN = mat->CreateBC(mat, -1, typeFlux, val1, val2Flux);
+        //    bcN->SetForcingFunction(0, force);
+    
+        MixedFluxPressureCmesh->InsertMaterialObject(bcN);
+        bcN = mat->CreateBC(mat, -3, typeFlux, val1, val2Flux);
+        //    bcN->SetForcingFunction(0, force);
+    
+        MixedFluxPressureCmesh->InsertMaterialObject(bcN);
+    
+        val2Pressure(0,0)=10;
+        TPZBndCond * bcS = mat->CreateBC(mat, -2, typePressure, val1, val2Pressure);
+    
+        MixedFluxPressureCmesh->InsertMaterialObject(bcS);
+        val2Pressure(0,0)=1000;
+        bcS = mat->CreateBC(mat, -4, typePressure, val1, val2Pressure);
+        MixedFluxPressureCmesh->InsertMaterialObject(bcS);
+    
+//
+//    //aqui
+//    int dimension = mGeometry->Dimension();
+//
+//    TPZMixedDarcyFlow * volume = nullptr;
+//    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+//    for (int d = 0; d <= dimension; d++) {
+//        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
+//            std::string material_name = chunk.first;
+//            std::cout << "physical name = " << material_name << std::endl;
+//            int materia_id = chunk.second;
+//            volume = new TPZMixedDarcyFlow(materia_id,d);
+//
+////            volume->SetDataTransfer(mSimData);
+//            MixedFluxPressureCmesh->InsertMaterialObject(volume);
+//        }
+//    }
+//
+//    if (!volume) {
+//        DebugStop();
+//    }
+//
+//    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+//    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+//    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+//        int bc_id   = get<0>(chunk);
+//        int bc_type = get<1>(chunk);
+//        val2(0,0)   = get<2>(chunk);
+//        double valimposto = val2(0,0) ;
+//        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+//        MixedFluxPressureCmesh->InsertMaterialObject(face);
+//    }
+//
+    
     
 }

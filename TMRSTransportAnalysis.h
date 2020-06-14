@@ -16,7 +16,6 @@
 #include "pzstepsolver.h"
 #include "TMRSDataTransfer.h"
 #include "TPZMFSolutionTransfer.h"
-#include "TPZAlgebraicTransport.h"
 
 class TMRSTransportAnalysis : public TPZAnalysis {
     
@@ -30,13 +29,8 @@ private:
     
     REAL m_current_time;
     
-    TPZFMatrix<REAL> F_inlet ;
-    
-    TPZFMatrix<STATE>  M_diag;
     
 public:
-    
-    TPZAlgebraicTransport fAlgebraicTransport;
     
     TPZMFSolutionTransfer m_soltransportTransfer;
 
@@ -51,7 +45,6 @@ public:
     
     /// Configurates iternal members
     void Configure(int n_threads, bool UsePardiso_Q);
-    void Assemble();
     
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer * sim_data);

@@ -2,7 +2,7 @@
 
 cmake_minimum_required (VERSION 2.8.0)
 
-set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE TYPE  INTERNAL FORCE )
+set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE STRING  INTERNAL FORCE )
 
 project (iMRS)
 
@@ -15,14 +15,13 @@ ELSE (WIN32)
 ENDIF()
 
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
 ELSE()
 	find_package( PZ REQUIRED )
-	find_package(libInterpolate REQUIRED)
 ENDIF (WIN32)
 
 
@@ -107,12 +106,8 @@ endif()
 file(GLOB mesh
   "gmsh/*.msh"
 )
-
 file(COPY ${mesh} DESTINATION ./LinearTracer/Debug/gmsh)
 file(COPY ${mesh} DESTINATION ./LinearTracer/Release/gmsh)
-
-file(COPY Reservoir DESTINATION ./LinearTracer/Debug)
-file(COPY Reservoir DESTINATION ./LinearTracer/Release)
 
 
 file (COPY PetroPhysics  DESTINATION ./LinearTracer/Debug)
@@ -125,18 +120,6 @@ file(COPY ${mesh} DESTINATION ./Buckley_Levertt/Release/gmsh)
 file (COPY PetroPhysics  DESTINATION ./Buckley_Levertt/Debug)
 file (COPY PetroPhysics  DESTINATION ./Buckley_Levertt/Release)
 
-file(COPY ${mesh} DESTINATION ./FourSpacesTest/Debug/gmsh)
-file(COPY ${mesh} DESTINATION ./FourSpacesTest/Release/gmsh)
-
-file (COPY PetroPhysics  DESTINATION ./FourSpacesTest/Debug)
-file (COPY PetroPhysics  DESTINATION ./FourSpacesTest/Release)
-
-file(COPY ${mesh} DESTINATION ./MHMTest/Debug/gmsh)
-file(COPY ${mesh} DESTINATION ./MHMTest/Release/gmsh)
-
-file (COPY PetroPhysics  DESTINATION ./MHMTest/Debug)
-file (COPY PetroPhysics  DESTINATION ./MHMTest/Release)
-
 file(GLOB headers_files *.h)
 
 file(GLOB sources_files *.cpp)
@@ -148,9 +131,7 @@ set(common_dir ${CMAKE_CURRENT_SOURCE_DIR} )
 
 
 add_subdirectory(LinearTracer)
-add_subdirectory(FourSpacesTest)
 add_subdirectory(Buckley_Levertt)
-add_subdirectory(MHMTest)
 add_subdirectory(CGP)
 
 

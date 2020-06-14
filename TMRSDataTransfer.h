@@ -44,44 +44,32 @@ public:
     /// Read object state
     virtual int ClassId() const;
     
-    /**
-     * @brief Class that stores geometric information
-     */
+    
     class TGeometry : public TMRSSavable {
         
     public:
         
-        /** @brief
-         Contains the dimension, name and physical tag of the domain. */
         std::vector<std::map<std::string,int>> mDomainDimNameAndPhysicalTag;
         
-        /** @brief
-         Contains the dimension and physical tag of the fractures. */
         std::vector<std::map<std::string,int>> mDomainFracDimNameAndPhysicalTag;
+
         
-        /** @brief
-          MaterialID of the interface element that will be inserted in the transport mesh
-         */
-        int Interface_material_id = 100;
-        
-         /** @brief Default constructor */
         TGeometry(){
             
             mDomainDimNameAndPhysicalTag.resize(4);
             mDomainFracDimNameAndPhysicalTag.resize(3);
         }
         
-        /** @brief Destructor */
         ~TGeometry(){
             
         }
         
-        /** @brief Copy constructor */
+    
         TGeometry(const TGeometry &other){
             mDomainDimNameAndPhysicalTag = other.mDomainDimNameAndPhysicalTag;
             mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
         }
-        /** @brief Copy assignment operator*/
+        
         TGeometry &operator=(const TGeometry &other){
             if (this != & other) // prevent self-assignment
             {
@@ -93,37 +81,30 @@ public:
         
     };
     
-    /**
-     * @brief Class that stores PetroPhysics information
-     */
     class TPetroPhysics : public TMRSSavable {
         
     public:
         
-        /** @brief Contains the water relative permeability model for each layer */
         std::vector<TRSLinearInterpolator > mLayer_Krw_RelPerModel;
-        /** @brief Contains the oil relative permeability model for each layer */
+        
         std::vector<TRSLinearInterpolator > mLayer_Kro_RelPerModel;
         
-        /** @brief Default constructor */
+        
         TPetroPhysics(){
             mLayer_Krw_RelPerModel.clear();
             mLayer_Kro_RelPerModel.clear();
         }
         
-        /** @brief Destructor */
         ~TPetroPhysics(){
             
         }
-        
-        /** @brief Copy constructor */
+    
         TPetroPhysics(const TPetroPhysics &other){
             mLayer_Krw_RelPerModel = other.mLayer_Krw_RelPerModel;
             mLayer_Kro_RelPerModel = other.mLayer_Kro_RelPerModel;
            
         }
         
-        /** @brief Copy assignment operator*/
         TPetroPhysics &operator=(const TPetroPhysics &other){
             if (this != & other) // prevent self-assignment
             {
@@ -137,76 +118,25 @@ public:
         
     };
     
-    /**
-     * @brief Class that stores Fluid properties
-     */
     class TFluidProperties : public TMRSSavable {
         
     public:
-        REAL mOilViscosity;
-        REAL mWaterViscosity;
-        REAL mOilDensity;
-        REAL mWaterDensity;
-        /** @brief Default constructor */
-        TFluidProperties(){
-            mOilViscosity= 1.0;
-            mWaterViscosity=1.0;
-            mOilDensity = 800;
-            mWaterDensity = 1000;
-        }
-        
-        /** @brief Destructor */
-        ~TFluidProperties(){
-            
-        }
-        
-        /** @brief Copy constructor */
-        TFluidProperties(const TFluidProperties &other){
-            mOilViscosity = other.mOilViscosity;
-            mWaterViscosity = other.mWaterViscosity;
-            mOilDensity = other.mOilDensity;
-            mWaterDensity = other.mWaterDensity;
-        }
-        
-        /** @brief Copy assignment operator*/
-        TFluidProperties &operator=(const TFluidProperties &other){
-            mOilViscosity = other.mOilViscosity;
-            mWaterViscosity = other.mWaterViscosity;
-            mOilDensity = other.mOilDensity;
-            mWaterDensity = other.mWaterDensity;
-            return *this;
-        }
-        
         
     };
     
-    /**
-     * @brief Class that stores multiphase functions
-     */
     class TMultiphaseFunctions : public TMRSSavable {
         
     public:
         
-        /**
-         * contains the fractional flow of water for each layer
-         */
         std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_fw;
-        /**
-         * contains the fractional flow of oil for each layer
-         */
+        
         std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_fo;
         
-        /**
-         * contains the mobility (lambda) for each layer
-         */
         std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_lambda;
         
-        /**
-         * contains the Gravitational term (Glambda) for each layer
-         */
         std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_Glambda;
         
-        /** @brief Default constructor */
+        
         TMultiphaseFunctions(){
             mLayer_fw.clear();
             mLayer_fo.clear();
@@ -214,12 +144,10 @@ public:
             mLayer_Glambda.clear();
         }
         
-        /** @brief Destructor */
         ~TMultiphaseFunctions(){
             
         }
         
-        /** @brief Copy constructor */
         TMultiphaseFunctions(const TMultiphaseFunctions &other){
             mLayer_fw = other.mLayer_fw;
             mLayer_fo = other.mLayer_fo;
@@ -228,7 +156,6 @@ public:
             
         }
         
-        /** @brief Copy assignment operator*/
         TMultiphaseFunctions &operator=(const TMultiphaseFunctions &other){
             if (this != & other) // prevent self-assignment
             {
@@ -243,32 +170,18 @@ public:
         
     };
     
-    /**
-     * @brief Class that stores the boundary conditions of the problem
-     */
     class TBoundaryConditions : public TMRSSavable {
         
     public:
         
-        /**
-         * @brief Contains the boundary conditions (material_id), condition type and value of the mixed problem
-         */
         TPZManVector<std::tuple<int, int, REAL>> mBCMixedPhysicalTagTypeValue;
-        /**
-         * @brief Contains the boundary conditions (material_id), condition type and value of the fractures
-         */
+        
         TPZManVector<std::tuple<int, int, REAL>> mBCMixedFracPhysicalTagTypeValue;
-        /**
-         * @brief Contains the boundary conditions (material_id), condition type and value of the transport problem
-         */
+        
         TPZManVector<std::tuple<int, int, REAL>> mBCTransportPhysicalTagTypeValue;
         
-        /**
-         * @brief Contains the boundary conditions (material_id), condition type and value of fractures in the transport problem
-         */
         TPZManVector<std::tuple<int, int, REAL>> mBCTransportFracPhysicalTagTypeValue;
-       
-        /** @brief Default constructor */
+        
         TBoundaryConditions(){
             
             mBCMixedPhysicalTagTypeValue.Resize(0);
@@ -280,12 +193,10 @@ public:
             mBCTransportFracPhysicalTagTypeValue.Resize(0);
         }
         
-        /** @brief Destructor */
         ~TBoundaryConditions(){
             
         }
         
-        /** @brief Copy constructor */
         TBoundaryConditions(const TBoundaryConditions &other){
             mBCMixedPhysicalTagTypeValue = other.mBCMixedPhysicalTagTypeValue;
             mBCMixedFracPhysicalTagTypeValue = other.mBCMixedFracPhysicalTagTypeValue;
@@ -293,7 +204,6 @@ public:
             mBCTransportFracPhysicalTagTypeValue = other.mBCTransportFracPhysicalTagTypeValue;
         }
         
-        /** @brief Copy assignment operator*/
         TBoundaryConditions &operator=(const TBoundaryConditions &other){
             if (this != & other) // prevent self-assignment
             {
@@ -307,70 +217,45 @@ public:
         
     };
     
-    /**
-     * @brief Class that stores the numerical parameters of the simulation
-     */
     class TNumerics : public TMRSSavable {
         
     public:
         
-        /**
-         * @brief time step size
-         */
+        /// time step size
         REAL m_dt;
      
         
-        /**
-         * @brief Residual tolerance for mixed operator
-         */
+        /// Residual tolerance for mixed operator
         REAL m_res_tol_mixed;
         
-        /**
-         * @brief Residual tolerance for transport operator
-         */
+        /// Residual tolerance for transport operator
         REAL m_res_tol_transport;
         
-        /**
-         * @brief Correction tolerance for mixed operator
-         */
+        /// Correction tolerance for mixed operator
         REAL m_corr_tol_mixed;
         
-        /**
-         * @brief Correction tolerance for transport operator
-         */
+        /// Correction tolerance for transport operator
         REAL m_corr_tol_transport;
         
-        /**
-         * @brief Maximum number of iterations per time step for mixed operator
-         */
+        /// Maximum number of iterations per time step for mixed operator
         int m_max_iter_mixed;
         
-        /**
-         * @brief Maximum number of iterations per time step for transport operator
-         */
+        /// Maximum number of iterations per time step for transport operator
         int m_max_iter_transport;
         
-        /**
-         * @brief Maximum number of Sequential Fully Implicit (SFI) iterations per time step
-         */
+        /// Maximum number of Sequential Fully Implicit (SFI) iterations per time step
         int m_max_iter_sfi;
         
-        /**
-         * @brief Number of time steps
-         */
+        /// Number of time steps
         int m_n_steps;
         
-        /**
-         * @brief Directive for the use of four spaces
-         */
+        /// Directive for the use of four spaces
         bool m_four_approx_spaces_Q;
         
-        /**
-         * @brief Directive MHM mixed approximation
-         */
+        /// Directive MHM mixed approximation
         bool m_mhm_mixed_Q;
         
-        /** @brief Default constructor */
+        
         TNumerics(){
             
             m_dt                    = 0.0;
@@ -386,12 +271,11 @@ public:
             m_mhm_mixed_Q           = false;
             
         }
-         /** @brief Destructor */
+        
         ~TNumerics(){
             
         }
         
-        /** @brief Copy constructor */
         TNumerics(const TNumerics & other){
             
             m_dt                    = other.m_dt;
@@ -409,7 +293,6 @@ public:
             
         }
         
-        /** @brief Copy assignment operator*/
         TNumerics & operator=(const TNumerics &other){
             
             // check for self-assignment
@@ -507,45 +390,21 @@ public:
         
     };
     
-    /**
-     * @brief Class that stores the PostProcess information
-     */
     class TPostProcess : public TMRSSavable {
         
     public:
         
-        /**
-         * @brief Mixed operator vtk file name
-         */
+        /// Mixed operator vtk file name
         std::string m_file_name_mixed;
         
-        /**
-         * @brief Transpor operator vtk file name
-          */
+        /// Transpor operator vtk file name
         std::string m_file_name_transport;
         
-        /**
-         * @brief Contains scalar variables that will be postprocessed
-         */
         TPZStack<std::string,10> m_scalnames;
-        /**
-         * @brief Contains vector variables that will be postprocessed
-         */
         TPZStack<std::string,10> m_vecnames;
-        
-        /**
-         * @brief Period of time post-processed data is printed
-         */
         REAL m_file_time_step;
-        
-        /**
-         * @brief Contains the times at which post-processed data is printed
-         */
         TPZStack<REAL,100> m_vec_reporting_times;
         
-        /**
-         * @brief Default constructor
-         */
         TPostProcess(){
             
             m_file_name_mixed       = "";
@@ -556,16 +415,11 @@ public:
             m_vec_reporting_times.Resize(0);
             
         }
-        /**
-         * @brief Destructor
-         */
+        
         ~TPostProcess(){
             
         }
         
-        /**
-         * @brief Copy constructor
-         */
         TPostProcess(const TPostProcess & other){
             m_file_name_mixed       = other.m_file_name_mixed;
             m_file_name_transport   = other.m_file_name_transport;
@@ -575,9 +429,7 @@ public:
             m_vec_reporting_times   = other.m_vec_reporting_times;
             
         }
-        /**
-         * @brief Copy assignment operator
-         */
+        
         TPostProcess & operator=(const TPostProcess &other){
             
             // check for self-assignment
@@ -648,11 +500,17 @@ public:
     };
     
     TGeometry mTGeometry;
+    
     TPetroPhysics mTPetroPhysics;
+    
     TFluidProperties mTFluidProperties;
+    
     TMultiphaseFunctions mTMultiphaseFunctions;
+    
     TBoundaryConditions mTBoundaryConditions;
+    
     TNumerics mTNumerics;
+    
     TPostProcess mTPostProcess;
     
 };

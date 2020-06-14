@@ -24,7 +24,7 @@ void TPZMFSolutionTransfer::Match::TransferFromMultiphysics(TPZCompMesh * cmesh)
     }
 }
 void TPZMFSolutionTransfer::Match::TransferToMultiphysics(TPZCompMesh * cmesh){
-//    cmesh->InitializeBlock();
+    cmesh->InitializeBlock();
     TPZBlock<STATE> &blockToTransfer = cmesh->Block();
     TPZBlock<STATE>* blockAto = fblockTarget.first;
     int seqtoTrans = fblockTarget.second;
@@ -43,7 +43,6 @@ void TPZMFSolutionTransfer::Match::TransferToMultiphysics(TPZCompMesh * cmesh){
 void TPZMFSolutionTransfer::MeshTransferData::TransferToMultiphysics(){
    
     int nmatch = fconnecttransfer.size();
-    fcmesh_ori->InitializeBlock();
     for (int imatch=0; imatch<nmatch; imatch++) {
         fconnecttransfer[imatch].TransferToMultiphysics(fcmesh_ori);
     }

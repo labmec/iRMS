@@ -28,7 +28,7 @@
 #include "pzelasmat.h"
 #include "pzlog.h"
 
-#include "TPZGenGrid2D.h"
+#include "pzgengrid.h"
 
 #include <time.h>
 #include <stdio.h>
