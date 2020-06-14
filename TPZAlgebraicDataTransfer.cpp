@@ -666,6 +666,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
             transport.fMixedMesh = fluxmesh;
             transport.fMixedCell.resize(num_elements);
             transport.fTransportCell.resize(num_elements);
+            transport.fEqNum.resize(num_elements);
             int64_t count = 0;
             for(auto cel : cellist)
             {
@@ -679,6 +680,12 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
                 if(!fast) DebugStop();
                 transport.fMixedCell[count] = fast;
                 transport.fTransportCell[count] = Volume_Index[gelindex];
+//                TPZConnect &con = cel->Connect(0);
+//                int block = con.SequenceNumber();
+//                int eq = fTransportMesh->Block().Position(block);
+//                transport.fEqNum[count] = eq;
+
+                
                 count++;
             }
             if(count != num_elements) DebugStop();
@@ -848,13 +855,15 @@ void TPZAlgebraicDataTransfer::TransferPermeabilityCoefficients()
     {
         int64_t ncells = meshit.fTransportCell.size();
         for (int icell = 0; icell < ncells; icell++) {
+//            int eqnum = ftra;
 #ifdef PZDEBUG
             if(meshit.fPermData == 0 || meshit.fTransportCell[icell] >= meshit.fPermData->size())
             {
                 DebugStop();
             }
 #endif
-            meshit.fMixedCell[icell]->SetPermeability((*meshit.fPermData)[meshit.fTransportCell[icell]]);
+//            meshit.fMixedCell[icell]->SetPermeability((*meshit.fPermData)[meshit.fTransportCell[icell]]);
+  meshit.fMixedCell[icell]->SetPermeability((*meshit.fPermData)[meshit.fEqNum[icell]]);
         }
     }
 }

@@ -80,18 +80,20 @@ public:
         TPZCompMesh *fMixedMesh;
         
         std::vector<int64_t> fTransportCell;
+        std::vector<int64_t> fEqNum;
         
         std::vector<REAL> *fPermData;
         
         std::vector<TPZFastCondensedElement *> fMixedCell;
         
-        TransportToMixedCorrespondence() : fMixedMesh(0), fPermData(0) {}
+        TransportToMixedCorrespondence() : fMixedMesh(0), fPermData(0), fTransportCell(0), fEqNum(0) {}
         
         TransportToMixedCorrespondence(const TransportToMixedCorrespondence &cp) {
             fMixedMesh = cp.fMixedMesh;
             fTransportCell = cp.fTransportCell;
             fPermData = cp.fPermData;
             fMixedCell = cp.fMixedCell;
+            fEqNum = cp.fEqNum;
         }
         
         TransportToMixedCorrespondence &operator=(const TransportToMixedCorrespondence &cp)
@@ -100,6 +102,7 @@ public:
             fTransportCell = cp.fTransportCell;
             fPermData = cp.fPermData;
             fMixedCell = cp.fMixedCell;
+            fEqNum = cp.fEqNum;
             return *this;
         }
         

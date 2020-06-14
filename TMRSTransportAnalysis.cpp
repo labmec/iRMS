@@ -165,6 +165,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
         cmesh->LoadSolutionFromMultiPhysics();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
+//        PostProcessTimeStep();
         corr_norm = Norm(dx);
 
         cmesh->LoadSolutionFromMultiPhysics();

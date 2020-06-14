@@ -69,27 +69,20 @@ void TMRSMixedAnalysis::RunTimeStep(){
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_mixed;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_mixed;
     
-    //    AssembleResidual();
-    //    res_norm = Norm(Rhs());
-    //    if (res_norm < res_tol && corr_norm<corr_tol) {
-    //        std::cout << "Already converged solution with res_norm = " << res_norm << std::endl;
-    //        return;
-    //    }
-    //
+    
     TPZFMatrix<STATE> dx,x(Solution());
     
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
-        //        cmesh->UpdatePreviousState(1);
-        //        Rhs() *=-1.0;
-        cmesh->LoadSolutionFromMultiPhysics();
-//        this->PostProcessTimeStep();
+//        cmesh->UpdatePreviousState(-1);
         dx = Solution();
+//        x += dx;
+//        LoadSolution(x);
+        cmesh->LoadSolutionFromMultiPhysics();
+        
         corr_norm = Norm(dx);
-        
-        //        m_soltransportTransfer.TransferFromMultiphysics();
-        
+      
         //        AssembleResidual();
         res_norm = Norm(Rhs());
 //        this->PostProcessTimeStep();
@@ -119,8 +112,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
 void TMRSMixedAnalysis::NewtonIteration(){
     
     Assemble();
-    
-//    Rhs() *= -1.0; 
+//    Rhs() *= -1.0;
     Solve();
 }
 
