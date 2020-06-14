@@ -73,7 +73,8 @@ void TPZAlgebraicTransport::BuildDataStructures(TPZMultiphysicsCompMesh &transpo
 void TPZAlgebraicTransport::Contribute(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
     ek(0,0) = fCellsData.fVolume[index];
     REAL sat =fCellsData.fSaturation[index];
-    ef(0) = fCellsData.fVolume[index]*(sat);
+    REAL satLast =fCellsData.fSaturationLastState[index];
+    ef(0) = fCellsData.fVolume[index]*(sat-satLast);
 }
 void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
     
@@ -152,7 +153,8 @@ std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal
     REAL num = -2.0*(muo*muw*(sw-1.0)*sw);
     REAL dem = ((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw))*((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw));
     fwData[0] = fw;
-    fwData[1] = num/dem;
+//    fwData[1] = num/dem;
+    fwData[1]=(muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
     foData[0] = 1.0;
     foData[1]=1.0;
   
@@ -167,6 +169,22 @@ std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal
 
     std::pair<std::vector<REAL>,std::vector<REAL>> fracflows = std::make_pair(fwData, foData);
     return fracflows;
+}
+
+std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::LinearfwAndfoVal(REAL sw, REAL muw,REAL muo){
+    std::vector<REAL> fwData(2), foData(2);
+    
+    REAL Krw = sw;
+    REAL Kro = (1-sw);
+    REAL fw = (Krw/muw)/((Krw/muw)+(Kro/muo));
+    fwData[0] = fw;
+    fwData[1] = (muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
+    foData[0] = 1.0;
+    foData[1]=1.0;
+    
+    std::pair<std::vector<REAL>,std::vector<REAL>> fracflows = std::make_pair(fwData, foData);
+    return fracflows;
+    
 }
 void TPZAlgebraicTransport::UpdateIntegralFlux(int matid){
     
@@ -210,17 +228,30 @@ void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){
    
 
 }
-void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(){
+void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLinearQ){
     int nvols = this->fVolume.size();
     for (int ivol =0 ; ivol< nvols; ivol++) {
-        std::pair<std::vector<REAL>,std::vector<REAL>> fWandFo=
+        std::pair<std::vector<REAL>,std::vector<REAL>> fWandFo;
+        REAL sw =this->fSaturation[ivol];
+        REAL krw, kro;
+        if (isLinearQ) {
+            fWandFo=
+            LinearfwAndfoVal(fSaturation[ivol], fViscosity[0], fViscosity[1]);
+            krw = sw;
+            kro = (1-sw);
+        }
+        else{
+        fWandFo=
         fwAndfoVal(fSaturation[ivol], fViscosity[0], fViscosity[1]);
+        krw = sw*sw;
+        kro = (1-sw)*(1-sw);
+            
+        }
         this->fWaterfractionalflow[ivol] = fWandFo.first;
         this->fOilfractionalflow[ivol] = fWandFo.second;
-        REAL sw =this->fSaturation[ivol];
+       
 
-        REAL krw = sw*sw;
-        REAL kro = (1-sw)*(1-sw);
+ 
 
         this->flambda[ivol] = (krw/(fViscosity[0]))+(kro/(fViscosity[1]));
 //        this->flambda[ivol] = (krw)+(kro);
@@ -234,5 +265,13 @@ void TPZAlgebraicTransport::TCellData::UpdateSaturations(TPZFMatrix<STATE> &sw){
         int eq_number = fEqNumber[icell];
         fSaturation[icell] = sw(eq_number);
 
+    }
+}
+void TPZAlgebraicTransport::TCellData::UpdateSaturationsLastState(TPZFMatrix<STATE> &sw){
+    int ncells = fVolume.size();
+    for (int icell = 0; icell<ncells; icell++) {
+        int eq_number = fEqNumber[icell];
+        fSaturationLastState[icell] = sw(eq_number);
+        
     }
 }

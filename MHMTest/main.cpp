@@ -92,7 +92,7 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-    aspace.CreateUniformMesh(25, 100, 1, 10);
+    aspace.CreateUniformMesh(20 , 100, 1, 10);
     aspace.GenerateMHMUniformMesh(1);
 
     aspace.PrintGeometry(name);
@@ -141,13 +141,18 @@ void SimpleTest(){
     REAL current_report_time = reporting_times[pos];
     TPZFMatrix<REAL> solution_n;
     solution_n = sfi_analysis->m_transport_module->Solution();
+    solution_n.Zero();
+    
+sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturationsLastState(solution_n);
     
 //    solution_n *= 0.0;
    
+    
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(sim_time);
         sfi_analysis->RunTimeStep();
+        
        
         if (sim_time >=  current_report_time) {
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
@@ -155,6 +160,7 @@ void SimpleTest(){
             pos++;
             current_report_time =reporting_times[pos];
         }
+        sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
     }
 }
 
@@ -203,12 +209,12 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 20;
-    sim_data.mTNumerics.m_res_tol_mixed = 0.00001;
-    sim_data.mTNumerics.m_corr_tol_mixed = 0.000001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 100;
-    sim_data.mTNumerics.m_dt      = 0.1;
+    sim_data.mTNumerics.m_res_tol_mixed = 0.001;
+    sim_data.mTNumerics.m_corr_tol_mixed = 0.0001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.001;
+    sim_data.mTNumerics.m_n_steps = 10;
+    sim_data.mTNumerics.m_dt      = 1.0;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
@@ -223,7 +229,7 @@ TMRSDataTransfer Setting2D(){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 0.1;
+    sim_data.mTPostProcess.m_file_time_step = 1.0;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     

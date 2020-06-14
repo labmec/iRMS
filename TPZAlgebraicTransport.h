@@ -67,6 +67,7 @@ public:
         std::vector<REAL> fEqNumber;
         std::vector<REAL> fVolume;
         std::vector<REAL> fSaturation;
+        std::vector<REAL> fSaturationLastState;
         std::vector<REAL> fPressure;
         std::vector<REAL> fDensityOil;
         std::vector<REAL> fDensityWater;
@@ -83,7 +84,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0), fPressure(0), fDensityOil(0),fDensityWater(0), flambda(0),fporosity(0), fWaterfractionalflow(0),fOilfractionalflow(0), fCenterCordinate(0),
+        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0),fSaturationLastState(0), fPressure(0), fDensityOil(0),fDensityWater(0), flambda(0),fporosity(0), fWaterfractionalflow(0),fOilfractionalflow(0), fCenterCordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -94,6 +95,7 @@ public:
             fVolume = copy.fVolume;
             fEqNumber=copy.fEqNumber;
             fSaturation= copy.fSaturation;
+            fSaturationLastState = copy.fSaturationLastState;
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
             fDensityWater = copy.fDensityWater;
@@ -112,6 +114,7 @@ public:
             fVolume = copy.fVolume;
             fEqNumber=copy.fEqNumber;
             fSaturation= copy.fSaturation;
+            fSaturationLastState = copy.fSaturationLastState;
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
             fDensityWater = copy.fDensityWater;
@@ -131,6 +134,7 @@ public:
             fVolume.resize(ncells);
             fEqNumber.resize(ncells);
             fSaturation.resize(ncells);
+            fSaturationLastState.resize(ncells);
             fporosity.resize(ncells);
             fPressure.resize(ncells);
             fDensityOil.resize(ncells);
@@ -141,7 +145,8 @@ public:
             fCenterCordinate.resize(ncells);
         }
         void UpdateSaturations(TPZFMatrix<STATE> &dsx);
-        void UpdateFractionalFlowsAndLambda();
+        void UpdateSaturationsLastState(TPZFMatrix<STATE> &sw);
+        void UpdateFractionalFlowsAndLambda(bool isLinearQ=false);
         
         void Print(std::ostream &out);
     };
@@ -182,6 +187,8 @@ public:
     void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef);
     void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef);
     static std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL Sw, REAL rhoW,REAL rhoO);
+    static std::pair<std::vector<REAL>,std::vector<REAL>> LinearfwAndfoVal(REAL sw, REAL muw,REAL muo);
+    
     void UpdateIntegralFlux(int matid);
     
     void CalcLambdas();

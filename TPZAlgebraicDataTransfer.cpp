@@ -762,6 +762,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fDensityOil[i]=800.00;
         transport.fCellsData.fDensityWater[i]=1000.00;
         transport.fCellsData.fSaturation[i]=0.0;
+        transport.fCellsData.fSaturationLastState[i]=0.0;
         int dim= gel->Dimension();
         transport.fCellsData.fCenterCordinate[i].resize(dim);
         TPZVec<REAL> ximasscent(dim);

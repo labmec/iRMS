@@ -155,21 +155,32 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> dx(Solution()),x(Solution());
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
-    
+    {
+        fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+        NewtonIteration();
+        dx = Solution();
+        x += dx;
+        LoadSolution(x);
+        cmesh->LoadSolutionFromMultiPhysics();
+        PostProcessTimeStep();
+    }
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
+//        AssembleResidual();
+        REAL normr = Norm(Rhs());
         dx = Solution();
 
         x += dx;
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
+        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
         corr_norm = Norm(dx);
 
         cmesh->LoadSolutionFromMultiPhysics();
-
+        PostProcessTimeStep();
         
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
