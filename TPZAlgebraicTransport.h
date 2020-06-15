@@ -147,6 +147,7 @@ public:
         void UpdateSaturations(TPZFMatrix<STATE> &dsx);
         void UpdateSaturationsLastState(TPZFMatrix<STATE> &sw);
         void UpdateFractionalFlowsAndLambda(bool isLinearQ=false);
+        void UpdateFractionalFlowsAndLambdaQuasiNewton();
         
         void Print(std::ostream &out);
     };
@@ -186,7 +187,7 @@ public:
     void ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef);
     void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef);
-    static std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL Sw, REAL rhoW,REAL rhoO);
+    static std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL sw, REAL muw,REAL muo, bool isLinearQ = false);
     static std::pair<std::vector<REAL>,std::vector<REAL>> LinearfwAndfoVal(REAL sw, REAL muw,REAL muo);
     
     void UpdateIntegralFlux(int matid);

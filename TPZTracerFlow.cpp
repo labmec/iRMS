@@ -175,8 +175,8 @@ REAL TPZTracerFlow::FractureFactor(TPZMaterialData & data){
 
 void TPZTracerFlow::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
 
-#ifdef PZDEBUG
     int nref =  datavec.size();
+#ifdef PZDEBUG
     if (nref != 3 && nref !=5 ) {
         std::cout << " Erro. The size of the datavec is different from 3 \n";
         DebugStop();

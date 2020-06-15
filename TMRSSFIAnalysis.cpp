@@ -82,7 +82,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
     bool stop_criterion_Q = false;
     REAL error_rel_mixed = 1.0;
     REAL error_rel_transport = 1.0;
-    REAL eps_tol = 1.0;
+    REAL eps_tol = 0.001; // define tolerancia para parar SFI
     
 
     for (int i = 1; i <= n_iterations; i++) {
@@ -93,9 +93,11 @@ void TMRSSFIAnalysis::RunTimeStep(){
         error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         
         stop_criterion_Q = error_rel_mixed < eps_tol && error_rel_transport < eps_tol;
-        if (stop_criterion_Q) {
+        if (stop_criterion_Q && i > 1) {
             std::cout << "SFI converged " << std::endl;
             std::cout << "Number of iterations = " << i << std::endl;
+            std::cout << "Mixed problem variations = " << error_rel_mixed << std::endl;
+            std::cout << "Transport problem variations = " << error_rel_transport << std::endl;
 //            UpdateMemoryInModules();
             break;
         }

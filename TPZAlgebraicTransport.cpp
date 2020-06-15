@@ -145,7 +145,7 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
 
 }
 
-std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal(REAL sw, REAL muw,REAL muo){
+std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal(REAL sw, REAL muw,REAL muo, bool isLinearQ){
     std::vector<REAL> fwData(2), foData(2);
 //    REAL Krw = sw*sw ;
 //    REAL Kro = (1-sw)*(1-sw) ;
@@ -154,8 +154,12 @@ std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal
     REAL num = -2.0*(muo*muw*(sw-1.0)*sw);
     REAL dem = ((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw))*((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw));
     fwData[0] = fw;
-//    fwData[1] = num/dem;
-    fwData[1]=(muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
+    if(isLinearQ){
+        fwData[1]=(muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
+    }else{
+        fwData[1] = num/dem;
+    }
+
     foData[0] = 1.0;
     foData[1]=1.0;
   
@@ -242,18 +246,35 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
             kro = (1-sw);
         }
         else{
-        fWandFo=
-        fwAndfoVal(fSaturation[ivol], fViscosity[0], fViscosity[1]);
-        krw = sw*sw;
-        kro = (1-sw)*(1-sw);
-            
+            fWandFo=
+            fwAndfoVal(fSaturation[ivol], fViscosity[0], fViscosity[1]);
+            krw = sw*sw;
+            kro = (1-sw)*(1-sw);
         }
         this->fWaterfractionalflow[ivol] = fWandFo.first;
         this->fOilfractionalflow[ivol] = fWandFo.second;
-       
-
+    
  
 
+        this->flambda[ivol] = (krw/(fViscosity[0]))+(kro/(fViscosity[1]));
+//        this->flambda[ivol] = (krw)+(kro);
+
+    }
+}
+
+void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton(){
+    int nvols = this->fVolume.size();
+    for (int ivol =0 ; ivol< nvols; ivol++) {
+        std::pair<std::vector<REAL>,std::vector<REAL>> fWandFo;
+        REAL sw =this->fSaturation[ivol];
+        REAL krw, kro;
+        fWandFo=
+        fwAndfoVal(fSaturation[ivol], fViscosity[0], fViscosity[1], true);
+        krw = sw*sw;
+        kro = (1-sw)*(1-sw);
+        this->fWaterfractionalflow[ivol] = fWandFo.first;
+        this->fOilfractionalflow[ivol] = fWandFo.second;
+    
         this->flambda[ivol] = (krw/(fViscosity[0]))+(kro/(fViscosity[1]));
 //        this->flambda[ivol] = (krw)+(kro);
 

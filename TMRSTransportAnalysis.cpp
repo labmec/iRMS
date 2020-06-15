@@ -232,10 +232,15 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
     
-//    ComputeInitialGuess(x);
+    ComputeInitialGuess(x); // from the linear problem (tangent and residue)
     
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
+    
+    QuasiNewtonSteps(x,10); // assuming linear operator
+    
+    fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
@@ -245,11 +250,11 @@ void TMRSTransportAnalysis::RunTimeStep(){
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
         corr_norm = Norm(dx);
 
         cmesh->LoadSolutionFromMultiPhysics();
-        PostProcessTimeStep();
+//        PostProcessTimeStep();
         
         AssembleResidual();
         res_norm = Norm(Rhs());
@@ -260,6 +265,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
             std::cout << "Transport operator: Converged" << std::endl;
 //            std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
+            std::cout << "residue norm = " << res_norm << std::endl;
             break;
         }
 
@@ -285,6 +291,34 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
 //    PostProcessTimeStep();
 }
 
+void TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
+    
+    TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
+    if (!cmesh) {
+        DebugStop();
+    }
+    
+    std::cout << "Quasi-Newton process : " <<  std::endl;
+    for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
+        
+        NewtonIteration();
+
+        x += Solution();
+        LoadSolution(x);
+        cmesh->LoadSolutionFromMultiPhysics();
+        fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambdaQuasiNewton();
+
+        cmesh->LoadSolutionFromMultiPhysics();
+//        PostProcessTimeStep();
+        
+        AssembleResidual();
+        REAL res_norm = Norm(Rhs());
+        std::cout << " Residue norm : " <<  res_norm << std::endl;
+    }
+    
+}
+
 void TMRSTransportAnalysis::NewtonIteration(){
     
     Assemble();
@@ -292,6 +326,7 @@ void TMRSTransportAnalysis::NewtonIteration(){
     Solve();
 //    this->PostProcessTimeStep();
 }
+
 
 void TMRSTransportAnalysis::PostProcessTimeStep(){
     

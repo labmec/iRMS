@@ -93,7 +93,7 @@ void SimpleTest(){
     aspace.LoadGeometry(geometry_file);
 
     aspace.CreateUniformMesh(20, 100, 1, 10);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(5);
 
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -158,6 +158,8 @@ void SimpleTest(){
         }
         sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
     }
+    
+    std::cout  << "Number of transportr equations = " << solution_n.Rows() << std::endl;
 }
 
 
@@ -204,13 +206,13 @@ TMRSDataTransfer Setting2D(){
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
-    sim_data.mTNumerics.m_max_iter_sfi = 20;
-    sim_data.mTNumerics.m_res_tol_mixed = 0.001;
-    sim_data.mTNumerics.m_corr_tol_mixed = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.001;
+    sim_data.mTNumerics.m_max_iter_sfi = 30;
+    sim_data.mTNumerics.m_res_tol_mixed = 0.000001;
+    sim_data.mTNumerics.m_corr_tol_mixed = 0.000001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 10;
-    sim_data.mTNumerics.m_dt      = 1.0;
+    sim_data.mTNumerics.m_dt      = 10.0;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
@@ -225,7 +227,7 @@ TMRSDataTransfer Setting2D(){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 1.0;
+    sim_data.mTPostProcess.m_file_time_step = 10.0;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
