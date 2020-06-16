@@ -101,8 +101,8 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-    aspace.CreateUniformMesh(10, 10, 1, 1);
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.CreateUniformMesh(10, 10, 10, 10);
+    aspace.GenerateMHMUniformMesh(0);
 
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);

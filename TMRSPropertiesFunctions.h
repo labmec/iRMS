@@ -15,7 +15,7 @@ class TMRSPropertiesFunctions
     public:
     
     /// Enumerate defining the function type
-    enum EFunctionType { EConstantFunction = 0, EPiecewiseFunction = 0, EUNISIMFunction = 1, ESPECase10Function = 2};
+    enum EFunctionType { EConstantFunction = 0, EPiecewiseFunction = 1, EUNISIMFunction = 2, ESPECase10Function = 3};
     
     
     TMRSPropertiesFunctions(){
@@ -121,6 +121,24 @@ class TMRSPropertiesFunctions
                             x = pt[0];
                             y = pt[1];
                             phi = 0.1;
+                            return phi;
+                        };
+                }
+                break;
+            case EPiecewiseFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL x,y,phi,r,c,f;
+                            r = 0.25;
+                            c = 10;
+                            x = pt[0];
+                            y = pt[1];
+                            f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
+                            if(f<0){
+                                phi = 0.001;
+                            }else{
+                                phi = 0.1;
+                            }
                             return phi;
                         };
                 }
