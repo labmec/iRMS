@@ -804,10 +804,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fDensityWater[i]=1000.00;
         transport.fCellsData.fSaturation[i]=0.0;
         transport.fCellsData.fSaturationLastState[i]=0.0;
-        transport.fCellsData.fKx[i]=1.0;
-        transport.fCellsData.fKy[i]=1.0;
-        transport.fCellsData.fKz[i]=1.0;
-        transport.fCellsData.fporosity[i] =1.0;
+
         int dim= gel->Dimension();
         transport.fCellsData.fCenterCordinate[i].resize(dim);
         TPZVec<REAL> ximasscent(dim);
@@ -815,6 +812,16 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         std::vector<REAL> center(dim,0.0);
         TPZVec<REAL> result(dim,0.0);
         gel->X(ximasscent, result);
+        
+        REAL kx_v   = fkx(result);
+        REAL ky_v   = fky(result);
+        REAL kz_v   = fkz(result);
+        REAL phi_v  = fphi(result);
+        transport.fCellsData.fKx[i]=kx_v;
+        transport.fCellsData.fKy[i]=ky_v;
+        transport.fCellsData.fKz[i]=kz_v;
+        transport.fCellsData.fporosity[i] = phi_v;
+        
         for (int ic =0; ic<dim; ic++) {center[ic]=result[ic];};
         transport.fCellsData.fCenterCordinate[i] =center;
     }

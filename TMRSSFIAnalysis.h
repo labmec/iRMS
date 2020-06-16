@@ -51,6 +51,9 @@ public:
     /// Constructor based on a cmesh and optimization band directive
     TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q);
     
+    /// Constructor based on a cmesh and optimization band directive
+    TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<REAL(const TPZVec<REAL> & )> & kx, std::function<REAL(const TPZVec<REAL> & )> & ky, std::function<REAL(const TPZVec<REAL> & )> & kz, std::function<REAL(const TPZVec<REAL> & )> & phi);
+    
     /// Configurates iternal members
     void Configure(int n_threads, bool UsePardiso_Q);
     

@@ -27,7 +27,30 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
    
-fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+    fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+    
+     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+    
+//    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+   
+//    int n_mixed_dof = m_mixed_module->Solution().Rows();
+//    int n_transport_dof = m_transport_module->Solution().Rows();
+//    m_x_mixed.Resize(n_mixed_dof, 1);
+//    m_x_transport.Resize(n_transport_dof, 1);
+    
+}
+
+TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<REAL(const TPZVec<REAL> & )> & kx, std::function<REAL(const TPZVec<REAL> & )> & ky, std::function<REAL(const TPZVec<REAL> & )> & kz, std::function<REAL(const TPZVec<REAL> & )> & phi){
+    m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
+    m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
+    
+    fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
+   
+    fAlgebraicDataTransfer.fkx = kx;
+    fAlgebraicDataTransfer.fky = ky;
+    fAlgebraicDataTransfer.fkz = kz;
+    fAlgebraicDataTransfer.fphi = phi;
+    fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
     
      fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     

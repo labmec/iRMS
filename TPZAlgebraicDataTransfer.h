@@ -20,6 +20,13 @@ class TPZFastCondensedElement;
 class TPZAlgebraicDataTransfer {
     
 public:
+    
+    // Spatial reservoir properties
+    std::function<REAL(const TPZVec<REAL> & )> fkx;
+    std::function<REAL(const TPZVec<REAL> & )> fky;
+    std::function<REAL(const TPZVec<REAL> & )> fkz;
+    std::function<REAL(const TPZVec<REAL> & )> fphi;
+    
     TPZMultiphysicsCompMesh *fFluxMesh;
     
     TPZMultiphysicsCompMesh *fTransportMesh;

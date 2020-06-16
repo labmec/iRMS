@@ -66,9 +66,10 @@
 #include "pzcondensedcompel.h"
 
 #include "TPZAlgebraicDataTransfer.h"
-
+#include "TMRSPropertiesFunctions.h"
 #include <libInterpolate/Interpolate.hpp>
 #include <libInterpolate/AnyInterpolator.hpp>
+
 
 TMRSDataTransfer Setting2D();
 TMRSDataTransfer Setting3D();
@@ -83,8 +84,8 @@ void UNISIMTest();
 //
 int main(){
     InitializePZLOG();
-//    SimpleTest();
-    SimpleTest3D();
+    SimpleTest();
+//    SimpleTest3D();
 //    UNISIMTest();
     return 0;
 }
@@ -125,8 +126,15 @@ void SimpleTest(){
 //    transfer.BuildTransportDataStructure(transport);
 //    
    
+    TMRSPropertiesFunctions reservoir_properties;
     
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+    
+    auto kx = reservoir_properties.Create_Kx();
+    auto ky = reservoir_properties.Create_Ky();
+    auto kz = reservoir_properties.Create_Kz();
+    auto phi = reservoir_properties.Create_phi();
+    
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
   
@@ -377,8 +385,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTFluidProperties.mOilViscosity = 1.0;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
     sim_data.mTFluidProperties.mOilDensity = 800.0;
-    //Rock properties
-    sim_data.mTReservoirProperties.mPorosity = 0.1;
+
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
