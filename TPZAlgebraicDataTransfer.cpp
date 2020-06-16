@@ -49,7 +49,8 @@ void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport
     BuildTransportToMixedCorrespondenceDatastructure(fFluxMesh, Volume_Index);
     InitializeTransportDataStructure(transport);
     InitializeVectorPointersMixedToTransport(transport);
-    Print();
+    InitializeVectorPointersTranportToMixed(transport);
+//    Print();
     
     
 }
@@ -704,8 +705,8 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
             transport.fMixedMesh = fluxmesh;
             transport.fMixedCell.resize(num_elements);
             transport.fTransportCell.resize(num_elements);
-
             transport.fEqNum.resize(num_elements);
+           
 
             int64_t count = 0;
             for(auto cel : cellist)
@@ -818,6 +819,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fCenterCordinate[i] =center;
     }
     transport.fCellsData.fMatId = 1;
+    
     transport.fCellsData.UpdateFractionalFlowsAndLambda();
     this->InitializeVectorPointersTranportToMixed(transport);
     
@@ -927,7 +929,7 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
         int64_t ncells = meshit.fTransportCell.size();
         for (int icell = 0; icell < ncells; icell++) {
 #ifdef PZDEBUG
-            if(meshit.fPermData == 0 || meshit.fTransportCell[icell] >= meshit.fPermData->size())
+            if(meshit.fKxData == 0 || meshit.fEqNum[icell] >= meshit.fPermData->size())
             {
                 DebugStop();
             }

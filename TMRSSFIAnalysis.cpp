@@ -26,7 +26,11 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
-    fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+   
+fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+    
+     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+    
 //    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
    
 //    int n_mixed_dof = m_mixed_module->Solution().Rows();
@@ -86,7 +90,6 @@ void TMRSSFIAnalysis::RunTimeStep(){
     REAL error_rel_transport = 1.0;
     REAL eps_tol = 0.001; // define tolerancia para parar SFI
     
-
     for (int i = 1; i <= n_iterations; i++) {
         
         SFIIteration();
@@ -132,6 +135,8 @@ void TMRSSFIAnalysis::SFIIteration(){
         m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
        m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
         fAlgebraicDataTransfer.TransferLambdaCoefficients();
+       
+
         m_mixed_module->RunTimeStep();
         
 #ifdef USING_BOOST2

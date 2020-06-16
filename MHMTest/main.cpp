@@ -84,8 +84,8 @@ void UNISIMTest();
 int main(){
     InitializePZLOG();
 //    SimpleTest();
-//    SimpleTest3D();
-    UNISIMTest();
+    SimpleTest3D();
+//    UNISIMTest();
     return 0;
 }
 
@@ -251,8 +251,8 @@ void SimpleTest3D(){
     std::cout  << "Number of transportr equations = " << solution_n.Rows() << std::endl;
 }
 void UNISIMTest(){
-    std::string geometry_file2D ="gmsh/mallaUNISIM_Test.msh";
-    int nLayers = 1;
+    std::string geometry_file2D ="gmsh/Contorno.msh";
+    int nLayers = 2;
     bool is3DQ = true;
     bool print3DMesh = true;
     TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
@@ -264,6 +264,7 @@ void UNISIMTest(){
     aspace.SetGeometry(gmesh);
     std::string name="NewMesh";
     std::cout<< gmesh->NElements();
+    aspace.GenerateMHMUniformMesh(0);
     aspace.PrintGeometry(name);
     
     aspace.SetDataTransfer(sim_data);
@@ -549,7 +550,7 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 50;
-    sim_data.mTNumerics.m_dt      = 100.0;
+    sim_data.mTNumerics.m_dt      = 1000.0;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
@@ -563,7 +564,7 @@ TMRSDataTransfer SettingUNISIM(){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 100.0;
+    sim_data.mTPostProcess.m_file_time_step = 1000.0;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
