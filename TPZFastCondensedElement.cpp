@@ -10,6 +10,8 @@
 #include "TPZFastCondensedElement.h"
 #include "pzcmesh.h"
 #include "pzmultiphysicselement.h"
+#include "TPZMixedDarcyWithFourSpaces.h"
+
 /**
  * @brief Computes the element stifness matrix and right hand side
  * @param ek element stiffness matrix
@@ -20,18 +22,17 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     
     if(this->fMatrixComputed == false)
     {
-        //JOSE: A condensaçao esta sendo realizada na linha 514 de TMRSApproxSpaceGenerator.cpp
+     
+        TPZMixedDarcyWithFourSpaces *matDarcy = dynamic_cast<TPZMixedDarcyWithFourSpaces *>(Material());
+        if (!matDarcy) {
+            DebugStop();
+        }
+        
+//        matDarcy->SetPermeability(fPermeabilityTensor);
         TPZCondensedCompEl::CalcStiff(ek, ef);
-//        ek.fMat.Print("EK= ",std::cout,EMathematicaInput);
         
         ShrinkElementMatrix(ek, fEK);
         ShrinkElementMatrix(ef, fEF);
-        
-        //JOSE: nesse caso NAO estao sendo utilizados os valores de fEK e fEF calculado no Shrink.
-        //JOSE: comentar as siguintes duas linhas e verificar o método ShrinkElementMatrix por favor.
-//        fEK=ek;
-//        fEF=ef ;
-//        fEK.fMat.Print(std::cout);
         this->fMatrixComputed = true;
     }
     
@@ -41,18 +42,17 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
     
-//JOSE: O valor de fPermmeability foi setado com o valor 20, na linha 47 do TPZReservoirTools.cpp
 
-//JOSE: ¿Tendo restriçoes fica igual a multiplicaçao por 1/lambda?
-
-    ek.fMat *= (1./fPermeability);
+//    REAL val = fMixedDensity;
+    ek.fMat *= (1./fLambda);
     for (int icol=0; icol<ncols; icol++) {
-        ek.fMat(nrows-1,icol) *= fPermeability;
+        ek.fMat(nrows-1,icol) *= fLambda;
     }
     for (int irow=0; irow<nrows; irow++) {
-        ek.fMat(irow,ncols-1) *= fPermeability;
+        ek.fMat(irow,ncols-1) *= fLambda;
     }
-    ek.fMat(nrows-1,ncols-1) *=fPermeability;
+    ek.fMat(nrows-1,ncols-1) *=fLambda;
+    
     ef.fMat *= fSource;
     
 }
@@ -118,9 +118,21 @@ void TPZFastCondensedElement::ShrinkElementMatrix(TPZElementMatrix &input, TPZEl
     
 }
 
-void TPZFastCondensedElement::SetPermeability(REAL perm){
-    fPermeability = perm;
+void TPZFastCondensedElement::SetLambda(REAL lambda){
+    fLambda = lambda;
 }
-REAL TPZFastCondensedElement::GetPermeability(){
-    return fPermeability;
+REAL TPZFastCondensedElement::GetLambda(){
+    return fLambda;
+}
+void TPZFastCondensedElement::SetMixedDensity(REAL mdensity){
+    fMixedDensity = mdensity;
+}
+REAL TPZFastCondensedElement::GetMixedDensity(){
+    return fMixedDensity;
+}
+void TPZFastCondensedElement::SetPermTensor(TPZFNMatrix<9, REAL> PermeabilityTensor){
+    fPermeabilityTensor = PermeabilityTensor;
+}
+TPZFNMatrix<9, REAL> TPZFastCondensedElement::GetPermTensor(){
+    return  fPermeabilityTensor;
 }

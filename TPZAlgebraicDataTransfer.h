@@ -82,14 +82,15 @@ public:
         std::vector<int64_t> fTransportCell;
 
         std::vector<int64_t> fEqNum;
-
         
         std::vector<REAL> *fPermData;
-        
+        std::vector<REAL> *fMixedDensityData;
         std::vector<TPZFastCondensedElement *> fMixedCell;
-        
+        std::vector<REAL> *fKxData;
+        std::vector<REAL> *fKyData;
+        std::vector<REAL> *fKzData;
 
-        TransportToMixedCorrespondence() : fMixedMesh(0), fPermData(0), fTransportCell(0), fEqNum(0) {}
+        TransportToMixedCorrespondence() : fMixedMesh(0), fTransportCell(0), fEqNum(0),fPermData(0),fMixedDensityData(0),fMixedCell(0),fKxData(0), fKyData(0), fKzData(0)  {}
 
         
         TransportToMixedCorrespondence(const TransportToMixedCorrespondence &cp) {
@@ -97,8 +98,11 @@ public:
             fTransportCell = cp.fTransportCell;
             fPermData = cp.fPermData;
             fMixedCell = cp.fMixedCell;
-
+            fMixedDensityData = cp.fMixedDensityData;
             fEqNum = cp.fEqNum;
+            fKxData = cp.fKxData;
+            fKyData = cp.fKyData;
+            fKzData = cp.fKzData;
 
         }
         
@@ -108,8 +112,11 @@ public:
             fTransportCell = cp.fTransportCell;
             fPermData = cp.fPermData;
             fMixedCell = cp.fMixedCell;
-
+            fMixedDensityData = cp.fMixedDensityData;
             fEqNum = cp.fEqNum;
+            fKxData = cp.fKxData;
+            fKyData = cp.fKyData;
+            fKzData = cp.fKzData;
 
             return *this;
         }
@@ -209,6 +216,7 @@ public:
     void TransferMixedMeshMultiplyingCoefficients();
     
     // transfer the permeability multiplier from the transport mesh to the mixed mesh elements
-    void TransferPermeabilityCoefficients();
+    void TransferLambdaCoefficients();
+    void TransferPermeabiliyTensor();
 };
 #endif /* AlgebraicDataTransfer_h */

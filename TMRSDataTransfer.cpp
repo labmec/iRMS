@@ -8,7 +8,7 @@
 #include "TMRSDataTransfer.h"
 
 
-TMRSDataTransfer::TMRSDataTransfer() : mTGeometry(), mTPetroPhysics(), mTFluidProperties(), mTBoundaryConditions(), mTNumerics(), mTPostProcess(){
+TMRSDataTransfer::TMRSDataTransfer() : mTGeometry(), mTPetroPhysics(), mTFluidProperties(),mTReservoirProperties(), mTBoundaryConditions(), mTNumerics(), mTPostProcess(){
     
 }
 
@@ -17,6 +17,7 @@ TMRSDataTransfer::TMRSDataTransfer(const TMRSDataTransfer &other){
     mTGeometry = other.mTGeometry;
     mTPetroPhysics = other.mTPetroPhysics;
     mTFluidProperties = other.mTFluidProperties;
+    mTReservoirProperties = other.mTReservoirProperties;
     mTMultiphaseFunctions = other.mTMultiphaseFunctions;
     mTBoundaryConditions = other.mTBoundaryConditions;
     mTNumerics = other.mTNumerics;
@@ -31,6 +32,7 @@ TMRSDataTransfer & TMRSDataTransfer::operator=(const TMRSDataTransfer &other){
         mTGeometry = other.mTGeometry;
         mTPetroPhysics = other.mTPetroPhysics;
         mTFluidProperties = other.mTFluidProperties;
+        mTReservoirProperties = other.mTReservoirProperties;
         mTMultiphaseFunctions = other.mTMultiphaseFunctions;
         mTBoundaryConditions = other.mTBoundaryConditions;
         mTNumerics = other.mTNumerics;

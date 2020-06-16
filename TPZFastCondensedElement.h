@@ -15,7 +15,12 @@
 class TPZFastCondensedElement : public TPZCondensedCompEl
 {
     // this will be the multiplying factor for the condensed stiffness matrix K11
-    REAL fPermeability = 1.;
+    REAL fLambda = 1.0;
+    
+    TPZFNMatrix<9, REAL> fPermeabilityTensor;
+    
+    //mixture density = rhow*fw + rhoo*fo
+    REAL fMixedDensity = 1.;
      
     // this constant contains the source term
     REAL fSource = 0.;
@@ -39,7 +44,7 @@ public:
     
     /// Assignement constructor
     const TPZFastCondensedElement & operator=(const TPZFastCondensedElement & other){
-        fPermeability = other.fPermeability;
+        fLambda = other.fLambda;
         return *this;
     }
     
@@ -49,7 +54,7 @@ public:
     {
         fEK = copy.fEK;
         fEF = copy.fEF;
-        fPermeability = copy.fPermeability;
+        fLambda = copy.fLambda;
         fMatrixComputed = copy.fMatrixComputed;
     }
     
@@ -73,9 +78,14 @@ public:
      */
     virtual void CalcResidual(TPZElementMatrix &ef) override;
     
-    void SetPermeability(REAL perm);
-    REAL GetPermeability();
+    void SetLambda(REAL lambda);
+    REAL GetLambda();
+    
+    void SetMixedDensity(REAL density);
+    REAL GetMixedDensity();
 
+    void SetPermTensor(TPZFNMatrix<9, REAL> PermeabilityTensor);
+    TPZFNMatrix<9, REAL>  GetPermTensor();
     
 };
 #endif /* TPZFASTCONDENSEDELEMENT_h */

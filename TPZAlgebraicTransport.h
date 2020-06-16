@@ -33,7 +33,11 @@ public:
         //Sign with respect to the natural orientation of the flux (+1 or -1)
         std::vector<REAL> fFluxSign;
         //Direction of the normal to the face
+        // prencher do elemento interpol
         std::vector<std::tuple<REAL,REAL,REAL>> fNormalFaceDirection;
+        
+        //dado x calcula a permeabilidade... calcular a permeabilidade
+        // transferir las densidades al problema mixto en transport to mixed
         
         TInterfaceDataTransport() : fMatid(0), fcelindex(0), fCoefficientsFlux(0), fIntegralFluxFunctions(0), fIntegralFlux(0),fFluxSign(0), fNormalFaceDirection(0) {
            
@@ -71,11 +75,21 @@ public:
         std::vector<REAL> fPressure;
         std::vector<REAL> fDensityOil;
         std::vector<REAL> fDensityWater;
+        std::vector<REAL> fMixedDensity;
         std::vector<REAL> flambda;
         std::vector<REAL> fporosity;
+        std::vector<REAL> fKx;
+        std::vector<REAL> fKy;
+        std::vector<REAL> fKz;
         //Fractional flow and its derivative
-        std::vector<std::vector<REAL>> fWaterfractionalflow;
-        std::vector<std::vector<REAL>> fOilfractionalflow;
+        //un vetor para fracional y outro para a derivada.
+        // center o cord x, y, z tres vetores.
+        std::vector<REAL> fWaterfractionalflow;
+        std::vector<REAL> fDerivativeWfractionalflow;
+        std::vector<REAL> fOilfractionalflow;
+        std::vector<REAL> fDerivativeOfractionalflow;
+        
+//        std::vector<std::vector<REAL>> fOilfractionalflow;
         std::vector<std::vector<REAL>> fCenterCordinate;
         
         // fCompressibility[0] = water, fCompressibility[1]=oil, fCompressibility[2]=gas etc.
@@ -84,7 +98,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0),fSaturationLastState(0), fPressure(0), fDensityOil(0),fDensityWater(0), flambda(0),fporosity(0), fWaterfractionalflow(0),fOilfractionalflow(0), fCenterCordinate(0),
+        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0),fSaturationLastState(0), fPressure(0), fDensityOil(0),fDensityWater(0),fMixedDensity(0), flambda(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -99,11 +113,17 @@ public:
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
             fDensityWater = copy.fDensityWater;
+            fMixedDensity = copy.fMixedDensity;
             flambda = copy.flambda;
             fWaterfractionalflow = copy.fWaterfractionalflow;
+            fDerivativeWfractionalflow = copy.fDerivativeWfractionalflow;
             fOilfractionalflow = copy.fOilfractionalflow;
+            fDerivativeOfractionalflow=copy.fDerivativeOfractionalflow;
             fCenterCordinate = copy.fCenterCordinate;
             fporosity = copy.fporosity;
+            fKx = copy.fKx;
+            fKy = copy.fKy;
+            fKz = copy.fKz;
             fCompressibility = copy.fCompressibility;
             fViscosity = copy.fViscosity;
             fReferencePressures= copy.fReferencePressures;
@@ -118,11 +138,17 @@ public:
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
             fDensityWater = copy.fDensityWater;
+            fMixedDensity = copy.fMixedDensity;
             flambda = copy.flambda;
             fWaterfractionalflow = copy.fWaterfractionalflow;
+            fDerivativeWfractionalflow=copy.fDerivativeWfractionalflow;
             fOilfractionalflow = copy.fOilfractionalflow;
+            fDerivativeOfractionalflow = copy.fDerivativeOfractionalflow;
             fCenterCordinate = copy.fCenterCordinate;
             fporosity = copy.fporosity;
+            fKx = copy.fKx;
+            fKy = copy.fKy;
+            fKz = copy.fKz;
             fCompressibility = copy.fCompressibility;
             fViscosity = copy.fViscosity;
             fReferencePressures= copy.fReferencePressures;
@@ -136,24 +162,32 @@ public:
             fSaturation.resize(ncells);
             fSaturationLastState.resize(ncells);
             fporosity.resize(ncells);
+            fKx.resize(ncells);
+            fKy.resize(ncells);
+            fKz.resize(ncells);
             fPressure.resize(ncells);
             fDensityOil.resize(ncells);
             fDensityWater.resize(ncells);
+            fMixedDensity.resize(ncells);
             flambda.resize(ncells);
             fWaterfractionalflow.resize(ncells);
+            fDerivativeWfractionalflow.resize(ncells);
             fOilfractionalflow.resize(ncells);
+            fDerivativeOfractionalflow.resize(ncells);
             fCenterCordinate.resize(ncells);
         }
         void UpdateSaturations(TPZFMatrix<STATE> &dsx);
         void UpdateSaturationsLastState(TPZFMatrix<STATE> &sw);
         void UpdateFractionalFlowsAndLambda(bool isLinearQ=false);
         void UpdateFractionalFlowsAndLambdaQuasiNewton();
+        void UpdateMixedDensity();
         
         void Print(std::ostream &out);
     };
     
     
     REAL fdt =0.1;
+    std::vector<REAL> fgravity;
     int fNFluxCoefficients;
     int inletmatid;
     int outletmatid;

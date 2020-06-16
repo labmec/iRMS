@@ -22,7 +22,7 @@ IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
 ELSE()
 	find_package( PZ REQUIRED )
-	#find_package(libInterpolate REQUIRED)
+	find_package(libInterpolate REQUIRED)
 ENDIF (WIN32)
 
 
@@ -136,6 +136,9 @@ file(COPY ${mesh} DESTINATION ./MHMTest/Release/gmsh)
 
 file (COPY PetroPhysics  DESTINATION ./MHMTest/Debug)
 file (COPY PetroPhysics  DESTINATION ./MHMTest/Release)
+
+file(COPY Reservoir DESTINATION ./MHMTest/Debug)
+file(COPY Reservoir DESTINATION ./MHMTest/Release)
 
 file(GLOB headers_files *.h)
 

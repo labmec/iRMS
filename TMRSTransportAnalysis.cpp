@@ -233,7 +233,6 @@ void TMRSTransportAnalysis::RunTimeStep(){
     correction.Zero();
     
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-    
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
     
@@ -285,7 +284,7 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
 
     NewtonIteration();
     x += Solution();
-
+//    x.Print("mat=",std::cout,EMathematicaInput);
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
 //    PostProcessTimeStep();

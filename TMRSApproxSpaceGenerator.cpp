@@ -71,6 +71,24 @@ void TMRSApproxSpaceGenerator::LoadGeometry(std::string geometry_file){
     }
 #endif
 }
+void TMRSApproxSpaceGenerator::LoadGeometry(std::string geometry_file,
+        TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tag){
+    
+    TPZGmshReader Geometry;
+    REAL l = 1.0;
+    Geometry.SetCharacteristiclength(l);
+    Geometry.SetFormatVersion("4.1");
+    Geometry.SetDimNamePhysical(dim_name_and_physical_tag);
+    mGeometry = Geometry.GeometricGmshMesh(geometry_file);
+    Geometry.PrintPartitionSummary(std::cout);
+#ifdef PZDEBUG
+    if (!mGeometry)
+    {
+        std::cout << "The geometrical mesh was not generated." << std::endl;
+        DebugStop();
+    }
+#endif
+}
 void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h, int nz, REAL w){
     
     TPZVec<int> nels(3,0);
@@ -110,21 +128,21 @@ void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h,
                 gel->CreateBCGeoEl(20, -1);
             }
             if(coordinates(2,4)==w){
-                gel->CreateBCGeoEl(25, -2);
+                gel->CreateBCGeoEl(25, -1);
             }
             
             if(coordinates(0,0)==0.0 ){
-                gel->CreateBCGeoEl(24, -3);
+                gel->CreateBCGeoEl(24, -4);
             }
             if(coordinates(1,0)==0.0 ){
-                gel->CreateBCGeoEl(21, -4);
+                gel->CreateBCGeoEl(21, -3);
             }
             
             if(coordinates(0,1)== L ){
-                gel->CreateBCGeoEl(22, -5);
+                gel->CreateBCGeoEl(22, -2);
             }
             if(coordinates(1,3)==h){
-                gel->CreateBCGeoEl(23, -6);
+                gel->CreateBCGeoEl(23, -3);
             }
         };
         gmesh->SetDimension(3);
@@ -1064,8 +1082,12 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
             TPZGeoEl *gel = cel->Reference();
             if (!gel){continue;};
             int nsides = gel->NSides();
-
-            for (int iside = gel->NNodes(); iside < nsides-1; iside++) {
+            int nsidesdim=0;
+            if (gel->Dimension()==3) {
+                nsidesdim = gel->NSides(1);
+            }
+            
+            for (int iside = gel->NNodes()+nsidesdim; iside < nsides-1; iside++) {
 
                 TPZGeoElSide gelside(gel,iside);
                 TPZCompElSide celside_l(cel,iside);

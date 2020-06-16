@@ -179,6 +179,34 @@ public:
         
         
     };
+    class TReservoirProperties : public TMRSSavable {
+        
+    public:
+        REAL mPorosity;
+     
+        /** @brief Default constructor */
+        TReservoirProperties(){
+            mPorosity=1.0;
+        }
+        
+        /** @brief Destructor */
+        ~TReservoirProperties(){
+            
+        }
+        
+        /** @brief Copy constructor */
+        TReservoirProperties(const TReservoirProperties &other){
+            mPorosity = other.mPorosity;
+        }
+        
+        /** @brief Copy assignment operator*/
+        TReservoirProperties &operator=(const TReservoirProperties &other){
+            mPorosity = other.mPorosity;
+            return *this;
+        }
+        
+        
+    };
     
     /**
      * @brief Class that stores multiphase functions
@@ -650,6 +678,7 @@ public:
     TGeometry mTGeometry;
     TPetroPhysics mTPetroPhysics;
     TFluidProperties mTFluidProperties;
+    TReservoirProperties mTReservoirProperties;
     TMultiphaseFunctions mTMultiphaseFunctions;
     TBoundaryConditions mTBoundaryConditions;
     TNumerics mTNumerics;

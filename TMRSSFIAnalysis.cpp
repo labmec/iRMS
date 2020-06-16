@@ -27,7 +27,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-
+//    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
    
 //    int n_mixed_dof = m_mixed_module->Solution().Rows();
 //    int n_transport_dof = m_transport_module->Solution().Rows();
@@ -59,8 +59,10 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     int ncells = m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil.size();
     REAL rhow = m_sim_data->mTFluidProperties.mWaterDensity;
     REAL rhoo = m_sim_data->mTFluidProperties.mOilDensity;
+    REAL phi = m_sim_data->mTReservoirProperties.mPorosity;
     for (int icell =0; icell<ncells; icell++) {
         m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
+        m_transport_module->fAlgebraicTransport.fCellsData.fporosity[icell]= phi;
     }
 }
 
@@ -127,9 +129,9 @@ void TMRSSFIAnalysis::PostProcessTimeStep(int val){
 void TMRSSFIAnalysis::SFIIteration(){
     
     {
-
-        fAlgebraicDataTransfer.TransferPermeabilityCoefficients();
-        
+        m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
+       m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
+        fAlgebraicDataTransfer.TransferLambdaCoefficients();
         m_mixed_module->RunTimeStep();
         
 #ifdef USING_BOOST2
