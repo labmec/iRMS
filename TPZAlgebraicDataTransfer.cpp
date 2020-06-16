@@ -114,13 +114,16 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     }
     // compute an index within the vector of interfaces
     std::map<int,std::map<int,int64_t>> count_interfaces;
-    for(auto matit=count_interfaces.begin(); matit != count_interfaces.end(); matit++)
+    for(auto matit=numinterfaces_matid.begin(); matit != numinterfaces_matid.end(); matit++)
     {
         int64_t prev_count = 0;
-        for(auto it = matit->second.begin(); it != matit->second.end(); it++)
+        int matid = matit->first;
+        for(auto it = matit->second.rbegin(); it != matit->second.rend(); it++)
         {
-            count_interfaces[matit->first][it->first] = prev_count;
-            prev_count += it->second;
+            int ncorner_nodes = it->first;
+            count_interfaces[matid][ncorner_nodes] = prev_count;
+            int64_t numfaces = it->second;
+            prev_count += numfaces;
         }
     }
     
@@ -141,6 +144,22 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
    
     }
     
+#ifdef PZDEBUG
+    {
+        for(auto &it : fInterfaceGelIndexes)
+        {
+            TPZVec<TInterfaceWithVolume> &vec = it.second;
+            int64_t nel = vec.size();
+            for(int64_t el = 0; el < nel; el++)
+            {
+                if(vec[el].fInterface_gelindex == -1)
+                {
+                    DebugStop();
+                }
+            }
+        }
+    }
+#endif
 }
 
 int SideLowerIndex(TPZGeoEl *gel, int side)
@@ -203,7 +222,11 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZCompElSide rightside = intface->Right();
             TPZCompEl *right = rightside.Element();
             TPZGeoEl *rightgel = right->Reference();
-            int rightorient = rightgel->NormalOrientation(rightside.Side());
+            int rightorient = 0;
+            if(rightgel->Dimension() == gmesh->Dimension())
+            {
+                rightorient = rightgel->NormalOrientation(rightside.Side());
+            }
             if(leftorient != -rightorient && rightgel->Dimension() != gmesh->Dimension()-1)
             {
                 DebugStop();
@@ -548,10 +571,14 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
         int64_t nel = gelindex.NElements();
         for(int64_t el = 0; el<nel; el++)
         {
-            TPZGeoEl *gel = gmesh->Element(gelindex[el].fInterface_gelindex);
+            TInterfaceWithVolume &intface = gelindex[el];
+            int64_t gindex = intface.fInterface_gelindex;
+#ifdef PZDEBUG
+            if(gindex < 0) DebugStop();
+#endif
+            TPZGeoEl *gel = gmesh->Element(gindex);
             int matid = gel->MaterialId();
             int ncorner = gel->NCornerNodes();
-            TInterfaceWithVolume &intface = gelindex[el];
             out << "el = " << el << " gel index " << intface.fInterface_gelindex << " ncorner " << ncorner << " matid " << matid << std::endl;
             out << "         cel index " << intface.fInterface_celindex << " leftright gelindex " <<
             intface.fLeftRightGelSideIndex.first << " " << intface.fLeftRightGelSideIndex.second << std::endl;
@@ -575,29 +602,35 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
         }
     }
     
-    out << "fInterfaceByGeom For each geometric element, which are the algebraic faces connected to it\n";
-    int64_t nel_geo = gmesh->NElements();
-    for(int64_t el = 0; el<nel_geo; el++)
+    if(fInterfaceByGeom.Rows() == 0)
     {
-        TPZGeoEl *gel = gmesh->Element(el);
-        bool hasface = false;
-        for(int i=0; i<6; i++) if(fInterfaceByGeom(el,i) != -1)
+        out << "fInterfaceByGeom not initialized\n";
+    }
+    else
+    {
+        out << "fInterfaceByGeom For each geometric element, which are the algebraic faces connected to it\n";
+        int64_t nel_geo = gmesh->NElements();
+        for(int64_t el = 0; el<nel_geo; el++)
         {
-            hasface=true;
-        }
-        if(hasface)
-        {
-            out << "gel index = " << el << std::endl;
+            TPZGeoEl *gel = gmesh->Element(el);
+            bool hasface = false;
             for(int i=0; i<6; i++) if(fInterfaceByGeom(el,i) != -1)
             {
-                int side = SideOriginalIndex(gel,i);
-                TPZGeoElSideIndex gelside(el,side);
-                out << "i = " << i <<  " side " << side << " face index " << fInterfaceByGeom(el,i) << " matid "
-                << IdentifyMaterial(gelside,fInterfaceByGeom(el,i)) << std::endl;
+                hasface=true;
+            }
+            if(hasface)
+            {
+                out << "gel index = " << el << std::endl;
+                for(int i=0; i<6; i++) if(fInterfaceByGeom(el,i) != -1)
+                {
+                    int side = SideOriginalIndex(gel,i);
+                    TPZGeoElSideIndex gelside(el,side);
+                    out << "i = " << i <<  " side " << side << " face index " << fInterfaceByGeom(el,i) << " matid "
+                    << IdentifyMaterial(gelside,fInterfaceByGeom(el,i)) << std::endl;
+                }
             }
         }
     }
-    
     if(fTransferMixedToTransport.size())
     {
         out << "Gather scatter to bring the flux data to the transport mesh\n";
