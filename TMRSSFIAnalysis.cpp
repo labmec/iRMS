@@ -86,10 +86,8 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     int ncells = m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil.size();
     REAL rhow = m_sim_data->mTFluidProperties.mWaterDensity;
     REAL rhoo = m_sim_data->mTFluidProperties.mOilDensity;
-    REAL phi = m_sim_data->mTReservoirProperties.mPorosity;
     for (int icell =0; icell<ncells; icell++) {
         m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
-        m_transport_module->fAlgebraicTransport.fCellsData.fporosity[icell]= phi;
     }
 }
 

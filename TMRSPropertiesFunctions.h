@@ -39,7 +39,7 @@ class TMRSPropertiesFunctions
                             REAL x,y,kx;
                             x = pt[0];
                             y = pt[1];
-                            kx = 1.0;
+                            kx = 1.0e-7;
                             return kx;
                         };
                 }
@@ -66,7 +66,7 @@ class TMRSPropertiesFunctions
                             REAL x,y,ky;
                             x = pt[0];
                             y = pt[1];
-                            ky = 1.0;
+                            ky = 1.0e-7;
                             return ky;
                         };
                 }
@@ -93,7 +93,7 @@ class TMRSPropertiesFunctions
                             REAL x,y,kz;
                             x = pt[0];
                             y = pt[1];
-                            kz = 1.0;
+                            kz = 1.0e-7;
                             return kz;
                         };
                 }

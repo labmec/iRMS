@@ -28,7 +28,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
             DebugStop();
         }
         
-//        matDarcy->SetPermeability(fPermeabilityTensor);
+        matDarcy->SetPermeability(fPermeabilityTensor);
         TPZCondensedCompEl::CalcStiff(ek, ef);
         
         ShrinkElementMatrix(ek, fEK);

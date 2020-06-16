@@ -101,7 +101,7 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-    aspace.CreateUniformMesh(1, 100, 1, 10);
+    aspace.CreateUniformMesh(10, 10, 1, 1);
     aspace.GenerateMHMUniformMesh(2);
 
     aspace.PrintGeometry(name);
@@ -127,8 +127,7 @@ void SimpleTest(){
 //    
    
     TMRSPropertiesFunctions reservoir_properties;
-    
-    
+    reservoir_properties.set_function_type(TMRSPropertiesFunctions::EConstantFunction);
     auto kx = reservoir_properties.Create_Kx();
     auto ky = reservoir_properties.Create_Ky();
     auto kz = reservoir_properties.Create_Kz();
@@ -356,8 +355,8 @@ TMRSDataTransfer Setting2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 1100.0;
-    REAL pressure_out = 100.0;
+    REAL pressure_in = 20.0;
+    REAL pressure_out = 10.0;
     
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(2,N_Type,zero_flux);
@@ -395,7 +394,8 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 20;
-    sim_data.mTNumerics.m_dt      = 20.0;
+    REAL day = 86400;
+    sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
@@ -410,7 +410,7 @@ TMRSDataTransfer Setting2D(){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 20.0;
+    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
