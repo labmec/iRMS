@@ -138,6 +138,7 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
         intface.fInterface_gelindex = gelindex;
         intface.fInterface_celindex = celindex;
         count_interfaces[matid][ncornernodes]++;
+   
     }
     
 }

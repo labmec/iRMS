@@ -180,7 +180,7 @@ void SimpleTest3D(){
 //    aspace.LoadGeometry(geometry_file);
     
     aspace.CreateUniformMesh(2, 100, 1, 10,1,10.0);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(2);
     
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
