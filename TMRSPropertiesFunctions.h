@@ -19,20 +19,30 @@ class TMRSPropertiesFunctions
     
     
     TMRSPropertiesFunctions(){
-        m_function_type = EConstantFunction;
+        m_function_type_kappa = EConstantFunction;
+        m_function_type_phi = EConstantFunction;
+        m_function_type_s0 = EConstantFunction;
     }
     
     ~TMRSPropertiesFunctions(){
         
     }
     
-    void set_function_type(EFunctionType function_type){
-        m_function_type = function_type;
+    void set_function_type_kappa(EFunctionType function_type_kappa){
+        m_function_type_kappa   = function_type_kappa;
+    }
+    
+    void set_function_type_phi(EFunctionType function_type_phi){
+        m_function_type_phi     = function_type_phi;
+    }
+    
+    void set_function_type_s0(EFunctionType function_type_s0){
+        m_function_type_s0      = function_type_s0;
     }
 
     std::function<REAL(const TPZVec<REAL> & )> Create_Kx(){
         
-        switch (m_function_type) {
+        switch (m_function_type_kappa) {
             case EConstantFunction:
                 {
                     return [] (const TPZVec<REAL> & pt) -> REAL {
@@ -77,7 +87,7 @@ class TMRSPropertiesFunctions
 
     std::function<REAL(const TPZVec<REAL> & )> Create_Ky(){
         
-        switch (m_function_type) {
+        switch (m_function_type_kappa) {
             case EConstantFunction:
                 {
                     return [] (const TPZVec<REAL> & pt) -> REAL {
@@ -122,7 +132,7 @@ class TMRSPropertiesFunctions
     
     std::function<REAL(const TPZVec<REAL> & )> Create_Kz(){
         
-        switch (m_function_type) {
+        switch (m_function_type_kappa) {
             case EConstantFunction:
                 {
                     return [] (const TPZVec<REAL> & pt) -> REAL {
@@ -167,7 +177,7 @@ class TMRSPropertiesFunctions
     
     std::function<REAL(const TPZVec<REAL> & )> Create_phi(){
         
-        switch (m_function_type) {
+        switch (m_function_type_phi) {
             case EConstantFunction:
                 {
                     return [] (const TPZVec<REAL> & pt) -> REAL {
@@ -212,7 +222,7 @@ class TMRSPropertiesFunctions
     
     std::function<REAL(const TPZVec<REAL> & )> Create_s0(){
         
-        switch (m_function_type) {
+        switch (m_function_type_s0) {
             case EConstantFunction:
                 {
                     return [] (const TPZVec<REAL> & pt) -> REAL {
@@ -257,7 +267,9 @@ class TMRSPropertiesFunctions
     
     private:
     
-    EFunctionType m_function_type;
+    EFunctionType m_function_type_kappa;
+    EFunctionType m_function_type_phi;
+    EFunctionType m_function_type_s0;
   
 };
 

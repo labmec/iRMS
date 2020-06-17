@@ -103,7 +103,6 @@ void SimpleTest(){
 
 
     aspace.CreateUniformMesh(10, 10, 10, 10);
-
     aspace.GenerateMHMUniformMesh(0);
 
     aspace.PrintGeometry(name);
@@ -129,7 +128,10 @@ void SimpleTest(){
 //    
    
     TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+
     auto kx = reservoir_properties.Create_Kx();
     auto ky = reservoir_properties.Create_Ky();
     auto kz = reservoir_properties.Create_Kz();
@@ -397,7 +399,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 20;
     REAL day = 86400;
-    sim_data.mTNumerics.m_dt      = 5.0*day;
+    sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     

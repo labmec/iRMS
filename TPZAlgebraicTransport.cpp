@@ -10,7 +10,7 @@
 /// Default constructor
 TPZAlgebraicTransport::TPZAlgebraicTransport(){
     fgravity.resize(3,0.0);
-    fgravity[2] = -9.81;
+    fgravity[1] = -10.0;//-9.81;
     
 }
 
@@ -105,7 +105,14 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     ek(1,0) = -1.0*dfwSw_L*(1/phi_L) * fdt* beta * fluxint;
     ek(1,1) = -1.0*dfwSw_R*(1/phi_R)*fdt*(1-beta)*fluxint;
     
-    //gravitational flux
+    // Gravity fluxes contribution
+    ContributeInterfaceIHU(index, ek, ef);
+    
+}
+
+void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
+    
+    std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceid].fLeftRightVolIndex[index];
     std::tuple<REAL, REAL, REAL> normal = fInterfaceData[interfaceid].fNormalFaceDirection[index];
     REAL ndotg = (std::get<0>(normal))*fgravity[0]+(std::get<1>(normal))*fgravity[1]+(std::get<2>(normal))*fgravity[2];
     REAL rhowL = fCellsData.fDensityWater[lr_index.first];
@@ -114,16 +121,15 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     REAL rhooR = fCellsData.fDensityOil[lr_index.second];
     REAL lambdaL = fCellsData.flambda[lr_index.first];
     REAL lambdaR = fCellsData.flambda[lr_index.second];
-    
-//    beta = 0.0;
-//    REAL gravfluxL = fCellsData.fKz[lr_index.first]*lambdaL*(rhowL-rhooL);
-//    REAL gravfluxR = fCellsData.fKz[lr_index.second]*lambdaR*(rhowR-rhooR);
-//    if (ndotg>0.0) {
-//        beta = 1.0;
-//    }
-    
-    
+        
+    //    beta = 0.0;
+    //    REAL gravfluxL = fCellsData.fKz[lr_index.first]*lambdaL*(rhowL-rhooL);
+    //    REAL gravfluxR = fCellsData.fKz[lr_index.second]*lambdaR*(rhowR-rhooR);
+    //    if (ndotg>0.0) {
+    //        beta = 1.0;
+    //    }
 }
+
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef){
    
     int s_inlet =1.0;

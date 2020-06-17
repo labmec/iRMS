@@ -220,6 +220,7 @@ public:
     void BuildDataStructures(TPZMultiphysicsCompMesh &transportmesh);
     void Contribute(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     void ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
+    void ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef);
     void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef);
     static std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL sw, REAL muw,REAL muo, bool isLinearQ = false);
