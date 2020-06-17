@@ -226,6 +226,10 @@ public:
     static std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL sw, REAL muw,REAL muo, bool isLinearQ = false);
     static std::pair<std::vector<REAL>,std::vector<REAL>> LinearfwAndfoVal(REAL sw, REAL muw,REAL muo);
     
+    // IHU auxiliary functions
+    std::pair<REAL, REAL> f_star(REAL fL, REAL fR, REAL dfL, REAL dfR, REAL g_dot_n);
+    std::pair<REAL, REAL> lambda_star(REAL lambda_L, REAL lambda_R, REAL dlambda_L, REAL dlambda_R, REAL g_dot_n, REAL rho_ratio);
+    
     void UpdateIntegralFlux(int matid);
     
     void CalcLambdas();

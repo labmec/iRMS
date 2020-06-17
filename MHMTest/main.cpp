@@ -383,10 +383,10 @@ TMRSDataTransfer Setting2D(){
      sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(-4,bc_outlet,1.0);
     
     //Fluid Properties
-    sim_data.mTFluidProperties.mWaterViscosity = 1.0;
-    sim_data.mTFluidProperties.mOilViscosity = 1.0;
+    sim_data.mTFluidProperties.mWaterViscosity = 0.001;
+    sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 800.0;
+    sim_data.mTFluidProperties.mOilDensity = 500.0;
 
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;

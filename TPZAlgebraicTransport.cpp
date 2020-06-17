@@ -114,13 +114,17 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceid].fLeftRightVolIndex[index];
     std::tuple<REAL, REAL, REAL> normal = fInterfaceData[interfaceid].fNormalFaceDirection[index];
-    REAL gdotn = (std::get<0>(normal))*fgravity[0]+(std::get<1>(normal))*fgravity[1]+(std::get<2>(normal))*fgravity[2];
-
+    
+    std::vector<REAL> n(3,0.0);
+    n[0] = std::get<0>(normal);
+    n[1] = std::get<1>(normal);
+    n[2] = std::get<2>(normal);
+    
+    REAL g_dot_n = n[0]*fgravity[0]+n[1]*fgravity[1]+n[2]*fgravity[2];
 
     REAL lambdaL = fCellsData.flambda[lr_index.first];
     REAL lambdaR = fCellsData.flambda[lr_index.second];
     
-    //   1 -> L and 2 -> R
     REAL fwL = fCellsData.fWaterfractionalflow[lr_index.first];
     REAL fwR = fCellsData.fWaterfractionalflow[lr_index.second];
     REAL foL = fCellsData.fOilfractionalflow[lr_index.first];
@@ -131,52 +135,69 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     REAL lambda_oL = foL * lambdaL;
     REAL lambda_oR = foR * lambdaR;
     
-    REAL fstar;
-    
-    // The upwinding logic is the same for each function
-    if( gdotn < 0.0){
-        fstar = foR * fwL;
-    }else{
-        fstar = foL * fwR;
-    }
-    
-    REAL lambda_o_star;
-    REAL lambda_w_star;
-    REAL lambda_star;
+    // The upwinding logic should be the same for each function
+    std::pair<REAL, REAL> fstarL = f_star(foL, fwR, g_dot_n);
+    std::pair<REAL, REAL> fstarR = f_star(fwR, foL, g_dot_n);
     
     REAL rho_wL = fCellsData.fDensityWater[lr_index.first];
     REAL rho_wR = fCellsData.fDensityWater[lr_index.second];
     REAL rho_oL = fCellsData.fDensityOil[lr_index.first];
     REAL rho_oR = fCellsData.fDensityOil[lr_index.second];
+    REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
+    REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
+    REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
+    REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
     
-    REAL rho_ratio_w = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
-    REAL rho_ratio_o = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
-    if( gdotn < 0.0){
-        // fstar = foR * fwL;
-//        lambda_wL
-        lambda_o_star = rho_ratio_o * lambda_oR  + (1-rho_ratio_o) * lambda_oL;
+    std::pair<REAL, REAL> lamba_w_starL = lambda_star(lambda_wL, lambda_wR, g_dot_n, rho_ratio_wL);
+    std::pair<REAL, REAL> lamba_w_starR = lambda_star(lambda_wR, lambda_wL, g_dot_n, rho_ratio_wR);
+    std::pair<REAL, REAL> lamba_o_starL = lambda_star(lambda_oL, lambda_oR, g_dot_n, rho_ratio_oL);
+    std::pair<REAL, REAL> lamba_o_starR = lambda_star(lambda_oR, lambda_oL, g_dot_n, rho_ratio_oR);
+    
+    // Harmonic permeability mean
+    REAL Kx_L =  fCellsData.fKx[lr_index.first];
+    REAL Ky_L =  fCellsData.fKy[lr_index.first];
+    REAL Kz_L =  fCellsData.fKz[lr_index.first];
+    
+    REAL Kx_R =  fCellsData.fKx[lr_index.first];
+    REAL Ky_R =  fCellsData.fKy[lr_index.first];
+    REAL Kz_R =  fCellsData.fKz[lr_index.first];
+    
+    
+    REAL K_x = 2.0*(Kx_L * Kx_R)/(Kx_L + Kx_R);
+    REAL K_y = 2.0*(Ky_L * Ky_R)/(Ky_L + Ky_R);
+    REAL K_z = 2.0*(Kz_L * Kz_R)/(Kz_L + Kz_R);
+    
+    
+    // Beacuse we assume diagonal abs. perm tensor
+    REAL K_times_g_dot_n = K_x*n[0]*fgravity[0]+K_y*n[1]*fgravity[1]+K_z*n[2]*fgravity[2];
+    
+    ef(0) += fstarL.first * (lamba_w_starL.first + lamba_o_starL.first) * K_times_g_dot_n*(rho_wL - rho_oL);
+    ef(1) += fstarR.first * (lamba_w_starR.first + lamba_o_starR.first) * K_times_g_dot_n*(rho_wR - rho_oR);
+
+}
+
+std::pair<REAL, REAL> TPZAlgebraicTransport::f_star(REAL fL, REAL fR, REAL dfL, REAL dfR, REAL g_dot_n){
+    REAL fstar, dfstar;
+    if( g_dot_n < 0.0){
+        fstar = fR * fL;
+        dfstar = dfR * fL + fR * dfL;
     }else{
-        // fstar = foL * fwR;
-        lambda_o_star = rho_ratio_o * lambda_oL  + (1-rho_ratio_o) * lambda_oR;
+        fstar = fL * fR;
+        dfstar = dfL * fR + fL * dfR;
     }
-    
-        if( gdotn < 0.0){
-            // fstar = foR * fwL;
-    //        lambda_wL
-            lambda_w_star = rho_ratio_w * lambda_wR  + (1-rho_ratio_w) * lambda_wL;
-        }else{
-            // fstar = foL * fwR;
-            lambda_w_star = rho_ratio_w * lambda_wL  + (1-rho_ratio_w) * lambda_wR;
-        }
-    
-    lambda_star = lambda_o_star + lambda_w_star;
-    
-    //    beta = 0.0;
-    //    REAL gravfluxL = fCellsData.fKz[lr_index.first]*lambdaL*(rhowL-rhooL);
-    //    REAL gravfluxR = fCellsData.fKz[lr_index.second]*lambdaR*(rhowR-rhooR);
-    //    if (ndotg>0.0) {
-    //        beta = 1.0;
-    //    }
+    return std::make_pair(fstar, dfstar);
+}
+
+std::pair<REAL, REAL> TPZAlgebraicTransport::lambda_star(REAL lambda_L, REAL lambda_R, REAL dlambda_L, REAL dlambda_R, REAL g_dot_n, REAL rho_ratio){
+    REAL lambda_star, dlambda_star;
+    if( g_dot_n < 0.0){
+        lambda_star = rho_ratio * lambda_R  + (1-rho_ratio) * lambda_L;
+        dlambda_star = rho_ratio * dlambda_R  + (1-rho_ratio) * dlambda_L;
+    }else{
+        lambda_star = rho_ratio * lambda_L  + (1-rho_ratio) * lambda_R;
+        dlambda_star = rho_ratio * dlambda_L  + (1-rho_ratio) * dlambda_R;
+    }
+    return std::make_pair(lambda_star, dlambda_star);
 }
 
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef){
