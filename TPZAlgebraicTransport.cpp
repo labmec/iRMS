@@ -139,10 +139,10 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     REAL lambda_oL = foL * lambdaL;
     REAL lambda_oR = foR * lambdaR;
     
-    REAL dlambda_wL = fCellsData.fdlambdadsw[lr_index.first];
-    REAL dlambda_wR = fCellsData.fdlambdadsw[lr_index.second];
-    REAL dlambda_oL = fCellsData.fdlambdadsw[lr_index.first];
-    REAL dlambda_oR = fCellsData.fdlambdadsw[lr_index.second];
+    REAL dlambda_wL = fCellsData.fdlambdawdsw[lr_index.first];
+    REAL dlambda_wR = fCellsData.fdlambdawdsw[lr_index.second];
+    REAL dlambda_oL = fCellsData.fdlambdaodsw[lr_index.first];
+    REAL dlambda_oR = fCellsData.fdlambdaodsw[lr_index.second];
     
     // The upwinding logic should be the same for each function
     std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, fwR, dfoL, dfwR, g_dot_n);
@@ -159,8 +159,8 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_star(lambda_wL, lambda_wR, dlambda_wL, dlambda_wR, g_dot_n, rho_ratio_wL);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_star(lambda_wR, lambda_wL, dlambda_wR, dlambda_wL, g_dot_n, rho_ratio_wR);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_star(lambda_oL, lambda_oR, dlambda_wL, dlambda_wR, g_dot_n, rho_ratio_oL);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starR = lambda_star(lambda_oR, lambda_oL, dlambda_wR, dlambda_wL, g_dot_n, rho_ratio_oR);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_star(lambda_oL, lambda_oR, dlambda_oL, dlambda_oR, g_dot_n, rho_ratio_oL);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starR = lambda_star(lambda_oR, lambda_oL, dlambda_oR, dlambda_oL, g_dot_n, rho_ratio_oR);
     
     // Harmonic permeability mean
     REAL Kx_L =  fCellsData.fKx[lr_index.first];
@@ -363,7 +363,7 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
             dfodsw = -1.0*dfwdsw;
             dlwdsw = (1.0/muw) ;
             dlodsw = -1.0*(1.0/muo);
-           
+
         }
         else{
             Krw = sw*sw;
@@ -409,7 +409,9 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton
         this->fOilfractionalflow[ivol] =fo;
         this->fDerivativeOfractionalflow[ivol] = -1.0*dfwdsw;
         this->flambda[ivol] = (krw/(fViscosity[0]))+(kro/(fViscosity[1]));
+
         this->fdlambdawdsw[ivol] = dlambdadsw;
+
     }
 }
 
