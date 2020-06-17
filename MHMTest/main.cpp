@@ -133,10 +133,10 @@ void SimpleTest(){
     auto kx = reservoir_properties.Create_Kx();
     auto ky = reservoir_properties.Create_Ky();
     auto kz = reservoir_properties.Create_Kz();
-//    reservoir_properties.set_function_type(TMRSPropertiesFunctions::EPiecewiseFunction);
     auto phi = reservoir_properties.Create_phi();
+    auto s0 = reservoir_properties.Create_s0();
     
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi);
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
   
@@ -157,12 +157,10 @@ void SimpleTest(){
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
-    TPZFMatrix<REAL> solution_n;
-    solution_n = sfi_analysis->m_transport_module->Solution();
-    solution_n.Zero();
-    sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturationsLastState(solution_n);
-    //
     
+    // Print initial condition
+    sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
+    sfi_analysis->PostProcessTimeStep();
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
@@ -178,7 +176,7 @@ void SimpleTest(){
         sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
     }
     
-    std::cout  << "Number of transportr equations = " << solution_n.Rows() << std::endl;
+    std::cout  << "Number of transportr equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
 }
 void SimpleTest3D(){
     

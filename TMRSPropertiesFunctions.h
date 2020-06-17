@@ -54,7 +54,7 @@ class TMRSPropertiesFunctions
                             y = pt[1];
                             f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
                             if(f<0){
-                                kx = 1.0e-9;
+                                kx = 1.0e-10;
                             }else{
                                 kx = 1.0e-7;
                             }
@@ -99,7 +99,7 @@ class TMRSPropertiesFunctions
                             y = pt[1];
                             f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
                             if(f<0){
-                                 ky = 1.0e-9;
+                                 ky = 1.0e-10;
                              }else{
                                  ky = 1.0e-7;
                              }
@@ -144,7 +144,7 @@ class TMRSPropertiesFunctions
                             y = pt[1];
                             f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
                             if(f<0){
-                                 kz = 1.0e-9;
+                                 kz = 1.0e-10;
                              }else{
                                  kz = 1.0e-7;
                              }
@@ -189,11 +189,56 @@ class TMRSPropertiesFunctions
                             y = pt[1];
                             f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
                             if(f<0){
-                                phi = 0.01;
+                                phi = 0.001;
                             }else{
                                 phi = 0.1;
                             }
                             return phi;
+                        };
+                }
+                break;
+            default:
+            {
+                std::cout << " Function not implemented " << std::endl;
+                DebugStop();
+                return [] (const TPZVec<REAL> & pt) -> REAL {
+                         return 0;
+                     };
+            }
+                break;
+        }
+        
+    }
+    
+    std::function<REAL(const TPZVec<REAL> & )> Create_s0(){
+        
+        switch (m_function_type) {
+            case EConstantFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL x,y,s;
+                            x = pt[0];
+                            y = pt[1];
+                            s = 0.25;
+                            return s;
+                        };
+                }
+                break;
+            case ECircleLevelSetFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL x,y,s,r,c,f;
+                            r = 0.25;
+                            c = 10;
+                            x = pt[0];
+                            y = pt[1];
+                            f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
+                            if(f>0){
+                                s = 0.0;
+                            }else{
+                                s = 1.0;
+                            }
+                            return s;
                         };
                 }
                 break;

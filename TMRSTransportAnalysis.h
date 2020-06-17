@@ -82,6 +82,7 @@ public:
     
     void QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n);
     
+    void UpdateInitialSolutionFromCellsData();
    
 };
 

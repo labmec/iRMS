@@ -809,9 +809,6 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fEqNumber[celindex]=eq_number;
         transport.fCellsData.fDensityOil[celindex]=800.00;
         transport.fCellsData.fDensityWater[celindex]=1000.00;
-        transport.fCellsData.fSaturation[celindex]=0.0;
-
-        transport.fCellsData.fSaturationLastState[celindex]=0.0;
 
 
         int dim= gel->Dimension();
@@ -826,10 +823,13 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         REAL ky_v   = fky(result);
         REAL kz_v   = fkz(result);
         REAL phi_v  = fphi(result);
+        REAL s0_v   = fs0(result);
         transport.fCellsData.fKx[celindex]=kx_v;
         transport.fCellsData.fKy[celindex]=ky_v;
         transport.fCellsData.fKz[celindex]=kz_v;
         transport.fCellsData.fporosity[celindex] = phi_v;
+        transport.fCellsData.fSaturation[celindex]=s0_v;
+        transport.fCellsData.fSaturationLastState[celindex]=s0_v;
         
         for (int ic =0; ic<dim; ic++) {center[ic]=result[ic];};
         transport.fCellsData.fCenterCordinate[celindex] =center;

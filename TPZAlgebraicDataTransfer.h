@@ -21,11 +21,12 @@ class TPZAlgebraicDataTransfer {
     
 public:
     
-    // Spatial reservoir properties
+    // Spatial reservoir properties and initial saturation
     std::function<REAL(const TPZVec<REAL> & )> fkx;
     std::function<REAL(const TPZVec<REAL> & )> fky;
     std::function<REAL(const TPZVec<REAL> & )> fkz;
     std::function<REAL(const TPZVec<REAL> & )> fphi;
+    std::function<REAL(const TPZVec<REAL> & )> fs0;
     
     TPZMultiphysicsCompMesh *fFluxMesh;
     

@@ -253,16 +253,13 @@ void TMRSTransportAnalysis::RunTimeStep(){
         corr_norm = Norm(dx);
 
         cmesh->LoadSolutionFromMultiPhysics();
-//        PostProcessTimeStep();
         
         AssembleResidual();
         res_norm = Norm(Rhs());
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
         if (stop_criterion_corr_Q) {
-//        if (stop_criterion_Q ) {
             std::cout << "Transport operator: Converged" << std::endl;
-//            std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;
             break;
@@ -342,4 +339,12 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     PostProcess(div,dim);
 }
 
-
+void TMRSTransportAnalysis::UpdateInitialSolutionFromCellsData(){
+    TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
+    if (!cmesh) {
+        DebugStop();
+    }
+    fAlgebraicTransport.fCellsData.UpdateSaturationsTo(Solution());
+    LoadSolution();
+    cmesh->LoadSolutionFromMultiPhysics();
+}

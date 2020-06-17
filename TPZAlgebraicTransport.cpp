@@ -314,6 +314,16 @@ void TPZAlgebraicTransport::TCellData::UpdateSaturations(TPZFMatrix<STATE> &sw){
        
     }
 }
+
+void TPZAlgebraicTransport::TCellData::UpdateSaturationsTo(TPZFMatrix<STATE> &sw){
+    int ncells = fVolume.size();
+    for (int icell = 0; icell<ncells; icell++) {
+        int eq_number = fEqNumber[icell];
+        sw(eq_number) = fSaturation[icell];
+       
+    }
+}
+
 void TPZAlgebraicTransport::TCellData::UpdateSaturationsLastState(TPZFMatrix<STATE> &sw){
     int ncells = fVolume.size();
     for (int icell = 0; icell<ncells; icell++) {

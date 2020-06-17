@@ -178,6 +178,7 @@ public:
         }
         void UpdateSaturations(TPZFMatrix<STATE> &dsx);
         void UpdateSaturationsLastState(TPZFMatrix<STATE> &sw);
+        void UpdateSaturationsTo(TPZFMatrix<STATE> &sw);
         void UpdateFractionalFlowsAndLambda(bool isLinearQ=false);
         void UpdateFractionalFlowsAndLambdaQuasiNewton();
         void UpdateMixedDensity();
