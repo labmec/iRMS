@@ -20,6 +20,7 @@ TMRSMixedAnalysis::TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool 
 
 void TMRSMixedAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
+    
 }
 
 TMRSDataTransfer * TMRSMixedAnalysis::GetDataTransfer(){

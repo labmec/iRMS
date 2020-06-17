@@ -52,8 +52,9 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fphi = phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-    
+    m_transport_module->fAlgebraicTransport.fgravity = m_sim_data.mTNumerics.m_gravity;
      fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+    
     
 //    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
    

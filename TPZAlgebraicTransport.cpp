@@ -9,8 +9,7 @@
 #include "pzelmat.h"
 /// Default constructor
 TPZAlgebraicTransport::TPZAlgebraicTransport(){
-    fgravity.resize(3,0.0);
-    fgravity[1] = -10.0;//-9.81;
+    
     
 }
 
@@ -328,7 +327,7 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
     for (int ivol =0 ; ivol< nvols; ivol++) {
         std::pair<std::vector<REAL>,std::vector<REAL>> fWandFo;
         REAL sw = this->fSaturation[ivol];
-        REAL Krw, Kro, fw, dfwdsw, fo, dfodsw, dlwdsw;
+        REAL Krw, Kro, fw, dfwdsw, fo, dfodsw, dlwdsw,dlodsw;
         REAL muw = fViscosity[0];
         REAL muo = fViscosity[1];
         if (isLinearQ) {
@@ -338,8 +337,8 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
             fo = (Kro/muo)/((Krw/muw)+(Kro/muo));
             dfwdsw = (muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
             dfodsw = -1.0*dfwdsw;
-            dlwdsw = (1/muw) - (1/muo);
-    
+            dlwdsw = (1.0/muw) ;
+            dlodsw = -1.0*(1.0/muo)
            
         }
         else{
@@ -352,14 +351,16 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
             dfwdsw = num/dem;
             dfodsw = -1.0*dfwdsw;
             
-            dlwdsw = (2.0*sw/muw) + (-2*(1.0-sw)/muo);
+            dlwdsw = (2.0*sw/muw) ;
+            dlodsw =(-2*(1.0-sw)/muo);
         }
         this->fWaterfractionalflow[ivol] = fw;
         this->fDerivativeWfractionalflow[ivol] =dfwdsw;
         this->fOilfractionalflow[ivol] = fo;
         this->fDerivativeOfractionalflow[ivol] = dfodsw;
         this->flambda[ivol] = (Krw/muw)+(Kro/muo);
-        this->fdlambdadsw[ivol] = dlwdsw;
+        this->fdlambdawdsw[ivol] = dlwdsw;
+        this->fdlambdaodsw[ivol] = dlodsw;
      
 
     }

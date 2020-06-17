@@ -77,7 +77,8 @@ public:
         std::vector<REAL> fDensityWater;
         std::vector<REAL> fMixedDensity;
         std::vector<REAL> flambda;
-        std::vector<REAL> fdlambdadsw;
+        std::vector<REAL> fdlambdawdsw;
+        std::vector<REAL> fdlambdaodsw;
         std::vector<REAL> fporosity;
         std::vector<REAL> fKx;
         std::vector<REAL> fKy;
@@ -100,7 +101,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0),fSaturationLastState(0), fPressure(0), fDensityOil(0),fDensityWater(0),fMixedDensity(0), flambda(0), fdlambdadsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCordinate(0),
+        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0),fSaturationLastState(0), fPressure(0), fDensityOil(0),fDensityWater(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -117,7 +118,8 @@ public:
             fDensityWater = copy.fDensityWater;
             fMixedDensity = copy.fMixedDensity;
             flambda = copy.flambda;
-            fdlambdadsw = copy.fdlambdadsw;
+            fdlambdawdsw = copy.fdlambdawdsw;
+            fdlambdaodsw = copy.fdlambdaodsw;
             fWaterfractionalflow = copy.fWaterfractionalflow;
             fDerivativeWfractionalflow = copy.fDerivativeWfractionalflow;
             fOilfractionalflow = copy.fOilfractionalflow;
@@ -143,7 +145,8 @@ public:
             fDensityWater = copy.fDensityWater;
             fMixedDensity = copy.fMixedDensity;
             flambda = copy.flambda;
-            fdlambdadsw = copy.fdlambdadsw;
+            fdlambdawdsw = copy.fdlambdawdsw;
+            fdlambdaodsw = copy.fdlambdaodsw;
             fWaterfractionalflow = copy.fWaterfractionalflow;
             fDerivativeWfractionalflow=copy.fDerivativeWfractionalflow;
             fOilfractionalflow = copy.fOilfractionalflow;
@@ -174,7 +177,8 @@ public:
             fDensityWater.resize(ncells);
             fMixedDensity.resize(ncells);
             flambda.resize(ncells);
-            fdlambdadsw.resize(ncells);
+            fdlambdawdsw.resize(ncells);
+            fdlambdaodsw.resize(ncells);
             fWaterfractionalflow.resize(ncells);
             fDerivativeWfractionalflow.resize(ncells);
             fOilfractionalflow.resize(ncells);
