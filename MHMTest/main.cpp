@@ -101,7 +101,7 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-    aspace.CreateUniformMesh(20, 10, 20, 10);
+    aspace.CreateUniformMesh(1, 1, 2, 10);
     aspace.GenerateMHMUniformMesh(0);
 
     aspace.PrintGeometry(name);
@@ -129,7 +129,7 @@ void SimpleTest(){
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
     reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
-    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EPiecewiseFunction);
 
     auto kx = reservoir_properties.Create_Kx();
     auto ky = reservoir_properties.Create_Ky();
@@ -387,24 +387,24 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 1.0;
+    sim_data.mTFluidProperties.mOilDensity = 100.0;
 
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
-    sim_data.mTNumerics.m_sfi_tol = 0.001;
+    sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_mixed = 0.000001;
     sim_data.mTNumerics.m_corr_tol_mixed = 0.000001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_n_steps = 500;
     REAL day = 86400;
-    sim_data.mTNumerics.m_dt      = 50.0*day;
+    sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[2] = -9.8*(1.0e-6);
+    grav[1] = -10.0*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
     
     

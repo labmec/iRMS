@@ -252,6 +252,19 @@ class TMRSPropertiesFunctions
                         };
                 }
                 break;
+                case EPiecewiseFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL x,y,s;
+                            if(y<5){
+                                 s = 0.0;
+                             }else{
+                                 s = 1.0;
+                             }
+                             return s;
+                        };
+                }
+                break;
             default:
             {
                 std::cout << " Function not implemented " << std::endl;

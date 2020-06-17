@@ -120,47 +120,45 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     n[2] = std::get<2>(normal);
     
     REAL g_dot_n = n[0]*fgravity[0]+n[1]*fgravity[1]+n[2]*fgravity[2];
+//    g_dot_n *= -1.0;
 
     REAL lambdaL = fCellsData.flambda[lr_index.first];
     REAL lambdaR = fCellsData.flambda[lr_index.second];
     
-    REAL fwL = fCellsData.fWaterfractionalflow[lr_index.first];
-    REAL fwR = fCellsData.fWaterfractionalflow[lr_index.second];
-    REAL foL = fCellsData.fOilfractionalflow[lr_index.first];
-    REAL foR = fCellsData.fOilfractionalflow[lr_index.second];
+    std::pair<REAL, REAL> fwL = {fCellsData.fWaterfractionalflow[lr_index.first], fCellsData.fDerivativeWfractionalflow[lr_index.first]};
+    std::pair<REAL, REAL> fwR = {fCellsData.fWaterfractionalflow[lr_index.second],
+        fCellsData.fDerivativeWfractionalflow[lr_index.second]};
+    std::pair<REAL, REAL> foL = {fCellsData.fOilfractionalflow[lr_index.first],
+            fCellsData.fDerivativeOfractionalflow[lr_index.first]};
+    std::pair<REAL, REAL> foR = {fCellsData.fOilfractionalflow[lr_index.second],
+                fCellsData.fDerivativeOfractionalflow[lr_index.second]};
     
-    REAL dfwL = fCellsData.fDerivativeWfractionalflow[lr_index.first];
-    REAL dfwR = fCellsData.fDerivativeWfractionalflow[lr_index.second];
-    REAL dfoL = fCellsData.fDerivativeOfractionalflow[lr_index.first];
-    REAL dfoR = fCellsData.fDerivativeOfractionalflow[lr_index.second];
-    
-    REAL lambda_wL = fwL * lambdaL;
-    REAL lambda_wR = fwR * lambdaR;
-    REAL lambda_oL = foL * lambdaL;
-    REAL lambda_oR = foR * lambdaR;
-    
-    REAL dlambda_wL = fCellsData.fdlambdawdsw[lr_index.first];
-    REAL dlambda_wR = fCellsData.fdlambdawdsw[lr_index.second];
-    REAL dlambda_oL = fCellsData.fdlambdaodsw[lr_index.first];
-    REAL dlambda_oR = fCellsData.fdlambdaodsw[lr_index.second];
+    std::pair<REAL, REAL> lambda_wL = {fwL.first * lambdaL, fCellsData.fdlambdawdsw[lr_index.first]};
+    std::pair<REAL, REAL> lambda_wR = {fwR.first * lambdaR,
+        fCellsData.fdlambdawdsw[lr_index.second]};
+    std::pair<REAL, REAL> lambda_oL = {foL.first * lambdaL,
+            fCellsData.fdlambdaodsw[lr_index.first]};
+    std::pair<REAL, REAL> lambda_oR = {foR.first * lambdaR,
+                fCellsData.fdlambdaodsw[lr_index.second]};
     
     // The upwinding logic should be the same for each function
-    std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, fwR, dfoL, dfwR, g_dot_n);
-    std::pair<REAL, std::pair<REAL, REAL>> fstarR = f_star(fwR, foL, dfoR, dfwL, g_dot_n);
+    std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, foR, fwL, fwR, g_dot_n);
+    std::pair<REAL, std::pair<REAL, REAL>> fstarR = f_star(foR, foL, fwR, fwL, g_dot_n);
     
     REAL rho_wL = fCellsData.fDensityWater[lr_index.first];
     REAL rho_wR = fCellsData.fDensityWater[lr_index.second];
     REAL rho_oL = fCellsData.fDensityOil[lr_index.first];
     REAL rho_oR = fCellsData.fDensityOil[lr_index.second];
+    
     REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
     REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
     REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
     REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
     
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_star(lambda_wL, lambda_wR, dlambda_wL, dlambda_wR, g_dot_n, rho_ratio_wL);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_star(lambda_wR, lambda_wL, dlambda_wR, dlambda_wL, g_dot_n, rho_ratio_wR);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_star(lambda_oL, lambda_oR, dlambda_oL, dlambda_oR, g_dot_n, rho_ratio_oL);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starR = lambda_star(lambda_oR, lambda_oL, dlambda_oR, dlambda_oL, g_dot_n, rho_ratio_oR);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_star(lambda_wL, lambda_wR, g_dot_n, rho_ratio_wL);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_star(lambda_wR, lambda_wL, g_dot_n, rho_ratio_wR);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_star(lambda_oL, lambda_oR, g_dot_n, rho_ratio_oL);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starR = lambda_star(lambda_oR, lambda_oL, g_dot_n, rho_ratio_oR);
     
     // Harmonic permeability mean
     REAL Kx_L =  fCellsData.fKx[lr_index.first];
@@ -195,30 +193,30 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     
 }
 
-std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::f_star(REAL fL, REAL fR, REAL dfL, REAL dfR, REAL g_dot_n){
+std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::f_star(std::pair<REAL, REAL> foL, std::pair<REAL, REAL> foR, std::pair<REAL, REAL> fwL, std::pair<REAL, REAL> fwR, REAL g_dot_n){
     REAL fstar, dfstardsL, dfstardsR;
     if( g_dot_n < 0.0){
-        fstar = fR * fL;
-        dfstardsL = fR * dfL;
-        dfstardsR = dfR * fL;
+        fstar = foL.first * fwR.first;
+        dfstardsL = foL.second * fwR.first;
+        dfstardsR = foL.first * fwR.second;
     }else{
-        fstar = fL * fR;
-        dfstardsL = dfL * fR;
-        dfstardsR = fL * dfR;
+        fstar = foR.first * fwL.first;
+        dfstardsL = foR.first * fwL.second;
+        dfstardsR = foR.second * fwL.first;
     }
     return std::make_pair(fstar, std::make_pair(dfstardsL, dfstardsR));
 }
 
-std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_star(REAL lambda_L, REAL lambda_R, REAL dlambda_L, REAL dlambda_R, REAL g_dot_n, REAL rho_ratio){
+std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_star(std::pair<REAL, REAL> lambda_L, std::pair<REAL, REAL> lambda_R, REAL g_dot_n, REAL rho_ratio){
     REAL lambda_star, dlambda_starL, dlambda_starR;
     if( g_dot_n < 0.0){
-        lambda_star = rho_ratio * lambda_R  + (1-rho_ratio) * lambda_L;
-        dlambda_starL = (1-rho_ratio) * dlambda_L;
-        dlambda_starR = rho_ratio * dlambda_R;
+        lambda_star = rho_ratio * lambda_L.first  + (1-rho_ratio) * lambda_R.first;
+        dlambda_starL = rho_ratio * lambda_L.second;
+        dlambda_starR = (1-rho_ratio) * lambda_R.second;
     }else{
-        lambda_star = rho_ratio * lambda_L  + (1-rho_ratio) * lambda_R;
-        dlambda_starL = rho_ratio * dlambda_L;
-        dlambda_starR = (1-rho_ratio) * dlambda_R;
+        lambda_star = rho_ratio * lambda_R.first  + (1-rho_ratio) * lambda_L.first;
+        dlambda_starL = (1-rho_ratio) * lambda_L.second;
+        dlambda_starR = rho_ratio * lambda_R.second;
     }
     return std::make_pair(lambda_star, std::make_pair(dlambda_starL, dlambda_starR));
 }
