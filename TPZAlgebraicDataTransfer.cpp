@@ -760,6 +760,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
             std::tuple<REAL, REAL, REAL> norm= std::make_tuple(normal[0],normal[1],normal[2]);
             InterfaceVec.fNormalFaceDirection.push_back(norm);
             int ncorner = gel->NCornerNodes();
+
 //            InterfaceVec.fLeftRightVolIndex.push_back(face_it.fLeftRightVolIndex);
             std::pair<TPZGeoElSideIndex, TPZGeoElSideIndex> lr = face_it.fLeftRightGelSideIndex;
             int lindex = lr.first.ElementIndex();
@@ -809,7 +810,9 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fDensityOil[celindex]=800.00;
         transport.fCellsData.fDensityWater[celindex]=1000.00;
         transport.fCellsData.fSaturation[celindex]=0.0;
+
         transport.fCellsData.fSaturationLastState[celindex]=0.0;
+
 
         int dim= gel->Dimension();
         transport.fCellsData.fCenterCordinate[celindex].resize(dim);
