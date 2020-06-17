@@ -15,7 +15,7 @@ class TMRSPropertiesFunctions
     public:
     
     /// Enumerate defining the function type
-    enum EFunctionType { EConstantFunction = 0, EPiecewiseFunction = 1, EUNISIMFunction = 2, ESPECase10Function = 3};
+    enum EFunctionType { EConstantFunction = 0, EPiecewiseFunction = 1, ECircleLevelSetFunction = 2, EUNISIMFunction = 3, ESPECase10Function = 4};
     
     
     TMRSPropertiesFunctions(){
@@ -40,6 +40,24 @@ class TMRSPropertiesFunctions
                             x = pt[0];
                             y = pt[1];
                             kx = 1.0e-7;
+                            return kx;
+                        };
+                }
+                break;
+            case ECircleLevelSetFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL x,y,kx,r,c,f;
+                            r = 0.25;
+                            c = 10;
+                            x = pt[0];
+                            y = pt[1];
+                            f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
+                            if(f<0){
+                                kx = 1.0e-9;
+                            }else{
+                                kx = 1.0e-7;
+                            }
                             return kx;
                         };
                 }
@@ -71,6 +89,24 @@ class TMRSPropertiesFunctions
                         };
                 }
                 break;
+            case ECircleLevelSetFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL x,y,ky,r,c,f;
+                            r = 0.25;
+                            c = 10;
+                            x = pt[0];
+                            y = pt[1];
+                            f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
+                            if(f<0){
+                                 ky = 1.0e-9;
+                             }else{
+                                 ky = 1.0e-7;
+                             }
+                             return ky;
+                        };
+                }
+                break;
             default:
             {
                 std::cout << " Function not implemented " << std::endl;
@@ -95,6 +131,24 @@ class TMRSPropertiesFunctions
                             y = pt[1];
                             kz = 1.0e-7;
                             return kz;
+                        };
+                }
+                break;
+            case ECircleLevelSetFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL x,y,kz,r,c,f;
+                            r = 0.25;
+                            c = 10;
+                            x = pt[0];
+                            y = pt[1];
+                            f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
+                            if(f<0){
+                                 kz = 1.0e-9;
+                             }else{
+                                 kz = 1.0e-7;
+                             }
+                             return kz;
                         };
                 }
                 break;
@@ -125,7 +179,7 @@ class TMRSPropertiesFunctions
                         };
                 }
                 break;
-            case EPiecewiseFunction:
+            case ECircleLevelSetFunction:
                 {
                     return [] (const TPZVec<REAL> & pt) -> REAL {
                             REAL x,y,phi,r,c,f;
@@ -135,7 +189,7 @@ class TMRSPropertiesFunctions
                             y = pt[1];
                             f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
                             if(f<0){
-                                phi = 0.001;
+                                phi = 0.01;
                             }else{
                                 phi = 0.1;
                             }
