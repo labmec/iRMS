@@ -397,21 +397,21 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton
     for (int ivol =0 ; ivol< nvols; ivol++) {
         std::pair<std::vector<REAL>,std::vector<REAL>> fWandFo;
         REAL sw =this->fSaturation[ivol];
-        REAL krw, kro, fw, fo,dfwdsw, dlambdadsw;
+        REAL krw, kro, fw, fo,dfwdsw, dlambdadsw, dlambdaodsw;
         krw = sw*sw;
         kro = (1-sw)*(1-sw);
         fw = (muw*krw)/((muw*kro) + (muo*krw));
         fo = (muo*kro)/((muw*kro) + (muo*krw));
         dfwdsw =(muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
-        dlambdadsw = (2.0*sw/muw) + (-2.0*(1.0-sw)/muo);
+        dlambdadsw = (2.0*sw/muw) ;
+        dlambdaodsw =  (-2.0*(1.0-sw)/muo);
         this->fWaterfractionalflow[ivol] = fw;
         this->fDerivativeWfractionalflow[ivol] =dfwdsw;
         this->fOilfractionalflow[ivol] =fo;
         this->fDerivativeOfractionalflow[ivol] = -1.0*dfwdsw;
         this->flambda[ivol] = (krw/(fViscosity[0]))+(kro/(fViscosity[1]));
-
         this->fdlambdawdsw[ivol] = dlambdadsw;
-
+        this->fdlambdaodsw[ivol] = dlambdaodsw;
     }
 }
 
