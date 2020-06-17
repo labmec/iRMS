@@ -52,8 +52,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fphi = phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-    m_transport_module->fAlgebraicTransport.fgravity = m_sim_data->mTNumerics.m_gravity;
-     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     
     
 //    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
@@ -80,6 +79,8 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_transport_module->fAlgebraicTransport.inletmatid = -2;
     m_transport_module->fAlgebraicTransport.outletmatid = -4;
    
+    m_transport_module->fAlgebraicTransport.fgravity = m_sim_data->mTNumerics.m_gravity;
+    
     //Set initial properties
     std::cout<<m_sim_data->mTGeometry.Interface_material_id;
     std::cout<<m_sim_data->mTFluidProperties.mWaterViscosity;
@@ -111,7 +112,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
     bool stop_criterion_Q = false;
     REAL error_rel_mixed = 1.0;
     REAL error_rel_transport = 1.0;
-    REAL eps_tol = 0.001; // define tolerancia para parar SFI
+    REAL eps_tol = 0.01; // define tolerancia para parar SFI
     
     for (int i = 1; i <= n_iterations; i++) {
         

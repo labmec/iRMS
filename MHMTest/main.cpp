@@ -358,7 +358,7 @@ TMRSDataTransfer Setting2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 20.0;
+    REAL pressure_in = 10.0;
     REAL pressure_out = 10.0;
     
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -386,7 +386,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 500.0;
+    sim_data.mTFluidProperties.mOilDensity = 1.0;
 
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
@@ -396,13 +396,13 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_corr_tol_mixed = 0.000001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 20;
+    sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 50.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[2] = -9.8;
+    grav[2] = -9.8*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
     
     
