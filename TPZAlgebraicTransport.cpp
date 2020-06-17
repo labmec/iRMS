@@ -409,7 +409,6 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton
         this->fOilfractionalflow[ivol] =fo;
         this->fDerivativeOfractionalflow[ivol] = -1.0*dfwdsw;
         this->flambda[ivol] = (krw/(fViscosity[0]))+(kro/(fViscosity[1]));
-
         this->fdlambdawdsw[ivol] = dlambdadsw;
 
     }
