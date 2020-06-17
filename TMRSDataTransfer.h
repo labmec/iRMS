@@ -398,6 +398,7 @@ public:
          */
         bool m_mhm_mixed_Q;
         
+        std::vector<REAL> m_gravity;
         /** @brief Default constructor */
         TNumerics(){
             
@@ -412,6 +413,8 @@ public:
             m_n_steps               = 0;
             m_four_approx_spaces_Q  = false;
             m_mhm_mixed_Q           = false;
+            m_gravity.resize(3,0.0);
+            m_gravity[2] = -10.0;
             
         }
          /** @brief Destructor */
@@ -433,7 +436,7 @@ public:
             m_n_steps               = other.m_n_steps;
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
-            
+            m_gravity               = other.m_gravity;
             
         }
         
@@ -456,6 +459,7 @@ public:
             m_n_steps               = other.m_n_steps;
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
+            m_gravity               = other.m_gravity;
             return *this;
         }
         
@@ -478,6 +482,7 @@ public:
             m_n_steps               == other.m_n_steps &&
             m_four_approx_spaces_Q  == other.m_four_approx_spaces_Q &&
             m_mhm_mixed_Q           == other.m_mhm_mixed_Q;
+            m_gravity               = other.m_gravity;
             
         }
         
@@ -494,6 +499,7 @@ public:
             buf.Write(&temp);
             temp = m_mhm_mixed_Q;
             buf.Write(&temp);
+            buf.Write(m_gravity);
           
         }
         
