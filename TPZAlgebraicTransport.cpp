@@ -74,10 +74,12 @@ void TPZAlgebraicTransport::BuildDataStructures(TPZMultiphysicsCompMesh &transpo
 }
 
 void TPZAlgebraicTransport::Contribute(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
-    ek(0,0) = fCellsData.fVolume[index];
+
     REAL sat =fCellsData.fSaturation[index];
-    REAL satLast =fCellsData.fSaturationLastState[index];
-    ef(0) = fCellsData.fVolume[index]*(sat-satLast);
+    REAL satLast = fCellsData.fSaturationLastState[index];
+    REAL phi = fCellsData.fporosity[index];
+    ef(0) = fCellsData.fVolume[index]*phi*(sat-satLast)/fdt;
+    ek(0,0) = fCellsData.fVolume[index]*phi/fdt;
 }
 void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
     
@@ -96,16 +98,16 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
         beta = 1.0;
     }
     
-    ef(0) = +1.0*fdt*(beta*fw_L*(1/phi_L) + (1-beta)*fw_R*(1/phi_R))*fluxint;
-    ef(1) = -1.0*fdt*(beta*fw_L*(1/phi_L)  + (1-beta)*fw_R*(1/phi_R))*fluxint;
+    ef(0) = +1.0*(beta*fw_L*(1/phi_L) + (1-beta)*fw_R*(1/phi_R))*fluxint;
+    ef(1) = -1.0*(beta*fw_L*(1/phi_L)  + (1-beta)*fw_R*(1/phi_R))*fluxint;
     
-    ek(0,0) = +1.0*dfwSw_L *(1/phi_L)* fdt * beta * fluxint;
-    ek(0,1) = +1.0*dfwSw_R*(1/phi_R) * fdt *(1-beta) * fluxint;
-    ek(1,0) = -1.0*dfwSw_L*(1/phi_L) * fdt* beta * fluxint;
-    ek(1,1) = -1.0*dfwSw_R*(1/phi_R)*fdt*(1-beta)*fluxint;
+    ek(0,0) = +1.0*dfwSw_L *(1/phi_L) * beta * fluxint;
+    ek(0,1) = +1.0*dfwSw_R*(1/phi_R) * (1-beta) * fluxint;
+    ek(1,0) = -1.0*dfwSw_L*(1/phi_L) * beta * fluxint;
+    ek(1,1) = -1.0*dfwSw_R*(1/phi_R) * (1-beta)*fluxint;
     
     // Gravity fluxes contribution
-//    ContributeInterfaceIHU(index, ek, ef);
+    ContributeInterfaceIHU(index, ek, ef);
     
 }
 
@@ -134,31 +136,29 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
                 fCellsData.fDerivativeOfractionalflow[lr_index.second]};
     
     std::pair<REAL, REAL> lambda_wL = {fwL.first * lambdaL, fCellsData.fdlambdawdsw[lr_index.first]};
-    std::pair<REAL, REAL> lambda_wR = {fwR.first * lambdaR,
-        fCellsData.fdlambdawdsw[lr_index.second]};
-    std::pair<REAL, REAL> lambda_oL = {foL.first * lambdaL,
-            fCellsData.fdlambdaodsw[lr_index.first]};
-    std::pair<REAL, REAL> lambda_oR = {foR.first * lambdaR,
-                fCellsData.fdlambdaodsw[lr_index.second]};
-    
-    // The upwinding logic should be the same for each function
-    std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, foR, fwL, fwR, g_dot_n);
-    std::pair<REAL, std::pair<REAL, REAL>> fstarR = f_star(foR, foL, fwR, fwL, g_dot_n);
+    std::pair<REAL, REAL> lambda_wR = {fwR.first * lambdaR, fCellsData.fdlambdawdsw[lr_index.second]};
+    std::pair<REAL, REAL> lambda_oL = {foL.first * lambdaL, fCellsData.fdlambdaodsw[lr_index.first]};
+    std::pair<REAL, REAL> lambda_oR = {foR.first * lambdaR, fCellsData.fdlambdaodsw[lr_index.second]};
     
     REAL rho_wL = fCellsData.fDensityWater[lr_index.first];
     REAL rho_wR = fCellsData.fDensityWater[lr_index.second];
     REAL rho_oL = fCellsData.fDensityOil[lr_index.first];
     REAL rho_oR = fCellsData.fDensityOil[lr_index.second];
     
+    // The upwinding logic should be the same for each function
+    std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, foR, fwL, fwR, g_dot_n);
+    std::pair<REAL, std::pair<REAL, REAL>> fstarR = f_star(foR, foL, fwR, fwL, -g_dot_n);
+    
+
     REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
     REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
     REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
     REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
     
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_star(lambda_wL, lambda_wR, g_dot_n, rho_ratio_wL);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_star(lambda_wR, lambda_wL, g_dot_n, rho_ratio_wR);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_star(lambda_wR, lambda_wL, -g_dot_n, rho_ratio_wR);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_star(lambda_oL, lambda_oR, g_dot_n, rho_ratio_oL);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starR = lambda_star(lambda_oR, lambda_oL, g_dot_n, rho_ratio_oR);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starR = lambda_star(lambda_oR, lambda_oL, -g_dot_n, rho_ratio_oR);
     
     // Harmonic permeability mean
     REAL Kx_L =  fCellsData.fKx[lr_index.first];
@@ -176,10 +176,12 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     
     
     // Beacuse we assume diagonal abs. perm tensor
-    REAL K_times_g_dot_n = K_x*n[0]*fgravity[0]+K_y*n[1]*fgravity[1]+K_z*n[2]*fgravity[2];
+    REAL K_times_g_dot_n = (K_x*n[0]*fgravity[0]+K_y*n[1]*fgravity[1]+K_z*n[2]*fgravity[2]);
     
-    ef(0) += fstarL.first * (lamba_w_starL.first + lamba_o_starL.first) * K_times_g_dot_n*(rho_wL - rho_oL);
-    ef(1) += fstarR.first * (lamba_w_starR.first + lamba_o_starR.first) * K_times_g_dot_n*(rho_wR - rho_oR);
+    REAL res1 = fstarL.first * (lamba_w_starL.first + lamba_o_starL.first) * K_times_g_dot_n * (rho_wL - rho_oL);
+    REAL res2 = fstarR.first * (lamba_w_starR.first + lamba_o_starR.first) * K_times_g_dot_n * (rho_wR - rho_oR);
+    ef(0) += res1;
+    ef(1) -= res2;
     
     REAL dGLdSL = fstarL.second.first * (lamba_w_starL.first + lamba_o_starL.first) + fstarL.first * (lamba_w_starL.second.first + lamba_o_starL.second.first);
     REAL dGLdSR = fstarL.second.second * (lamba_w_starL.first + lamba_o_starL.first) + fstarL.first * (lamba_w_starL.second.second + lamba_o_starL.second.second);
@@ -188,8 +190,9 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     
     ek(0,0) += dGLdSL * K_times_g_dot_n*(rho_wL - rho_oL);
     ek(0,1) += dGLdSR * K_times_g_dot_n*(rho_wL - rho_oL);
-    ek(1,0) += dGRdSL * K_times_g_dot_n*(rho_wR - rho_oR);
-    ek(1,1) += dGRdSR * K_times_g_dot_n*(rho_wR - rho_oR);
+    
+    ek(1,0) -= dGRdSL * K_times_g_dot_n*(rho_wR - rho_oR);
+    ek(1,1) -= dGRdSR * K_times_g_dot_n*(rho_wR - rho_oR);
     
 }
 
@@ -223,11 +226,9 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_star(std::p
 
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef){
    
-    int s_inlet =1.0;
+    int s_inlet = 1.0;
     REAL fluxint  = fInterfaceData[inletmatid].fIntegralFlux[index];
-    std::pair<int, int> lr_index = fInterfaceData[inletmatid].fLeftRightVolIndex[index];
-    REAL phi = fCellsData.fporosity[lr_index.first];
-    ef(0,0) = 1.0*fdt*s_inlet*fluxint*(1/phi);
+    ef(0,0) = 1.0*s_inlet*fluxint;
 }
 void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef){
   
@@ -235,9 +236,8 @@ void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<dou
     REAL fluxint  = fInterfaceData[outletmatid].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
-    REAL phi = fCellsData.fporosity[lr_index.first];
-    ef(0,0) = 1.0*fdt*fw_L*fluxint*(1.0/phi);
-    ek(0,0) = dfwSw_L*fdt*fluxint*(1.0/phi);
+    ef(0,0) = 1.0*fw_L*fluxint;
+    ek(0,0) = dfwSw_L*fluxint;
 }
 
 void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){

@@ -81,7 +81,7 @@ void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std:
 void SimpleTest();
 void SimpleTest3D();
 void UNISIMTest();
-void * PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *alg);
+void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *alg);
 
 //
 int main(){
@@ -103,8 +103,8 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-    aspace.CreateUniformMesh(5, 10, 5, 10);
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.CreateUniformMesh(1, 1, 2, 10);
+    aspace.GenerateMHMUniformMesh(0);
 
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -117,29 +117,12 @@ void SimpleTest(){
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh();
     
-    std::ofstream file2("AuxMesh.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(AuxPosProcessProps, file2);
-    
-   
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-    
-    {
-        std::ofstream out("fluxmesh.txt");
-        mixed_operator->MeshVector()[0]->Print(out);
-    }
-    
-    std::ofstream file("transportmesh.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
-//    TPZAlgebraicTransport transport;
-//    TPZAlgebraicDataTransfer transfer;
-//    transfer.SetMeshes(*mixed_operator, *transport_operator);
-//    transfer.BuildTransportDataStructure(transport);
-//    
    
     TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::ECircleLevelSetFunction);
-    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EPiecewiseFunction);
 
     auto kx = reservoir_properties.Create_Kx();
@@ -152,15 +135,9 @@ void SimpleTest(){
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
   
+    // Render a graphical map
     PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
     
-//    sfi_analysis->RunTimeStep();
-    
-    
-//    exit(0);
-//    sfi_analysis->m_mixed_module->RunTimeStep();
-  
-
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     
@@ -372,7 +349,7 @@ TMRSDataTransfer Setting2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 20.0;
+    REAL pressure_in = 10.0;
     REAL pressure_out = 10.0;
     
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -400,7 +377,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 100.0;
+    sim_data.mTFluidProperties.mOilDensity = 500.0;
 
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
@@ -413,7 +390,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 50;
     REAL day = 86400;
-    sim_data.mTNumerics.m_dt      = 0.01*day;
+    sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -799,7 +776,7 @@ void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std:
     
 }
 
-void * PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *alTransport){
+void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *alTransport){
     
     
      TPZAnalysis *an = new TPZAnalysis(cmesh,false);
