@@ -114,14 +114,63 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceid].fLeftRightVolIndex[index];
     std::tuple<REAL, REAL, REAL> normal = fInterfaceData[interfaceid].fNormalFaceDirection[index];
-    REAL ndotg = (std::get<0>(normal))*fgravity[0]+(std::get<1>(normal))*fgravity[1]+(std::get<2>(normal))*fgravity[2];
-    REAL rhowL = fCellsData.fDensityWater[lr_index.first];
-    REAL rhowR = fCellsData.fDensityWater[lr_index.second];
-    REAL rhooL = fCellsData.fDensityOil[lr_index.first];
-    REAL rhooR = fCellsData.fDensityOil[lr_index.second];
+    REAL gdotn = (std::get<0>(normal))*fgravity[0]+(std::get<1>(normal))*fgravity[1]+(std::get<2>(normal))*fgravity[2];
+
+
     REAL lambdaL = fCellsData.flambda[lr_index.first];
     REAL lambdaR = fCellsData.flambda[lr_index.second];
-        
+    
+    //   1 -> L and 2 -> R
+    REAL fwL = fCellsData.fWaterfractionalflow[lr_index.first];
+    REAL fwR = fCellsData.fWaterfractionalflow[lr_index.second];
+    REAL foL = fCellsData.fOilfractionalflow[lr_index.first];
+    REAL foR = fCellsData.fOilfractionalflow[lr_index.second];
+    
+    REAL lambda_wL = fwL * lambdaL;
+    REAL lambda_wR = fwR * lambdaR;
+    REAL lambda_oL = foL * lambdaL;
+    REAL lambda_oR = foR * lambdaR;
+    
+    REAL fstar;
+    
+    // The upwinding logic is the same for each function
+    if( gdotn < 0.0){
+        fstar = foR * fwL;
+    }else{
+        fstar = foL * fwR;
+    }
+    
+    REAL lambda_o_star;
+    REAL lambda_w_star;
+    REAL lambda_star;
+    
+    REAL rho_wL = fCellsData.fDensityWater[lr_index.first];
+    REAL rho_wR = fCellsData.fDensityWater[lr_index.second];
+    REAL rho_oL = fCellsData.fDensityOil[lr_index.first];
+    REAL rho_oR = fCellsData.fDensityOil[lr_index.second];
+    
+    REAL rho_ratio_w = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
+    REAL rho_ratio_o = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
+    if( gdotn < 0.0){
+        // fstar = foR * fwL;
+//        lambda_wL
+        lambda_o_star = rho_ratio_o * lambda_oR  + (1-rho_ratio_o) * lambda_oL;
+    }else{
+        // fstar = foL * fwR;
+        lambda_o_star = rho_ratio_o * lambda_oL  + (1-rho_ratio_o) * lambda_oR;
+    }
+    
+        if( gdotn < 0.0){
+            // fstar = foR * fwL;
+    //        lambda_wL
+            lambda_w_star = rho_ratio_w * lambda_wR  + (1-rho_ratio_w) * lambda_wL;
+        }else{
+            // fstar = foL * fwR;
+            lambda_w_star = rho_ratio_w * lambda_wL  + (1-rho_ratio_w) * lambda_wR;
+        }
+    
+    lambda_star = lambda_o_star + lambda_w_star;
+    
     //    beta = 0.0;
     //    REAL gravfluxL = fCellsData.fKz[lr_index.first]*lambdaL*(rhowL-rhooL);
     //    REAL gravfluxR = fCellsData.fKz[lr_index.second]*lambdaR*(rhowR-rhooR);

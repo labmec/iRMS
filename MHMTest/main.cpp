@@ -102,7 +102,7 @@ void SimpleTest(){
     aspace.LoadGeometry(geometry_file);
 
 
-    aspace.CreateUniformMesh(10, 10, 10, 10);
+    aspace.CreateUniformMesh(3, 10, 3, 10);
     aspace.GenerateMHMUniformMesh(0);
 
     aspace.PrintGeometry(name);
