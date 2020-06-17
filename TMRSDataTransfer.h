@@ -368,6 +368,7 @@ public:
          */
         REAL m_corr_tol_transport;
         
+        REAL m_sfi_tol;
         /**
          * @brief Maximum number of iterations per time step for mixed operator
          */
@@ -410,6 +411,7 @@ public:
             m_max_iter_mixed        = 0;
             m_max_iter_transport    = 0;
             m_max_iter_sfi          = 0;
+            m_sfi_tol               = 1.0e-3;
             m_n_steps               = 0;
             m_four_approx_spaces_Q  = false;
             m_mhm_mixed_Q           = false;
@@ -433,6 +435,7 @@ public:
             m_max_iter_mixed        = other.m_max_iter_mixed;
             m_max_iter_transport    = other.m_max_iter_transport;
             m_max_iter_sfi          = other.m_max_iter_sfi;
+            m_sfi_tol               = other.m_sfi_tol;
             m_n_steps               = other.m_n_steps;
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
@@ -456,6 +459,7 @@ public:
             m_max_iter_mixed        = other.m_max_iter_mixed;
             m_max_iter_transport    = other.m_max_iter_transport;
             m_max_iter_sfi          = other.m_max_iter_sfi;
+            m_sfi_tol               = other.m_sfi_tol;
             m_n_steps               = other.m_n_steps;
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
@@ -479,10 +483,11 @@ public:
             m_max_iter_mixed        == other.m_max_iter_mixed &&
             m_max_iter_transport    == other.m_max_iter_transport &&
             m_max_iter_sfi          == other.m_max_iter_sfi &&
+            m_sfi_tol               ==  other.m_sfi_tol &&
             m_n_steps               == other.m_n_steps &&
             m_four_approx_spaces_Q  == other.m_four_approx_spaces_Q &&
-            m_mhm_mixed_Q           == other.m_mhm_mixed_Q;
-            m_gravity               = other.m_gravity;
+            m_mhm_mixed_Q           == other.m_mhm_mixed_Q&&
+            m_gravity               == other.m_gravity;
             
         }
         
@@ -494,6 +499,7 @@ public:
             buf.Write(&m_max_iter_mixed);
             buf.Write(&m_max_iter_transport);
             buf.Write(&m_max_iter_sfi);
+            buf.Write(&m_sfi_tol);
             buf.Write(&m_n_steps);
             int temp = m_four_approx_spaces_Q;
             buf.Write(&temp);
@@ -512,6 +518,7 @@ public:
             buf.Read(&m_max_iter_mixed);
             buf.Read(&m_max_iter_transport);
             buf.Read(&m_max_iter_sfi);
+            buf.Read(&m_sfi_tol);
             buf.Read(&m_n_steps);
             int temp;
             buf.Read(&temp);
