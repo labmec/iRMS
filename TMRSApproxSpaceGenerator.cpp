@@ -12,6 +12,7 @@
 #include "TPZMHMixedMesh4SpacesControl.h"
 #include "TPZFastCondensedElement.h"
 #include "TPZReservoirTools.h"
+#include "TPZPostProcessResProp.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -1155,6 +1156,73 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     mTransportOperator->Print(transport);
 #endif
     
+}
+TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(){
+    
+    if (!mGeometry) {
+        DebugStop();
+    }
+    
+//    TPZManVector<TPZCompMesh *,5> mixed_meshvec = mMixedOperator->MeshVector();
+    TPZManVector<TPZCompMesh *,5> transport_meshvec(5);
+    
+    transport_meshvec[0] = DiscontinuousCmesh();
+    transport_meshvec[1] = DiscontinuousCmesh();
+    transport_meshvec[2] = DiscontinuousCmesh();
+    transport_meshvec[3] = DiscontinuousCmesh();
+    transport_meshvec[4] = DiscontinuousCmesh();
+    
+    
+    int dimension = mGeometry->Dimension();
+    TPZMultiphysicsCompMesh *auxmesh = new TPZMultiphysicsCompMesh(mGeometry);
+    
+    //    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
+    TPZPostProcessResProp * volume = nullptr;
+    auxmesh->SetDefaultOrder(0);
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+    for (int d = 0; d <= dimension; d++) {
+        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
+            std::string material_name = chunk.first;
+            std::cout << "physical name = " << material_name << std::endl;
+            int material_id = chunk.second;
+            //            volume = new TMRSMultiphaseFlow<TMRSMemory>(material_id,d);
+            //            volume->SetDataTransfer(mSimData);
+            
+            volume = new TPZPostProcessResProp(material_id,d);
+            //            volume->SetDataTransfer(mSimData);
+            
+            auxmesh->InsertMaterialObject(volume);
+        }
+    }
+    
+    if (!volume) {
+        DebugStop();
+    }
+    
+    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
+    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+        int bc_id   = get<0>(chunk);
+        int bc_type = get<1>(chunk);
+        val2(0,0)   = get<2>(chunk);
+        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        auxmesh->InsertMaterialObject(face);
+    }
+    
+    auxmesh->SetDimModel(dimension);
+    TPZManVector<int,5> active_approx_spaces(5); /// 1 stands for an active approximation spaces
+    active_approx_spaces[0] = 0;
+    active_approx_spaces[1] = 0;
+    active_approx_spaces[2] = 0;
+    active_approx_spaces[3] = 0;
+    active_approx_spaces[4] = 1;
+    //    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
+    auxmesh->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
+#ifdef PZDEBUG
+    std::ofstream transport_a("aux.txt");
+    auxmesh->Print(transport_a);
+#endif
+    return auxmesh;
 }
 
 void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){

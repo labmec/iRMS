@@ -763,9 +763,14 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 
 //            InterfaceVec.fLeftRightVolIndex.push_back(face_it.fLeftRightVolIndex);
             std::pair<TPZGeoElSideIndex, TPZGeoElSideIndex> lr = face_it.fLeftRightGelSideIndex;
+            std::pair<int, int> lrIndex = face_it.fLeftRightVolIndex;
+            int lindea = lr.first.ElementIndex();
+            int rindeb = lr.second.ElementIndex();
             int lindex = lr.first.ElementIndex();
             int rindex = lr.second.ElementIndex();
-            std::pair<int, int> indexes = std::make_pair(lindex, rindex);
+            int ltindex = gmesh->Element(lindex)->Reference()->Index();
+            int rtindex = gmesh->Element(rindex)->Reference()->Index();
+            std::pair<int, int> indexes = std::make_pair(ltindex, rtindex);
             InterfaceVec.fLeftRightVolIndex.push_back(indexes);
             InterfaceVec.fcelindex.push_back(face_it.fInterface_celindex);
             if(ncorner > ncormax) ncormax = ncorner;

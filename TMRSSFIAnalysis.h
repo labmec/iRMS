@@ -84,6 +84,7 @@ public:
     void UpdateMemoryTransportModule();
     
     void UpdateMemoryInModules();
+    void PostProcessResevoirProp();
     
 };
 

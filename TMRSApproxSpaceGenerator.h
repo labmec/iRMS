@@ -92,6 +92,7 @@ public:
     void BuildMHMMixed4SpacesMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh *CreateMixedOperatorMHM();
     
+    TPZMultiphysicsCompMesh *BuildAuxPosProcessCmesh();
     void BuildMixedSCStructures();
     
     void BuildTransportMultiPhysicsCompMesh();

@@ -81,6 +81,8 @@ void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std:
 void SimpleTest();
 void SimpleTest3D();
 void UNISIMTest();
+void * PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *alg);
+
 //
 int main(){
     InitializePZLOG();
@@ -101,8 +103,8 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-    aspace.CreateUniformMesh(1, 1, 2, 10);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.CreateUniformMesh(5, 10, 5, 10);
+    aspace.GenerateMHMUniformMesh(2);
 
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -113,6 +115,12 @@ void SimpleTest(){
     bool UsePardiso_Q = true;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
+    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh();
+    
+    std::ofstream file2("AuxMesh.vtk");
+    TPZVTKGeoMesh::PrintCMeshVTK(AuxPosProcessProps, file2);
+    
+   
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     
@@ -120,6 +128,9 @@ void SimpleTest(){
         std::ofstream out("fluxmesh.txt");
         mixed_operator->MeshVector()[0]->Print(out);
     }
+    
+    std::ofstream file("transportmesh.vtk");
+    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
 //    TPZAlgebraicTransport transport;
 //    TPZAlgebraicDataTransfer transfer;
 //    transfer.SetMeshes(*mixed_operator, *transport_operator);
@@ -127,8 +138,8 @@ void SimpleTest(){
 //    
    
     TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
-    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::ECircleLevelSetFunction);
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EPiecewiseFunction);
 
     auto kx = reservoir_properties.Create_Kx();
@@ -141,6 +152,8 @@ void SimpleTest(){
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
   
+    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+    
 //    sfi_analysis->RunTimeStep();
     
     
@@ -359,7 +372,7 @@ TMRSDataTransfer Setting2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 10.0;
+    REAL pressure_in = 20.0;
     REAL pressure_out = 10.0;
     
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -398,9 +411,9 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_corr_tol_mixed = 0.000001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 500;
+    sim_data.mTNumerics.m_n_steps = 50;
     REAL day = 86400;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 0.01*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -783,5 +796,46 @@ void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std:
         std::cout<<y.size()<<std::endl;
         std::cout<<z.size()<<std::endl;
     }
+    
+}
+
+void * PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *alTransport){
+    
+    
+     TPZAnalysis *an = new TPZAnalysis(cmesh,false);
+     int ncells = alTransport->fCellsData.fVolume.size();
+     TPZFMatrix<STATE> phi(ncells,1,0.1);
+     TPZFMatrix<STATE> Kx(ncells,1,1.0);
+     TPZFMatrix<STATE> Ky(ncells,1,2.0);
+     TPZFMatrix<STATE> Kz(ncells,1,3.0);
+    
+    for (int ivol = 0; ivol<ncells; ivol++) {
+        REAL phival = alTransport->fCellsData.fporosity[ivol];
+        REAL Kxval = alTransport->fCellsData.fKx[ivol];
+        REAL Kyval = alTransport->fCellsData.fKy[ivol];
+        REAL Kzval = alTransport->fCellsData.fKz[ivol];
+        phi(ivol,0) =phival;
+        Kx(ivol,0) =Kxval;
+        Ky(ivol,0) =Kyval;
+        Kz(ivol,0) =Kzval;
+    }
+//    cmesh->MeshVector()[0]->Solution().Resize(ncells, 1);
+//    cmesh->MeshVector()[1]->Solution().Resize(ncells, 1);
+//    cmesh->MeshVector()[2]->Solution().Resize(ncells, 1);
+//    cmesh->MeshVector()[3]->Solution().Resize(ncells, 1);
+     cmesh->MeshVector()[0]->Solution() = phi;
+     cmesh->MeshVector()[1]->Solution() = Kx;
+     cmesh->MeshVector()[2]->Solution() = Ky;
+     cmesh->MeshVector()[3]->Solution() = Kz;
+    
+     TPZStack<std::string,10> scalnames, vecnames;
+     vecnames.Push("q");
+     scalnames.Push("Porosity");
+     scalnames.Push("Permeability_x");
+     scalnames.Push("Permeability_y");
+     scalnames.Push("Permeability_z");
+     std::string file("Props.vtk");
+     an->DefineGraphMesh(2,scalnames,vecnames,file);
+     an->PostProcess(0,2);
     
 }
