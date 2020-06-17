@@ -39,7 +39,7 @@ class TMRSPropertiesFunctions
                             REAL x,y,kx;
                             x = pt[0];
                             y = pt[1];
-                            kx = 1.0e-7;
+                            kx = 1.0e-7;;
                             return kx;
                         };
                 }
@@ -65,9 +65,9 @@ class TMRSPropertiesFunctions
                     return [] (const TPZVec<REAL> & pt) -> REAL {
                             REAL x,y,ky;
                             x = pt[0];
-                            y = pt[1];
-                            ky = 1.0e-7;
-                            return ky;
+                            y = 1.0e-5;
+                            ky = y;
+                            return ky +1;
                         };
                 }
                 break;
@@ -94,7 +94,7 @@ class TMRSPropertiesFunctions
                             x = pt[0];
                             y = pt[1];
                             kz = 1.0e-7;
-                            return kz;
+                            return kz ;
                         };
                 }
                 break;

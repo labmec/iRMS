@@ -28,7 +28,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
             DebugStop();
         }
         
-        matDarcy->SetPermeability(fPermeabilityTensor);
+        matDarcy->SetPermeabilityandInverse(fPermeabilityTensor, fInvPerm);
         TPZCondensedCompEl::CalcStiff(ek, ef);
         
         ShrinkElementMatrix(ek, fEK);
@@ -130,8 +130,9 @@ void TPZFastCondensedElement::SetMixedDensity(REAL mdensity){
 REAL TPZFastCondensedElement::GetMixedDensity(){
     return fMixedDensity;
 }
-void TPZFastCondensedElement::SetPermTensor(TPZFNMatrix<9, REAL> PermeabilityTensor){
+void TPZFastCondensedElement::SetPermTensorAndInv(TPZFNMatrix<9, REAL> &PermeabilityTensor, TPZFNMatrix<9, REAL> &InvPerm){
     fPermeabilityTensor = PermeabilityTensor;
+    fInvPerm = InvPerm;
 }
 TPZFNMatrix<9, REAL> TPZFastCondensedElement::GetPermTensor(){
     return  fPermeabilityTensor;

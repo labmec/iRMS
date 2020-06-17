@@ -101,7 +101,10 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
+
     aspace.CreateUniformMesh(10, 10, 10, 10);
+
+
     aspace.GenerateMHMUniformMesh(0);
 
     aspace.PrintGeometry(name);
@@ -131,6 +134,7 @@ void SimpleTest(){
     auto kx = reservoir_properties.Create_Kx();
     auto ky = reservoir_properties.Create_Ky();
     auto kz = reservoir_properties.Create_Kz();
+    reservoir_properties.set_function_type(TMRSPropertiesFunctions::EPiecewiseFunction);
     auto phi = reservoir_properties.Create_phi();
     
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi);
@@ -158,6 +162,7 @@ void SimpleTest(){
     solution_n = sfi_analysis->m_transport_module->Solution();
     solution_n.Zero();
     sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturationsLastState(solution_n);
+    //
     
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;

@@ -18,6 +18,7 @@ class TPZFastCondensedElement : public TPZCondensedCompEl
     REAL fLambda = 1.0;
     
     TPZFNMatrix<9, REAL> fPermeabilityTensor;
+    TPZFNMatrix<9, REAL> fInvPerm;
     
     //mixture density = rhow*fw + rhoo*fo
     REAL fMixedDensity = 1.;
@@ -84,7 +85,7 @@ public:
     void SetMixedDensity(REAL density);
     REAL GetMixedDensity();
 
-    void SetPermTensor(TPZFNMatrix<9, REAL> PermeabilityTensor);
+    void SetPermTensorAndInv(TPZFNMatrix<9, REAL> &PermeabilityTensor, TPZFNMatrix<9, REAL> &InvPerm);
     TPZFNMatrix<9, REAL>  GetPermTensor();
     
 };
