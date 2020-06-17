@@ -101,7 +101,7 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-    aspace.CreateUniformMesh(3, 10, 3, 10);
+    aspace.CreateUniformMesh(20, 10, 20, 10);
     aspace.GenerateMHMUniformMesh(0);
 
     aspace.PrintGeometry(name);
@@ -169,6 +169,7 @@ void SimpleTest(){
         
        
         if (sim_time >=  current_report_time) {
+            std::cout << "Time step number:  " << it << std::endl;
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
             sfi_analysis->PostProcessTimeStep();
             pos++;
@@ -392,6 +393,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
+    sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_mixed = 0.000001;
     sim_data.mTNumerics.m_corr_tol_mixed = 0.000001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;

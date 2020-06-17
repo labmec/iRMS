@@ -109,11 +109,11 @@ void TMRSSFIAnalysis::RunTimeStep(){
     
     
     int n_iterations = m_sim_data->mTNumerics.m_max_iter_sfi;
+    REAL eps_tol = m_sim_data->mTNumerics.m_sfi_tol;
     bool stop_criterion_Q = false;
     REAL error_rel_mixed = 1.0;
     REAL error_rel_transport = 1.0;
-    REAL eps_tol = 0.01; // define tolerancia para parar SFI
-    
+
     for (int i = 1; i <= n_iterations; i++) {
         
         SFIIteration();
