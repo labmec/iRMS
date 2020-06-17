@@ -101,7 +101,6 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-
     aspace.CreateUniformMesh(10, 10, 10, 10);
     aspace.GenerateMHMUniformMesh(0);
 
@@ -402,6 +401,10 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
+    std::vector<REAL> grav(3,0.0);
+    grav[2] = -9.8;
+    sim_data.mTNumerics.m_gravity = grav;
+    
     
     
     // PostProcess controls
