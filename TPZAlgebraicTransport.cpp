@@ -469,3 +469,15 @@ void TPZAlgebraicTransport::TCellData::UpdateMixedDensity(){
         fMixedDensity[i] = mixedDen;
     }
 }
+
+REAL TPZAlgebraicTransport::CalculateMass(){
+    int ncells = fCellsData.fVolume.size();
+    REAL intMass = 0.0;
+    for (int icel = 0; icel < ncells; icel++) {
+        REAL sat = fCellsData.fSaturation[icel];
+        REAL phi = fCellsData.fporosity[icel];
+        REAL vol = fCellsData.fVolume[icel];
+        intMass += sat*phi*vol;
+    }
+    return intMass;
+}

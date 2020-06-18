@@ -247,7 +247,7 @@ public:
     double CalcLambda(double sw, double paverage, double densityo, double densityw);
     double CalcDensity(double paverage,double compress, double reff,  double pref);
     
-    
+    REAL CalculateMass();
 
 };
 
