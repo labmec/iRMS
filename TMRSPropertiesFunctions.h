@@ -72,6 +72,20 @@ class TMRSPropertiesFunctions
                         };
                 }
                 break;
+            case EPiecewiseFunction:
+            {
+                return [] (const TPZVec<REAL> & pt) -> REAL {
+                        REAL y,kx;
+                        y = pt[1];
+                        if(y>5){
+                             kx = 1.0e-10;
+                         }else{
+                             kx = 1.0e-7;
+                         }
+                         return kx;
+                    };
+            }
+            break;
             default:
             {
                 std::cout << " Function not implemented " << std::endl;
@@ -109,6 +123,20 @@ class TMRSPropertiesFunctions
                             y = pt[1];
                             f = -r*r + (-5 + x)*(-5 + x) + (-5 + y)*(-5 + y) - c;
                             if(f<0){
+                                 ky = 1.0e-10;
+                             }else{
+                                 ky = 1.0e-7;
+                             }
+                             return ky;
+                        };
+                }
+                break;
+                case EPiecewiseFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL y,ky;
+                            y = pt[1];
+                            if(y>5){
                                  ky = 1.0e-10;
                              }else{
                                  ky = 1.0e-7;
@@ -162,6 +190,20 @@ class TMRSPropertiesFunctions
                         };
                 }
                 break;
+                case EPiecewiseFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL y,kz;
+                            y = pt[1];
+                            if(y>5){
+                                 kz = 1.0e-10;
+                             }else{
+                                 kz = 1.0e-7;
+                             }
+                             return kz;
+                        };
+                }
+                break;
             default:
             {
                 std::cout << " Function not implemented " << std::endl;
@@ -204,6 +246,20 @@ class TMRSPropertiesFunctions
                                 phi = 0.1;
                             }
                             return phi;
+                        };
+                }
+                break;
+                case EPiecewiseFunction:
+                {
+                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                            REAL y,phi;
+                            y = pt[1];
+                            if(y<5){
+                                 phi = 0.01;
+                             }else{
+                                 phi = 0.1;
+                             }
+                             return phi;
                         };
                 }
                 break;

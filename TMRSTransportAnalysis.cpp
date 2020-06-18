@@ -232,17 +232,9 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
     
-//    x.Print("x0 = ",std::cout, EMathematicaInput);
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-//    PostProcessTimeStep();
     
-//    AssembleResidual();
-//    REAL res_norm_C = Norm(Rhs());
-//    Rhs().Print("r = ",std::cout, EMathematicaInput);
-//    x.Print("guess x = ",std::cout, EMathematicaInput);
-    
-    QuasiNewtonSteps(x,10); // assuming linear operator
-//    x.Print("QN x = ",std::cout, EMathematicaInput);
+    QuasiNewtonSteps(x,5); // assuming linear operator
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
@@ -261,7 +253,6 @@ void TMRSTransportAnalysis::RunTimeStep(){
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
         if (stop_criterion_Q || stop_criterion_corr_Q) {
-//            x.Print("N x = ",std::cout, EMathematicaInput);
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;

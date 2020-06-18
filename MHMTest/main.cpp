@@ -104,7 +104,7 @@ void SimpleTest(){
     aspace.LoadGeometry(geometry_file);
 
     aspace.CreateUniformMesh(10, 10, 10, 10);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(2);
 
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -121,7 +121,7 @@ void SimpleTest(){
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
    
     TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EPiecewiseFunction);
     reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::ECircleLevelSetFunction);
 
@@ -403,7 +403,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400;
-    sim_data.mTNumerics.m_dt      = 0.5*day;
+    sim_data.mTNumerics.m_dt      = 0.01*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
