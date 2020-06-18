@@ -232,19 +232,17 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
     
+//    x.Print("x0 = ",std::cout, EMathematicaInput);
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
 //    PostProcessTimeStep();
-    fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     
 //    AssembleResidual();
 //    REAL res_norm_C = Norm(Rhs());
 //    Rhs().Print("r = ",std::cout, EMathematicaInput);
+//    x.Print("guess x = ",std::cout, EMathematicaInput);
     
     QuasiNewtonSteps(x,10); // assuming linear operator
-    fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
-    
+//    x.Print("QN x = ",std::cout, EMathematicaInput);
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
@@ -255,15 +253,15 @@ void TMRSTransportAnalysis::RunTimeStep(){
         cmesh->LoadSolutionFromMultiPhysics();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
-        corr_norm = Norm(dx);
-
-        cmesh->LoadSolutionFromMultiPhysics();
-        
+    
         AssembleResidual();
+        corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
+        
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
-        if (stop_criterion_corr_Q) {
+        if (stop_criterion_Q || stop_criterion_corr_Q) {
+//            x.Print("N x = ",std::cout, EMathematicaInput);
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;
@@ -291,6 +289,8 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     x += Solution();
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
+    fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
 //    PostProcessTimeStep();
 }
 

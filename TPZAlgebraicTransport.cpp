@@ -78,6 +78,7 @@ void TPZAlgebraicTransport::Contribute(int index, TPZFMatrix<double> &ek,TPZFMat
     REAL sat =fCellsData.fSaturation[index];
     REAL satLast = fCellsData.fSaturationLastState[index];
     REAL phi = fCellsData.fporosity[index];
+//    REAL elmass = fCellsData.fVolume[index]*phi;
     ef(0) = fCellsData.fVolume[index]*phi*(sat-satLast)/fdt;
     ek(0,0) = fCellsData.fVolume[index]*phi/fdt;
 }
@@ -124,6 +125,9 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     REAL g_dot_n = n[0]*fgravity[0]+n[1]*fgravity[1]+n[2]*fgravity[2];
 //    g_dot_n *= -1.0;
 
+    REAL sL = fCellsData.fSaturation[lr_index.first];
+    REAL sR = fCellsData.fSaturation[lr_index.second];
+    
     REAL lambdaL = fCellsData.flambda[lr_index.first];
     REAL lambdaR = fCellsData.flambda[lr_index.second];
     
@@ -155,10 +159,10 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
     REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
     
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_star(lambda_wL, lambda_wR, g_dot_n, rho_ratio_wL);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_star(lambda_wR, lambda_wL, -g_dot_n, rho_ratio_wR);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_star(lambda_oL, lambda_oR, g_dot_n, rho_ratio_oL);
-    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starR = lambda_star(lambda_oR, lambda_oL, -g_dot_n, rho_ratio_oR);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_w_star(lambda_wL, lambda_wR, g_dot_n, rho_ratio_wL);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_w_star(lambda_wR, lambda_wL, -g_dot_n, rho_ratio_wR);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_o_star(lambda_oL, lambda_oR, g_dot_n, rho_ratio_oL);
+    std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starR = lambda_o_star(lambda_oR, lambda_oL, -g_dot_n, rho_ratio_oR);
     
     // Harmonic permeability mean
     REAL Kx_L =  fCellsData.fKx[lr_index.first];
@@ -188,12 +192,14 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     REAL dGRdSL = fstarR.second.first * (lamba_w_starR.first + lamba_o_starR.first) + fstarR.first * (lamba_w_starR.second.first + lamba_o_starR.second.first);
     REAL dGRdSR = fstarR.second.second * (lamba_w_starR.first + lamba_o_starR.first) + fstarR.first * (lamba_w_starR.second.second + lamba_o_starR.second.second);
     
-    ek(0,0) += dGLdSL * K_times_g_dot_n*(rho_wL - rho_oL);
-    ek(0,1) += dGLdSR * K_times_g_dot_n*(rho_wL - rho_oL);
+    ek(0,0) += dGLdSL * K_times_g_dot_n * (rho_wL - rho_oL);
+    ek(0,1) += dGLdSR * K_times_g_dot_n * (rho_wL - rho_oL);
     
-    ek(1,0) -= dGRdSL * K_times_g_dot_n*(rho_wR - rho_oR);
-    ek(1,1) -= dGRdSR * K_times_g_dot_n*(rho_wR - rho_oR);
-    
+    ek(1,0) -= dGRdSL * K_times_g_dot_n * (rho_wR - rho_oR);
+    ek(1,1) -= dGRdSR * K_times_g_dot_n * (rho_wR - rho_oR);
+//    ef.Print("ef = ",std::cout, EMathematicaInput);
+//    ek.Print("ek = ",std::cout, EMathematicaInput);
+//    int aka = 0;
 }
 
 std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::f_star(std::pair<REAL, REAL> foL, std::pair<REAL, REAL> foR, std::pair<REAL, REAL> fwL, std::pair<REAL, REAL> fwR, REAL g_dot_n){
@@ -210,9 +216,23 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::f_star(std::pair<R
     return std::make_pair(fstar, std::make_pair(dfstardsL, dfstardsR));
 }
 
-std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_star(std::pair<REAL, REAL> lambda_L, std::pair<REAL, REAL> lambda_R, REAL g_dot_n, REAL rho_ratio){
+std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_o_star(std::pair<REAL, REAL> lambda_L, std::pair<REAL, REAL> lambda_R, REAL g_dot_n, REAL rho_ratio){
     REAL lambda_star, dlambda_starL, dlambda_starR;
     if( g_dot_n < 0.0){
+        lambda_star = rho_ratio * lambda_L.first  + (1-rho_ratio) * lambda_R.first;
+        dlambda_starL = rho_ratio * lambda_L.second;
+        dlambda_starR = (1-rho_ratio) * lambda_R.second;
+    }else{
+        lambda_star = rho_ratio * lambda_R.first  + (1-rho_ratio) * lambda_L.first;
+        dlambda_starL = (1-rho_ratio) * lambda_L.second;
+        dlambda_starR = rho_ratio * lambda_R.second;
+    }
+    return std::make_pair(lambda_star, std::make_pair(dlambda_starL, dlambda_starR));
+}
+
+std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std::pair<REAL, REAL> lambda_L, std::pair<REAL, REAL> lambda_R, REAL g_dot_n, REAL rho_ratio){
+    REAL lambda_star, dlambda_starL, dlambda_starR;
+    if( g_dot_n > 0.0){
         lambda_star = rho_ratio * lambda_L.first  + (1-rho_ratio) * lambda_R.first;
         dlambda_starL = rho_ratio * lambda_L.second;
         dlambda_starR = (1-rho_ratio) * lambda_R.second;
