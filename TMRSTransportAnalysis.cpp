@@ -237,14 +237,14 @@ void TMRSTransportAnalysis::RunTimeStep(){
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     
-    AssembleResidual();
+//    AssembleResidual();
 //    REAL res_norm_C = Norm(Rhs());
 //    Rhs().Print("r = ",std::cout, EMathematicaInput);
     
-//    QuasiNewtonSteps(x,10); // assuming linear operator
-    
+    QuasiNewtonSteps(x,10); // assuming linear operator
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
+    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+    
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
@@ -300,7 +300,7 @@ void TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
     if (!cmesh) {
         DebugStop();
     }
-    
+    REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
     std::cout << "Quasi-Newton process : " <<  std::endl;
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
@@ -310,14 +310,21 @@ void TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambdaQuasiNewton();
+        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+//        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambdaQuasiNewton();
 
-        cmesh->LoadSolutionFromMultiPhysics();
 //        PostProcessTimeStep();
         
         AssembleResidual();
         REAL res_norm = Norm(Rhs());
         std::cout << " Residue norm : " <<  res_norm << std::endl;
+        
+        res_norm = Norm(Rhs());
+        bool stop_criterion_Q = res_norm < res_tol;
+        if (stop_criterion_Q) {
+            std::cout << "Quasi-Newton iterations = " << m_k_iteration << std::endl;
+            break;
+        }
     }
     
 }
