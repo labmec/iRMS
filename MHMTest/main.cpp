@@ -195,69 +195,73 @@ void SimpleTest3D(){
     aspace.SetDataTransfer(sim_data);
     
     int order = 1;
-    bool must_opt_band_width_Q = true;
-    int n_threads = 0;
-    bool UsePardiso_Q = true;
-    aspace.BuildMixedMultiPhysicsCompMesh(order);
-    TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    aspace.BuildTransportMultiPhysicsCompMesh();
-    TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-    std::ofstream file("Transport.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
+      bool must_opt_band_width_Q = true;
+      int n_threads = 0;
+      bool UsePardiso_Q = true;
+      aspace.BuildMixedMultiPhysicsCompMesh(order);
+      TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
+      TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh();
+      
+      aspace.BuildTransportMultiPhysicsCompMesh();
+      TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
+     
+      TMRSPropertiesFunctions reservoir_properties;
+      reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EPiecewiseFunction);
+      reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
+      reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+
+      auto kx = reservoir_properties.Create_Kx();
+      auto ky = reservoir_properties.Create_Ky();
+      auto kz = reservoir_properties.Create_Kz();
+      auto phi = reservoir_properties.Create_phi();
+      auto s0 = reservoir_properties.Create_s0();
+      
+      TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi,s0);
+      sfi_analysis->SetDataTransfer(&sim_data);
+      sfi_analysis->Configure(n_threads, UsePardiso_Q);
     
-    {
-        std::ofstream out("fluxmesh.txt");
-        mixed_operator->MeshVector()[0]->Print(out);
-    }
-    //    TPZAlgebraicTransport transport;
-    //    TPZAlgebraicDataTransfer transfer;
-    //    transfer.SetMeshes(*mixed_operator, *transport_operator);
-    //    transfer.BuildTransportDataStructure(transport);
-    //
-    
-    
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
-    sfi_analysis->SetDataTransfer(&sim_data);
-    sfi_analysis->Configure(n_threads, UsePardiso_Q);
-    
-    //    sfi_analysis->RunTimeStep();
-    
-    
-    //    exit(0);
-    //    sfi_analysis->m_mixed_module->RunTimeStep();
-    
-    
-    int n_steps = sim_data.mTNumerics.m_n_steps;
-    REAL dt = sim_data.mTNumerics.m_dt;
-    
-    
-    TPZStack<REAL,100> reporting_times;
-    reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
-    
-    REAL sim_time = 0.0;
-    int pos =0;
-    REAL current_report_time = reporting_times[pos];
-    TPZFMatrix<REAL> solution_n;
-    solution_n = sfi_analysis->m_transport_module->Solution();
-    solution_n.Zero();
-    sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturationsLastState(solution_n);
-    
-    for (int it = 1; it <= n_steps; it++) {
-        sim_time = it*dt;
-        sfi_analysis->m_transport_module->SetCurrentTime(dt);
-        sfi_analysis->RunTimeStep();
-        
-        
-        if (sim_time >=  current_report_time) {
-            std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
-            sfi_analysis->PostProcessTimeStep();
-            pos++;
-            current_report_time =reporting_times[pos];
-        }
-        sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
-    }
-    
-    std::cout  << "Number of transportr equations = " << solution_n.Rows() << std::endl;
+      // Render a graphical map
+      PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+      
+      int n_steps = sim_data.mTNumerics.m_n_steps;
+      REAL dt = sim_data.mTNumerics.m_dt;
+      
+      
+      TPZStack<REAL,100> reporting_times;
+      reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
+      
+      REAL sim_time = 0.0;
+      int pos =0;
+      REAL current_report_time = reporting_times[pos];
+      
+      // Print initial condition
+      sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
+      sfi_analysis->PostProcessTimeStep();
+      REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+      std::cout << "Mass report at time : " << 0.0 << std::endl;
+      std::cout << "Mass integral :  " << initial_mass << std::endl;
+      for (int it = 1; it <= n_steps; it++) {
+          sim_time = it*dt;
+          sfi_analysis->m_transport_module->SetCurrentTime(dt);
+          sfi_analysis->RunTimeStep();
+          
+         
+          if (sim_time >=  current_report_time) {
+              std::cout << "Time step number:  " << it << std::endl;
+              std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
+              sfi_analysis->PostProcessTimeStep();
+              pos++;
+              current_report_time =reporting_times[pos];
+              
+              REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+              std::cout << "Mass report at time : " << sim_time << std::endl;
+              std::cout << "Mass integral :  " << mass << std::endl;
+              
+          }
+          sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
+      }
+      
+      std::cout  << "Number of transportr equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
 }
 void UNISIMTest(){
     std::string geometry_file2D ="gmsh/Contorno.msh";
@@ -284,66 +288,68 @@ void UNISIMTest(){
     bool UsePardiso_Q = true;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
+    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh();
+
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-    std::ofstream file("Transport.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
-    
-    {
-        std::ofstream out("fluxmesh.txt");
-        mixed_operator->MeshVector()[0]->Print(out);
-    }
-    //    TPZAlgebraicTransport transport;
-    //    TPZAlgebraicDataTransfer transfer;
-    //    transfer.SetMeshes(*mixed_operator, *transport_operator);
-    //    transfer.BuildTransportDataStructure(transport);
-    //
-    
-    
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+
+    TMRSPropertiesFunctions reservoir_properties;
+    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EPiecewiseFunction);
+    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+
+    auto kx = reservoir_properties.Create_Kx();
+    auto ky = reservoir_properties.Create_Ky();
+    auto kz = reservoir_properties.Create_Kz();
+    auto phi = reservoir_properties.Create_phi();
+    auto s0 = reservoir_properties.Create_s0();
+
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
-    
-    //    sfi_analysis->RunTimeStep();
-    
-    
-    //    exit(0);
-    //    sfi_analysis->m_mixed_module->RunTimeStep();
-    
-    
+
+    // Render a graphical map
+    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
-    
-    
+
+
     TPZStack<REAL,100> reporting_times;
     reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
-    
+
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
-    TPZFMatrix<REAL> solution_n;
-    solution_n = sfi_analysis->m_transport_module->Solution();
-    solution_n.Zero();
-    sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturationsLastState(solution_n);
-    
+
+    // Print initial condition
+    sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
+    sfi_analysis->PostProcessTimeStep();
+    REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+    std::cout << "Mass report at time : " << 0.0 << std::endl;
+    std::cout << "Mass integral :  " << initial_mass << std::endl;
     for (int it = 1; it <= n_steps; it++) {
-        sim_time = it*dt;
-        sfi_analysis->m_transport_module->SetCurrentTime(dt);
-        sfi_analysis->RunTimeStep();
-        
-        
-        if (sim_time >=  current_report_time) {
-            std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
-            sfi_analysis->PostProcessTimeStep();
-            pos++;
-            current_report_time =reporting_times[pos];
-        }
-        sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
+      sim_time = it*dt;
+      sfi_analysis->m_transport_module->SetCurrentTime(dt);
+      sfi_analysis->RunTimeStep();
+      
+     
+      if (sim_time >=  current_report_time) {
+          std::cout << "Time step number:  " << it << std::endl;
+          std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
+          sfi_analysis->PostProcessTimeStep();
+          pos++;
+          current_report_time =reporting_times[pos];
+          
+          REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+          std::cout << "Mass report at time : " << sim_time << std::endl;
+          std::cout << "Mass integral :  " << mass << std::endl;
+          
+      }
+      sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
     }
-    
-    std::cout  << "Number of transportr equations = " << solution_n.Rows() << std::endl;
-    
-    
+
+    std::cout  << "Number of transportr equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
     
 }
 
