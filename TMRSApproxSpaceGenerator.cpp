@@ -1617,6 +1617,7 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
             int material_id = chunk.second;
             volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
             volume->SetPermeability(1.0);
+            volume->SetGravity(mSimData.mTNumerics.m_gravity);
             MixedFluxPressureCmesh->InsertMaterialObject(volume);
         }
     }
