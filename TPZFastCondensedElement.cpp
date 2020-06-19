@@ -49,7 +49,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     
 
     REAL Glambda = fMixedDensity;
-    Glambda =0.0;
+//    Glambda =0.0;
     fLambda =1.0;
     ek.fMat *= (1./fLambda);
     for (int icol=0; icol<ncols; icol++) {
@@ -60,7 +60,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     }
     ek.fMat(nrows-1,ncols-1) *=fLambda;
     
-    ef.fMat *= fSource;
+    ef.fMat *= Glambda;
     
     
 }

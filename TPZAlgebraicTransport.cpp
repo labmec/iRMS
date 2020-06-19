@@ -108,7 +108,7 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     ek(1,1) = -1.0*dfwSw_R * (1-beta)*fluxint;
     
     // Gravity fluxes contribution
-//    ContributeInterfaceIHU(index, ek, ef);
+    ContributeInterfaceIHU(index, ek, ef);
     
 }
 

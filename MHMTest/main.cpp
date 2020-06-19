@@ -86,9 +86,9 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
 //
 int main(){
     InitializePZLOG();
-//    SimpleTest();
+    SimpleTest();
 //    SimpleTest3D();
-    UNISIMTest();
+//    UNISIMTest();
     return 0;
 }
 
@@ -410,7 +410,7 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -9.81*(1.0e-6);
+    grav[1] = -0.81*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
     
     
