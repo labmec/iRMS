@@ -120,8 +120,8 @@ void SimpleTest(){
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
    
     TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::ECircleLevelSetFunction);
-    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::ECircleLevelSetFunction);
 
     auto kx = reservoir_properties.Create_Kx();
@@ -360,24 +360,13 @@ TMRSDataTransfer Setting2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 20.0;
-    REAL pressure_out = 10.0;
-    
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(2,N_Type,zero_flux);
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(4,D_Type,pressure_in);
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(5,D_Type,pressure_out);
+    REAL pressure_on_top = 10.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
-//      sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-3,N_Type,zero_flux);
-//    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-4,D_Type,pressure_out);
-    
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
-      sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-3,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-4,D_Type,pressure_out);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,N_Type,zero_flux);
+      sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-3,D_Type,pressure_on_top);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-4,N_Type,zero_flux);
  
     //Transport boundary Conditions
     int bc_inlet = 0;
@@ -404,13 +393,13 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_corr_tol_mixed = 0.00001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_n_steps = 50;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -0.81*(1.0e-6);
+    grav[1] = -9.81*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
     
     
