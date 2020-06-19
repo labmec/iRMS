@@ -400,23 +400,19 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTrans
     // The index of the computational volume elements in the transport mesh identified by material id
 //    std::map<int,TPZVec<int64_t>> fVolumeElements;
     int64_t vol_index = 0;
-    for(auto &it : Atransfer.fVolumeElements)
-    {
-        std::cout << "material id " << it.first << std::endl;
-        TPZVec<int64_t> &elindices = it.second;
-        for (int64_t i=0; i<elindices.size(); i++) {
-            int64_t el = elindices[i];
-            TPZCompEl *cel = mTransportOperator->Element(el);
-            if(!cel) DebugStop();
-            TPZGeoEl *gel = cel->Reference();
-            if(!gel) DebugStop();
-            int dim = gel->Dimension();
-            int matid = gel->MaterialId();
-            if(cmesh->FindMaterial(matid) == 0) continue;
-            int64_t celindex;
-            cmesh->CreateCompEl(gel, celindex);
-            vol_index++;
-        }
+    TPZVec<int64_t> &elindices = Atransfer.fVolumeElements;
+    for (int64_t i=0; i<elindices.size(); i++) {
+        int64_t el = elindices[i];
+        TPZCompEl *cel = mTransportOperator->Element(el);
+        if(!cel) DebugStop();
+        TPZGeoEl *gel = cel->Reference();
+        if(!gel) DebugStop();
+        int dim = gel->Dimension();
+        int matid = gel->MaterialId();
+        if(cmesh->FindMaterial(matid) == 0) continue;
+        int64_t celindex;
+        cmesh->CreateCompEl(gel, celindex);
+        vol_index++;
     }
     cmesh->InitializeBlock();
     

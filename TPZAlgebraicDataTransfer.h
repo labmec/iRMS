@@ -88,7 +88,8 @@ public:
         
         TPZCompMesh *fMixedMesh;
         
-        std::vector<int64_t> fTransportCell;
+        // Algebraic cell index
+        std::vector<int64_t> fAlgebraicTransportCellIndex;
 
         // The equation number in the original transport mesh
         std::vector<int64_t> fEqNum;
@@ -96,12 +97,12 @@ public:
         TPZAlgebraicTransport *fTransport;
         std::vector<TPZFastCondensedElement *> fMixedCell;
 
-        TransportToMixedCorrespondence() : fMixedMesh(0), fTransportCell(0), fEqNum(0),fTransport(0) {}
+        TransportToMixedCorrespondence() : fMixedMesh(0), fAlgebraicTransportCellIndex(0), fEqNum(0),fTransport(0) {}
 
         
         TransportToMixedCorrespondence(const TransportToMixedCorrespondence &cp) {
             fMixedMesh = cp.fMixedMesh;
-            fTransportCell = cp.fTransportCell;
+            fAlgebraicTransportCellIndex = cp.fAlgebraicTransportCellIndex;
             fTransport = cp.fTransport;
             fEqNum = cp.fEqNum;
             
@@ -111,7 +112,7 @@ public:
         TransportToMixedCorrespondence &operator=(const TransportToMixedCorrespondence &cp)
         {
             fMixedMesh = cp.fMixedMesh;
-            fTransportCell = cp.fTransportCell;
+            fAlgebraicTransportCellIndex = cp.fAlgebraicTransportCellIndex;
             fTransport = cp.fTransport;
             fMixedCell = cp.fMixedCell;
             fEqNum = cp.fEqNum;
@@ -127,7 +128,7 @@ public:
     
     // The index of the computational volume elements in the transport mesh identified by material id
     // for each algebraic cell
-    std::map<int,TPZVec<int64_t>> fVolumeElements;
+    TPZVec<int64_t> fVolumeElements;
     
     /// Interface element associated with each volumetric geometric element/side when applicable
     // the size of this data structure is Number Geometric Elements x 6
@@ -216,5 +217,8 @@ public:
     // transfer the permeability multiplier from the transport mesh to the mixed mesh elements
     void TransferLambdaCoefficients();
     void TransferPermeabiliyTensor();
+    
+    // verify the correspondence of the mixed elements and the algebraic cells
+    void CheckDataTransferTransportToMixed();
 };
 #endif /* AlgebraicDataTransfer_h */

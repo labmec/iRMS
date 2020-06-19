@@ -266,8 +266,8 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
     for (int iel =0; iel< nels; iel++) {
         out<<"Material_Id: "<<this->fMatId<<std::endl;
         out<<"Center Cord: ";
-        for (int ic=0 ; ic<fCenterCordinate[iel].size(); ic++) {
-            out<<fCenterCordinate[iel][ic]<<" ";
+        for (int ic=0 ; ic<fCenterCoordinate[iel].size(); ic++) {
+            out<<fCenterCoordinate[iel][ic]<<" ";
         }
         out<<std::endl;
         out<<"Volume : "<<this->fVolume[iel]<<std::endl;

@@ -86,9 +86,9 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
 //
 int main(){
     InitializePZLOG();
-    SimpleTest();
+//    SimpleTest();
 //    SimpleTest3D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 
@@ -266,6 +266,7 @@ void UNISIMTest(){
     int nLayers = 2;
     bool is3DQ = true;
     bool print3DMesh = true;
+    gRefDBase.InitializeAllUniformRefPatterns();
     TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
  
     TMRSApproxSpaceGenerator aspace;
@@ -275,7 +276,7 @@ void UNISIMTest(){
     aspace.SetGeometry(gmesh);
     std::string name="NewMesh";
     std::cout<< gmesh->NElements();
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(1);
     aspace.PrintGeometry(name);
     
     aspace.SetDataTransfer(sim_data);
@@ -636,6 +637,7 @@ TPZGeoMesh * CreateGeoMeshWithTopeAndBase(std::string geometry_file2D, int nLaye
     TPZGeoMesh * returnedMesh = nullptr;
     if (Is3DQ) {
         TPZExtendGridDimension extend(gmesh2d, w);
+        extend.SetElType(1);
         returnedMesh = extend.ExtendedMesh(nLayers,topID,baseID);
         ModifyTopeAndBase2(returnedMesh ,nLayers);
         

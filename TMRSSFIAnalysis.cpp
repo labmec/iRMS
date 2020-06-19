@@ -52,9 +52,10 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fphi = phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+//    fAlgebraicDataTransfer.CheckDataTransferTransportToMixed();
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     
-    
+//    fAlgebraicDataTransfer.CheckDataTransferTransportToMixed();
 //    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
    
 //    int n_mixed_dof = m_mixed_module->Solution().Rows();

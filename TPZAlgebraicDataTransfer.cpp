@@ -51,8 +51,8 @@ void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport
     // check the Volume_index xyz with transport xyz
     InitializeVectorPointersMixedToTransport(transport);
     InitializeVectorPointersTranportToMixed(transport);
-//    Print();
-    
+
+    CheckDataTransferTransportToMixed();
     
 }
 
@@ -194,7 +194,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
         }
     }
     TPZVec<int64_t> geometricvolume(nel,0);
-    std::map<int,int64_t> volumecount_matid;
+    int64_t volumecount = 0;
     TPZVec<int64_t> VolumeElementIndex(fTransportMesh->NElements(),-1);
     
     for(auto it = fInterfaceGelIndexes.begin(); it != fInterfaceGelIndexes.end(); it++)
@@ -209,6 +209,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZMultiphysicsInterfaceElement *intface = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
             TPZCompElSide leftside = intface->Left();
             TPZCompEl *left = leftside.Element();
+            if(left->NConnects() > 1) DebugStop();
             TPZGeoEl *leftgel = left->Reference();
             int leftorient = leftgel->NormalOrientation(leftside.Side());
             TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
@@ -216,13 +217,14 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             fInterfaceByGeom(leftgel->Index(),lowerindex) = iface;
             int leftmatid = left->Reference()->MaterialId();
             int64_t leftindex = left->Index();
-            if(VolumeElementIndex[leftindex] == -1)
+            if(VolumeElementIndex[leftindex] == -1 && left->NConnects() == 1)
             {
-                VolumeElementIndex[leftindex] = volumecount_matid[leftmatid];
-                volumecount_matid[leftmatid]++;
+                VolumeElementIndex[leftindex] = volumecount;
+                volumecount++;
             }
             TPZCompElSide rightside = intface->Right();
             TPZCompEl *right = rightside.Element();
+            if(right->NConnects() > 1) DebugStop();
             TPZGeoEl *rightgel = right->Reference();
             int rightorient = 0;
             if(rightgel->Dimension() == gmesh->Dimension())
@@ -238,10 +240,10 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             int64_t rightindex = right->Index();
             lowerindex = SideLowerIndex(rightgel,rightside.Side());
             fInterfaceByGeom(rightgel->Index(),lowerindex) = iface;
-            if(VolumeElementIndex[rightindex] == -1)
+            if(VolumeElementIndex[rightindex] == -1 && right->NConnects() == 1)
             {
-                VolumeElementIndex[rightindex] = volumecount_matid[rightmatid];
-                volumecount_matid[rightmatid]++;
+                VolumeElementIndex[rightindex] = volumecount;
+                volumecount++;
             }
             if(leftorient == 1)
             {
@@ -257,10 +259,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
         }
     }
     
-    for(auto it = volumecount_matid.begin(); it != volumecount_matid.end(); it++)
-    {
-        fVolumeElements[it->first].Resize(it->second, -1);
-    }
+    fVolumeElements.Resize(volumecount);
     
     int64_t nelcomp = fTransportMesh->NElements();
     for(int64_t el = 0; el<nelcomp; el++)
@@ -270,7 +269,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
         TPZGeoEl *gel = cel->Reference();
         int matid = gel->MaterialId();
         int64_t cellindex = VolumeElementIndex[el];
-        fVolumeElements[matid][cellindex] = el;
+        fVolumeElements[cellindex] = el;
     }
 }
 
@@ -584,19 +583,16 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
     }
     out << "fVolumeElements Number of volume materials " << fVolumeElements.size() << std::endl;
     
-    for(auto it = fVolumeElements.begin(); it != fVolumeElements.end(); it++)
+    out << "Volume elements" << std::endl;
+    TPZVec<int64_t> &volel_indexes = fVolumeElements;
+    int64_t nel = volel_indexes.size();
+    for(int64_t el = 0; el<nel; el++)
     {
-        out << "Volume elements for material id = " << it->first << std::endl;
-        TPZVec<int64_t> &volel_indexes = it->second;
-        int64_t nel = volel_indexes.size();
-        for(int64_t el = 0; el<nel; el++)
-        {
-            int64_t celindex = volel_indexes[el];
-            TPZCompEl *cel = fTransportMesh->Element(celindex);
-            TPZGeoEl *gel = cel->Reference();
-            int64_t gelindex = gel->Index();
-            out << "el = " << el << " gel index " << gelindex << " matid " << gel->MaterialId() << " dim " << gel->Dimension() << std::endl;
-        }
+        int64_t celindex = volel_indexes[el];
+        TPZCompEl *cel = fTransportMesh->Element(celindex);
+        TPZGeoEl *gel = cel->Reference();
+        int64_t gelindex = gel->Index();
+        out << "el = " << el << " gel index " << gelindex << " matid " << gel->MaterialId() << " dim " << gel->Dimension() << std::endl;
     }
     
     if(fInterfaceByGeom.Rows() == 0)
@@ -648,7 +644,7 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
 // Build the data structure which defines the correspondence between
 // algebraic transport cells and indexes of mixed fast condensed elements
 void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(TPZCompMesh *fluxmesh,
-                                                                                TPZVec<int64_t> &Volume_Index)
+                                                                                TPZVec<int64_t> &Alg_Cell_Index)
 {
     // build a vector of the size of the geometric elements
     // where applicable the value of the vector is the index of the
@@ -656,23 +652,19 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
     int64_t nel_geo = gmesh->NElements();
     //    TPZVec<int64_t> Volume_Index(nel_geo,-10);
-    if(Volume_Index.size() != nel_geo)
+    if(Alg_Cell_Index.size() != nel_geo)
     {
-        Volume_Index.Resize(nel_geo);
-        Volume_Index.Fill(-10);
-        for(auto imat_it : fVolumeElements)
+        Alg_Cell_Index.Resize(nel_geo);
+        Alg_Cell_Index.Fill(-10);
+        for(int64_t vec_it = 0 ;vec_it < fVolumeElements.size(); vec_it++)
         {
-            for(auto vec_it : imat_it.second)
+            int64_t celindex = fVolumeElements[vec_it];
+            TPZCompEl *cel = fTransportMesh->Element(celindex);
+            if(cel->NConnects() != 0)
             {
-                TPZCompEl *cel = fTransportMesh->Element(vec_it);
-                if(cel->NConnects() != 0)
-                {
-                    TPZGeoEl *gel = cel->Reference();
-                    int64_t geo_index = gel->Index();
-                    int matid = gel->MaterialId();
-                    if(matid != imat_it.first) DebugStop();
-                    Volume_Index[geo_index] = vec_it;
-                }
+                TPZGeoEl *gel = cel->Reference();
+                int64_t geo_index = gel->Index();
+                Alg_Cell_Index[geo_index] = vec_it;
             }
         }
     }
@@ -690,7 +682,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
             if(cel->NConnects() == 1) continue;
             int64_t celindex = cel->Index();
             int64_t gelindex = cel->Reference()->Index();
-            if(Volume_Index[gelindex] < 0) continue;
+            if(Alg_Cell_Index[gelindex] < 0) continue;
             TPZCompEl *celcondensed = fluxmesh->Element(celindex);
             TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(celcondensed);
             if(!fast) DebugStop();
@@ -700,7 +692,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
             TransportToMixedCorrespondence transport;
             transport.fMixedMesh = fluxmesh;
             transport.fMixedCell.resize(num_elements);
-            transport.fTransportCell.resize(num_elements);
+            transport.fAlgebraicTransportCellIndex.resize(num_elements);
             transport.fEqNum.resize(num_elements);
            
 
@@ -711,13 +703,13 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
                 if(cel->NConnects() == 1) continue;
                 int64_t celindex = cel->Index();
                 int64_t gelindex = cel->Reference()->Index();
-                if(Volume_Index[gelindex] < 0) continue;
+                if(Alg_Cell_Index[gelindex] < 0) continue;
                 TPZCompEl *celcondensed = fluxmesh->Element(celindex);
                 TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(celcondensed);
                 if(!fast) DebugStop();
                 transport.fMixedCell[count] = fast;
-                int transGelIndex = Volume_Index[gelindex];
-                
+                int64_t AlgCelIndex = Alg_Cell_Index[gelindex];
+                int64_t TransportCelIndex = fVolumeElements[AlgCelIndex];
                 TPZGeoEl *fastgel = cel->Reference();
                 int dim = fastgel->Dimension();
                 int side = fastgel->NSides()-1;
@@ -725,7 +717,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
                 fastgel->CenterPoint(side, xifast);
                 fastgel->X(xifast, coordFast);
                 
-                TPZCompEl *transComp =fTransportMesh->Element(transGelIndex);
+                TPZCompEl *transComp =fTransportMesh->Element(TransportCelIndex);
                 TPZGeoEl *transportGel = transComp->Reference();
                 TPZVec<REAL> coordTransp(3), xiTransp(dim,0);
                 transportGel->CenterPoint(side, xiTransp);
@@ -740,7 +732,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
                     DebugStop();
                 }
                 
-                transport.fTransportCell[count] = Volume_Index[gelindex];
+                transport.fAlgebraicTransportCellIndex[count] = Alg_Cell_Index[gelindex];
                 count++;
             }
             if(count != num_elements) DebugStop();
@@ -751,7 +743,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
     {
         for(auto sub : submeshes)
         {
-            BuildTransportToMixedCorrespondenceDatastructure(sub, Volume_Index);
+            BuildTransportToMixedCorrespondenceDatastructure(sub, Alg_Cell_Index);
         }
     }
   
@@ -801,16 +793,16 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         
     }
    
-    auto volData = fVolumeElements.rbegin();
+    auto &volData = fVolumeElements;
     
-    int64_t nvols = volData->second.size();
+    int64_t nvols = volData.size();
    
     transport.fCellsData.SetNumCells(nvols);
     transport.fCellsData.fViscosity.resize(2);
     transport.fCellsData.fViscosity[0] = 0.5;
     transport.fCellsData.fViscosity[1] = 0.1;
     for (int64_t i=0 ; i<nvols; i++) {
-        int64_t celindex = volData->second[i];
+        int64_t celindex = volData[i];
        
         TPZCompEl *cel = fTransportMesh->Element(celindex);
         TPZGeoEl *gel = cel->Reference();
@@ -830,14 +822,18 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fDensityWater[i]=1000.00;
 
         int dim= gel->Dimension();
-        transport.fCellsData.fCenterCordinate[i].resize(dim);
+        transport.fCellsData.fCenterCoordinate[i].resize(3);
         TPZVec<REAL> ximasscent(dim);
         gel->CenterPoint(side, ximasscent);
-        std::vector<REAL> center(dim,0.0);
-        TPZManVector<REAL,3> coord(dim,0.0);
+        std::vector<REAL> center(3,0.0);
+        TPZManVector<REAL,3> coord(3,0.0);
         gel->X(ximasscent, coord);
         
-        REAL kx_v   = fkx(coord);
+        REAL kx_v = 1.e-7;
+        if(fkx)
+        {
+            kx_v   = fkx(coord);
+        }
         REAL ky_v   = fky(coord);
         REAL kz_v   = fkz(coord);
         REAL phi_v  = fphi(coord);
@@ -851,7 +847,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fSaturationLastState[i]=s0_v;
         
         for (int ic =0; ic<dim; ic++) {center[ic]=coord[ic];};
-        transport.fCellsData.fCenterCordinate[i] =center;
+        transport.fCellsData.fCenterCoordinate[i] = center;
     }
     transport.fCellsData.fMatId = 1;
 
@@ -901,7 +897,7 @@ void TPZAlgebraicDataTransfer::TransportToMixedCorrespondence::Print(std::ostrea
 {
     out << "TransportToMixedCorrespondence mesh = " << (void *) fMixedMesh << std::endl;
     out << "fTransportCell vector ";
-    for (auto value : fTransportCell) out << value << ' ';
+    for (auto value : fAlgebraicTransportCellIndex) out << value << ' ';
     out << std::endl;
     out << "fMixedCell compel indices ";
     for(auto value : fMixedCell) out << value->Index() << ' ';
@@ -931,7 +927,7 @@ void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
     
     for(auto &meshit : fTransportMixedCorrespondence)
     {
-        int64_t ncells = meshit.fTransportCell.size();
+        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
 #ifdef PZDEBUG
         if(meshit.fTransport == 0)
         {
@@ -940,7 +936,7 @@ void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
 #endif
         for (int icell = 0; icell < ncells; icell++)
         {
-            int64_t cellindex = meshit.fTransportCell[icell];
+            int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
             meshit.fMixedCell[icell]->SetLambda(meshit.fTransport->fCellsData.flambda[cellindex]);
             
             meshit.fMixedCell[icell]->SetMixedDensity(meshit.fTransport->fCellsData.fMixedDensity[cellindex]);
@@ -953,7 +949,7 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
     for(auto &meshit : fTransportMixedCorrespondence)
     {
         TPZAlgebraicTransport::TCellData &celldata = meshit.fTransport->fCellsData;
-        int64_t ncells = meshit.fTransportCell.size();
+        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
         for (int icell = 0; icell < ncells; icell++) {
 #ifdef PZDEBUG
             if(meshit.fTransport == 0 || meshit.fEqNum[icell] >= ncells)
@@ -964,7 +960,7 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
             TPZFNMatrix<9, REAL> PermeabilityT, InvPerm;
             PermeabilityT.Redim(3, 3);
             InvPerm.Redim(3, 3);
-            int64_t transportcell = meshit.fTransportCell[icell];
+            int64_t transportcell = meshit.fAlgebraicTransportCellIndex[icell];
             PermeabilityT(0,0) = (celldata.fKx)[transportcell];
             PermeabilityT(1,1) = (celldata.fKy)[transportcell];
             PermeabilityT(2,2) = (celldata.fKz)[transportcell];
@@ -977,10 +973,11 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
             TPZManVector<REAL,3> xcenter(3,0.), xi(gel->Dimension(),0.);
             gel->CenterPoint(gel->NSides()-1, xi);
             gel->X(xi, xcenter);
+            std::vector<REAL> cellcenter = celldata.fCenterCoordinate[transportcell];
             REAL diff = 0;
             for(int i=0; i<3; i++)
             {
-                diff += fabs(xcenter[i]-celldata.fCenterCordinate[transportcell][i]);
+                diff += fabs(xcenter[i]-cellcenter.at(i));
             }
             if(diff > 1.e-16)
             {
@@ -994,3 +991,41 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
     }
     
 }
+
+// verify the correspondence of the mixed elements and the algebraic cells
+void TPZAlgebraicDataTransfer::CheckDataTransferTransportToMixed()
+{
+    for(auto &meshit : fTransportMixedCorrespondence)
+    {
+        TPZAlgebraicTransport::TCellData &celldata = meshit.fTransport->fCellsData;
+        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
+        for (int icell = 0; icell < ncells; icell++) {
+#ifdef PZDEBUG
+            if(meshit.fTransport == 0 || meshit.fEqNum[icell] >= ncells)
+            {
+                DebugStop();
+            }
+#endif
+            int64_t transportcell = meshit.fAlgebraicTransportCellIndex[icell];
+            TPZCompEl *cel = meshit.fMixedCell[icell];
+#ifdef PZDEBUG
+            TPZGeoEl *gel = cel->Reference();
+            if(!gel) DebugStop();
+            TPZManVector<REAL,3> xcenter(3,0.), xi(gel->Dimension(),0.);
+            gel->CenterPoint(gel->NSides()-1, xi);
+            gel->X(xi, xcenter);
+            REAL diff = 0;
+            std::vector<REAL> celcenter = celldata.fCenterCoordinate[transportcell];
+            for(int i=0; i<3; i++)
+            {
+                diff += fabs(xcenter[i]-celcenter[i]);
+            }
+            if(diff > 1.e-16)
+            {
+                DebugStop();
+            }
+#endif
+        }
+    }
+}
+
