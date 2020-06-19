@@ -104,7 +104,7 @@ void SimpleTest(){
     aspace.LoadGeometry(geometry_file);
 
     aspace.CreateUniformMesh(10, 10, 10, 10);
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.GenerateMHMUniformMesh(1);
 
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -121,9 +121,9 @@ void SimpleTest(){
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
    
     TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EPiecewiseFunction);
-    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
-    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::ECircleLevelSetFunction);
+    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
 
     auto kx = reservoir_properties.Create_Kx();
     auto ky = reservoir_properties.Create_Ky();
@@ -188,7 +188,7 @@ void SimpleTest3D(){
     TMRSApproxSpaceGenerator aspace;
 //    aspace.LoadGeometry(geometry_file);
     
-    aspace.CreateUniformMesh(2, 100, 1, 10,1,10.0);
+    aspace.CreateUniformMesh(2, 10, 1, 10,1,10.0);
     aspace.GenerateMHMUniformMesh(2);
     
     aspace.PrintGeometry(name);
@@ -357,7 +357,7 @@ TMRSDataTransfer Setting2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 10.0;
+    REAL pressure_in = 20.0;
     REAL pressure_out = 10.0;
     
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -372,9 +372,9 @@ TMRSDataTransfer Setting2D(){
 //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-4,D_Type,pressure_out);
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,N_Type,zero_flux);
-      sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-3,D_Type,pressure_out);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-4,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
+      sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-3,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-4,D_Type,pressure_out);
  
     //Transport boundary Conditions
     int bc_inlet = 0;
@@ -402,8 +402,8 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
     sim_data.mTNumerics.m_n_steps = 100;
-    REAL day = 86400;
-    sim_data.mTNumerics.m_dt      = 0.01*day;
+    REAL day = 86400.0;
+    sim_data.mTNumerics.m_dt      = 1.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -488,7 +488,8 @@ TMRSDataTransfer Setting3D(){
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 30;
-    sim_data.mTNumerics.m_dt      = 10.0;
+    REAL day = 1;
+    sim_data.mTNumerics.m_dt      = 0.01;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     
@@ -502,7 +503,7 @@ TMRSDataTransfer Setting3D(){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = 10.0;
+    sim_data.mTPostProcess.m_file_time_step =0.01;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
@@ -800,6 +801,7 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
      TPZFMatrix<STATE> Kz(ncells,1,3.0);
     
     for (int ivol = 0; ivol<ncells; ivol++) {
+        int eq = alTransport->fCellsData.fEqNumber[ivol];
         REAL phival = alTransport->fCellsData.fporosity[ivol];
         REAL Kxval = alTransport->fCellsData.fKx[ivol];
         REAL Kyval = alTransport->fCellsData.fKy[ivol];

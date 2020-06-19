@@ -233,7 +233,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
     correction.Zero();
     
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-    
+//    PostProcessTimeStep();
     QuasiNewtonSteps(x,5); // assuming linear operator
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
@@ -296,10 +296,11 @@ void TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
-
+        
         x += Solution();
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
+//        PostProcessTimeStep();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
 //        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambdaQuasiNewton();

@@ -734,6 +734,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
             BuildTransportToMixedCorrespondenceDatastructure(sub, Volume_Index);
         }
     }
+  
 }
 
 
@@ -747,7 +748,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int ncormax = 0;
         for(auto face_it : mat_iter.second)
         {
-           
+       
             TPZGeoEl *gel = gmesh->Element(face_it.fInterface_gelindex);
             TPZCompEl *cel = gel->Reference();
             TPZMultiphysicsInterfaceElement * intel = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
@@ -760,18 +761,8 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
             std::tuple<REAL, REAL, REAL> norm= std::make_tuple(normal[0],normal[1],normal[2]);
             InterfaceVec.fNormalFaceDirection.push_back(norm);
             int ncorner = gel->NCornerNodes();
-
-//            InterfaceVec.fLeftRightVolIndex.push_back(face_it.fLeftRightVolIndex);
-            std::pair<TPZGeoElSideIndex, TPZGeoElSideIndex> lr = face_it.fLeftRightGelSideIndex;
-            std::pair<int, int> lrIndex = face_it.fLeftRightVolIndex;
-            int lindea = lr.first.ElementIndex();
-            int rindeb = lr.second.ElementIndex();
-            int lindex = lr.first.ElementIndex();
-            int rindex = lr.second.ElementIndex();
-            int ltindex = gmesh->Element(lindex)->Reference()->Index();
-            int rtindex = gmesh->Element(rindex)->Reference()->Index();
-            std::pair<int, int> indexes = std::make_pair(ltindex, rtindex);
-            InterfaceVec.fLeftRightVolIndex.push_back(indexes);
+            std::pair<int, int> lr = face_it.fLeftRightVolIndex;
+            InterfaceVec.fLeftRightVolIndex.push_back(lr);
             InterfaceVec.fcelindex.push_back(face_it.fInterface_celindex);
             if(ncorner > ncormax) ncormax = ncorner;
             for(int i=0; i<ncorner; i++) numfaces[i]++;
@@ -787,7 +778,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         InterfaceVec.fIntegralFluxFunctions.resize(numfaces[0]);
         
     }
-    
+   
     auto volData = fVolumeElements.rbegin();
     int64_t nvols = volData->second.size();
    
@@ -798,12 +789,11 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     for (int64_t i=0 ; i<nvols; i++) {
         int64_t celindex = volData->second[i];
         TPZCompEl *cel = fTransportMesh->Element(celindex);
-        
         TPZGeoEl *gel = cel->Reference();
         REAL volume = gel->Volume();
         int side = gel->NSides()-1;
-        transport.fCellsData.fVolume[celindex]=volume;
-        //EqNumber
+        transport.fCellsData.fVolume[i]=volume;
+        
         if (cel->NConnects()!=1) {
             DebugStop();
         }
@@ -811,13 +801,12 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int block_num = con.SequenceNumber();
         int eq_number = fTransportMesh->Block().Position(block_num);
 
-        transport.fCellsData.fEqNumber[celindex]=eq_number;
-        transport.fCellsData.fDensityOil[celindex]=800.00;
-        transport.fCellsData.fDensityWater[celindex]=1000.00;
-
+        transport.fCellsData.fEqNumber[i]=eq_number;
+        transport.fCellsData.fDensityOil[i]=800.00;
+        transport.fCellsData.fDensityWater[i]=1000.00;
 
         int dim= gel->Dimension();
-        transport.fCellsData.fCenterCordinate[celindex].resize(dim);
+        transport.fCellsData.fCenterCordinate[i].resize(dim);
         TPZVec<REAL> ximasscent(dim);
         gel->CenterPoint(side, ximasscent);
         std::vector<REAL> center(dim,0.0);
@@ -829,15 +818,16 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         REAL kz_v   = fkz(result);
         REAL phi_v  = fphi(result);
         REAL s0_v   = fs0(result);
-        transport.fCellsData.fKx[celindex]=kx_v;
-        transport.fCellsData.fKy[celindex]=ky_v;
-        transport.fCellsData.fKz[celindex]=kz_v;
-        transport.fCellsData.fporosity[celindex] = phi_v;
-        transport.fCellsData.fSaturation[celindex]=s0_v;
-        transport.fCellsData.fSaturationLastState[celindex]=s0_v;
+
+        transport.fCellsData.fKx[i]=kx_v;
+        transport.fCellsData.fKy[i]=ky_v;
+        transport.fCellsData.fKz[i]=kz_v;
+        transport.fCellsData.fporosity[i] = phi_v;
+        transport.fCellsData.fSaturation[i]=s0_v;
+        transport.fCellsData.fSaturationLastState[i]=s0_v;
         
         for (int ic =0; ic<dim; ic++) {center[ic]=result[ic];};
-        transport.fCellsData.fCenterCordinate[celindex] =center;
+        transport.fCellsData.fCenterCordinate[i] =center;
     }
     transport.fCellsData.fMatId = 1;
     

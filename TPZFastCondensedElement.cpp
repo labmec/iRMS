@@ -28,6 +28,11 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
             DebugStop();
         }
         
+        
+//        fPermeabilityTensor.Zero();
+//        fPermeabilityTensor(0,0)=1.0;
+//        fPermeabilityTensor(1,1)=1.0;
+//        fPermeabilityTensor(2,2)=1.0;
         matDarcy->SetPermeability(fPermeabilityTensor);
         TPZCondensedCompEl::CalcStiff(ek, ef);
         
@@ -44,6 +49,8 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     
 
     REAL Glambda = fMixedDensity;
+    Glambda =0.0;
+    fLambda =1.0;
     ek.fMat *= (1./fLambda);
     for (int icol=0; icol<ncols; icol++) {
         ek.fMat(nrows-1,icol) *= fLambda;
@@ -53,7 +60,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     }
     ek.fMat(nrows-1,ncols-1) *=fLambda;
     
-    ef.fMat *= -1.0*Glambda;
+    ef.fMat *= fSource;
     
     
 }

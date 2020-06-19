@@ -99,16 +99,16 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
         beta = 1.0;
     }
     
-    ef(0) = +1.0*(beta*fw_L*(1/phi_L) + (1-beta)*fw_R*(1/phi_R))*fluxint;
-    ef(1) = -1.0*(beta*fw_L*(1/phi_L)  + (1-beta)*fw_R*(1/phi_R))*fluxint;
+    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint;
+    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint;
     
-    ek(0,0) = +1.0*dfwSw_L *(1/phi_L) * beta * fluxint;
-    ek(0,1) = +1.0*dfwSw_R*(1/phi_R) * (1-beta) * fluxint;
-    ek(1,0) = -1.0*dfwSw_L*(1/phi_L) * beta * fluxint;
-    ek(1,1) = -1.0*dfwSw_R*(1/phi_R) * (1-beta)*fluxint;
+    ek(0,0) = +1.0*dfwSw_L  * beta * fluxint;
+    ek(0,1) = +1.0*dfwSw_R * (1-beta) * fluxint;
+    ek(1,0) = -1.0*dfwSw_L* beta * fluxint;
+    ek(1,1) = -1.0*dfwSw_R * (1-beta)*fluxint;
     
     // Gravity fluxes contribution
-    ContributeInterfaceIHU(index, ek, ef);
+//    ContributeInterfaceIHU(index, ek, ef);
     
 }
 
