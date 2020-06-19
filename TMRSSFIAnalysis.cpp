@@ -285,3 +285,28 @@ void TMRSSFIAnalysis::UpdateMemoryInModules(){
     UpdateMemoryTransportModule();
 }
 
+#include "TPZFastCondensedElement.h"
+// transfer the permeability and lambda to the element solution for post processing
+void TMRSSFIAnalysis::SetMixedMeshElementSolution(TPZCompMesh *cmesh)
+{
+    int64_t nel = cmesh->NElements();
+    cmesh->ElementSolution().Redim(nel, 4);
+    int64_t count = 0;
+    for (int64_t el=0; el<nel; el++) {
+        TPZCompEl *cel = cmesh->Element(el);
+        TPZSubCompMesh *submesh = dynamic_cast<TPZSubCompMesh *>(cel);
+        if(submesh)
+        {
+            SetMixedMeshElementSolution(submesh);
+            continue;
+        }
+        TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(cel);
+        if(!fast) continue;
+        count++;
+        cmesh->ElementSolution()(el,0) = fast->GetPermTensor()(0,0);
+        cmesh->ElementSolution()(el,1) = fast->GetPermTensor()(1,1);
+        cmesh->ElementSolution()(el,2) = fast->GetPermTensor()(2,2);
+        cmesh->ElementSolution()(el,3) = fast->GetLambda();
+    }
+}
+

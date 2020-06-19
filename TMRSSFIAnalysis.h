@@ -86,6 +86,9 @@ public:
     void UpdateMemoryInModules();
     void PostProcessResevoirProp();
     
+    // transfer the permeability and lambda to the element solution for post processing
+    void SetMixedMeshElementSolution(TPZCompMesh *cmesh);
+    
 };
 
 #endif /* TMRSSFIAnalysis_h */

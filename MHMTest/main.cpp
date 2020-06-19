@@ -103,8 +103,8 @@ void SimpleTest(){
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
-    aspace.CreateUniformMesh(10, 10, 10, 10);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.CreateUniformMesh(5, 10, 5, 10);
+    aspace.GenerateMHMUniformMesh(2);
 
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -115,15 +115,14 @@ void SimpleTest(){
     bool UsePardiso_Q = true;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh();
     
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
    
     TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::ECircleLevelSetFunction);
     reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::ECircleLevelSetFunction);
-    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::ECircleLevelSetFunction);
 
     auto kx = reservoir_properties.Create_Kx();
     auto ky = reservoir_properties.Create_Ky();
@@ -135,6 +134,8 @@ void SimpleTest(){
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
   
+    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
+
     // Render a graphical map
     PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
     
@@ -151,6 +152,7 @@ void SimpleTest(){
     
     // Print initial condition
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
+    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
     sfi_analysis->PostProcessTimeStep();
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
     std::cout << "Mass report at time : " << 0.0 << std::endl;
@@ -421,6 +423,11 @@ TMRSDataTransfer Setting2D(){
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
+        scalnames.Push("kxx");
+        scalnames.Push("kyy");
+        scalnames.Push("kzz");
+        scalnames.Push("lambda");
+
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
     sim_data.mTPostProcess.m_vecnames = vecnames;

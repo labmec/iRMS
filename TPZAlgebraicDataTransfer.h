@@ -16,6 +16,7 @@
 #include "TPZAlgebraicTransport.h"
 class TPZSubCompMesh;
 class TPZFastCondensedElement;
+class TPZAlgebraicTransport;
 
 class TPZAlgebraicDataTransfer {
     
@@ -89,43 +90,31 @@ public:
         
         std::vector<int64_t> fTransportCell;
 
+        // The equation number in the original transport mesh
         std::vector<int64_t> fEqNum;
         
-        std::vector<REAL> *fPermData;
-        std::vector<REAL> *fMixedDensityData;
+        TPZAlgebraicTransport *fTransport;
         std::vector<TPZFastCondensedElement *> fMixedCell;
-        std::vector<REAL> *fKxData;
-        std::vector<REAL> *fKyData;
-        std::vector<REAL> *fKzData;
 
-        TransportToMixedCorrespondence() : fMixedMesh(0), fTransportCell(0), fEqNum(0),fPermData(0),fMixedDensityData(0),fMixedCell(0),fKxData(0), fKyData(0), fKzData(0)  {}
+        TransportToMixedCorrespondence() : fMixedMesh(0), fTransportCell(0), fEqNum(0),fTransport(0) {}
 
         
         TransportToMixedCorrespondence(const TransportToMixedCorrespondence &cp) {
             fMixedMesh = cp.fMixedMesh;
             fTransportCell = cp.fTransportCell;
-            fPermData = cp.fPermData;
-            fMixedCell = cp.fMixedCell;
-            fMixedDensityData = cp.fMixedDensityData;
+            fTransport = cp.fTransport;
             fEqNum = cp.fEqNum;
-            fKxData = cp.fKxData;
-            fKyData = cp.fKyData;
-            fKzData = cp.fKzData;
-
+            
+            fMixedCell = cp.fMixedCell;
         }
         
         TransportToMixedCorrespondence &operator=(const TransportToMixedCorrespondence &cp)
         {
             fMixedMesh = cp.fMixedMesh;
             fTransportCell = cp.fTransportCell;
-            fPermData = cp.fPermData;
+            fTransport = cp.fTransport;
             fMixedCell = cp.fMixedCell;
-            fMixedDensityData = cp.fMixedDensityData;
             fEqNum = cp.fEqNum;
-            fKxData = cp.fKxData;
-            fKyData = cp.fKyData;
-            fKzData = cp.fKzData;
-
             return *this;
         }
         
@@ -137,6 +126,7 @@ public:
     std::map<int,TPZVec<TInterfaceWithVolume>> fInterfaceGelIndexes;
     
     // The index of the computational volume elements in the transport mesh identified by material id
+    // for each algebraic cell
     std::map<int,TPZVec<int64_t>> fVolumeElements;
     
     /// Interface element associated with each volumetric geometric element/side when applicable

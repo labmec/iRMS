@@ -48,6 +48,7 @@ void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport
     TPZVec<int64_t> Volume_Index;
     BuildTransportToMixedCorrespondenceDatastructure(fFluxMesh, Volume_Index);
     InitializeTransportDataStructure(transport);
+    // check the Volume_index xyz with transport xyz
     InitializeVectorPointersMixedToTransport(transport);
     InitializeVectorPointersTranportToMixed(transport);
 //    Print();
@@ -268,8 +269,8 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
         TPZCompEl *cel = fTransportMesh->Element(el);
         TPZGeoEl *gel = cel->Reference();
         int matid = gel->MaterialId();
-        int64_t volindex = VolumeElementIndex[el];
-        fVolumeElements[matid][volindex] = el;
+        int64_t cellindex = VolumeElementIndex[el];
+        fVolumeElements[matid][cellindex] = el;
     }
 }
 
@@ -550,12 +551,7 @@ void TPZAlgebraicDataTransfer::InitializeVectorPointersTranportToMixed(TPZAlgebr
 {
     for(auto &mesh_iter : fTransportMixedCorrespondence)
     {
-        
-        mesh_iter.fPermData = &transport.fCellsData.flambda;
-        mesh_iter.fMixedDensityData = &transport.fCellsData.fMixedDensity;
-        mesh_iter.fKxData = &transport.fCellsData.fKx;
-        mesh_iter.fKyData = &transport.fCellsData.fKy;
-        mesh_iter.fKzData = &transport.fCellsData.fKz;
+        mesh_iter.fTransport = &transport;
     }
 }
 
@@ -810,14 +806,14 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         TPZVec<REAL> ximasscent(dim);
         gel->CenterPoint(side, ximasscent);
         std::vector<REAL> center(dim,0.0);
-        TPZVec<REAL> result(dim,0.0);
-        gel->X(ximasscent, result);
+        TPZManVector<REAL,3> coord(dim,0.0);
+        gel->X(ximasscent, coord);
         
-        REAL kx_v   = fkx(result);
-        REAL ky_v   = fky(result);
-        REAL kz_v   = fkz(result);
-        REAL phi_v  = fphi(result);
-        REAL s0_v   = fs0(result);
+        REAL kx_v   = fkx(coord);
+        REAL ky_v   = fky(coord);
+        REAL kz_v   = fkz(coord);
+        REAL phi_v  = fphi(coord);
+        REAL s0_v   = fs0(coord);
 
         transport.fCellsData.fKx[i]=kx_v;
         transport.fCellsData.fKy[i]=ky_v;
@@ -826,7 +822,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fSaturation[i]=s0_v;
         transport.fCellsData.fSaturationLastState[i]=s0_v;
         
-        for (int ic =0; ic<dim; ic++) {center[ic]=result[ic];};
+        for (int ic =0; ic<dim; ic++) {center[ic]=coord[ic];};
         transport.fCellsData.fCenterCordinate[i] =center;
     }
     transport.fCellsData.fMatId = 1;
@@ -878,16 +874,6 @@ void TPZAlgebraicDataTransfer::TransportToMixedCorrespondence::Print(std::ostrea
     out << "fTransportCell vector ";
     for (auto value : fTransportCell) out << value << ' ';
     out << std::endl;
-    if(fPermData)
-    {
-        out << "fPermData vector ";
-        for (auto value : *fPermData) out << value << ' ';
-    }
-    else
-    {
-        out << "fPermData is NULL";
-    }
-    out << std::endl;
     out << "fMixedCell compel indices ";
     for(auto value : fMixedCell) out << value->Index() << ' ';
     out << std::endl;
@@ -917,46 +903,63 @@ void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
     for(auto &meshit : fTransportMixedCorrespondence)
     {
         int64_t ncells = meshit.fTransportCell.size();
-        for (int icell = 0; icell < ncells; icell++) {
-
-
 #ifdef PZDEBUG
-            if(meshit.fPermData == 0 || meshit.fEqNum[icell] >= meshit.fPermData->size())
-            {
-                DebugStop();
-            }
+        if(meshit.fTransport == 0)
+        {
+            DebugStop();
+        }
 #endif
-
-            meshit.fMixedCell[icell]->SetLambda((*meshit.fPermData)[meshit.fTransportCell[icell]]);
+        for (int icell = 0; icell < ncells; icell++)
+        {
+            int64_t cellindex = meshit.fTransportCell[icell];
+            meshit.fMixedCell[icell]->SetLambda(meshit.fTransport->fCellsData.flambda[cellindex]);
             
-  meshit.fMixedCell[icell]->SetMixedDensity((*meshit.fMixedDensityData)[meshit.fTransportCell[icell]]);
+            meshit.fMixedCell[icell]->SetMixedDensity(meshit.fTransport->fCellsData.fMixedDensity[cellindex]);
 
         }
     }
 }
 void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
+    
     for(auto &meshit : fTransportMixedCorrespondence)
     {
+        TPZAlgebraicTransport::TCellData &celldata = meshit.fTransport->fCellsData;
         int64_t ncells = meshit.fTransportCell.size();
         for (int icell = 0; icell < ncells; icell++) {
 #ifdef PZDEBUG
-            if(meshit.fKxData == 0 || meshit.fEqNum[icell] >= meshit.fPermData->size())
+            if(meshit.fTransport == 0 || meshit.fEqNum[icell] >= ncells)
             {
                 DebugStop();
             }
 #endif
             TPZFNMatrix<9, REAL> PermeabilityT, InvPerm;
-            PermeabilityT.Resize(3, 3);
-            InvPerm.Resize(3, 3);
-            PermeabilityT(0,0) = (*meshit.fKxData)[meshit.fTransportCell[icell]];
-            PermeabilityT(1,1) = (*meshit.fKyData)[meshit.fTransportCell[icell]];
-            PermeabilityT(2,2) = (*meshit.fKzData)[meshit.fTransportCell[icell]];
+            PermeabilityT.Redim(3, 3);
+            InvPerm.Redim(3, 3);
+            int64_t transportcell = meshit.fTransportCell[icell];
+            PermeabilityT(0,0) = (celldata.fKx)[transportcell];
+            PermeabilityT(1,1) = (celldata.fKy)[transportcell];
+            PermeabilityT(2,2) = (celldata.fKz)[transportcell];
             InvPerm(0,0) = 1.0/(PermeabilityT(0,0));
             InvPerm(1,1) = 1.0/(PermeabilityT(1,1));
             InvPerm(2,2) = 1.0/(PermeabilityT(2,2));
+            TPZCompEl *cel = meshit.fMixedCell[icell];
+            TPZGeoEl *gel = cel->Reference();
+            if(!gel) DebugStop();
+            TPZManVector<REAL,3> xcenter(3,0.), xi(gel->Dimension(),0.);
+            gel->CenterPoint(gel->NSides()-1, xi);
+            gel->X(xi, xcenter);
+            REAL diff = 0;
+            for(int i=0; i<3; i++)
+            {
+                diff += fabs(xcenter[i]-celldata.fCenterCordinate[transportcell][i]);
+            }
+            if(diff > 1.e-16)
+            {
+                DebugStop();
+            }
             //            meshit.fMixedCell[icell]->SetLambda((*meshit.fPermData)[meshit.fTransportCell[icell]]);
             meshit.fMixedCell[icell]->SetPermTensorAndInv(PermeabilityT,InvPerm) ;
-            meshit.fMixedCell[icell]->SetMixedDensity((*meshit.fMixedDensityData)[meshit.fTransportCell[icell]]);
+            meshit.fMixedCell[icell]->SetMixedDensity((celldata.fMixedDensity)[transportcell]);
             
         }
     }
