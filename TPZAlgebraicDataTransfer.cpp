@@ -716,6 +716,30 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
                 TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(celcondensed);
                 if(!fast) DebugStop();
                 transport.fMixedCell[count] = fast;
+                int transGelIndex = Volume_Index[gelindex];
+                
+                TPZGeoEl *fastgel = cel->Reference();
+                int dim = fastgel->Dimension();
+                int side = fastgel->NSides()-1;
+                TPZVec<REAL> coordFast(3), xifast(dim,0);
+                fastgel->CenterPoint(side, xifast);
+                fastgel->X(xifast, coordFast);
+                
+                TPZCompEl *transComp =fTransportMesh->Element(transGelIndex);
+                TPZGeoEl *transportGel = transComp->Reference();
+                TPZVec<REAL> coordTransp(3), xiTransp(dim,0);
+                transportGel->CenterPoint(side, xiTransp);
+                transportGel->X(xiTransp, coordTransp);
+                REAL diff = 0.0;
+                for(int i=0; i<3; i++)
+                {
+                    diff += fabs(coordTransp[i]- coordFast[i]);
+                }
+                if(diff > 1.e-16)
+                {
+                    DebugStop();
+                }
+                
                 transport.fTransportCell[count] = Volume_Index[gelindex];
                 count++;
             }
@@ -760,6 +784,8 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
             std::pair<int, int> lr = face_it.fLeftRightVolIndex;
             InterfaceVec.fLeftRightVolIndex.push_back(lr);
             InterfaceVec.fcelindex.push_back(face_it.fInterface_celindex);
+            
+            
             if(ncorner > ncormax) ncormax = ncorner;
             for(int i=0; i<ncorner; i++) numfaces[i]++;
         }
@@ -776,6 +802,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     }
    
     auto volData = fVolumeElements.rbegin();
+    
     int64_t nvols = volData->second.size();
    
     transport.fCellsData.SetNumCells(nvols);
@@ -784,6 +811,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     transport.fCellsData.fViscosity[1] = 0.1;
     for (int64_t i=0 ; i<nvols; i++) {
         int64_t celindex = volData->second[i];
+       
         TPZCompEl *cel = fTransportMesh->Element(celindex);
         TPZGeoEl *gel = cel->Reference();
         REAL volume = gel->Volume();
@@ -826,6 +854,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fCenterCordinate[i] =center;
     }
     transport.fCellsData.fMatId = 1;
+
     
     transport.fCellsData.UpdateFractionalFlowsAndLambda();
     this->InitializeVectorPointersTranportToMixed(transport);
