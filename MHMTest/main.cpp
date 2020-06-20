@@ -78,7 +78,7 @@ TPZGeoMesh * CreateGeoMeshWithTopeAndBase(std::string geometry_file2D, int nLaye
 void ModifyTopeAndBase(TPZGeoMesh * gmesh, std::string filename);
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
 void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
-void Gravity2DTest();
+void Gravity2D();
 void SimpleTest3D();
 void UNISIMTest();
 void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *alg);
@@ -86,9 +86,9 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
 //
 int main(){
     InitializePZLOG();
-    Gravity2D();
+//    Gravity2D();
 //    SimpleTest3D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 
@@ -276,7 +276,7 @@ void UNISIMTest(){
     aspace.SetGeometry(gmesh);
     std::string name="NewMesh";
     std::cout<< gmesh->NElements();
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(0);
     aspace.PrintGeometry(name);
     
     aspace.SetDataTransfer(sim_data);
@@ -287,64 +287,70 @@ void UNISIMTest(){
     bool UsePardiso_Q = true;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
+
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-    std::ofstream file("Transport.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
-    
-    {
-        std::ofstream out("fluxmesh.txt");
-        mixed_operator->MeshVector()[0]->Print(out);
-    }
-    //    TPZAlgebraicTransport transport;
-    //    TPZAlgebraicDataTransfer transfer;
-    //    transfer.SetMeshes(*mixed_operator, *transport_operator);
-    //    transfer.BuildTransportDataStructure(transport);
-    //
-    
-    
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+
+    TMRSPropertiesFunctions reservoir_properties;
+    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
+    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
+
+    auto kx = reservoir_properties.Create_Kx();
+    auto ky = reservoir_properties.Create_Ky();
+    auto kz = reservoir_properties.Create_Kz();
+    auto phi = reservoir_properties.Create_phi();
+    auto s0 = reservoir_properties.Create_s0();
+
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
-    
-    //    sfi_analysis->RunTimeStep();
-    
-    
-    //    exit(0);
-    //    sfi_analysis->m_mixed_module->RunTimeStep();
-    
-    
+
+    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
+
+    // Render a graphical map
+    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
-    
-    
+
+
     TPZStack<REAL,100> reporting_times;
     reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
-    
+
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
-    TPZFMatrix<REAL> solution_n;
-    solution_n = sfi_analysis->m_transport_module->Solution();
-    solution_n.Zero();
-    sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturationsLastState(solution_n);
+    
+    // Print initial condition
+    sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
+    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
+    sfi_analysis->PostProcessTimeStep();
+    REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+    std::cout << "Mass report at time : " << 0.0 << std::endl;
+    std::cout << "Mass integral :  " << initial_mass << std::endl;
     
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
         
-        
+       
         if (sim_time >=  current_report_time) {
+            std::cout << "Time step number:  " << it << std::endl;
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
             sfi_analysis->PostProcessTimeStep();
             pos++;
             current_report_time =reporting_times[pos];
+            
+            REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+            std::cout << "Mass report at time : " << sim_time << std::endl;
+            std::cout << "Mass integral :  " << mass << std::endl;
+            
         }
-        sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
     }
     
-    std::cout  << "Number of transportr equations = " << solution_n.Rows() << std::endl;
+    std::cout  << "Number of transportr equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
     
     
     
@@ -517,6 +523,7 @@ TMRSDataTransfer Setting3D(){
     sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
     return sim_data;
 }
+
 TMRSDataTransfer SettingUNISIM(){
     
     TMRSDataTransfer sim_data;
@@ -528,8 +535,8 @@ TMRSDataTransfer SettingUNISIM(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 1100.0;
-    REAL pressure_out = 100.0;
+    REAL pressure_in = 20.0;
+    REAL pressure_out = 10.0;
     
     //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
     //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(2,N_Type,zero_flux);
@@ -553,35 +560,47 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(-4,bc_outlet,1.0);
     
     //Fluid Properties
-    sim_data.mTFluidProperties.mWaterViscosity = 1.0;
-    sim_data.mTFluidProperties.mOilViscosity = 1.0;
+    sim_data.mTFluidProperties.mWaterViscosity = 0.001;
+    sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 800.0;
-    
+    sim_data.mTFluidProperties.mOilDensity = 500.0;
+
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
-    sim_data.mTNumerics.m_res_tol_mixed = 0.000001;
-    sim_data.mTNumerics.m_corr_tol_mixed = 0.000001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_sfi_tol = 0.001;
+//    sim_data.mTNumerics.m_res_tol_mixed = 0.00001;
+//    sim_data.mTNumerics.m_corr_tol_mixed = 0.00001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
     sim_data.mTNumerics.m_n_steps = 50;
-    sim_data.mTNumerics.m_dt      = 1000.0;
+    REAL day = 86400.0;
+    sim_data.mTNumerics.m_dt      = 1.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
+    std::vector<REAL> grav(3,0.0);
+    grav[2] = 0.0;//-9.81*(1.0e-6);
+    sim_data.mTNumerics.m_gravity = grav;
+    
+    
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("q");
-    //    scalnames.Push("p");
+//    scalnames.Push("p");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
+        scalnames.Push("kxx");
+        scalnames.Push("kyy");
+        scalnames.Push("kzz");
+        scalnames.Push("lambda");
+
     }
-    sim_data.mTPostProcess.m_file_time_step = 1000.0;
+    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
     
@@ -817,7 +836,7 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
      cmesh->MeshVector()[1]->Solution() = Kx;
      cmesh->MeshVector()[2]->Solution() = Ky;
      cmesh->MeshVector()[3]->Solution() = Kz;
-    
+     int dim = cmesh->Reference()->Dimension();
      TPZStack<std::string,10> scalnames, vecnames;
      vecnames.Push("q");
      scalnames.Push("Porosity");
@@ -825,7 +844,7 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
      scalnames.Push("Permeability_y");
      scalnames.Push("Permeability_z");
      std::string file("Props.vtk");
-     an->DefineGraphMesh(2,scalnames,vecnames,file);
-     an->PostProcess(0,2);
+     an->DefineGraphMesh(dim,scalnames,vecnames,file);
+     an->PostProcess(0,dim);
     
 }

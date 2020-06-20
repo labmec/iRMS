@@ -285,7 +285,7 @@ class TMRSPropertiesFunctions
                             REAL x,y,s;
                             x = pt[0];
                             y = pt[1];
-                            s = 0.25;
+                            s = 0.0;
                             return s;
                         };
                 }

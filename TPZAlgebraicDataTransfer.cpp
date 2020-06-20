@@ -868,7 +868,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     transport.fCellsData.fMatId = 1;
 
     
-    transport.fCellsData.UpdateFractionalFlowsAndLambda();
+    transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     this->InitializeVectorPointersTranportToMixed(transport);
     
 }
