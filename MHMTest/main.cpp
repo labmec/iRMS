@@ -71,14 +71,14 @@
 #include <libInterpolate/AnyInterpolator.hpp>
 
 
-TMRSDataTransfer Setting2D();
+TMRSDataTransfer SettingGravity2D();
 TMRSDataTransfer Setting3D();
 TMRSDataTransfer SettingUNISIM();
 TPZGeoMesh * CreateGeoMeshWithTopeAndBase(std::string geometry_file2D, int nLayers, bool print3DMesh, bool Is3DQ);
 void ModifyTopeAndBase(TPZGeoMesh * gmesh, std::string filename);
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
 void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
-void SimpleTest();
+void Gravity2DTest();
 void SimpleTest3D();
 void UNISIMTest();
 void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *alg);
@@ -86,16 +86,16 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
 //
 int main(){
     InitializePZLOG();
-    SimpleTest();
+    Gravity2D();
 //    SimpleTest3D();
 //    UNISIMTest();
     return 0;
 }
 
 
-void SimpleTest(){
+void Gravity2D(){
     
-    TMRSDataTransfer sim_data  = Setting2D();
+    TMRSDataTransfer sim_data  = SettingGravity2D();
     
     std::string geometry_file = "gmsh/simple_2D_coarse.msh";
     std::string name = "simplemesh.vtk";
@@ -350,7 +350,7 @@ void UNISIMTest(){
     
 }
 
-TMRSDataTransfer Setting2D(){
+TMRSDataTransfer SettingGravity2D(){
     
     TMRSDataTransfer sim_data;
     
