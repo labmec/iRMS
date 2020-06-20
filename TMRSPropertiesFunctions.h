@@ -9,6 +9,7 @@
 #define TMRSPropertiesFunctions_h
 
 #include "pzreal.h"
+#include "TRMSpatialPropertiesMap.h"
 
 class TMRSPropertiesFunctions
 {
