@@ -34,7 +34,7 @@ private:
     
     TPZFMatrix<STATE>  M_diag;
     
-    bool isLinear_Q = true;
+    bool isLinear_Q = false;
     
 public:
     

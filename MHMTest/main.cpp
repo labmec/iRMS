@@ -98,9 +98,9 @@ int main(){
     InitializePZLOG();
 //    Gravity2D();
 //    PaperTest2D();
-    PaperTest3D();
+//    PaperTest3D();
 //    SimpleTest3D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 
@@ -483,7 +483,7 @@ void SimpleTest3D(){
 }
 void UNISIMTest(){
     std::string geometry_file2D ="gmsh/UNISIMV_2.msh";
-    int nLayers = 1;
+    int nLayers = 3;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -921,7 +921,7 @@ TMRSDataTransfer SettingUNISIM(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 20.0;
+    REAL pressure_in = 30.0;
     REAL pressure_out = 10.0;
     
     //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -957,14 +957,14 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
+    sim_data.mTNumerics.m_sfi_tol = 0.00001;
     //    sim_data.mTNumerics.m_res_tol_mixed = 0.00001;
     //    sim_data.mTNumerics.m_corr_tol_mixed = 0.00001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 50;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 1000.0*day;
+    sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
