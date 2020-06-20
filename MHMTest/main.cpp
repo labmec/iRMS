@@ -86,9 +86,9 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
 //
 int main(){
     InitializePZLOG();
-    Gravity2D();
+//    Gravity2D();
 //    SimpleTest3D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 
@@ -263,7 +263,7 @@ void SimpleTest3D(){
 }
 void UNISIMTest(){
     std::string geometry_file2D ="gmsh/Contorno.msh";
-    int nLayers = 2;
+    int nLayers = 1;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -528,8 +528,8 @@ TMRSDataTransfer SettingUNISIM(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 1100.0;
-    REAL pressure_out = 100.0;
+    REAL pressure_in = 20.0;
+    REAL pressure_out = 10.0;
     
     //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
     //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(2,N_Type,zero_flux);
