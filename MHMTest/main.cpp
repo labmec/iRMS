@@ -263,7 +263,7 @@ void SimpleTest3D(){
 }
 void UNISIMTest(){
     std::string geometry_file2D ="gmsh/Contorno.msh";
-    int nLayers = 2;
+    int nLayers = 1;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
