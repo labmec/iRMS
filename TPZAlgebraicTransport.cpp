@@ -187,8 +187,9 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     ek(0,0) += dGLdSL * K_times_g_dot_n * (rho_wL - rho_oL);
     ek(0,1) += dGLdSR * K_times_g_dot_n * (rho_wL - rho_oL);
     
-    ek(1,0) -= dGRdSL * K_times_g_dot_n * (rho_wR - rho_oR);
-    ek(1,1) -= dGRdSR * K_times_g_dot_n * (rho_wR - rho_oR);
+    // Becase the flip
+    ek(1,1) -= dGRdSL * K_times_g_dot_n * (rho_wR - rho_oR);
+    ek(1,0) -= dGRdSR * K_times_g_dot_n * (rho_wR - rho_oR);
 }
 
 std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::f_star(std::pair<REAL, REAL> foL, std::pair<REAL, REAL> foR, std::pair<REAL, REAL> fwL, std::pair<REAL, REAL> fwR, REAL g_dot_n){

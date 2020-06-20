@@ -128,7 +128,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
             std::cout << "Number of iterations = " << i << std::endl;
             std::cout << "Mixed problem variations = " << error_rel_mixed << std::endl;
             std::cout << "Transport problem variations = " << error_rel_transport << std::endl;
-//            UpdateMemoryInModules();
+            m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
             break;
         }
         
@@ -157,8 +157,8 @@ void TMRSSFIAnalysis::PostProcessTimeStep(int val){
 void TMRSSFIAnalysis::SFIIteration(){
     
     {
-        m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
-       m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
+        m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+        m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
         fAlgebraicDataTransfer.TransferLambdaCoefficients();
        
 

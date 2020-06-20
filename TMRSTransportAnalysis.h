@@ -80,7 +80,7 @@ public:
     
     void ComputeInitialGuess(TPZFMatrix<STATE> &x);
     
-    void QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n);
+    bool QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n);
     
     void UpdateInitialSolutionFromCellsData();
    
