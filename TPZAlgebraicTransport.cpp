@@ -78,7 +78,6 @@ void TPZAlgebraicTransport::Contribute(int index, TPZFMatrix<double> &ek,TPZFMat
     REAL sat =fCellsData.fSaturation[index];
     REAL satLast = fCellsData.fSaturationLastState[index];
     REAL phi = fCellsData.fporosity[index];
-//    REAL elmass = fCellsData.fVolume[index]*phi;
     ef(0) = fCellsData.fVolume[index]*phi*(sat-satLast)/fdt;
     ek(0,0) = fCellsData.fVolume[index]*phi/fdt;
 }

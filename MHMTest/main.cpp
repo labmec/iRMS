@@ -104,7 +104,7 @@ void SimpleTest(){
     aspace.LoadGeometry(geometry_file);
 
     aspace.CreateUniformMesh(10, 10, 10, 10);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(2);
 
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -166,13 +166,14 @@ void SimpleTest(){
         TPZFNMatrix<2,double> dxx0,x;
         TPZFNMatrix<2,double> x0 = sfi_analysis->m_transport_module->Solution();
         TPZFNMatrix<2,double> dx = sfi_analysis->m_transport_module->Solution();
-        x0(0,0) = 0.25;
-        x0(1,0) = 0.75;
+        x0(0,0) = 0.0;
+        x0(1,0) = 1.0;
         x0.Print("x0 = ",std::cout,EMathematicaInput);
         
         dx(0,0) = 1.0;
         dx(1,0) = 1.0;
-        std::vector<double> alpha= {0.01,0.005,0.00125};
+        std::vector<double> alpha= {0.1,0.05,0.0125,0.00625,0.003125};
+        std::vector<double> error;
         {
             sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturations(x0);
             sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
@@ -194,8 +195,11 @@ void SimpleTest(){
             }
             r.Print("r = ",std::cout,EMathematicaInput);
             re.Print("re = ",std::cout,EMathematicaInput);
+            double error_v = Norm(r-re);
+            error.push_back(error_v);
         }
-        
+    
+        int aka = 0;
     }
     
     for (int it = 1; it <= n_steps; it++) {
@@ -431,11 +435,11 @@ TMRSDataTransfer Setting2D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
 //    sim_data.mTNumerics.m_res_tol_mixed = 0.00001;
 //    sim_data.mTNumerics.m_corr_tol_mixed = 0.00001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 50;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 1.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -522,8 +526,8 @@ TMRSDataTransfer Setting3D(){
     sim_data.mTNumerics.m_max_iter_sfi = 30;
     sim_data.mTNumerics.m_res_tol_mixed = 0.000001;
     sim_data.mTNumerics.m_corr_tol_mixed = 0.000001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
     sim_data.mTNumerics.m_n_steps = 30;
     REAL day = 1;
     sim_data.mTNumerics.m_dt      = 0.01;
