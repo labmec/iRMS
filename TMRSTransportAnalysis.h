@@ -34,6 +34,8 @@ private:
     
     TPZFMatrix<STATE>  M_diag;
     
+    bool isQuadratic_Q = true;
+    
 public:
     
     TPZAlgebraicTransport fAlgebraicTransport;

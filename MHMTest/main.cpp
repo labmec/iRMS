@@ -158,50 +158,6 @@ void SimpleTest(){
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
     
-    // Convergence test for IHU fluxes
-    if(0){
-        int index = 0;
-        TPZFNMatrix<4,double> j(2,2,0.0),j0(2,2,0.0);
-        TPZFNMatrix<2,double> re(2,1,0.0),r(2,1,0.0),r0(2,1,0.0);
-        TPZFNMatrix<2,double> dxx0,x;
-        TPZFNMatrix<2,double> x0 = sfi_analysis->m_transport_module->Solution();
-        TPZFNMatrix<2,double> dx = sfi_analysis->m_transport_module->Solution();
-        x0(0,0) = 0.0;
-        x0(1,0) = 1.0;
-        x0.Print("x0 = ",std::cout,EMathematicaInput);
-        
-        dx(0,0) = 1.0;
-        dx(1,0) = 1.0;
-        std::vector<double> alpha= {0.1,0.05,0.0125,0.00625,0.003125};
-        std::vector<double> error;
-        {
-            sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturations(x0);
-            sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
-            r0.Zero();
-            sfi_analysis->m_transport_module->fAlgebraicTransport.ContributeInterfaceIHU(index, j0, r0);
-            j0.Print("j0 = ",std::cout,EMathematicaInput);
-            r0.Print("r0 = ",std::cout,EMathematicaInput);
-        }
-        for (int i = 0; i < alpha.size(); i++) {
-            x = x0 + alpha[i] * dx;
-            TPZFNMatrix<2,double> diff = alpha[i] * dx;
-            j0.Multiply(diff, dxx0);
-            r = r0 + dxx0;
-            {
-                sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-                sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
-                re.Zero();
-                sfi_analysis->m_transport_module->fAlgebraicTransport.ContributeInterfaceIHU(index, j, re);
-            }
-            r.Print("r = ",std::cout,EMathematicaInput);
-            re.Print("re = ",std::cout,EMathematicaInput);
-            double error_v = Norm(r-re);
-            error.push_back(error_v);
-        }
-    
-        int aka = 0;
-    }
-    
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
