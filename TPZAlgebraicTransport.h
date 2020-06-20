@@ -93,7 +93,7 @@ public:
         std::vector<REAL> fDerivativeOfractionalflow;
         
 //        std::vector<std::vector<REAL>> fOilfractionalflow;
-        std::vector<std::vector<REAL>> fCenterCordinate;
+        std::vector<std::vector<REAL>> fCenterCoordinate;
         
         // fCompressibility[0] = water, fCompressibility[1]=oil, fCompressibility[2]=gas etc.
         std::vector<REAL> fCompressibility;
@@ -101,7 +101,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0),fSaturationLastState(0), fPressure(0), fDensityOil(0),fDensityWater(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCordinate(0),
+        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0),fSaturationLastState(0), fPressure(0), fDensityOil(0),fDensityWater(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCoordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -124,7 +124,7 @@ public:
             fDerivativeWfractionalflow = copy.fDerivativeWfractionalflow;
             fOilfractionalflow = copy.fOilfractionalflow;
             fDerivativeOfractionalflow=copy.fDerivativeOfractionalflow;
-            fCenterCordinate = copy.fCenterCordinate;
+            fCenterCoordinate = copy.fCenterCoordinate;
             fporosity = copy.fporosity;
             fKx = copy.fKx;
             fKy = copy.fKy;
@@ -151,7 +151,7 @@ public:
             fDerivativeWfractionalflow=copy.fDerivativeWfractionalflow;
             fOilfractionalflow = copy.fOilfractionalflow;
             fDerivativeOfractionalflow = copy.fDerivativeOfractionalflow;
-            fCenterCordinate = copy.fCenterCordinate;
+            fCenterCoordinate = copy.fCenterCoordinate;
             fporosity = copy.fporosity;
             fKx = copy.fKx;
             fKy = copy.fKy;
@@ -183,7 +183,7 @@ public:
             fDerivativeWfractionalflow.resize(ncells);
             fOilfractionalflow.resize(ncells);
             fDerivativeOfractionalflow.resize(ncells);
-            fCenterCordinate.resize(ncells);
+            fCenterCoordinate.resize(ncells);
         }
         void UpdateSaturations(TPZFMatrix<STATE> &dsx);
         void UpdateSaturationsLastState(TPZFMatrix<STATE> &sw);
@@ -202,6 +202,7 @@ public:
     int inletmatid;
     int outletmatid;
     int interfaceid;
+    
     //number of volumetric elements in the transport mesh
     int fNVolumesTransport = 0;
     // Cells data structure, one material at a time

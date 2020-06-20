@@ -52,9 +52,10 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fphi = phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+//    fAlgebraicDataTransfer.CheckDataTransferTransportToMixed();
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     
-    
+//    fAlgebraicDataTransfer.CheckDataTransferTransportToMixed();
 //    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
    
 //    int n_mixed_dof = m_mixed_module->Solution().Rows();
@@ -127,7 +128,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
             std::cout << "Number of iterations = " << i << std::endl;
             std::cout << "Mixed problem variations = " << error_rel_mixed << std::endl;
             std::cout << "Transport problem variations = " << error_rel_transport << std::endl;
-//            UpdateMemoryInModules();
+            m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
             break;
         }
         
@@ -156,8 +157,9 @@ void TMRSSFIAnalysis::PostProcessTimeStep(int val){
 void TMRSSFIAnalysis::SFIIteration(){
     
     {
-        m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
-       m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
+        
+        m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+        m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
         fAlgebraicDataTransfer.TransferLambdaCoefficients();
        
 
@@ -283,5 +285,30 @@ void TMRSSFIAnalysis::UpdateMemoryTransportModule(){
 void TMRSSFIAnalysis::UpdateMemoryInModules(){
 //    UpdateMemoryMixedModule();
     UpdateMemoryTransportModule();
+}
+
+#include "TPZFastCondensedElement.h"
+// transfer the permeability and lambda to the element solution for post processing
+void TMRSSFIAnalysis::SetMixedMeshElementSolution(TPZCompMesh *cmesh)
+{
+    int64_t nel = cmesh->NElements();
+    cmesh->ElementSolution().Redim(nel, 4);
+    int64_t count = 0;
+    for (int64_t el=0; el<nel; el++) {
+        TPZCompEl *cel = cmesh->Element(el);
+        TPZSubCompMesh *submesh = dynamic_cast<TPZSubCompMesh *>(cel);
+        if(submesh)
+        {
+            SetMixedMeshElementSolution(submesh);
+            continue;
+        }
+        TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(cel);
+        if(!fast) continue;
+        count++;
+        cmesh->ElementSolution()(el,0) = fast->GetPermTensor()(0,0);
+        cmesh->ElementSolution()(el,1) = fast->GetPermTensor()(1,1);
+        cmesh->ElementSolution()(el,2) = fast->GetPermTensor()(2,2);
+        cmesh->ElementSolution()(el,3) = fast->GetLambda();
+    }
 }
 

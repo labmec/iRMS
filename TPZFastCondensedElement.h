@@ -85,8 +85,18 @@ public:
     void SetMixedDensity(REAL density);
     REAL GetMixedDensity();
 
+    /**
+     * @brief Calculates the solution - sol - for the variable var
+     * at point qsi, where qsi is expressed in terms of the
+     * master element coordinates
+     * @param qsi master element coordinate
+     * @param var variable name
+     * @param sol vetor for the solution
+     */
+    virtual void Solution(TPZVec<REAL> &qsi,int var,TPZVec<STATE> &sol) override;
+    
     void SetPermTensorAndInv(TPZFNMatrix<9, REAL> &PermeabilityTensor, TPZFNMatrix<9, REAL> &InvPerm);
-    TPZFNMatrix<9, REAL>  GetPermTensor();
+    TPZFMatrix<REAL> &GetPermTensor();
     
 };
 #endif /* TPZFASTCONDENSEDELEMENT_h */

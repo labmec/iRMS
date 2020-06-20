@@ -26,6 +26,9 @@
 #include "TPZExtendGridDimension.h"
 #include "TMRSSFIAnalysis.h"
 #include "TPZMHMixedMeshControl.h"
+
+class TPZAlgebraicDataTransfer;
+
 class TMRSApproxSpaceGenerator : public TMRSSavable {
     
 public:
@@ -81,6 +84,10 @@ public:
     
     TPZCompMesh * DiscontinuousCmesh(int order = 0);
     
+    // build a discontinuous mesh with the order of the elements according to the
+    // algebraic transport mesh. The order is always 0
+    TPZCompMesh * DiscontinuousCmesh(TPZAlgebraicDataTransfer &Atransfer);
+    
     void BuildMixedMultiPhysicsCompMesh(int order);
     
     void BuildMixed2SpacesMultiPhysicsCompMesh(int order);
@@ -92,7 +99,7 @@ public:
     void BuildMHMMixed4SpacesMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh *CreateMixedOperatorMHM();
     
-    TPZMultiphysicsCompMesh *BuildAuxPosProcessCmesh();
+    TPZMultiphysicsCompMesh *BuildAuxPosProcessCmesh(TPZAlgebraicDataTransfer &Atransfer);
     void BuildMixedSCStructures();
     
     void BuildTransportMultiPhysicsCompMesh();

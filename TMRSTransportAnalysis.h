@@ -34,6 +34,8 @@ private:
     
     TPZFMatrix<STATE>  M_diag;
     
+    bool isLinear_Q = true;
+    
 public:
     
     TPZAlgebraicTransport fAlgebraicTransport;
@@ -80,7 +82,7 @@ public:
     
     void ComputeInitialGuess(TPZFMatrix<STATE> &x);
     
-    void QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n);
+    bool QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n);
     
     void UpdateInitialSolutionFromCellsData();
    

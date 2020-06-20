@@ -58,11 +58,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
     if (!cmesh) {
         DebugStop();
     }
-    {
-        std::ofstream out("mixed_mesh.txt");
-        cmesh->Print(out);
-    }
-    int n = m_sim_data->mTNumerics.m_max_iter_mixed;
+
+    int n = 1;//m_sim_data->mTNumerics.m_max_iter_mixed;
     bool stop_criterion_Q = false;
     bool stop_criterion_corr_Q = false;
     REAL res_norm = 1.0;

@@ -365,6 +365,74 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
     return cmesh;
 }
 
+TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTransfer &Atransfer){
+ 
+    if (!mGeometry) {
+        DebugStop();
+    }
+    int order = 0;
+    TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
+    TPZL2Projection * volume = nullptr;
+    int dimension = mGeometry->Dimension();
+    cmesh->SetDefaultOrder(order);
+    
+    std::vector<std::map<std::string,int>> &DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+    int nstate = 1;
+    TPZVec<STATE> sol;
+    for (int d = 0; d <= dimension; d++) {
+        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
+            std::string material_name = chunk.first;
+            std::cout << "physical name = " << material_name << std::endl;
+            int materia_id = chunk.second;
+            volume = new TPZL2Projection(materia_id,d,nstate, sol);
+            cmesh->InsertMaterialObject(volume);
+        }
+    }
+    
+    if (!volume) {
+        DebugStop();
+    }
+    
+    // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
+    
+    cmesh->SetAllCreateFunctionsDiscontinuous();
+
+    // The index of the computational volume elements in the transport mesh identified by material id
+//    std::map<int,TPZVec<int64_t>> fVolumeElements;
+    int64_t vol_index = 0;
+    TPZVec<int64_t> &elindices = Atransfer.fVolumeElements;
+    for (int64_t i=0; i<elindices.size(); i++) {
+        int64_t el = elindices[i];
+        TPZCompEl *cel = mTransportOperator->Element(el);
+        if(!cel) DebugStop();
+        TPZGeoEl *gel = cel->Reference();
+        if(!gel) DebugStop();
+        int dim = gel->Dimension();
+        int matid = gel->MaterialId();
+        if(cmesh->FindMaterial(matid) == 0) continue;
+        int64_t celindex;
+        cmesh->CreateCompEl(gel, celindex);
+        vol_index++;
+    }
+    cmesh->InitializeBlock();
+    
+
+    
+#ifdef PZDEBUG
+    std::stringstream file_name;
+    if (order == 0) {
+        file_name << "s_cmesh" << ".txt";
+    }
+    else{
+        file_name << "p_cmesh" << ".txt";
+    }
+    std::ofstream sout(file_name.str().c_str());
+    cmesh->Print(sout);
+#endif
+    
+    return cmesh;
+}
+
 
 void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     
@@ -1157,7 +1225,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
 #endif
     
 }
-TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(){
+TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(TPZAlgebraicDataTransfer &Atransfer){
     
     if (!mGeometry) {
         DebugStop();
@@ -1166,11 +1234,11 @@ TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(){
 //    TPZManVector<TPZCompMesh *,5> mixed_meshvec = mMixedOperator->MeshVector();
     TPZManVector<TPZCompMesh *,5> transport_meshvec(5);
     
-    transport_meshvec[0] = DiscontinuousCmesh();
-    transport_meshvec[1] = DiscontinuousCmesh();
-    transport_meshvec[2] = DiscontinuousCmesh();
-    transport_meshvec[3] = DiscontinuousCmesh();
-    transport_meshvec[4] = DiscontinuousCmesh();
+    transport_meshvec[0] = DiscontinuousCmesh(Atransfer);
+    transport_meshvec[1] = DiscontinuousCmesh(Atransfer);
+    transport_meshvec[2] = DiscontinuousCmesh(Atransfer);
+    transport_meshvec[3] = DiscontinuousCmesh(Atransfer);
+    transport_meshvec[4] = DiscontinuousCmesh(Atransfer);
     
     
     int dimension = mGeometry->Dimension();

@@ -69,17 +69,26 @@ void TPZMixedDarcyWithFourSpaces::Contribute(TPZVec<TPZMaterialData> &datavec,RE
 int TPZMixedDarcyWithFourSpaces::VariableIndex(const std::string &name) {
     if(!strcmp("g_average",name.c_str()))        return  5;
     if(!strcmp("p_average",name.c_str()))        return  6;
+    if(!strcmp("kxx",name.c_str()))        return  100;
+    if(!strcmp("kyy",name.c_str()))        return  101;
+    if(!strcmp("kzz",name.c_str()))        return  102;
+    if(!strcmp("lambda",name.c_str()))     return  103;
     return TPZMixedDarcyFlow::VariableIndex(name);
 }
 
 int TPZMixedDarcyWithFourSpaces::NSolutionVariables(int var) {
     if(var == 5) return 1;
     if(var == 6) return 1;
+    if(var == 7) return 100;
+    if(var == 8) return 101;
+    if(var == 9) return 102;
+    if(var == 10) return 103;
     return TPZMixedDarcyFlow::NSolutionVariables(var);
 }
 
 void TPZMixedDarcyWithFourSpaces::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<STATE> &Solout){
 
+    if(var >= 100 && var <= 103) DebugStop();
     int g_avgb = 2;
     int p_avgb = 3;
     

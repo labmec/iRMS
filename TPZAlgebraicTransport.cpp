@@ -78,7 +78,6 @@ void TPZAlgebraicTransport::Contribute(int index, TPZFMatrix<double> &ek,TPZFMat
     REAL sat =fCellsData.fSaturation[index];
     REAL satLast = fCellsData.fSaturationLastState[index];
     REAL phi = fCellsData.fporosity[index];
-//    REAL elmass = fCellsData.fVolume[index]*phi;
     ef(0) = fCellsData.fVolume[index]*phi*(sat-satLast)/fdt;
     ek(0,0) = fCellsData.fVolume[index]*phi/fdt;
 }
@@ -91,21 +90,20 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     REAL fw_R = fCellsData.fWaterfractionalflow[lr_index.second];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
     REAL dfwSw_R = fCellsData.fDerivativeWfractionalflow[lr_index.second];
-    REAL phi_L = fCellsData.fporosity[lr_index.first];
-    REAL phi_R = fCellsData.fporosity[lr_index.second];
+    
     REAL beta =0.0;
     //upwind
     if (fluxint>0.0) {
         beta = 1.0;
     }
     
-    ef(0) = +1.0*(beta*fw_L*(1/phi_L) + (1-beta)*fw_R*(1/phi_R))*fluxint;
-    ef(1) = -1.0*(beta*fw_L*(1/phi_L)  + (1-beta)*fw_R*(1/phi_R))*fluxint;
+    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint;
+    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint;
     
-    ek(0,0) = +1.0*dfwSw_L *(1/phi_L) * beta * fluxint;
-    ek(0,1) = +1.0*dfwSw_R*(1/phi_R) * (1-beta) * fluxint;
-    ek(1,0) = -1.0*dfwSw_L*(1/phi_L) * beta * fluxint;
-    ek(1,1) = -1.0*dfwSw_R*(1/phi_R) * (1-beta)*fluxint;
+    ek(0,0) = +1.0*dfwSw_L  * beta * fluxint;
+    ek(0,1) = +1.0*dfwSw_R * (1-beta) * fluxint;
+    ek(1,0) = -1.0*dfwSw_L* beta * fluxint;
+    ek(1,1) = -1.0*dfwSw_R * (1-beta)*fluxint;
     
     // Gravity fluxes contribution
     ContributeInterfaceIHU(index, ek, ef);
@@ -123,10 +121,6 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     n[2] = std::get<2>(normal);
     
     REAL g_dot_n = n[0]*fgravity[0]+n[1]*fgravity[1]+n[2]*fgravity[2];
-//    g_dot_n *= -1.0;
-
-    REAL sL = fCellsData.fSaturation[lr_index.first];
-    REAL sR = fCellsData.fSaturation[lr_index.second];
     
     REAL lambdaL = fCellsData.flambda[lr_index.first];
     REAL lambdaR = fCellsData.flambda[lr_index.second];
@@ -153,7 +147,6 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, foR, fwL, fwR, g_dot_n);
     std::pair<REAL, std::pair<REAL, REAL>> fstarR = f_star(foR, foL, fwR, fwL, -g_dot_n);
     
-
     REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
     REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
     REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
@@ -173,11 +166,9 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     REAL Ky_R =  fCellsData.fKy[lr_index.first];
     REAL Kz_R =  fCellsData.fKz[lr_index.first];
     
-    
     REAL K_x = 2.0*(Kx_L * Kx_R)/(Kx_L + Kx_R);
     REAL K_y = 2.0*(Ky_L * Ky_R)/(Ky_L + Ky_R);
     REAL K_z = 2.0*(Kz_L * Kz_R)/(Kz_L + Kz_R);
-    
     
     // Beacuse we assume diagonal abs. perm tensor
     REAL K_times_g_dot_n = (K_x*n[0]*fgravity[0]+K_y*n[1]*fgravity[1]+K_z*n[2]*fgravity[2]);
@@ -195,11 +186,9 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     ek(0,0) += dGLdSL * K_times_g_dot_n * (rho_wL - rho_oL);
     ek(0,1) += dGLdSR * K_times_g_dot_n * (rho_wL - rho_oL);
     
-    ek(1,0) -= dGRdSL * K_times_g_dot_n * (rho_wR - rho_oR);
-    ek(1,1) -= dGRdSR * K_times_g_dot_n * (rho_wR - rho_oR);
-//    ef.Print("ef = ",std::cout, EMathematicaInput);
-//    ek.Print("ek = ",std::cout, EMathematicaInput);
-//    int aka = 0;
+    // Becase the flip
+    ek(1,1) -= dGRdSL * K_times_g_dot_n * (rho_wR - rho_oR);
+    ek(1,0) -= dGRdSR * K_times_g_dot_n * (rho_wR - rho_oR);
 }
 
 std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::f_star(std::pair<REAL, REAL> foL, std::pair<REAL, REAL> foR, std::pair<REAL, REAL> fwL, std::pair<REAL, REAL> fwR, REAL g_dot_n){
@@ -266,8 +255,8 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
     for (int iel =0; iel< nels; iel++) {
         out<<"Material_Id: "<<this->fMatId<<std::endl;
         out<<"Center Cord: ";
-        for (int ic=0 ; ic<fCenterCordinate[iel].size(); ic++) {
-            out<<fCenterCordinate[iel][ic]<<" ";
+        for (int ic=0 ; ic<fCenterCoordinate[iel].size(); ic++) {
+            out<<fCenterCoordinate[iel][ic]<<" ";
         }
         out<<std::endl;
         out<<"Volume : "<<this->fVolume[iel]<<std::endl;

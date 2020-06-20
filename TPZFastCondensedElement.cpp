@@ -55,7 +55,6 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     
     ef.fMat *= -1.0*Glambda;
     
-    
 }
 
 /**
@@ -135,6 +134,35 @@ void TPZFastCondensedElement::SetPermTensorAndInv(TPZFNMatrix<9, REAL> &Permeabi
     fPermeabilityTensor = PermeabilityTensor;
     fInvPerm = InvPerm;
 }
-TPZFNMatrix<9, REAL> TPZFastCondensedElement::GetPermTensor(){
+TPZFMatrix<REAL> &TPZFastCondensedElement::GetPermTensor(){
     return  fPermeabilityTensor;
+}
+
+/**
+ * @brief Calculates the solution - sol - for the variable var
+ * at point qsi, where qsi is expressed in terms of the
+ * master element coordinates
+ * @param qsi master element coordinate
+ * @param var variable name
+ * @param sol vetor for the solution
+ */
+void TPZFastCondensedElement::Solution(TPZVec<REAL> &qsi,int var,TPZVec<STATE> &sol)
+{
+    switch (var) {
+        case 7:
+            sol[0] = fPermeabilityTensor(0,0);
+            break;
+        case 8:
+            sol[0] = fPermeabilityTensor(1,1);
+            break;
+        case 9:
+            sol[0] = fPermeabilityTensor(2,2);
+            break;
+        case 10:
+            sol[0] = fLambda;
+            break;
+        default:
+            TPZCondensedCompEl::Solution(qsi, var, sol);
+            break;
+    }
 }
