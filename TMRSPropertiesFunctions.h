@@ -84,7 +84,7 @@ class TMRSPropertiesFunctions
                             REAL x,y,kx;
                             x = pt[0];
                             y = pt[1];
-                            kx = 1.0e-7;;
+                            kx = 1.0e-7;
                             return kx;
                         };
                 }
