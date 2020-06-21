@@ -2,7 +2,7 @@
 //  TRMSpatialPropertiesMap.h
 //  PZ
 //
-//  Created by omar duran on 5/05/2015.
+//  Created by omar duran on 21/06/2020.
 //
 //
 
@@ -21,32 +21,21 @@
 #include "pzgeopoint.h"
 #include "tpzgeoelrefpattern.h"
 #include "TPZRefPatternTools.h"
-#include "TRMSpatialMap.h"
 #include "pzanalysis.h"
 #include "pzinterpolationspace.h"
 
 class TRMSpatialPropertiesMap{
     
     
-private:
+public:
     
-    /** @brief L2 computational mesh for compute spatial properties of SPE10 */
-    TPZCompMesh * fSPE10Cmesh;
-
-    /** @brief Gmsh grid file */
-    std::string fGridName;
+    std::vector<std::vector<REAL>> m_grid_coordinates;
     
-    /** @brief Set SPE10 fields file */
-    std::pair< std::string , std::string > fPermPorFields;
+    std::vector<std::vector<REAL>> m_properties;
     
-    /** @brief number of blocks i, j and k  */
-    TPZStack<int> fNBlocks;
+    REAL m_kappa_default;
     
-    /** @brief size of blocks dx, dy and dz  */
-    TPZStack<REAL> fBlocks_sizes;
-    
-    /** @brief size of blocks dx, dy and dz  */
-    std::map<int64_t,int64_t> fm_data;
+    REAL m_phi_default;
         
 public:
     
@@ -54,76 +43,39 @@ public:
     TRMSpatialPropertiesMap();
     
     /** @brief default constructor */
-    TRMSpatialPropertiesMap(TRMSpatialPropertiesMap &copy)
+    TRMSpatialPropertiesMap(TRMSpatialPropertiesMap &other)
     {
-        DebugStop();
+        m_grid_coordinates  = other.m_grid_coordinates;
+        m_properties        = other.m_properties;
     }
     
     /** @brief default constructor */
-    TRMSpatialPropertiesMap &operator=(TRMSpatialPropertiesMap &copy)
+    TRMSpatialPropertiesMap &operator=(TRMSpatialPropertiesMap &other)
     {
-        DebugStop();
+        // check for self-assignment
+        if(&other == this){
+            return *this;
+        }
+        m_grid_coordinates  = other.m_grid_coordinates;
+        m_properties        =   other.m_properties;
+        
         return *this;
     }
     
     /** @brief default destructor */
     ~TRMSpatialPropertiesMap();
 
+    /** @brief Evaluate the permeabilty as diagonal tensor and porosity */
+    void SampleKappaAndPhi(TPZManVector<REAL,3> &x, std::vector<REAL> &kappa_and_phi);
 
-    /** @brief Compute permeabilty diagonal tensor */
-    void Kappa(TPZManVector<STATE,3> &x, TPZFMatrix<STATE> &kappa);
     
-    /** @brief compute porosity */
-    void phi(TPZManVector<STATE,3> &x, TPZManVector<STATE,10> &phi);
-    
-    /** @brief Set SPE10 fields file */
-    void SetSpatialFields(TPZStack<int> NBlocks, TPZStack<REAL> Blocks_sizes, std::pair< std::string , std::string > PermPorFields){
-        fNBlocks = NBlocks;
-        fBlocks_sizes = Blocks_sizes;
-        fPermPorFields = PermPorFields;
+    /** @brief Set Carterian mesh data  */
+    void SetCartesianMeshData(){
+        
     }
-    
-    /** @brief Set SPE10 fields file */
-    std::pair< std::string , std::string > & SpatialFields(){
-        return fPermPorFields;
-    }
-    
-    /** @brief Get SPE10 fields file */
-    TPZStack<int> & NBlocks(){
-        return fNBlocks;
-    }
-    
-    /** @brief Get SPE10 fields file */
-    TPZStack<REAL> & Blocks_sizes(){
-        return fBlocks_sizes;
-    }
-    
-    /** @brief Load spatial properties from SPE10 cartesian intact fields Kx, ky, kz and phi */
-    void LoadSPE10Map(bool PrintMapQ);
-    
-    /** @brief Load spatial properties from SPE10 cartesian intact fields Kx, ky, kz and phi */
-    bool ComputePropertieSPE10Map(long & index, TPZVec<STATE> &x, TPZFMatrix<STATE> &kappa, TPZFMatrix<STATE> &inv_kappa, REAL & phi);
 
-    /** @brief Insert spatial properties from SPE10 on pz mesh of order zero */
-    bool Insert_Inside_Map(int n_data);
-    
-    /** @brief Get dof for spatial properties from SPE10 on pz mesh with connect solution (kx,ky,kz,phi) */
-    void ElementDofIndexes(TPZInterpolationSpace * &intel, TPZVec<long> &dof_indexes);
-    
-    /** @brief Create a reservoir-box geometry */
-    TPZGeoMesh * CreateGeometricBoxMesh(TPZManVector<REAL,2> dx, TPZManVector<REAL,2> dy, TPZManVector<REAL,2> dz);
-    
-    static void ParametricfunctionX(const TPZVec<STATE> &par, TPZVec<STATE> &X);
-    
-    static void ParametricfunctionY(const TPZVec<STATE> &par, TPZVec<STATE> &X);
-    
-    static void ParametricfunctionZ(const TPZVec<STATE> &par, TPZVec<STATE> &X);
-    
-    void ExpandGeomesh(TPZGeoMesh *gmesh, REAL sx, REAL  sy, REAL  sz);
-    
-    void TraslateGeomesh(TPZGeoMesh *gmesh, TPZVec<REAL> t_vec);
-    
-    void RotateGeomesh(TPZGeoMesh *gmesh, REAL CounterClockwiseAngle, int &Axis);
+    /** @brief Set Corner grid mesh data  */
+    void SetCornerGridMeshData(size_t n_cells, std::string corner_data_name, std::string props_data_name);
     
 };
 

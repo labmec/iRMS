@@ -108,6 +108,10 @@ file(GLOB mesh
   "gmsh/*.msh"
 )
 
+file(GLOB mapsdata
+  "maps/*.dat"
+)
+
 file(COPY ${mesh} DESTINATION ./LinearTracer/Debug/gmsh)
 file(COPY ${mesh} DESTINATION ./LinearTracer/Release/gmsh)
 
@@ -134,8 +138,8 @@ file (COPY PetroPhysics  DESTINATION ./FourSpacesTest/Release)
 file(COPY ${mesh} DESTINATION ./MHMTest/Debug/gmsh)
 file(COPY ${mesh} DESTINATION ./MHMTest/Release/gmsh)
 
-file(COPY ${maps} DESTINATION ./MHMTest/Debug/maps)
-file(COPY ${maps} DESTINATION ./MHMTest/Release/maps)
+file(COPY ${mapsdata} DESTINATION ./MHMTest/Debug/maps)
+file(COPY ${mapsdata} DESTINATION ./MHMTest/Release/maps)
 
 file (COPY PetroPhysics  DESTINATION ./MHMTest/Debug)
 file (COPY PetroPhysics  DESTINATION ./MHMTest/Release)

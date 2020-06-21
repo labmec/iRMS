@@ -834,26 +834,40 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         REAL kz_v = 1.e-7;
         REAL s0_v = 0.0;
         REAL phi_v = 0.1;
-        if(fkx)
-        {
-            kx_v   = fkx(coord);
+        
+        if(fkappa_phi){
+            std::vector<REAL> kappa_phi = fkappa_phi(coord);
+            kx_v = 1.e-7*kappa_phi[0];
+            ky_v = 1.e-7*kappa_phi[1];
+            kz_v = 1.e-7*kappa_phi[2];
+            phi_v= kappa_phi[3] + 0.01;
+        }else{
+            if(fkx)
+            {
+                kx_v   = fkx(coord);
+            }
+            if(fky)
+            {
+                ky_v   = fky(coord);
+            }
+            if(fkz)
+            {
+                kz_v   = fkz(coord);
+            }
+            if(fphi)
+            {
+                phi_v   = fphi(coord);
+            }
         }
-        if(fky)
-        {
-            ky_v   = fky(coord);
-        }
-        if(fkz)
-        {
-            kz_v   = fkz(coord);
-        }
+        
+        
         if(fs0)
         {
             s0_v   = fs0(coord);
         }
-        if(fphi)
-        {
-            phi_v   = fphi(coord);
-        }
+   
+        
+        
 
         transport.fCellsData.fKx[i]=kx_v;
         transport.fCellsData.fKy[i]=ky_v;

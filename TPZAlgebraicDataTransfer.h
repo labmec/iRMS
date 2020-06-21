@@ -28,6 +28,7 @@ public:
     std::function<REAL(const TPZVec<REAL> & )> fkz;
     std::function<REAL(const TPZVec<REAL> & )> fphi;
     std::function<REAL(const TPZVec<REAL> & )> fs0;
+    std::function<std::vector<REAL>(const TPZVec<REAL> & )> fkappa_phi;
     
     TPZMultiphysicsCompMesh *fFluxMesh;
     

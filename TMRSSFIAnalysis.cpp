@@ -26,17 +26,8 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
-   
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-    
-     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
-    
-//    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
-   
-//    int n_mixed_dof = m_mixed_module->Solution().Rows();
-//    int n_transport_dof = m_transport_module->Solution().Rows();
-//    m_x_mixed.Resize(n_mixed_dof, 1);
-//    m_x_transport.Resize(n_transport_dof, 1);
+    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     
 }
 
@@ -52,17 +43,19 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fphi = phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-//    fAlgebraicDataTransfer.CheckDataTransferTransportToMixed();
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+}
+
+TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
+    m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
+    m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
     
-//    fAlgebraicDataTransfer.CheckDataTransferTransportToMixed();
-//    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+    fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
    
-//    int n_mixed_dof = m_mixed_module->Solution().Rows();
-//    int n_transport_dof = m_transport_module->Solution().Rows();
-//    m_x_mixed.Resize(n_mixed_dof, 1);
-//    m_x_transport.Resize(n_transport_dof, 1);
-    
+    fAlgebraicDataTransfer.fkappa_phi = kappa_phi;
+    fAlgebraicDataTransfer.fs0 = s0;
+    fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
 }
 
 void TMRSSFIAnalysis::Configure(int n_threads, bool UsePardiso_Q){

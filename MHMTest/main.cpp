@@ -66,7 +66,9 @@
 #include "pzcondensedcompel.h"
 
 #include "TPZAlgebraicDataTransfer.h"
+
 #include "TMRSPropertiesFunctions.h"
+#include "TRMSpatialPropertiesMap.h"
 #include <libInterpolate/Interpolate.hpp>
 #include <libInterpolate/AnyInterpolator.hpp>
 
@@ -482,6 +484,20 @@ void SimpleTest3D(){
     std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
 }
 void UNISIMTest(){
+    
+    // spatial properties
+    int64_t n_cells = 93960;
+    std::string grid_data = "maps/corner_grid_coordinates.dat";
+    std::string props_data = "maps/corner_grid_props.dat";
+    TRMSpatialPropertiesMap properties_map;
+    properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data);
+    
+    TMRSPropertiesFunctions reservoir_properties;
+    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
+
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
+    auto s0 = reservoir_properties.Create_s0();
+    
     std::string geometry_file2D ="gmsh/UNISIMV_FUNCIONAL1.msh";
     int nLayers = 1;
     bool is3DQ = true;
@@ -512,19 +528,8 @@ void UNISIMTest(){
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
 
-    TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
-    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
-    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
-
-    auto kx = reservoir_properties.Create_Kx();
-    auto ky = reservoir_properties.Create_Ky();
-    auto kz = reservoir_properties.Create_Kz();
-    auto phi = reservoir_properties.Create_phi();
-    auto s0 = reservoir_properties.Create_s0();
-
     
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi,s0);
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     
@@ -960,10 +965,8 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
     sim_data.mTNumerics.m_sfi_tol = 0.00001;
-    //    sim_data.mTNumerics.m_res_tol_mixed = 0.00001;
-    //    sim_data.mTNumerics.m_corr_tol_mixed = 0.00001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10.0*day;
