@@ -249,7 +249,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(isLinear_Q);
+        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
         AssembleResidual();
         corr_norm = Norm(dx);
@@ -308,11 +308,13 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         x += Solution();
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
-        fAlgebraicTransport.fCellsData.UpdateSaturations(x);
         
-        if (isLinear_Q) {
+        
+        if (m_sim_data->mTNumerics.m_ISLinearKrModelQ) {
+            fAlgebraicTransport.fCellsData.UpdateSaturations(x);
             fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
         }else{
+            fAlgebraicTransport.fCellsData.UpdateSaturations(x);
             fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambdaQuasiNewton();
         }
         

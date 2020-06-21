@@ -158,7 +158,7 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     {
         
-        m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda();
+        m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
         m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
         fAlgebraicDataTransfer.TransferLambdaCoefficients();
        
