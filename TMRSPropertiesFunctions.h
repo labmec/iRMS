@@ -57,7 +57,7 @@ class TMRSPropertiesFunctions
         return [] (const TPZVec<REAL> & pt) -> std::vector<REAL> {
             std::vector<REAL> kappa_and_phi;
             REAL k_c,phi_c;
-            k_c = 1.0e-6;
+            k_c = 1.0e-7;
             phi_c = 0.1;
             REAL x = pt[0];
             REAL y = pt[1];
