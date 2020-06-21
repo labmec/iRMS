@@ -202,7 +202,7 @@ class TMRSPropertiesFunctions
                             REAL x,y,kz;
                             x = pt[0];
                             y = pt[1];
-                            kz = 1.0e-7;
+                            kz = 1.0e-6;
                             return kz ;
                         };
                 }

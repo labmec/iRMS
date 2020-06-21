@@ -112,7 +112,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
         
         SFIIteration();
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
-        
+//        PostProcessTimeStep();
         error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         
         stop_criterion_Q = error_rel_mixed < eps_tol && error_rel_transport < eps_tol;
