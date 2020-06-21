@@ -482,8 +482,8 @@ void SimpleTest3D(){
     std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
 }
 void UNISIMTest(){
-    std::string geometry_file2D ="gmsh/UNISIMV_4.msh";
-    int nLayers = 3;
+    std::string geometry_file2D ="gmsh/UNISIMV_FUNCIONAL1.msh";
+    int nLayers = 1;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -1119,8 +1119,8 @@ void ModifyTopeAndBase(TPZGeoMesh * gmesh, std::string filename){
     
 }
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
-    std::string filename1 = "Reservoir/tope_unisim2.txt";
-    std::string filename2 = "Reservoir/base_unisim2.txt";
+    std::string filename1 = "Reservoir/tope_unisimMOD.txt";
+    std::string filename2 = "Reservoir/base_unisimMOD.txt";
     std::vector<double> x, y, z, x1,y1,z1;
     ReadData(filename1, true, x, y, z);
     ReadData(filename2, true, x1, y1, z1);
@@ -1203,8 +1203,8 @@ void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std:
                 double a, b, c;
                 if(iss >> a >> b >> c) ;
                 if (modpoints) {
-                    x.push_back(a - 311214.135108);
-                    y.push_back(b - 7478429.28008);
+                    x.push_back(a - 350808.47);
+                    y.push_back(b - 7.51376238e6);
                     z.push_back(c);
                 }
                 else{
