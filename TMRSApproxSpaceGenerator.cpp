@@ -654,15 +654,6 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
             mhm->fMaterialBCIds = matids;
         }
 
-        
-#ifdef PZDEBUG2
-        if(1)
-        {
-            std::ofstream out("MixedMeshControlHDiv.txt");
-            meshcontrol.Print(out);
-        }
-#endif
-    
         mhm->SetInternalPOrder(1);
         mhm->SetSkeletonPOrder(1);
         
@@ -673,26 +664,8 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
     
         mhm->SetApproxSpaceGenerator(this);
         mhm->BuildComputationalMesh(substructure);
-    
-#ifdef PZDEBUG2
-        if(1)
-        {
-            std::ofstream out("MixedMeshControlHDiv.txt");
-            meshcontrol.Print(out);
-        }
-#endif
         
         std::cout << "MHM Hdiv Computational meshes created\n";
-#ifdef PZDEBUG2
-        if(1)
-        {
-            std::ofstream gfile("geometryMHMHdiv.txt");
-            gmeshauto->Print(gfile);
-            std::ofstream out_mhm("MHM_hdiv.txt");
-            meshcontrol.CMesh()->Print(out_mhm);
-            
-        }
-#endif
         
         std::cout << "Number of equations MHMixed " << mhm->CMesh()->NEquations() << std::endl;
     
@@ -1286,10 +1259,6 @@ TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(TPZAl
     active_approx_spaces[4] = 1;
     //    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
     auxmesh->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
-#ifdef PZDEBUG
-    std::ofstream transport_a("aux.txt");
-    auxmesh->Print(transport_a);
-#endif
     return auxmesh;
 }
 
@@ -1398,16 +1367,6 @@ void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOpera
         cel_tra->SetMemoryIndices(indices);
         cel_tra->SetIntegrationRule(cloned_rule);
     }
-#endif
-    
-#ifdef PZDEBUG
-    std::ofstream out_res("Cmesh_res_adjusted.txt");
-    cmesh_res->Print(out_res);
-#endif
-    
-#ifdef PZDEBUG
-    std::ofstream out_geo("Cmesh_tra_adjusted.txt");
-    cmesh_tra->Print(out_geo);
 #endif
     
 }

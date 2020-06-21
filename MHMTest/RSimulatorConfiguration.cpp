@@ -128,14 +128,7 @@ TPZCompMesh * RSimulatorConfiguration::CreateFluxCmesh(TPZGeoMesh * gmesh, int o
 //    }
 
     cmesh->InitializeBlock();
-    
-#ifdef PZDEBUG
-    std::stringstream file_name;
-    file_name << "q_cmesh_raw" << ".txt";
-    std::ofstream sout(file_name.str().c_str());
-    cmesh->Print(sout);
-#endif
-    
+        
     return cmesh;
     
 }
@@ -172,12 +165,6 @@ TPZCompMesh * RSimulatorConfiguration::CreatePressureCmesh(TPZGeoMesh * gmesh, i
         newnod.SetLagrangeMultiplier(1);
     }
     
-#ifdef PZDEBUG
-    std::stringstream file_name;
-    file_name << "p_cmesh_raw" << ".txt";
-    std::ofstream sout(file_name.str().c_str());
-    cmesh->Print(sout);
-#endif
     
     return cmesh;
     
@@ -503,11 +490,6 @@ TPZMultiphysicsCompMesh * RSimulatorConfiguration::MPTransportMesh(TPZMultiphysi
     active_approx_spaces[2] = 1;
     cmesh->BuildMultiphysicsSpace(active_approx_spaces,meshvec);
     
-#ifdef PZDEBUG
-    std::ofstream transport_a("transport_cmesh_after.txt");
-    cmesh->Print(transport_a);
-#endif
-    
     {
         cmesh->Reference()->ResetReference();
         cmesh->LoadReferences();
@@ -577,9 +559,6 @@ TPZMultiphysicsCompMesh * RSimulatorConfiguration::MPTransportMesh(TPZMultiphysi
             
         }
     }
-   
-//    InsertTransportInterfaceElements(cmesh);
-   
     
     std::cout << "Created multi-physics transport mesh\n";
     
@@ -662,13 +641,6 @@ TPZMultiphysicsCompMesh *RSimulatorConfiguration::CreateMultiPhysicsCompMesh(TPZ
     //    }
     
     std::cout << "Created multi-physics DFN mesh\n";
-    
-#ifdef PZDEBUG2
-    std::stringstream file_name;
-    file_name  << "Dual_cmesh" << ".txt";
-    std::ofstream sout(file_name.str().c_str());
-    cmesh->Print(sout);
-#endif
     
     //meshvec = mesh_vec;
     return cmesh;

@@ -40,11 +40,7 @@ void TPZMHMixedMeshWithTransportControl::BuildComputationalMesh(bool usersubstru
     fGlobalSystemSize = fCMesh->Solution().Rows();
     
     fCMesh->ComputeNodElCon();
-#ifdef PZDEBUG2
-    {
-        std::ofstream out("Friendly.txt");
-        PrintFriendly(out);
-    }
+#ifdef PZDEBUG
     CheckMeshConsistency();
 #endif
     //+
@@ -62,24 +58,6 @@ void TPZMHMixedMeshWithTransportControl::BuildComputationalMesh(bool usersubstru
     }
     fNumeq = fCMesh->NEquations();
     
-#ifdef PZDEBUG2
-    {
-        int64_t nel = fCMesh->NElements();
-        for(int64_t el = 0; el<nel; el++)
-        {
-            TPZCompEl *cel = fCMesh->Element(el);
-            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
-            if(sub)
-            {
-                std::stringstream sout;
-                sout << "submesh_" << el << ".vtk";
-                std::ofstream file(sout.str());
-                TPZVTKGeoMesh::PrintCMeshVTK(sub, file,true);
-            }
-        }
-        
-    }
-#endif
 }
 void TPZMHMixedMeshWithTransportControl::CreateHDivPressureMHMMesh()
 {
@@ -110,18 +88,6 @@ void TPZMHMixedMeshWithTransportControl::CreateHDivPressureMHMMesh()
     BuildMultiPhysicsMesh();
     TPZManVector<TPZCompMesh * ,3> meshvector;
     
-#ifdef PZDEBUG
-    if(0)
-    {
-        std::ofstream out2("gmesh.txt");
-        gmesh->Print(out2);
-        std::ofstream out3("HDivMesh.txt");
-        fFluxMesh->Print(out3);
-        std::ofstream out4("PressureMesh.txt");
-        fPressureFineMesh->Print(out4);
-    }
-#endif
-    
     meshvector = cmeshes;
     
     // populate the connect to subdomain data structure for the multiphysics mesh
@@ -136,25 +102,8 @@ void TPZMHMixedMeshWithTransportControl::CreateHDivPressureMHMMesh()
     std::pair<int,int> skelmatid(fSkeletonMatId,fSecondSkeletonMatId);
 //    CreateMultiPhysicsInterfaceElements(fGMesh->Dimension()-1);
 //    CreateMultiPhysicsInterfaceElements(fGMesh->Dimension()-2);
-#ifdef PZDEBUG
-    if(0)
-    {
-        MixedFluxPressureCmesh->ComputeNodElCon();
-        std::ofstream file("cmeshmphys.vtk");
-        TPZVTKGeoMesh::PrintCMeshVTK(MixedFluxPressureCmesh, file,true);
-        std::ofstream out("cmeshmphys.txt");
-        MixedFluxPressureCmesh->Print(out);
-    }
-#endif
+
     MixedFluxPressureCmesh->CleanUpUnconnectedNodes();
-    
-#ifdef PZDEBUG
-    if(0)
-    {
-        std::ofstream out("multiphysics.txt");
-        MixedFluxPressureCmesh->Print(out);
-    }
-#endif
     
     return;
     
