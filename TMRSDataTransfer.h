@@ -400,6 +400,8 @@ public:
         bool m_mhm_mixed_Q;
         
         std::vector<REAL> m_gravity;
+        
+        bool m_ISLinearKrModelQ;
         /** @brief Default constructor */
         TNumerics(){
             
@@ -417,6 +419,7 @@ public:
             m_mhm_mixed_Q           = false;
             m_gravity.resize(3,0.0);
             m_gravity[2] = -10.0;
+            m_ISLinearKrModelQ = true;
             
         }
          /** @brief Destructor */
@@ -440,6 +443,7 @@ public:
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
             m_gravity               = other.m_gravity;
+            m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
             
         }
         
@@ -464,6 +468,7 @@ public:
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
             m_gravity               = other.m_gravity;
+            m_ISLinearKrModelQ               = other.m_ISLinearKrModelQ;
             return *this;
         }
         
@@ -487,7 +492,8 @@ public:
             m_n_steps               == other.m_n_steps &&
             m_four_approx_spaces_Q  == other.m_four_approx_spaces_Q &&
             m_mhm_mixed_Q           == other.m_mhm_mixed_Q&&
-            m_gravity               == other.m_gravity;
+            m_gravity               == other.m_gravity&&
+            m_ISLinearKrModelQ        == other.m_ISLinearKrModelQ;
             
         }
         
@@ -506,6 +512,7 @@ public:
             temp = m_mhm_mixed_Q;
             buf.Write(&temp);
             buf.Write(m_gravity);
+            buf.Write(m_ISLinearKrModelQ);
           
         }
         
@@ -525,6 +532,7 @@ public:
             m_four_approx_spaces_Q = temp;
             buf.Read(&temp);
             m_mhm_mixed_Q = temp;
+            buf.Read(m_ISLinearKrModelQ);
            
         }
         
@@ -544,6 +552,7 @@ public:
             std::cout << m_n_steps << std::endl;
             std::cout << m_four_approx_spaces_Q << std::endl;
             std::cout << m_mhm_mixed_Q << std::endl;
+            std::cout << m_ISLinearKrModelQ << std::endl;
         }
         
     };

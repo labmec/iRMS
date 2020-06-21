@@ -364,9 +364,9 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
         if (isLinearQ) {
             Krw = sw;
             Kro = (1-sw);
-            fw = (Krw/muw)/((Krw/muw)+(Kro/muo));
-            fo = (Kro/muo)/((Krw/muw)+(Kro/muo));
-            dfwdsw = (muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
+            fw =(muo*Krw)/((muw*Kro) + (muo*Krw));
+            fo =(muw*Kro)/((muw*Kro) + (muo*Krw));
+            dfwdsw = (muo*muw)/ ((muw + (muo-muw)*sw)*(muw + (muo-muw)*sw));
             dfodsw = -1.0*dfwdsw;
             dlwdsw = (1.0/muw) ;
             dlodsw = -1.0*(1.0/muo);
@@ -375,8 +375,8 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
         else{
             Krw = sw*sw;
             Kro = (1-sw)*(1-sw);
-            fw =(muw*Krw)/((muo*Kro) + (muw*Krw));
-            fo =(muo*Kro)/((muo*Kro) + (muw*Krw));
+            fw =(muo*Krw)/((muw*Kro) + (muo*Krw));
+            fo =(muw*Kro)/((muw*Kro) + (muo*Krw));
             REAL num = -2.0*(muo*muw*(sw-1.0)*sw);
             REAL dem = ((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw))*((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw));
             dfwdsw = num/dem;
@@ -407,8 +407,8 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton
         REAL krw, kro, fw, fo,dfwdsw, dlambdadsw, dlambdaodsw;
         krw = sw*sw;
         kro = (1-sw)*(1-sw);
-        fw = (muw*krw)/((muw*kro) + (muo*krw));
-        fo = (muo*kro)/((muw*kro) + (muo*krw));
+        fw = (muo*krw)/((muw*kro) + (muo*krw));
+        fo = (muw*kro)/((muw*kro) + (muo*krw));
         dfwdsw =(muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
         dlambdadsw = (2.0*sw/muw) ;
         dlambdaodsw =  (-2.0*(1.0-sw)/muo);
@@ -416,7 +416,7 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton
         this->fDerivativeWfractionalflow[ivol] =dfwdsw;
         this->fOilfractionalflow[ivol] =fo;
         this->fDerivativeOfractionalflow[ivol] = -1.0*dfwdsw;
-        this->flambda[ivol] = (krw/(fViscosity[0]))+(kro/(fViscosity[1]));
+        this->flambda[ivol] = (krw/muw)+(kro/muo);
         this->fdlambdawdsw[ivol] = dlambdadsw;
         this->fdlambdaodsw[ivol] = dlambdaodsw;
     }

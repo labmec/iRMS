@@ -482,7 +482,7 @@ void SimpleTest3D(){
     std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
 }
 void UNISIMTest(){
-    std::string geometry_file2D ="gmsh/UNISIMV_2.msh";
+    std::string geometry_file2D ="gmsh/UNISIMV_4.msh";
     int nLayers = 3;
     bool is3DQ = true;
     bool print3DMesh = true;
@@ -627,7 +627,7 @@ TMRSDataTransfer SettingGravity2D(){
     std::vector<REAL> grav(3,0.0);
     grav[1] = -9.81*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
-    
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     
     
     // PostProcess controls
@@ -718,6 +718,7 @@ TMRSDataTransfer Setting3D(){
     sim_data.mTNumerics.m_dt      = 0.01;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -798,6 +799,7 @@ TMRSDataTransfer SettingPaper2D(){
     std::vector<REAL> grav(3,0.0);
     grav[1] = -9.81*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     
     
     
@@ -947,7 +949,7 @@ TMRSDataTransfer SettingUNISIM(){
     
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
-    sim_data.mTFluidProperties.mOilViscosity = 0.001;
+    sim_data.mTFluidProperties.mOilViscosity = 0.002;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
     sim_data.mTFluidProperties.mOilDensity = 500.0;
 
@@ -969,8 +971,8 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
     grav[3] = -9.8*(1.0e-6);
-
     sim_data.mTNumerics.m_gravity = grav;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     
     
     
@@ -983,10 +985,10 @@ TMRSDataTransfer SettingUNISIM(){
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
-        scalnames.Push("kxx");
-        scalnames.Push("kyy");
-        scalnames.Push("kzz");
-        scalnames.Push("lambda");
+//        scalnames.Push("kxx");
+//        scalnames.Push("kyy");
+//        scalnames.Push("kzz");
+//        scalnames.Push("lambda");
 
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
