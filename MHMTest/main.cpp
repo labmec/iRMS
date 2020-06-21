@@ -975,7 +975,7 @@ TMRSDataTransfer SettingUNISIM(){
     std::vector<REAL> grav(3,0.0);
     grav[3] = -9.8*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     
     
     

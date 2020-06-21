@@ -837,9 +837,9 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         
         if(fkappa_phi){
             std::vector<REAL> kappa_phi = fkappa_phi(coord);
-            kx_v = 1.e-7*kappa_phi[0];
-            ky_v = 1.e-7*kappa_phi[1];
-            kz_v = 1.e-7*kappa_phi[2];
+            kx_v = kappa_phi[0];
+            ky_v = kappa_phi[1];
+            kz_v = kappa_phi[2];
             phi_v= kappa_phi[3] + 0.01;
         }else{
             if(fkx)
