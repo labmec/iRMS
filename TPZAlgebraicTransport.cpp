@@ -470,3 +470,20 @@ REAL TPZAlgebraicTransport::CalculateMass(){
     }
     return intMass;
 }
+std::pair<REAL, REAL> TPZAlgebraicTransport::FLuxWaterOilIntegralbyID(int mat_id){
+    REAL WaterIntegral =0.0;
+    REAL OilIntegral = 0.0;
+    int ninter = fInterfaceData[mat_id].fIntegralFlux.size();
+    for (int iface =0 ; iface < ninter; iface++) {
+        // Boundary condition
+        int LeftElIndex = fInterfaceData[mat_id].fLeftRightVolIndex[iface].first;
+        REAL fracFluxWater = fCellsData.fWaterfractionalflow[LeftElIndex];
+        REAL fracFluxOil = fCellsData.fOilfractionalflow[LeftElIndex];
+        REAL FluxInttegral = fInterfaceData[mat_id].fIntegralFlux[iface];
+        REAL porosity = fCellsData.fporosity[LeftElIndex];
+        WaterIntegral += FluxInttegral*fracFluxWater*porosity;
+        OilIntegral += FluxInttegral*fracFluxOil*porosity;
+        
+    }
+    return std::make_pair(WaterIntegral, OilIntegral);
+}

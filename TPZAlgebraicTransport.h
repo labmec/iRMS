@@ -249,7 +249,7 @@ public:
     double CalcDensity(double paverage,double compress, double reff,  double pref);
     
     REAL CalculateMass();
-
+    std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
 };
 
 #endif /* AlgebraicTransport_h */
