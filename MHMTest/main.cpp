@@ -1263,8 +1263,8 @@ void ModifyTopeAndBase(TPZGeoMesh * gmesh, std::string filename){
     
 }
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
-    std::string filename1 = "Reservoir/tope_unisimMOD.txt";
-    std::string filename2 = "Reservoir/base_unisimMOD.txt";
+    std::string filename1 = "Reservoir/base_unisimMOD.txt";
+    std::string filename2 = "Reservoir/tope_unisimMOD.txt";
     std::vector<double> x, y, z, x1,y1,z1;
     ReadData(filename1, true, x, y, z);
     ReadData(filename2, true, x1, y1, z1);
