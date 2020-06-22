@@ -498,7 +498,7 @@ void UNISIMTest(){
     auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
     auto s0 = reservoir_properties.Create_s0();
     
-    std::string geometry_file2D ="gmsh/UNISIMV_FUNCIONAL1.msh";
+    std::string geometry_file2D ="gmsh/AuxFinal.msh";
     int nLayers = 1;
     bool is3DQ = true;
     bool print3DMesh = true;
