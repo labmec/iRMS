@@ -100,9 +100,9 @@ int main(){
     InitializePZLOG();
 //    Gravity2D();
 //    PaperTest2D();
-    PaperTest3D();
+//    PaperTest3D();
 //    SimpleTest3D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 
@@ -357,7 +357,7 @@ void PaperTest2D(){
 void PaperTest3D(){
     
    std::string geometry_file = "gmsh/reservoir_2d_paper.msh";
-   int n_layers = 1;
+   int n_layers = 2;
    bool is3D_Q = true;
    bool printMesh_Q = true;
    TPZGeoMesh *gmesh = CreateGeoMeshMHM3DTest( geometry_file,  n_layers, printMesh_Q, is3D_Q);
@@ -986,7 +986,6 @@ TMRSDataTransfer SettingPaper3D(){
    TMRSDataTransfer sim_data;
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Reservoir"] = 1;
-//    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["RockMatrix"] = 1;
     sim_data.mTGeometry.Interface_material_id = 100;
     
     int D_Type = 0;
@@ -1034,7 +1033,7 @@ TMRSDataTransfer SettingPaper3D(){
     std::vector<REAL> grav(3,0.0);
     grav[1] = -9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     
     
     
@@ -1112,12 +1111,12 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_sfi_tol = 0.001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 50.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
