@@ -96,6 +96,10 @@ void TRMSpatialPropertiesMap::SampleKappaAndPhi(TPZManVector<REAL,3> &x, std::ve
     }else{
         std::vector<REAL> chunk = m_properties[pos];
         kappa_and_phi = chunk;
+        kappa_and_phi[0] *= 1.0e-7;
+        kappa_and_phi[1] *= 1.0e-7;
+        kappa_and_phi[2] *= 1.0e-7;
+        kappa_and_phi[3] += 1.0e-2; // Because some porosities are null
     }
 }
 
