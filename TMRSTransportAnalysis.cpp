@@ -365,6 +365,7 @@ void TMRSTransportAnalysis::UpdateInitialSolutionFromCellsData(){
         DebugStop();
     }
     fAlgebraicTransport.fCellsData.UpdateSaturationsTo(Solution());
+    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     LoadSolution();
     cmesh->LoadSolutionFromMultiPhysics();
 }

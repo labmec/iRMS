@@ -281,10 +281,14 @@ void PaperTest2D(){
     TPZFNMatrix<200,REAL> time_prod(n_steps+1,3,0.0);
     
     // Print initial condition
+    sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
+    sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
     sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
     sfi_analysis->PostProcessTimeStep();
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+    
+    sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
     std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
     std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
     std::cout << "Mass report at time : " << 0.0 << std::endl;
@@ -312,9 +316,10 @@ void PaperTest2D(){
           std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
           sfi_analysis->PostProcessTimeStep();
           pos++;
-          current_report_time =reporting_times[pos];
+          current_report_time = reporting_times[pos];
           
           REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+      sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
           std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
           std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
           std::cout << "Mass report at time : " << sim_time << std::endl;
@@ -343,10 +348,10 @@ void PaperTest2D(){
     time_mass.Print("mass = ",outdata_mass,EMathematicaInput);
 
     std::ofstream outdata_inj("imrs_inj.txt");
-    time_inj.Print("mass = ",outdata_inj,EMathematicaInput);
+    time_inj.Print("inj = ",outdata_inj,EMathematicaInput);
     
     std::ofstream outdata_prod("imrs_prod.txt");
-    time_prod.Print("mass = ",outdata_prod,EMathematicaInput);
+    time_prod.Print("prod = ",outdata_prod,EMathematicaInput);
 }
 
 void PaperTest3D(){
@@ -836,10 +841,10 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_sfi_tol = 0.00001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_n_steps = 50;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -847,7 +852,7 @@ TMRSDataTransfer SettingPaper2D(){
     std::vector<REAL> grav(3,0.0);
     grav[1] = -9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     
     
     
