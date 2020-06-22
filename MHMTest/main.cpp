@@ -583,7 +583,7 @@ void SimpleTest3D(){
 void UNISIMTest(){
     
     // spatial properties
-    int64_t n_cells = 93960;
+    int64_t n_cells = 38466;
     std::string grid_data = "maps/corner_grid_coordinates.dat";
     std::string props_data = "maps/corner_grid_props.dat";
     TRMSpatialPropertiesMap properties_map;
@@ -592,7 +592,7 @@ void UNISIMTest(){
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
 
-    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
     auto s0 = reservoir_properties.Create_s0();
     
     std::string geometry_file2D ="gmsh/AuxFinal.msh";
