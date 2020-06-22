@@ -1170,7 +1170,7 @@ TPZGeoMesh * CreateGeoMeshWithTopeAndBase(std::string geometry_file2D, int nLaye
     Geometry.SetDimNamePhysical(dim_name_and_physical_tag);
     gmesh2d = Geometry.GeometricGmshMesh(geometry_file2D);
     Geometry.PrintPartitionSummary(std::cout);
-    double w = 200.0;
+    double w = -200.0;
     
     std::string name2D("mesh2d.vtk");
     
