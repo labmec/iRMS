@@ -100,9 +100,9 @@ int main(){
     InitializePZLOG();
 //    Gravity2D();
 //    PaperTest2D();
-//    PaperTest3D();
+    PaperTest3D();
 //    SimpleTest3D();
-    UNISIMTest();
+//    UNISIMTest();
     return 0;
 }
 
@@ -1201,8 +1201,8 @@ TPZGeoMesh * CreateGeoMeshMHM3DTest(std::string geometry_file2D, int nLayers, bo
     dim_name_and_physical_tag[2]["Reservoir"] = 1;
     dim_name_and_physical_tag[2]["Wellbore_p"] = 1;
     dim_name_and_physical_tag[2]["Wellbore_i"] = 1;
-    dim_name_and_physical_tag[1]["producers"] = -2;
-    dim_name_and_physical_tag[1]["injectors"] = -4;
+    dim_name_and_physical_tag[1]["producers"] = -4;
+    dim_name_and_physical_tag[1]["injectors"] = -2;
     dim_name_and_physical_tag[1]["Reservoir_south"] = -1;
     dim_name_and_physical_tag[1]["Reservoir_West"] = -1;
     dim_name_and_physical_tag[1]["Reservoir_north"] = -1;
