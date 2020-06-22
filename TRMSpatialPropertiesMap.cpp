@@ -36,7 +36,7 @@ void TRMSpatialPropertiesMap::SampleKappaAndPhi(TPZManVector<REAL,3> &x, std::ve
             return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
     };
     
-    auto sign = [] (const REAL a) -> int {
+    auto sign = [] (const REAL & a) -> int {
             return (REAL(0.0) < a) - (a < REAL(0.0));
     };
     
@@ -45,6 +45,10 @@ void TRMSpatialPropertiesMap::SampleKappaAndPhi(TPZManVector<REAL,3> &x, std::ve
         REAL dot_v4 = dot(normal,substract(v4,v1));
         REAL dot_pt = dot(normal,substract(pt,v1));
         bool checkQ = sign(dot_v4) == sign(dot_pt);
+        REAL tol = 1.0e-8;
+        if (fabs(dot_v4) < tol) { // collapsed tet
+            checkQ = false;
+        }
         return checkQ;
     };
     
@@ -92,7 +96,7 @@ void TRMSpatialPropertiesMap::SampleKappaAndPhi(TPZManVector<REAL,3> &x, std::ve
     
     if (!IsCellMemberQ) {
         kappa_and_phi = {m_kappa_default,m_kappa_default,m_kappa_default,m_phi_default};
-        return ;
+        return;
     }else{
         std::vector<REAL> chunk = m_properties[pos];
         kappa_and_phi = chunk;

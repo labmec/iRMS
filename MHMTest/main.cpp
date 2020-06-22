@@ -1112,7 +1112,7 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
-    sim_data.mTNumerics.m_sfi_tol = 0.00001;
+    sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 100;
