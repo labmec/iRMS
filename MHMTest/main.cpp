@@ -100,9 +100,9 @@ int main(){
     InitializePZLOG();
 //    Gravity2D();
 //    PaperTest2D();
-    PaperTest3D();
+//    PaperTest3D();
 //    SimpleTest3D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 
@@ -1123,7 +1123,7 @@ TMRSDataTransfer SettingUNISIM(){
     std::vector<REAL> grav(3,0.0);
     grav[3] = -9.8*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
