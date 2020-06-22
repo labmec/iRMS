@@ -186,7 +186,6 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     ek(0,0) += dGLdSL * K_times_g_dot_n * (rho_wL - rho_oL);
     ek(0,1) += dGLdSR * K_times_g_dot_n * (rho_wL - rho_oL);
     
-    // Becase the flip
     ek(1,1) -= dGRdSL * K_times_g_dot_n * (rho_wR - rho_oR);
     ek(1,0) -= dGRdSR * K_times_g_dot_n * (rho_wR - rho_oR);
 }

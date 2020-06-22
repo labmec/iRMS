@@ -831,7 +831,7 @@ TMRSDataTransfer SettingPaper2D(){
     
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
-    sim_data.mTFluidProperties.mOilViscosity = 0.002;
+    sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
     sim_data.mTFluidProperties.mOilDensity = 500.0;
 
@@ -842,9 +842,9 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
     sim_data.mTNumerics.m_sfi_tol = 0.00001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 50;
+    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_n_steps = 20;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
