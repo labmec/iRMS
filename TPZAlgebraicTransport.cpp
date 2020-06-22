@@ -186,7 +186,6 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     ek(0,0) += dGLdSL * K_times_g_dot_n * (rho_wL - rho_oL);
     ek(0,1) += dGLdSR * K_times_g_dot_n * (rho_wL - rho_oL);
     
-    // Becase the flip
     ek(1,1) -= dGRdSL * K_times_g_dot_n * (rho_wR - rho_oR);
     ek(1,0) -= dGRdSR * K_times_g_dot_n * (rho_wR - rho_oR);
 }
@@ -335,7 +334,6 @@ void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){
     for (int iinter = 0 ; iinter <ninterfaces; iinter++) {
         out<<"Left_Index: "<<this->fLeftRightVolIndex[iinter].first<<std::endl;
         out<<"Right_Index: "<<this->fLeftRightVolIndex[iinter].second<<std::endl;
-        int ncflux = fCoefficientsFlux.size();
         out << "fCoefficientsFlux :";
         for (int icoe=0; icoe<fCoefficientsFlux.size(); icoe++) {
             out<<fCoefficientsFlux[icoe][iinter]<<" ";
@@ -451,10 +449,6 @@ void TPZAlgebraicTransport::TCellData::UpdateMixedDensity(){
     int ncells = fVolume.size();
     for (int i =0; i< ncells; i++) {
         REAL mixedDen = (fWaterfractionalflow[i]*fDensityWater[i])+fOilfractionalflow[i]*fDensityOil[i];
-//        std::cout<<"fw: "<<fWaterfractionalflow[i]<<std::endl;
-//        std::cout<<"fo: "<<fOilfractionalflow[i]<<std::endl;
-//        std::cout<<"rhow: "<<fDensityWater[i]<<std::endl;
-//        std::cout<<"rhoo: "<<fDensityOil[i]<<std::endl;
         fMixedDensity[i] = mixedDen;
     }
 }
@@ -471,18 +465,17 @@ REAL TPZAlgebraicTransport::CalculateMass(){
     return intMass;
 }
 std::pair<REAL, REAL> TPZAlgebraicTransport::FLuxWaterOilIntegralbyID(int mat_id){
+    
     REAL WaterIntegral =0.0;
     REAL OilIntegral = 0.0;
     int ninter = fInterfaceData[mat_id].fIntegralFlux.size();
     for (int iface =0 ; iface < ninter; iface++) {
-        // Boundary condition
         int LeftElIndex = fInterfaceData[mat_id].fLeftRightVolIndex[iface].first;
         REAL fracFluxWater = fCellsData.fWaterfractionalflow[LeftElIndex];
         REAL fracFluxOil = fCellsData.fOilfractionalflow[LeftElIndex];
         REAL FluxInttegral = fInterfaceData[mat_id].fIntegralFlux[iface];
-        REAL porosity = fCellsData.fporosity[LeftElIndex];
-        WaterIntegral += FluxInttegral*fracFluxWater*porosity;
-        OilIntegral += FluxInttegral*fracFluxOil*porosity;
+        WaterIntegral += FluxInttegral*fracFluxWater;
+        OilIntegral += FluxInttegral*fracFluxOil;
         
     }
     return std::make_pair(WaterIntegral, OilIntegral);
