@@ -1,9 +1,9 @@
 Mesh.Algorithm = 1;
 ht=2500;
 hs=2500;
-divR = 5;
+divR = 2;
 divTheta= 4;
-progre = 2.0;
+progre = 1.5;
 Point(1)= {5408.7, 100., 0, ht};
 Point(2)= {4805.66, 204.12, 0, ht};
 Point(3)= {4906.87, 203.37, 0, ht};
