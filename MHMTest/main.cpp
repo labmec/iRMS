@@ -942,7 +942,7 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 5.0*day;
+    sim_data.mTNumerics.m_dt      = 2.5*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
