@@ -233,8 +233,7 @@ public:
     void ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef);
     void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef);
-    static std::pair<std::vector<REAL>,std::vector<REAL>> fwAndfoVal(REAL sw, REAL muw,REAL muo, bool isLinearQ = false);
-    static std::pair<std::vector<REAL>,std::vector<REAL>> LinearfwAndfoVal(REAL sw, REAL muw,REAL muo);
+
     
     // IHU auxiliary functions
     std::pair<REAL, std::pair<REAL, REAL>> f_star(std::pair<REAL, REAL> foL, std::pair<REAL, REAL> foR, std::pair<REAL, REAL> fwL, std::pair<REAL, REAL> fwR, REAL g_dot_n);
@@ -242,12 +241,6 @@ public:
     std::pair<REAL, std::pair<REAL, REAL>> lambda_w_star(std::pair<REAL, REAL> lambda_L, std::pair<REAL, REAL> lambda_R, REAL g_dot_n, REAL rho_ratio);
     
     void UpdateIntegralFlux(int matid);
-    
-    void CalcLambdas();
-    void CalcDensities();
-    double CalcLambda(double sw, double paverage, double densityo, double densityw);
-    double CalcDensity(double paverage,double compress, double reff,  double pref);
-    
     REAL CalculateMass();
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
 };

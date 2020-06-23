@@ -544,8 +544,8 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElements()
 #endif
         TPZAutoPointer<TPZGuiInterface> guiInterface;
         subcmesh->SetAnalysisSkyline(numthreads, preconditioned, guiInterface);
-        std::ofstream filehide2("subcmeshAfter.txt");
-        subcmesh->Print(filehide2);
+//        std::ofstream filehide2("subcmeshAfter.txt");
+//        subcmesh->Print(filehide2);
     }
 }
 

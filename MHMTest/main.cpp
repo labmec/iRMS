@@ -583,20 +583,21 @@ void SimpleTest3D(){
 void UNISIMTest(){
     
     // spatial properties
-    int64_t n_cells = 38466;
-    std::string grid_data = "maps/corner_grid_coordinates.dat";
-    std::string props_data = "maps/corner_grid_props.dat";
-    TRMSpatialPropertiesMap properties_map;
-    properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data);
-    
+//    int64_t n_cells = 2*38466;
+//    std::string grid_data = "maps/corner_grid_coordinates.dat";
+//    std::string props_data = "maps/corner_grid_props.dat";
+//    TRMSpatialPropertiesMap properties_map;
+//    properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data);
+//
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
 
-    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
     auto s0 = reservoir_properties.Create_s0();
-    
-    std::string geometry_file2D ="gmsh/AuxFinal.msh";
-    int nLayers = 1;
+
+//    std::string geometry_file2D ="gmsh/AuxFinal.msh";
+    std::string geometry_file2D ="gmsh/UNISIMT4R5P20.msh";
+    int nLayers = 2;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -629,11 +630,11 @@ void UNISIMTest(){
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
-    
+
     // Render a graphical map
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
     PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
-    
+
 
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
@@ -645,7 +646,7 @@ void UNISIMTest(){
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
-    
+
     // Mass integral - Injection - Production data
     TPZFNMatrix<200,REAL> time_mass(n_steps+1,2,0.0);
     TPZFNMatrix<200,REAL> time_inj(n_steps+1,3,0.0);
@@ -677,11 +678,11 @@ void UNISIMTest(){
     time_prod(0,2) = prod_data.second;
 
     for (int it = 1; it <= n_steps; it++) {
-        
+
      sim_time = it*dt;
      sfi_analysis->m_transport_module->SetCurrentTime(dt);
      sfi_analysis->RunTimeStep();
-     
+
 
      if (sim_time >=  current_report_time) {
          std::cout << "Time step number:  " << it << std::endl;
@@ -689,27 +690,27 @@ void UNISIMTest(){
          sfi_analysis->PostProcessTimeStep();
          pos++;
          current_report_time = reporting_times[pos];
-         
+
          REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
      sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
          std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
          std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
          std::cout << "Mass report at time : " << sim_time << std::endl;
          std::cout << "Mass integral :  " << mass << std::endl;
-         
+
          time_mass(it,0) = sim_time;
          time_mass(it,1) = mass;
-         
+
          time_inj(it,0) = sim_time;
          time_inj(it,1) = inj_data.first;
          time_inj(it,2) = inj_data.second;
-         
+
          time_prod(it,0) = sim_time;
          time_prod(it,1) = prod_data.first;
          time_prod(it,2) = prod_data.second;
-         
+
      }
-       
+
     }
 
     std::cout  << "Number of transportr equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
@@ -1169,7 +1170,7 @@ TPZGeoMesh * CreateGeoMeshWithTopeAndBase(std::string geometry_file2D, int nLaye
     Geometry.SetDimNamePhysical(dim_name_and_physical_tag);
     gmesh2d = Geometry.GeometricGmshMesh(geometry_file2D);
     Geometry.PrintPartitionSummary(std::cout);
-    double w = -200.0;
+    double w = 200.0;
     
     std::string name2D("mesh2d.vtk");
     
@@ -1262,8 +1263,10 @@ void ModifyTopeAndBase(TPZGeoMesh * gmesh, std::string filename){
     
 }
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
-    std::string filename1 = "Reservoir/base_unisimMOD.txt";
-    std::string filename2 = "Reservoir/tope_unisimMOD.txt";
+//    std::string filename2 = "Reservoir/base_unisimMOD.txt";
+    
+     std::string filename1 = "Reservoir/topeMOD.txt";
+    std::string filename2 = "Reservoir/baseMOD.txt";
     std::vector<double> x, y, z, x1,y1,z1;
     ReadData(filename1, true, x, y, z);
     ReadData(filename2, true, x1, y1, z1);
@@ -1285,7 +1288,11 @@ void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
         sum += val;
     }
     double val_base= sum / z1.size();
-
+//    val_base = 1000;
+//    val_tope = 5000;
+//
+//    val_tope = 3000;
+//    val_base = 3000;
     int npointsPerLayer = nCoordinates/(nlayers+1);
     double valinter=0.0;
     for (int ilay = 1; ilay <= nlayers+1; ilay++) {
@@ -1297,18 +1304,79 @@ void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
             double baseinterpol = interpBase(co[0],co[1]);
             if (topeinterpol==0) {
                 topeinterpol = val_tope;
+                if (co[0]>1000.00) {
+                    topeinterpol -= 120;
+                }
+
+//                if (ipoint==0) {
+//                    bool find = 0;
+//                    int i =1;
+//                    while (find==0) {
+//                        TPZGeoNode node = gmesh->NodeVec()[ipoint+i];
+//                        TPZVec<REAL> coaux(3);
+//                        node.GetCoordinates(coaux);
+//                        topeinterpol =interpTope(coaux[0],coaux[1]);
+//                        if (topeinterpol!=0) {
+//                            find=1;
+//                        }
+//                        i=i+1;
+////                        topeinterpol =coaux[2];
+//                    }
+//                }
+//                if (ipoint != 0) {
+//                    TPZGeoNode node = gmesh->NodeVec()[ipoint-1];
+//                    TPZVec<REAL> coaux(3);
+//                    node.GetCoordinates(coaux);
+//                    REAL valz = coaux[2];
+//                    topeinterpol =coaux[2];
+//
+//                }
+                
+                
             }
             if (baseinterpol==0) {
+                
                 baseinterpol = val_base;
+                if (co[0]>1000.00) {
+                   baseinterpol = val_base-80;
+                }
+                std::cout<<"{"<<co[0]<<","<<co[1]<<"};"<<std::endl;
+//                    if (ipoint==npointsPerLayer) {
+//                        bool find = 0;
+//                        int i =1;
+//                        while (find==0) {
+//                            TPZGeoNode node = gmesh->NodeVec()[ipoint+i];
+//                            TPZVec<REAL> coaux(3);
+//                            node.GetCoordinates(coaux);
+//                            baseinterpol =interpBase(coaux[0],coaux[1]);
+//                            if (baseinterpol!=0) {
+//                                find=1;
+//                            }
+//                            i=i+1;
+//    //                        topeinterpol =coaux[2];
+//                        }
+//                    }
+//                    if (ipoint != npointsPerLayer && ilay!=1) {
+//                        TPZGeoNode node = gmesh->NodeVec()[ipoint-1];
+//                        TPZVec<REAL> coaux(3);
+//                        node.GetCoordinates(coaux);
+//                        REAL valz = coaux[2];
+//                        baseinterpol =coaux[2];
+//
+//                    }
+
+
             }
 
             if (ilay==1) {
                 valinter=topeinterpol;
+//                valinter = 3500;
                 co[2]=valinter;
                 gmesh->NodeVec()[ipoint].SetCoord(co);
             }
             if (ilay==nlayers+1) {
                 valinter = baseinterpol;
+//                valinter = 2850;
                 co[2]=valinter;
                 gmesh->NodeVec()[ipoint].SetCoord(co);
             }

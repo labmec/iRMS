@@ -42,32 +42,6 @@ TPZAlgebraicTransport::~TPZAlgebraicTransport(){
     
 }
 
-
-
-void TPZAlgebraicTransport::CalcLambdas(){
-
-}
-void TPZAlgebraicTransport::CalcDensities(){
-
-}
-
-double TPZAlgebraicTransport::CalcLambda(double sw, double paverage, double densityo, double densityw){
-    double kro = (1 - sw)*(1 - sw);
-    double krw = sw*sw;
-    double muo = 0.05;
-    double muw = 0.01;
-    double lambda;
-    lambda = ((densityo*kro)/muo) + ((densityw*krw)/muw);
-    return lambda;
-}
-
-double TPZAlgebraicTransport::CalcDensity(double paverage,double compress, double reff, double pref){
-    double density = reff*(1+ compress*(paverage-pref));
-    return density;
-}
-
-
-
 void TPZAlgebraicTransport::BuildDataStructures(TPZMultiphysicsCompMesh &transportmesh)
 {
 
@@ -273,43 +247,6 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
 
 }
 
-std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::fwAndfoVal(REAL sw, REAL muw,REAL muo, bool isLinearQ){
-    std::vector<REAL> fwData(2), foData(2);
-//    REAL Krw = sw*sw ;
-//    REAL Kro = (1-sw)*(1-sw) ;
-    
-    REAL fw = (muo*sw*sw)/(muw*(sw-1.0)*(sw-1.0) + (muo*sw*sw));
-    REAL num = -2.0*(muo*muw*(sw-1.0)*sw);
-    REAL dem = ((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw))*((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw));
-    fwData[0] = fw;
-    if(isLinearQ){
-        fwData[1]=(muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
-    }else{
-        fwData[1] = num/dem;
-    }
-
-    foData[0] = 1.0;
-    foData[1]=1.0;
-  
-    std::pair<std::vector<REAL>,std::vector<REAL>> fracflows = std::make_pair(fwData, foData);
-    return fracflows;
-}
-
-std::pair<std::vector<REAL>,std::vector<REAL>> TPZAlgebraicTransport::LinearfwAndfoVal(REAL sw, REAL muw,REAL muo){
-    std::vector<REAL> fwData(2), foData(2);
-    
-    REAL Krw = sw;
-    REAL Kro = (1-sw);
-    REAL fw = (Krw/muw)/((Krw/muw)+(Kro/muo));
-    fwData[0] = fw;
-    fwData[1] = (muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
-    foData[0] = 1.0;
-    foData[1]=1.0;
-    
-    std::pair<std::vector<REAL>,std::vector<REAL>> fracflows = std::make_pair(fwData, foData);
-    return fracflows;
-    
-}
 void TPZAlgebraicTransport::UpdateIntegralFlux(int matid){
     
     if(fInterfaceData.find(matid) == fInterfaceData.end()) DebugStop();
