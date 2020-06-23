@@ -355,7 +355,7 @@ void PaperTest2D(){
 void PaperTest3D(){
     
     std::string geometry_file = "gmsh/reservoir_2d_paper.msh";
-    int n_layers = 4;
+    int n_layers = 2;
     bool is3D_Q = true;
     bool printMesh_Q = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -368,7 +368,7 @@ void PaperTest3D(){
     aspace.SetGeometry(gmesh);
     std::string name = "paper_3d_test_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(1);
     std::string name_ref = "paper_3d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -1221,6 +1221,7 @@ TPZGeoMesh * CreateGeoMeshMHM3DTest(std::string geometry_file2D, int nLayers, bo
     int baseID = -1;
     TPZGeoMesh * returnedMesh = nullptr;
     TPZExtendGridDimension extend(gmesh2d, w);
+    extend.SetElType(1);
     returnedMesh = extend.ExtendedMesh(nLayers,topID,baseID);
     return returnedMesh;
     
