@@ -597,7 +597,7 @@ void UNISIMTest(){
 
 //    std::string geometry_file2D ="gmsh/AuxFinal.msh";
     std::string geometry_file2D ="gmsh/UNISIMT2R4P1p5.msh";
-    int nLayers = 1;
+    int nLayers = 3;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -1104,7 +1104,7 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.002;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 500.0;
+    sim_data.mTFluidProperties.mOilDensity = 800.0;
 
 
     // Numerical controls
@@ -1115,7 +1115,7 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_n_steps = 102;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 100.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
