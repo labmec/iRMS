@@ -98,11 +98,11 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
 //
 int main(){
     InitializePZLOG();
-//    Gravity2D();
+    Gravity2D();
 //    PaperTest2D();
 //    PaperTest3D();
 //    SimpleTest3D();
-    UNISIMTest();
+//    UNISIMTest();
     return 0;
 }
 
@@ -112,13 +112,13 @@ void Gravity2D(){
     TMRSDataTransfer sim_data  = SettingGravity2D();
     
     std::string geometry_file = "gmsh/simple_2D_coarse.msh";
-    std::string name = "simplemesh.vtk";
+    std::string name = "g_segregation_geo";
     
     TMRSApproxSpaceGenerator aspace;
     aspace.LoadGeometry(geometry_file);
 
     aspace.CreateUniformMesh(10, 10, 10, 10);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(3);
 
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -357,9 +357,10 @@ void PaperTest2D(){
 void PaperTest3D(){
     
    std::string geometry_file = "gmsh/reservoir_2d_paper.msh";
-   int n_layers = 2;
+   int n_layers = 1;
    bool is3D_Q = true;
    bool printMesh_Q = true;
+   gRefDBase.InitializeAllUniformRefPatterns();
    TPZGeoMesh *gmesh = CreateGeoMeshMHM3DTest( geometry_file,  n_layers, printMesh_Q, is3D_Q);
 
    TMRSApproxSpaceGenerator aspace;
@@ -767,11 +768,9 @@ TMRSDataTransfer SettingGravity2D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
-//    sim_data.mTNumerics.m_res_tol_mixed = 0.00001;
-//    sim_data.mTNumerics.m_corr_tol_mixed = 0.00001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 50;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
+    sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -910,7 +909,7 @@ TMRSDataTransfer SettingPaper2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 20.0;
+    REAL pressure_in = 25.0;
     REAL pressure_out = 10.0;
         
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -932,7 +931,7 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 500.0;
+    sim_data.mTFluidProperties.mOilDensity = 800.0;
 
 
     // Numerical controls
@@ -940,12 +939,12 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
-    sim_data.mTNumerics.m_sfi_tol = 0.00001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 20;
+    sim_data.mTNumerics.m_sfi_tol = 0.000001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 5.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -992,7 +991,7 @@ TMRSDataTransfer SettingPaper3D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 30.0;
+    REAL pressure_in = 20.0;
     REAL pressure_out = 10.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
@@ -1015,7 +1014,7 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.002;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 500.0;
+    sim_data.mTFluidProperties.mOilDensity = 800.0;
 
 
     // Numerical controls
@@ -1023,16 +1022,16 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_sfi_tol = 0.00001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 5.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -9.8*(1.0e-6); // hor
+    grav[1] = -9.8*(1.0e-6); // ho
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     

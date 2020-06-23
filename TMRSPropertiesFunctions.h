@@ -63,7 +63,7 @@ class TMRSPropertiesFunctions
             REAL y = pt[1];
             REAL z = pt[2];
             REAL kx = k_c ;//* fabs(std::cos(0.2*x)*std::sin(0.1*y)*std::sin(0.1*z)) + k_c;
-            REAL ky = k_c ;//* fabs(std::sin(0.1*x)*std::cos(0.2*y)*std::sin(0.1*z)) + k_c;
+            REAL ky = 10.0 * k_c ;//* fabs(std::sin(0.1*x)*std::cos(0.2*y)*std::sin(0.1*z)) + k_c;
             REAL kz = 10.0 * k_c ;//* fabs(std::sin(0.1*x)*std::sin(0.1*y)*std::cos(0.2*z)) + k_c;
             REAL phi = phi_c ;//* fabs(std::cos(0.2*x)*std::cos(0.3*y)*std::cos(0.1*z)) + phi_c;
             kappa_and_phi.push_back(kx);
