@@ -111,16 +111,14 @@ void Gravity2D(){
     
     TMRSDataTransfer sim_data  = SettingGravity2D();
     
-    std::string geometry_file = "gmsh/simple_2D_coarse.msh";
-    std::string name = "g_segregation_geo";
-    
     TMRSApproxSpaceGenerator aspace;
-    aspace.LoadGeometry(geometry_file);
-
     aspace.CreateUniformMesh(10, 10, 10, 10);
-    aspace.GenerateMHMUniformMesh(3);
-
+    std::string name = "g_segregation_geo";
     aspace.PrintGeometry(name);
+    
+    aspace.GenerateMHMUniformMesh(2);
+    std::string name_ref = "g_segregation_ref_geo";
+    aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
     
     int order = 1;
@@ -761,15 +759,15 @@ TMRSDataTransfer SettingGravity2D(){
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 500.0;
+    sim_data.mTFluidProperties.mOilDensity = 800.0;
 
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
-    sim_data.mTNumerics.m_max_iter_sfi = 30;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
+    sim_data.mTNumerics.m_max_iter_sfi = 50;
+    sim_data.mTNumerics.m_sfi_tol = 0.001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0*day;
