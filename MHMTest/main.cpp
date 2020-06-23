@@ -192,7 +192,7 @@ void Gravity2D(){
         }
     }
     
-    std::cout  << "Number of transportr equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
+    std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
 }
 
 void PaperTest2D(){
@@ -340,7 +340,7 @@ void PaperTest2D(){
         
     }
 
-    std::cout  << "Number of transportr equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
+    std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
     
     // Writing relevant output
     
@@ -480,7 +480,7 @@ void PaperTest3D(){
        
    }
 
-   std::cout  << "Number of transportr equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
+   std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
    
    // Writing relevant output
    
@@ -596,8 +596,8 @@ void UNISIMTest(){
     auto s0 = reservoir_properties.Create_s0();
 
 //    std::string geometry_file2D ="gmsh/AuxFinal.msh";
-    std::string geometry_file2D ="gmsh/UNISIMT4R5P20.msh";
-    int nLayers = 2;
+    std::string geometry_file2D ="gmsh/UNISIMT2R4P1p5.msh";
+    int nLayers = 1;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -713,7 +713,7 @@ void UNISIMTest(){
 
     }
 
-    std::cout  << "Number of transportr equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
+    std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
 
     // Writing relevant output
 
@@ -1076,7 +1076,7 @@ TMRSDataTransfer SettingUNISIM(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 30.0;
+    REAL pressure_in = 25.0;
     REAL pressure_out = 10.0;
     
     //    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -1113,8 +1113,8 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
     sim_data.mTNumerics.m_sfi_tol = 0.001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 100.0*day;
