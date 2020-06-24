@@ -100,9 +100,9 @@ int main(){
     InitializePZLOG();
 //    Gravity2D();
 //    PaperTest2D();
-    PaperTest3D();
+//    PaperTest3D();
 //    SimpleTest3D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 
@@ -590,22 +590,22 @@ void SimpleTest3D(){
 }
 void UNISIMTest(){
     
-    // spatial properties
-//    int64_t n_cells = 2*38466;
-//    std::string grid_data = "maps/corner_grid_coordinates.dat";
-//    std::string props_data = "maps/corner_grid_props.dat";
-//    TRMSpatialPropertiesMap properties_map;
-//    properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data);
-//
+  //   spatial properties
+    int64_t n_cells = 38466;
+    std::string grid_data = "maps/corner_grid_coordinates.dat";
+    std::string props_data = "maps/corner_grid_props.dat";
+    TRMSpatialPropertiesMap properties_map;
+    properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data);
+
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
 
-    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
     auto s0 = reservoir_properties.Create_s0();
 
 //    std::string geometry_file2D ="gmsh/AuxFinal.msh";
-    std::string geometry_file2D ="gmsh/UNISIMT2R4P1p5.msh";
-    int nLayers = 3;
+    std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
+    int nLayers = 5;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -1121,7 +1121,7 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 102;
+    sim_data.mTNumerics.m_n_steps = 150;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 100.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
