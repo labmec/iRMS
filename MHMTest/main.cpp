@@ -100,9 +100,9 @@ int main(){
     InitializePZLOG();
 //    Gravity2D();
 //    PaperTest2D();
-    PaperTest3D();
+//    PaperTest3D();
 //    SimpleTest3D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 
@@ -371,7 +371,7 @@ void PaperTest3D(){
     aspace.SetGeometry(gmesh);
     std::string name = "paper_3d_test_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(1);
     std::string name_ref = "paper_3d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -388,10 +388,10 @@ void PaperTest3D(){
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
 
     // total 60-x-220-x-85
-    std::vector<size_t> n_blocks = {220,60,4};// first layer
-    std::vector<REAL> size_blocks = {1000.0/220.0,100.0/60.0,100.0/4};
+    std::vector<size_t> n_blocks = {220,60,8};// first layer
+    std::vector<REAL> size_blocks = {1000.0/220.0,100.0/60.0,100.0/8};
     std::vector<REAL> translation = {-500.0,-50.0,0.0};
-    std::vector<size_t> SAMe_blocks = {5,5,5}; // keep it small as you can
+    std::vector<size_t> SAMe_blocks = {5,5,5}; // keep it small
     std::string perm_data = "maps/spe_perm.dat";
     std::string phi_data  = "maps/spe_phi.dat";
     TRMSpatialPropertiesMap properties_map;
@@ -591,20 +591,20 @@ void SimpleTest3D(){
 void UNISIMTest(){
     
     // spatial properties
-//    int64_t n_cells = 2*38466;
-//    std::string grid_data = "maps/corner_grid_coordinates.dat";
-//    std::string props_data = "maps/corner_grid_props.dat";
-//    TRMSpatialPropertiesMap properties_map;
-//    properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data);
-//
+    int64_t n_cells = 2*38466;
+    std::string grid_data = "maps/corner_grid_coordinates.dat";
+    std::string props_data = "maps/corner_grid_props.dat";
+    TRMSpatialPropertiesMap properties_map;
+    std::vector<size_t> SAMe_blocks = {5,5,5}; // keep it small as you can
+    properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
+
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
 
-    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
     auto s0 = reservoir_properties.Create_s0();
 
-//    std::string geometry_file2D ="gmsh/AuxFinal.msh";
-    std::string geometry_file2D ="gmsh/UNISIMT2R4P1p5.msh";
+    std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
     int nLayers = 3;
     bool is3DQ = true;
     bool print3DMesh = true;
@@ -1029,9 +1029,9 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
 
-    sim_data.mTNumerics.m_sfi_tol = 0.00001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
+    sim_data.mTNumerics.m_sfi_tol = 0.001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 5.0*day;

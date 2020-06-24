@@ -56,6 +56,12 @@ public:
     
     std::map<std::vector<unsigned int>,std::vector<std::vector<unsigned int>>> m_SAMe_to_SPE;
     
+    std::map<std::vector<unsigned int>,std::vector<unsigned int>> m_SAMe_to_CornerGrid;
+    
+    std::pair<REAL, REAL> m_x_box;
+    std::pair<REAL, REAL> m_y_box;
+    std::pair<REAL, REAL> m_z_box;
+    
         
 public:
     
@@ -96,10 +102,14 @@ public:
     /** @brief Set Carterian mesh data  */
     void SetCartesianMeshData(std::vector<size_t> n_blocks, std::vector<REAL> size_blocks, std::string perm_data_name, std::string phi_data_name, std::vector<size_t> n_SAMe_blocks, std::vector<REAL> translation = {0,0,0});
     
-    void BuildSAMe();
+    void BuildSAMeForCartesianMesh();
+    
+    void BuildSAMeForCornerGridMesh();
 
     /** @brief Set Corner grid mesh data  */
-    void SetCornerGridMeshData(size_t n_cells, std::string corner_data_name, std::string props_data_name);
+    void SetCornerGridMeshData(size_t n_cells, std::string corner_data_name, std::string props_data_name, std::vector<size_t> SAMe_blocks);
+    
+    void Clear();
     
 };
 
