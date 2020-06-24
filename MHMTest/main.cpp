@@ -101,8 +101,8 @@ int main(){
 //    Gravity2D();
 //    PaperTest2D();
 //    PaperTest3D();
-//    SimpleTest3D();
-    UNISIMTest();
+    SimpleTest3D();
+//    UNISIMTest();
     return 0;
 }
 
@@ -370,7 +370,7 @@ void PaperTest3D(){
 
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingPaper3D();
-    sim_data.mTGeometry.mSkeletonDiv =0;
+    sim_data.mTGeometry.mSkeletonDiv =1;
 
     aspace.SetGeometry(gmesh);
     std::string name = "paper_3d_test_geo";
