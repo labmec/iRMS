@@ -99,8 +99,8 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
 int main(){
     InitializePZLOG();
 //    Gravity2D();
-//    PaperTest2D();
-    PaperTest3D();
+    PaperTest2D();
+//    PaperTest3D();
 //    SimpleTest3D();
 //    UNISIMTest();
     return 0;
@@ -240,17 +240,20 @@ void PaperTest2D(){
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
 
-    // spatial properties
-    int64_t n_cells = 93960;
-    std::string grid_data = "maps/corner_grid_coordinates.dat";
-    std::string props_data = "maps/corner_grid_props.dat";
+    // total 60-x-220-x-85
+    int64_t n_cells = 60*220; // first layer
+    std::vector<size_t> n_blocks = {220,60,1};
+    std::vector<REAL> size_blocks = {1000.0/220.0,100.0/60.0,1.0};
+    std::vector<REAL> translation = {0.0,0,0.0};
+    std::string perm_data = "maps/spe_perm.dat";
+    std::string phi_data  = "maps/spe_phi.dat";
     TRMSpatialPropertiesMap properties_map;
-//    properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data);
+    properties_map.SetCartesianMeshData(n_blocks,size_blocks,perm_data,phi_data,translation);
     
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
-
-    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
+    
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
     auto s0 = reservoir_properties.Create_s0();
 
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
@@ -368,7 +371,7 @@ void PaperTest3D(){
     aspace.SetGeometry(gmesh);
     std::string name = "paper_3d_test_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(0);
     std::string name_ref = "paper_3d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -384,18 +387,24 @@ void PaperTest3D(){
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
 
+    // total 60-x-220-x-85
+    int64_t n_cells = 60*220; // first layer
+    std::vector<size_t> n_blocks = {220,60,1};
+    std::vector<REAL> size_blocks = {1000.0/220.0,100.0/60.0,10.0};
+    std::vector<REAL> center = {0,0,0};
+    std::string perm_data = "maps/spe_perm.dat";
+    std::string phi_data  = "maps/spe_phi.dat";
+    TRMSpatialPropertiesMap properties_map;
+    properties_map.SetCartesianMeshData(n_blocks,size_blocks,perm_data,phi_data,center);
+    
+    
     TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
-    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
 
-    auto kx = reservoir_properties.Create_Kx();
-    auto ky = reservoir_properties.Create_Ky();
-    auto kz = reservoir_properties.Create_Kz();
-    auto phi = reservoir_properties.Create_phi();
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
     auto s0 = reservoir_properties.Create_s0();
 
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi,s0);
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
 

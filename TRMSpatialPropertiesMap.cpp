@@ -10,10 +10,19 @@
 
 
 TRMSpatialPropertiesMap::TRMSpatialPropertiesMap(){
+    
     m_grid_coordinates.clear();
     m_properties.clear();
+    
     m_kappa_default = 1.0e-7;
     m_phi_default = 0.1;
+    
+    m_n_SAMe_blocks = {5,5,5};
+    m_size_SAMe_blocks.clear();
+    m_SAMe_to_SPE.clear();
+    m_n_spe_blocks.clear();
+    m_size_spe_blocks.clear();
+    m_spe_translation.clear();
 }
 
 TRMSpatialPropertiesMap::~TRMSpatialPropertiesMap(){
@@ -21,7 +30,124 @@ TRMSpatialPropertiesMap::~TRMSpatialPropertiesMap(){
 }
 
 void TRMSpatialPropertiesMap::SampleKappaAndPhi(TPZManVector<REAL,3> &x, std::vector<REAL> &kappa_and_phi){
+    if (m_map_type == ECartesianGrid) {
+        SampleKappaAndPhiCartesianGrid(x,kappa_and_phi);
+    }else if (m_map_type == ECornerPointGrid){
+        SampleKappaAndPhiCornerGrid(x,kappa_and_phi);
+    }else{
+        assert(m_map_type == ENone);
+    }
+}
 
+void TRMSpatialPropertiesMap::SampleKappaAndPhiCartesianGrid(TPZManVector<REAL,3> &x, std::vector<REAL> &kappa_and_phi){
+    
+    std::vector<REAL> pt = {x[0],x[1],x[2]};
+    
+    auto substract = [] (const std::vector<REAL> & a, const std::vector<REAL> & b) -> std::vector<REAL> {
+            return {a[0] - b[0],a[1] - b[1],a[2] - b[2]};
+    };
+    
+    auto add = [] (const std::vector<REAL> & a, const std::vector<REAL> & b) -> std::vector<REAL> {
+            return {a[0] + b[0],a[1] + b[1],a[2] + b[2]};
+    };
+    
+    auto dot = [] (const std::vector<REAL> & a, const std::vector<REAL> & b) -> REAL {
+            return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+    };
+    
+    auto VoxelCenter = [] (unsigned int & i, unsigned int & j, unsigned int & k, REAL & dx, REAL & dy, REAL & dz) -> std::vector<REAL> {
+            return {-dx/2. + dx*(i+1),-dy/2. + dy*(j+1),-dz/2. + dz*(k+1)};
+    };
+    
+    auto IsVoxelMemberQ = [&substract,&dot] (REAL & dx, REAL & dy, REAL & dz, const std::vector<REAL> & center, const std::vector<REAL> & pt) -> bool {
+        std::vector<REAL> e1 = {1,0,0};
+        std::vector<REAL> e2 = {0,1,0};
+        std::vector<REAL> e3 = {0,0,1};
+        std::vector<REAL> d = substract(pt,center);
+        bool checkxQ = std::fabs(dot(d,e1)) <= dx/2.0;
+        bool checkyQ = std::fabs(dot(d,e2)) <= dy/2.0;
+        bool checkzQ = std::fabs(dot(d,e3)) <= dz/2.0;
+        return checkxQ && checkyQ && checkzQ;
+    };
+        
+    REAL dx = m_size_spe_blocks[0];
+    REAL dy = m_size_spe_blocks[1];
+    REAL dz = m_size_spe_blocks[2];
+    
+    m_size_SAMe_blocks.resize(3);
+    m_size_SAMe_blocks[0] = dx*m_n_spe_blocks[0]/m_n_SAMe_blocks[0];
+    m_size_SAMe_blocks[1] = dy*m_n_spe_blocks[1]/m_n_SAMe_blocks[1];
+    m_size_SAMe_blocks[2] = dz*m_n_spe_blocks[2]/m_n_SAMe_blocks[2];
+    
+    REAL sdx = m_size_SAMe_blocks[0];
+    REAL sdy = m_size_SAMe_blocks[1];
+    REAL sdz = m_size_SAMe_blocks[2];
+    unsigned int i,j,k;
+    for (unsigned int sk = 0; sk < m_n_SAMe_blocks[2]; sk++) {
+        for (unsigned int sj = 0; sj < m_n_SAMe_blocks[1]; sj++) {
+            for (unsigned int si = 0; si < m_n_SAMe_blocks[0]; si++) {
+                auto SAMe_voxcel_center = add(VoxelCenter(si,sj,sk,sdx,sdy,sdz),m_spe_translation);
+                
+                bool isSAMeMemberQ = IsVoxelMemberQ(sdx,sdy,sdz,SAMe_voxcel_center,pt);
+                
+                if (isSAMeMemberQ) {
+                    bool foundQ = false;
+                    unsigned int pos;
+                    std::map<std::vector<unsigned int>,std::vector<std::vector<unsigned int>>>::iterator voxels;
+                    voxels = m_SAMe_to_SPE.find({si,sj,sk});
+                    if (voxels == m_SAMe_to_SPE.end()){
+                        continue;
+                    }
+                    for (auto voxcel : voxels->second) {
+                        i = voxcel[0];
+                        j = voxcel[1];
+                        k = voxcel[2];
+                        auto spe_voxcel_center = add(VoxelCenter(i,j,k,dx,dy,dz),m_spe_translation);
+                        bool isSPEMemberQ = IsVoxelMemberQ(dx,dy,dz,spe_voxcel_center,pt);
+                        if (isSPEMemberQ) {
+                            pos = i + m_n_spe_blocks[0]*(j) + m_n_spe_blocks[0]*m_n_spe_blocks[1]*(k);
+                            foundQ = true;
+                            break;
+                        }
+                    }
+                    if (!foundQ) {
+                        kappa_and_phi = {m_kappa_default,m_kappa_default,m_kappa_default,m_phi_default};
+                        return;
+                    }else{
+                        std::vector<REAL> chunk = m_properties[pos];
+                        kappa_and_phi = chunk;
+                        REAL mDTom2 = 0.986923e-15;
+                        kappa_and_phi[0] *= mDTom2*1.0e6;
+                        kappa_and_phi[1] *= mDTom2*1.0e6;
+                        kappa_and_phi[2] *= mDTom2*1.0e6;
+                        kappa_and_phi[3] += 1.0e-2; // Because some porosities are null
+                    }
+                }else{
+                    kappa_and_phi = {m_kappa_default,m_kappa_default,m_kappa_default,m_phi_default};
+                    return;
+                }
+                
+
+                
+                for (unsigned int k = 0; k < m_n_spe_blocks[2]; k++) {
+                    for (unsigned int j = 0; j < m_n_spe_blocks[1]; j++) {
+                        for (unsigned int i = 0; i < m_n_spe_blocks[0]; i++) {
+                            auto spe_voxcel_center = add(VoxelCenter(i,j,k,dx,dy,dz),m_spe_translation);
+                            bool isSAMeMemberQ = IsVoxelMemberQ(sdx,sdy,sdz,SAMe_voxcel_center,spe_voxcel_center);
+                            if (isSAMeMemberQ) {
+                                m_SAMe_to_SPE[{si,sj,sk}].push_back({i,j,k});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+}
+
+void TRMSpatialPropertiesMap::SampleKappaAndPhiCornerGrid(TPZManVector<REAL,3> &x, std::vector<REAL> &kappa_and_phi){
+    
     std::vector<REAL> pt = {x[0],x[1],x[2]};
     
     auto substract = [] (const std::vector<REAL> & a, const std::vector<REAL> & b) -> std::vector<REAL> {
@@ -106,9 +232,109 @@ void TRMSpatialPropertiesMap::SampleKappaAndPhi(TPZManVector<REAL,3> &x, std::ve
         kappa_and_phi[2] *= mDTom2*1.0e6;
         kappa_and_phi[3] += 1.0e-2; // Because some porosities are null
     }
+    
+}
+
+void TRMSpatialPropertiesMap::SetCartesianMeshData(std::vector<size_t> n_blocks, std::vector<REAL> size_blocks, std::string perm_data_name, std::string phi_data_name, std::vector<REAL> translation){
+    
+    m_map_type = ECartesianGrid;
+    
+    assert(n_blocks.size() == 3);
+    
+    assert(size_blocks.size() == 3);
+    
+    m_n_spe_blocks = n_blocks;
+    m_size_spe_blocks = size_blocks;
+    m_spe_translation = translation;
+    
+    std::ifstream stream_perm (perm_data_name.c_str());
+    std::ifstream stream_phi (phi_data_name.c_str());
+    
+    size_t n_cells = m_n_spe_blocks[0] *  m_n_spe_blocks[1] * m_n_spe_blocks[2];
+    m_properties.resize(n_cells);
+    size_t c = 0;
+    for (unsigned int k = 0; k < m_n_spe_blocks[2]; k++) {
+        for (unsigned int j = 0; j < m_n_spe_blocks[1]; j++) {
+            for (unsigned int i = 0; i < m_n_spe_blocks[0]; i++) {
+                REAL k,phi;
+                stream_perm >> k;
+                stream_phi >> phi;
+                m_properties[c] = {k,k,k,phi};
+                c++;
+            }
+        }
+    }
+    
+    assert(c == n_cells);
+    
+    BuildSAMe();
+}
+
+void TRMSpatialPropertiesMap::BuildSAMe(){
+        
+    auto substract = [] (const std::vector<REAL> & a, const std::vector<REAL> & b) -> std::vector<REAL> {
+            return {a[0] - b[0],a[1] - b[1],a[2] - b[2]};
+    };
+    
+    auto add = [] (const std::vector<REAL> & a, const std::vector<REAL> & b) -> std::vector<REAL> {
+            return {a[0] + b[0],a[1] + b[1],a[2] + b[2]};
+    };
+    
+    auto dot = [] (const std::vector<REAL> & a, const std::vector<REAL> & b) -> REAL {
+            return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+    };
+    
+    auto VoxelCenter = [] (unsigned int & i, unsigned int & j, unsigned int & k, REAL & dx, REAL & dy, REAL & dz) -> std::vector<REAL> {
+            return {-dx/2. + dx*(i+1),-dy/2. + dy*(j+1),-dz/2. + dz*(k+1)};
+    };
+    
+    auto IsVoxelMemberQ = [&substract,&dot] (REAL & dx, REAL & dy, REAL & dz, const std::vector<REAL> & center, const std::vector<REAL> & pt) -> bool {
+        std::vector<REAL> e1 = {1,0,0};
+        std::vector<REAL> e2 = {0,1,0};
+        std::vector<REAL> e3 = {0,0,1};
+        std::vector<REAL> d = substract(pt,center);
+        bool checkxQ = std::fabs(dot(d,e1)) <= dx/2.0;
+        bool checkyQ = std::fabs(dot(d,e2)) <= dy/2.0;
+        bool checkzQ = std::fabs(dot(d,e3)) <= dz/2.0;
+        return checkxQ && checkyQ && checkzQ;
+    };
+        
+    REAL dx = m_size_spe_blocks[0];
+    REAL dy = m_size_spe_blocks[1];
+    REAL dz = m_size_spe_blocks[2];
+    
+    m_size_SAMe_blocks.resize(3);
+    m_size_SAMe_blocks[0] = dx*m_n_spe_blocks[0]/m_n_SAMe_blocks[0];
+    m_size_SAMe_blocks[1] = dy*m_n_spe_blocks[1]/m_n_SAMe_blocks[1];
+    m_size_SAMe_blocks[2] = dz*m_n_spe_blocks[2]/m_n_SAMe_blocks[2];
+    
+    REAL sdx = m_size_SAMe_blocks[0];
+    REAL sdy = m_size_SAMe_blocks[1];
+    REAL sdz = m_size_SAMe_blocks[2];
+    for (unsigned int sk = 0; sk < m_n_SAMe_blocks[2]; sk++) {
+        for (unsigned int sj = 0; sj < m_n_SAMe_blocks[1]; sj++) {
+            for (unsigned int si = 0; si < m_n_SAMe_blocks[0]; si++) {
+                auto SAMe_voxcel_center = add(VoxelCenter(si,sj,sk,sdx,sdy,sdz),m_spe_translation);
+                
+                for (unsigned int k = 0; k < m_n_spe_blocks[2]; k++) {
+                    for (unsigned int j = 0; j < m_n_spe_blocks[1]; j++) {
+                        for (unsigned int i = 0; i < m_n_spe_blocks[0]; i++) {
+                            auto spe_voxcel_center = add(VoxelCenter(i,j,k,dx,dy,dz),m_spe_translation);
+                            bool isSAMeMemberQ = IsVoxelMemberQ(sdx,sdy,sdz,SAMe_voxcel_center,spe_voxcel_center);
+                            if (isSAMeMemberQ) {
+                                m_SAMe_to_SPE[{si,sj,sk}].push_back({i,j,k});
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 void TRMSpatialPropertiesMap::SetCornerGridMeshData(size_t n_cells, std::string corner_data_name, std::string props_data_name){
+    
+    m_map_type = ECornerPointGrid;
     
     std::ifstream stream_corners (corner_data_name.c_str());
     std::ifstream stream_props (props_data_name.c_str());
