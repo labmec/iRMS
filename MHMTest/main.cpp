@@ -374,7 +374,7 @@ void PaperTest3D(){
     aspace.SetGeometry(gmesh);
     std::string name = "paper_3d_test_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(2);
     std::string name_ref = "paper_3d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -1040,7 +1040,7 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_n_steps = 150;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
