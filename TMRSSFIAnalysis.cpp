@@ -132,7 +132,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
 //        m_mixed_module->PostProcessTimeStep();
     }
     
-    if (stop_criterion_Q) {
+    if (!stop_criterion_Q) {
         std::cout << "SFI fail to converge " << std::endl;
         std::cout << "Number of iterations = " << n_iterations << std::endl;
         std::cout << "SFI will continue with : " << std::endl;
