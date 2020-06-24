@@ -604,8 +604,9 @@ void UNISIMTest(){
     auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
     auto s0 = reservoir_properties.Create_s0();
 
+//    std::string geometry_file2D ="gmsh/AuxFinal.msh";
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
-    int nLayers = 3;
+    int nLayers = 5;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -1123,7 +1124,7 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 102;
+    sim_data.mTNumerics.m_n_steps = 150;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 100.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
