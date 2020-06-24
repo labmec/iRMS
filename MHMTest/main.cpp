@@ -99,8 +99,8 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
 int main(){
     InitializePZLOG();
 //    Gravity2D();
-    PaperTest2D();
-//    PaperTest3D();
+//    PaperTest2D();
+    PaperTest3D();
 //    SimpleTest3D();
 //    UNISIMTest();
     return 0;
@@ -224,7 +224,7 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(1);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -241,14 +241,14 @@ void PaperTest2D(){
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
 
     // total 60-x-220-x-85
-    int64_t n_cells = 60*220; // first layer
-    std::vector<size_t> n_blocks = {220,60,1};
+    std::vector<size_t> n_blocks = {220,60,1};// first layer
     std::vector<REAL> size_blocks = {1000.0/220.0,100.0/60.0,1.0};
-    std::vector<REAL> translation = {0.0,0,0.0};
+    std::vector<REAL> translation = {-500.0,-50.0,-0.5};
+    std::vector<size_t> SAMe_blocks = {7,7,1}; // keep it small as you can
     std::string perm_data = "maps/spe_perm.dat";
     std::string phi_data  = "maps/spe_phi.dat";
     TRMSpatialPropertiesMap properties_map;
-    properties_map.SetCartesianMeshData(n_blocks,size_blocks,perm_data,phi_data,translation);
+    properties_map.SetCartesianMeshData(n_blocks,size_blocks,perm_data,phi_data,SAMe_blocks,translation);
     
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
@@ -358,7 +358,7 @@ void PaperTest2D(){
 void PaperTest3D(){
     
     std::string geometry_file = "gmsh/reservoir_2d_paper.msh";
-    int n_layers = 2;
+    int n_layers = 4;
     bool is3D_Q = true;
     bool printMesh_Q = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -388,20 +388,20 @@ void PaperTest3D(){
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
 
     // total 60-x-220-x-85
-    int64_t n_cells = 60*220; // first layer
-    std::vector<size_t> n_blocks = {220,60,1};
-    std::vector<REAL> size_blocks = {1000.0/220.0,100.0/60.0,10.0};
-    std::vector<REAL> center = {0,0,0};
+    std::vector<size_t> n_blocks = {220,60,4};// first layer
+    std::vector<REAL> size_blocks = {1000.0/220.0,100.0/60.0,100.0/4};
+    std::vector<REAL> translation = {-500.0,-50.0,0.0};
+    std::vector<size_t> SAMe_blocks = {5,5,5}; // keep it small as you can
     std::string perm_data = "maps/spe_perm.dat";
     std::string phi_data  = "maps/spe_phi.dat";
     TRMSpatialPropertiesMap properties_map;
-    properties_map.SetCartesianMeshData(n_blocks,size_blocks,perm_data,phi_data,center);
+    properties_map.SetCartesianMeshData(n_blocks,size_blocks,perm_data,phi_data,SAMe_blocks,translation);
     
     
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
 
-    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
     auto s0 = reservoir_properties.Create_s0();
 
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
@@ -951,7 +951,7 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 2.5*day;
+    sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -1034,13 +1034,13 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 5.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
     grav[1] = -9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     
     
     

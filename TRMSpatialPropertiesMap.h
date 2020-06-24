@@ -43,7 +43,7 @@ public:
     REAL m_phi_default;
     
     // Structured Auxiliary Mesh with Element Storage (SAMe)
-    std::vector<REAL> m_n_SAMe_blocks;
+    std::vector<size_t> m_n_SAMe_blocks;
     
     std::vector<REAL> m_size_SAMe_blocks;
     
@@ -94,7 +94,7 @@ public:
     void SampleKappaAndPhiCornerGrid(TPZManVector<REAL,3> &x, std::vector<REAL> &kappa_and_phi);
     
     /** @brief Set Carterian mesh data  */
-    void SetCartesianMeshData(std::vector<size_t> n_blocks, std::vector<REAL> size_blocks, std::string perm_data_name, std::string phi_data_name, std::vector<REAL> translation = {0,0,0});
+    void SetCartesianMeshData(std::vector<size_t> n_blocks, std::vector<REAL> size_blocks, std::string perm_data_name, std::string phi_data_name, std::vector<size_t> n_SAMe_blocks, std::vector<REAL> translation = {0,0,0});
     
     void BuildSAMe();
 
