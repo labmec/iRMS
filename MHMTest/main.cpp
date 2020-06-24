@@ -100,8 +100,10 @@ int main(){
     InitializePZLOG();
 //    Gravity2D();
 //    PaperTest2D();
+
     PaperTest3D();
 //    SimpleTest3D();
+
 //    UNISIMTest();
     return 0;
 }
@@ -227,8 +229,9 @@ void PaperTest2D(){
     aspace.GenerateMHMUniformMesh(1);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
+    sim_data.mTGeometry.mSkeletonDiv =0;
     aspace.SetDataTransfer(sim_data);
-
+    
     
     int order = 1;
     bool must_opt_band_width_Q = true;
@@ -368,8 +371,8 @@ void PaperTest3D(){
     TPZGeoMesh *gmesh = CreateGeoMeshMHM3DTest( geometry_file,  n_layers, printMesh_Q, is3D_Q);
 
     TMRSApproxSpaceGenerator aspace;
-
     TMRSDataTransfer sim_data  = SettingPaper3D();
+    sim_data.mTGeometry.mSkeletonDiv =1;
 
     aspace.SetGeometry(gmesh);
     std::string name = "paper_3d_test_geo";
@@ -597,7 +600,7 @@ void SimpleTest3D(){
 void UNISIMTest(){
     
     // spatial properties
-    int64_t n_cells = 2*38466;
+    int64_t n_cells = 38466;
     std::string grid_data = "maps/corner_grid_coordinates.dat";
     std::string props_data = "maps/corner_grid_props.dat";
     TRMSpatialPropertiesMap properties_map;
@@ -620,6 +623,7 @@ void UNISIMTest(){
     TMRSApproxSpaceGenerator aspace;
     
     TMRSDataTransfer sim_data  = SettingUNISIM();
+    sim_data.mTGeometry.mSkeletonDiv =0;
     
     aspace.SetGeometry(gmesh);
     std::string name="unisim_geo";
@@ -749,7 +753,7 @@ TMRSDataTransfer SettingGravity2D(){
     TMRSDataTransfer sim_data;
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["RockMatrix"] = 1;
-    sim_data.mTGeometry.Interface_material_id = 100;
+    sim_data.mTGeometry.mInterface_material_id = 100;
    
     int D_Type = 0;
     int N_Type = 1;
@@ -836,7 +840,7 @@ TMRSDataTransfer Setting3D(){
     TMRSDataTransfer sim_data;
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["RockMatrix"] = 1;
-    sim_data.mTGeometry.Interface_material_id = 100;
+    sim_data.mTGeometry.mInterface_material_id = 100;
     
     int D_Type = 0;
     int N_Type = 1;
@@ -919,7 +923,7 @@ TMRSDataTransfer SettingPaper2D(){
     TMRSDataTransfer sim_data;
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["Reservoir"] = 1;
-    sim_data.mTGeometry.Interface_material_id = 100;
+    sim_data.mTGeometry.mInterface_material_id = 100;
    
     int D_Type = 0;
     int N_Type = 1;
@@ -1001,7 +1005,7 @@ TMRSDataTransfer SettingPaper3D(){
    TMRSDataTransfer sim_data;
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Reservoir"] = 1;
-    sim_data.mTGeometry.Interface_material_id = 100;
+    sim_data.mTGeometry.mInterface_material_id = 100;
     
     int D_Type = 0;
     int N_Type = 1;
@@ -1085,7 +1089,7 @@ TMRSDataTransfer SettingUNISIM(){
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["RockMatrix"] = 1;
 //    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["RockMatrix"] = 1;
-    sim_data.mTGeometry.Interface_material_id = 100;
+    sim_data.mTGeometry.mInterface_material_id = 100;
     
     int D_Type = 0;
     int N_Type = 1;

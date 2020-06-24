@@ -79,7 +79,7 @@ void TMRSTransportAnalysis::Assemble(){
     }
    
     //Interface Elements
-    int interID = m_sim_data->mTGeometry.Interface_material_id;
+    int interID = m_sim_data->mTGeometry.mInterface_material_id;
     int ninterfaces = fAlgebraicTransport.fInterfaceData[interID].fFluxSign.size();
     if (ninterfaces<1) {
         DebugStop();
@@ -156,7 +156,7 @@ void TMRSTransportAnalysis::AssembleResidual(){
     }
    
     //Interface Elements
-    int interID = m_sim_data->mTGeometry.Interface_material_id;
+    int interID = m_sim_data->mTGeometry.mInterface_material_id;
     int ninterfaces = fAlgebraicTransport.fInterfaceData[interID].fFluxSign.size();
     if (ninterfaces<1) {
         DebugStop();

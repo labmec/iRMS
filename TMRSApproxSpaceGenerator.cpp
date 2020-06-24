@@ -657,7 +657,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
         mhm->SetInternalPOrder(1);
         mhm->SetSkeletonPOrder(1);
         
-        mhm->DivideSkeletonElements(0);
+        mhm->DivideSkeletonElements(mSimData.mTGeometry.mSkeletonDiv);
         mhm->DivideBoundarySkeletonElements();
     
         bool substructure = true;
@@ -823,7 +823,7 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
         
     }
     
-    int transport_matid = mSimData.mTGeometry.Interface_material_id;
+    int transport_matid = mSimData.mTGeometry.mInterface_material_id;
     {
         TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
         interface->SetDataTransfer(mSimData);
@@ -1004,7 +1004,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
         mTransportOperator->InsertMaterialObject(face);
     }
     
-    int transport_matid = mSimData.mTGeometry.Interface_material_id;
+    int transport_matid = mSimData.mTGeometry.mInterface_material_id;
     {
 //        TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
          TPZTracerFlow * interface = new TPZTracerFlow (transport_matid,dimension-1);
