@@ -263,7 +263,10 @@ void PaperTest2D(){
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
 
     // Render a graphical map
-    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+        PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+    std::cout << "Spatial properties are transferred." << std::endl;
+    std::cout << "Memory used by SpatialPropertiesMap is released. " << std::endl;
+    properties_map.Clear();
 
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
@@ -410,7 +413,10 @@ void PaperTest3D(){
 
     // Render a graphical map
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
-    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+        PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+    std::cout << "Spatial properties are transferred." << std::endl;
+    std::cout << "Memory used by SpatialPropertiesMap is released. " << std::endl;
+    properties_map.Clear();
 
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
@@ -604,7 +610,6 @@ void UNISIMTest(){
     auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
     auto s0 = reservoir_properties.Create_s0();
 
-//    std::string geometry_file2D ="gmsh/AuxFinal.msh";
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
     int nLayers = 5;
     bool is3DQ = true;
@@ -643,8 +648,8 @@ void UNISIMTest(){
     // Render a graphical map
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
     PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
-    
-    // Releasing not used memory
+    std::cout << "Spatial properties are transferred." << std::endl;
+    std::cout << "Memory used by SpatialPropertiesMap is released. " << std::endl;
     properties_map.Clear();
 
     int n_steps = sim_data.mTNumerics.m_n_steps;
