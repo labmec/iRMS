@@ -622,11 +622,11 @@ void UNISIMTest(){
     TMRSDataTransfer sim_data  = SettingUNISIM();
     
     aspace.SetGeometry(gmesh);
-    std::string name="NewMesh";
-    std::cout<< gmesh->NElements();
-    aspace.GenerateMHMUniformMesh(0);
+    std::string name="unisim_geo";
     aspace.PrintGeometry(name);
-    
+    aspace.GenerateMHMUniformMesh(1);
+    std::string name_ref = "unisim_ref_geo";
+    aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
     
     int order = 1;
