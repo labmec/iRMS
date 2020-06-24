@@ -76,7 +76,7 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_transport_module->fAlgebraicTransport.fgravity = m_sim_data->mTNumerics.m_gravity;
     
     //Set initial properties
-    std::cout<<m_sim_data->mTGeometry.Interface_material_id;
+    std::cout<<m_sim_data->mTGeometry.mInterface_material_id;
     std::cout<<m_sim_data->mTFluidProperties.mWaterViscosity;
     m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[0] = m_sim_data->mTFluidProperties.mWaterViscosity;
     m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[1] = m_sim_data->mTFluidProperties.mOilViscosity;

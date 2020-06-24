@@ -62,7 +62,8 @@ public:
         /** @brief
           MaterialID of the interface element that will be inserted in the transport mesh
          */
-        int Interface_material_id = 100;
+        int mInterface_material_id = 100;
+        int mSkeletonDiv =0;
         
          /** @brief Default constructor */
         TGeometry(){
@@ -80,6 +81,8 @@ public:
         TGeometry(const TGeometry &other){
             mDomainDimNameAndPhysicalTag = other.mDomainDimNameAndPhysicalTag;
             mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
+            mInterface_material_id=other.mInterface_material_id;
+            mSkeletonDiv = other.mSkeletonDiv;
         }
         /** @brief Copy assignment operator*/
         TGeometry &operator=(const TGeometry &other){
@@ -87,6 +90,8 @@ public:
             {
                 mDomainDimNameAndPhysicalTag = other.mDomainDimNameAndPhysicalTag;
                 mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
+                mInterface_material_id=other.mInterface_material_id;
+                mSkeletonDiv = other.mSkeletonDiv;
             }
             return *this;
         }
