@@ -101,10 +101,10 @@ int main(){
 //    Gravity2D();
 //    PaperTest2D();
 
-    PaperTest3D();
+//    PaperTest3D();
 //    SimpleTest3D();
 
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 
@@ -614,7 +614,7 @@ void UNISIMTest(){
     auto s0 = reservoir_properties.Create_s0();
 
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
-    int nLayers = 5;
+    int nLayers = 3;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -628,7 +628,7 @@ void UNISIMTest(){
     aspace.SetGeometry(gmesh);
     std::string name="unisim_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(0);
     std::string name_ref = "unisim_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -671,7 +671,8 @@ void UNISIMTest(){
     TPZFNMatrix<200,REAL> time_mass(n_steps+1,2,0.0);
     TPZFNMatrix<200,REAL> time_inj(n_steps+1,3,0.0);
     TPZFNMatrix<200,REAL> time_prod(n_steps+1,3,0.0);
-
+    TPZFNMatrix<200,REAL> time_fluxInlet(n_steps+1,2,0.0);
+    TPZFNMatrix<200,REAL> time_fluxOutlet(n_steps+1,2,0.0);
     // Print initial condition
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
@@ -683,6 +684,9 @@ void UNISIMTest(){
     sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
     std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
     std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
+    REAL fluxInlet_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
+    REAL fluxOutlet_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
+    
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
 
@@ -696,7 +700,13 @@ void UNISIMTest(){
     time_prod(0,0) = 0.0;
     time_prod(0,1) = prod_data.first;
     time_prod(0,2) = prod_data.second;
+    
+    time_fluxInlet(0,0) =0.0;
+    time_fluxInlet(0,1) =fluxInlet_data;
 
+    time_fluxOutlet(0,0) =0.0;
+    time_fluxOutlet(0,1) =fluxOutlet_data;
+    
     for (int it = 1; it <= n_steps; it++) {
 
      sim_time = it*dt;
@@ -715,6 +725,11 @@ void UNISIMTest(){
      sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
          std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
          std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
+         
+         REAL fluxInlet_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
+         REAL fluxOutlet_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
+         
+         
          std::cout << "Mass report at time : " << sim_time << std::endl;
          std::cout << "Mass integral :  " << mass << std::endl;
 
@@ -728,6 +743,12 @@ void UNISIMTest(){
          time_prod(it,0) = sim_time;
          time_prod(it,1) = prod_data.first;
          time_prod(it,2) = prod_data.second;
+         
+         time_fluxInlet(it,0) = sim_time;
+         time_fluxInlet(it,1) = fluxInlet_data;
+         
+         time_fluxOutlet(it,0) = sim_time;
+         time_fluxOutlet(it,1) = fluxOutlet_data;
 
      }
 
@@ -745,6 +766,12 @@ void UNISIMTest(){
 
     std::ofstream outdata_prod("imrs_prod.txt");
     time_prod.Print("prod = ",outdata_prod,EMathematicaInput);
+    
+    std::ofstream outdata_fluxin("imrs_fluxinlet.txt");
+    time_fluxInlet.Print("fluxint = ",outdata_fluxin,EMathematicaInput);
+    
+    std::ofstream outdata_fluxout("imrs_fluxoutlet.txt");
+    time_fluxOutlet.Print("fluxint = ",outdata_fluxout,EMathematicaInput);
     
 }
 
@@ -1133,9 +1160,9 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 150;
+    sim_data.mTNumerics.m_n_steps = 750;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 100.0*day;
+    sim_data.mTNumerics.m_dt      = 15*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -1160,7 +1187,7 @@ TMRSDataTransfer SettingUNISIM(){
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    REAL time = 10*sim_data.mTPostProcess.m_file_time_step;
     int n_reporting_times =(n_steps)/(time/dt) + 1;
     REAL r_time =0.0;
     for (int i =1; i<= n_reporting_times; i++) {

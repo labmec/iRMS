@@ -241,6 +241,7 @@ public:
     std::pair<REAL, std::pair<REAL, REAL>> lambda_w_star(std::pair<REAL, REAL> lambda_L, std::pair<REAL, REAL> lambda_R, REAL g_dot_n, REAL rho_ratio);
     
     void UpdateIntegralFlux(int matid);
+    REAL FLuxIntegralbyID(int mat_id);
     REAL CalculateMass();
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
 };

@@ -417,3 +417,15 @@ std::pair<REAL, REAL> TPZAlgebraicTransport::FLuxWaterOilIntegralbyID(int mat_id
     }
     return std::make_pair(WaterIntegral, OilIntegral);
 }
+REAL TPZAlgebraicTransport::FLuxIntegralbyID(int mat_id){
+    
+    REAL FluxInt =0.0;
+    
+    int ninter = fInterfaceData[mat_id].fIntegralFlux.size();
+    for (int iface =0 ; iface < ninter; iface++) {
+        int LeftElIndex = fInterfaceData[mat_id].fLeftRightVolIndex[iface].first;
+        REAL FluxInttegral = fInterfaceData[mat_id].fIntegralFlux[iface];
+        FluxInt += FluxInttegral;
+    }
+    return FluxInt;
+}
