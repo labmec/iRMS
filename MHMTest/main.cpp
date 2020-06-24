@@ -100,8 +100,10 @@ int main(){
     InitializePZLOG();
 //    Gravity2D();
 //    PaperTest2D();
-//    PaperTest3D();
-    SimpleTest3D();
+
+    PaperTest3D();
+//    SimpleTest3D();
+
 //    UNISIMTest();
     return 0;
 }
@@ -1044,13 +1046,13 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 5.0*day;
+    sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
     grav[1] = -9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     
     
     
