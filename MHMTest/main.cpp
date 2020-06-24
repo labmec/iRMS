@@ -99,7 +99,7 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
 int main(){
     InitializePZLOG();
 //    Gravity2D();
-//    PaperTest2D();
+    PaperTest2D();
 
 //    PaperTest3D();
 //    SimpleTest3D();
@@ -226,10 +226,9 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(2);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
-    sim_data.mTGeometry.mSkeletonDiv =0;
     aspace.SetDataTransfer(sim_data);
     
     
@@ -247,7 +246,7 @@ void PaperTest2D(){
     std::vector<size_t> n_blocks = {220,60,1};// first layer
     std::vector<REAL> size_blocks = {1000.0/220.0,100.0/60.0,1.0};
     std::vector<REAL> translation = {-500.0,-50.0,-0.5};
-    std::vector<size_t> SAMe_blocks = {7,7,1}; // keep it small as you can
+    std::vector<size_t> SAMe_blocks = {5,5,1}; // keep it small
     std::string perm_data = "maps/spe_perm.dat";
     std::string phi_data  = "maps/spe_phi.dat";
     TRMSpatialPropertiesMap properties_map;
@@ -377,7 +376,7 @@ void PaperTest3D(){
     aspace.SetGeometry(gmesh);
     std::string name = "paper_3d_test_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(2);
     std::string name_ref = "paper_3d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -955,7 +954,7 @@ TMRSDataTransfer SettingPaper2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 15.0;
+    REAL pressure_in = 20.0;
     REAL pressure_out = 10.0;
         
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -985,10 +984,11 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
 
-    sim_data.mTNumerics.m_sfi_tol = 0.00001;
+    sim_data.mTGeometry.mSkeletonDiv = 0;
+    sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_n_steps = 400;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -996,7 +996,7 @@ TMRSDataTransfer SettingPaper2D(){
     std::vector<REAL> grav(3,0.0);
     grav[1] = -9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     
     
     
@@ -1068,10 +1068,11 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
 
+    sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_n_steps = 150;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -1080,6 +1081,7 @@ TMRSDataTransfer SettingPaper3D(){
     grav[1] = -9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    
     
     
     
