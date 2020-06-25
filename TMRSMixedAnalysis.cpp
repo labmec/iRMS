@@ -5,6 +5,10 @@
 //
 
 #include "TMRSMixedAnalysis.h"
+#ifdef USING_BOOST
+#include "boost/date_time/posix_time/posix_time.hpp"
+#endif
+
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(){
     
@@ -111,11 +115,25 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
 void TMRSMixedAnalysis::NewtonIteration(){
     
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+#endif
+
     Assemble();
 
-//    Rhs() *= -1.0; 
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+    auto deltat = tsim2-tsim1;
+    std::cout << "Mixed Analysis Assembly time " << deltat;
+#endif
+//    Rhs() *= -1.0;
 
     Solve();
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
+    auto deltat2 = tsim3-tsim1;
+    std::cout << "Mixed Analysis Solve time " << deltat2;
+#endif
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(){
