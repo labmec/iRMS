@@ -55,8 +55,37 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     }
     ek.fMat(nrows-1,ncols-1) *=fLambda;
     
+    TPZFMatrix<STATE> solvec(fEK.fMat.Rows(),1,0.);
+    GetSolutionVector(solvec);
     ef.fMat *= -1.0*Glambda;
-    
+    /** @brief Computes z = alpha * opt(this)*x + beta * y */
+    /** @note z and x cannot overlap in memory */
+//    void MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,
+//                 const TVar alpha=1.,const TVar beta = 0.,const int opt = 0) const override;
+    STATE alpha = -1.;
+    ek.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1.);
+}
+
+// extract the solution vector of the condensed element
+void TPZFastCondensedElement::GetSolutionVector(TPZFMatrix<STATE> &solvec)
+{
+    int nc = fEK.fConnect.size();
+    TPZCompMesh *cmesh = Mesh();
+    int64_t vecsize = fEK.fMat.Rows();
+    int count = 0;
+    for(int ic=0; ic<nc; ic++)
+    {
+        int64_t cindex = fEK.fConnect[ic];
+        TPZConnect &c = cmesh->ConnectVec()[cindex];
+        int64_t seqnum = c.SequenceNumber();
+        int blsize = c.NShape()*c.NState();
+        for(int dof=0; dof<blsize; dof++)
+        {
+            solvec(count+dof,0) = cmesh->Block()(seqnum,0,dof,0);
+        }
+        count += blsize;
+    }
+    if(count != vecsize) DebugStop();
 }
 
 /**

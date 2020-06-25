@@ -180,7 +180,7 @@ void SimpleTest2D(){
     std::cout << "Mass integral :  " << initial_mass << std::endl;
     
     for (int it = 1; it <= n_steps; it++) {
-       // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = false;
+        TPZFastCondensedElement::fSkipLoadSolution = false;
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
@@ -198,7 +198,7 @@ void SimpleTest2D(){
             std::cout << "Mass integral :  " << mass << std::endl;
             
         }
-        // TPZFastCondensedElement::fSkipLoadSolution = true;
+        TPZFastCondensedElement::fSkipLoadSolution = true;
     }
     
     std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
@@ -633,12 +633,12 @@ void SimpleTest3D(){
 //    aspace.LoadGeometry(geometry_file);
     double nx = 2;
     double ny = 2;
-    double nz = 4;
+    double nz = 1;
     double L = 10;
     double H = 10;
     double W = 10;
     aspace.CreateUniformMesh(nx, L, ny, H,nz,W);
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.GenerateMHMUniformMesh(0);
     
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -1134,8 +1134,8 @@ TMRSDataTransfer Setting3D(){
     std::vector<REAL> grav(3,0.0);
     grav[2] = -9.8*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 10;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     
     // PostProcess controls

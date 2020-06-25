@@ -38,6 +38,8 @@ private:
     
     void ShrinkElementMatrix(TPZElementMatrix &ekinput, TPZElementMatrix &output);
     
+    // extract the solution vector of the condensed element
+    void GetSolutionVector(TPZFMatrix<STATE> &solvec);
 public:
     
     TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix = true) :

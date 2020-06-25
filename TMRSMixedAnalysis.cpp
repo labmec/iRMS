@@ -63,7 +63,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         DebugStop();
     }
 
-    int n = 1;//m_sim_data->mTNumerics.m_max_iter_mixed;
+    int n = m_sim_data->mTNumerics.m_max_iter_mixed;
     bool stop_criterion_Q = false;
     bool stop_criterion_corr_Q = false;
     REAL res_norm = 1.0;
@@ -77,12 +77,12 @@ void TMRSMixedAnalysis::RunTimeStep(){
         
         NewtonIteration();
         
-        //        cmesh->UpdatePreviousState(1);
-        //        Rhs() *=-1.0;
+        cmesh->UpdatePreviousState(1);
+        Rhs() *=-1.0;
 
         dx = Solution();
-//        x += dx;
-//        LoadSolution(x);
+        x += dx;
+        LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         
         corr_norm = Norm(dx);
@@ -102,9 +102,10 @@ void TMRSMixedAnalysis::RunTimeStep(){
             //            Rhs().Print("r = ",std::cout,EMathematicaInput);
             break;
         }
-//        if (m_k_iteration >= n) {
-//            std::cout << "Mixed operator not converge " << std::endl;
-//        }
+        if (m_k_iteration >= n) {
+            std::cout << "Mixed operator no convergence " <<
+            " corr_norm = " << corr_norm << " res_norm " << res_norm << std::endl;
+        }
         
     }
     
