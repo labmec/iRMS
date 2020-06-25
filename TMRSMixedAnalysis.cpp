@@ -5,6 +5,10 @@
 //
 
 #include "TMRSMixedAnalysis.h"
+#ifdef USING_BOOST
+#include "boost/date_time/posix_time/posix_time.hpp"
+#endif
+
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(){
     
@@ -69,11 +73,10 @@ void TMRSMixedAnalysis::RunTimeStep(){
     
 
     TPZFMatrix<STATE> dx,x(Solution());
-    
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
-
+        
         //        cmesh->UpdatePreviousState(1);
         //        Rhs() *=-1.0;
 
@@ -111,11 +114,65 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
 void TMRSMixedAnalysis::NewtonIteration(){
     
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+#endif
+
+//    static int firstassemble = 1;
+    if(mIsFirstAssembleQ == true)
+    {
+        fStructMatrix->SetNumThreads(0);
+        int64_t nel = fCompMesh->NElements();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            TPZCompEl *cel = fCompMesh->Element(el);
+            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
+            if(sub)
+            {
+                sub->Analysis()->StructMatrix()->SetNumThreads(0);
+            }
+        }
+        mIsFirstAssembleQ=false;
+        std::cout << "First Assembly\n";
+    }
+    else{
+        fStructMatrix->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+        int64_t nel = fCompMesh->NElements();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            TPZCompEl *cel = fCompMesh->Element(el);
+            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
+            if(sub)
+            {
+                sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+            }
+        }
+    }
+    std::cout << "Assembling Darcy operator\n";
     Assemble();
 
-//    Rhs() *= -1.0; 
+//    std::cout << "Rhs norm " << Norm(Rhs()) << std::endl;
+//    std::cout << "done\n";
+//    if(firstassemble == 1)
+//    {
+//        firstassemble = 0;
+//
+//    }
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+    auto deltat = tsim2-tsim1;
+    std::cout << "Mixed Analysis Assembly time " << deltat << std::endl;
+#endif
+//    Rhs() *= -1.0;
 
     Solve();
+    
+    std::cout << "Solution Norm " << Norm(Solution()) << std::endl;
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
+    auto deltat2 = tsim3-tsim1;
+    std::cout << "Mixed Analysis Solve time " << deltat2 << std::endl;
+#endif
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(){

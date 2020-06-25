@@ -12,6 +12,7 @@ TPZMixedDarcyFlow::TPZMixedDarcyFlow() : TPZMaterial(){
     m_kappa.Resize(0, 0);
     m_kappa_inv.Resize(0, 0);
     m_gravity.resize(3);
+    for(int i=0; i<3; i++) m_gravity[i] = 0.;
     m_d = 0.0;
     m_dim = 0;
     
@@ -25,6 +26,7 @@ TPZMixedDarcyFlow::TPZMixedDarcyFlow(int mat_id, int dim) :  TPZMaterial(mat_id)
     m_kappa.Resize(3, 3);
     m_kappa_inv.Resize(3, 3);
     m_gravity.resize(3);
+    for(int i=0; i<3; i++) m_gravity[i] = 0.;
     m_d = 0.0;
     m_dim = dim;
 }
@@ -36,7 +38,7 @@ TPZMixedDarcyFlow::TPZMixedDarcyFlow(const TPZMixedDarcyFlow &other) : TPZMateri
     m_kappa_inv     = other.m_kappa_inv;
     m_d             = other.m_d;
     m_dim           = other.m_dim;
-    m_gravity       =other.m_gravity;
+    m_gravity       = other.m_gravity;
 }
 
 TPZMaterial * TPZMixedDarcyFlow::NewMaterial(){
@@ -51,7 +53,7 @@ TPZMixedDarcyFlow & TPZMixedDarcyFlow::operator=(const TPZMixedDarcyFlow &other)
         m_kappa_inv     = other.m_kappa_inv;
         m_d             = other.m_d;
         m_dim           = other.m_dim;
-        m_gravity       =other.m_gravity;
+        m_gravity       = other.m_gravity;
     }
     return *this;
 }
@@ -69,6 +71,10 @@ void TPZMixedDarcyFlow::Print(std::ostream & out){
     m_kappa_inv.Print(out);
     out << m_d << std::endl;
     out << m_dim << std::endl;
+    out << "gravity ";
+    for(int i=0; i<3; i++) out << m_gravity[i] << ' ';
+    out << std::endl;
+        
 }
 
 std::string TPZMixedDarcyFlow::Name(){

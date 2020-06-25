@@ -727,11 +727,23 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
     std::cout << "Number of equations MHMixed " << mhm->CMesh()->NEquations() << std::endl;
     
  
-        TPZCompMesh *MixedMesh = mhm->CMesh().operator->();
+    TPZCompMesh *MixedMesh = mhm->CMesh().operator->();
 //        std::ofstream multcmesh("multcompmesh.txt");
 //        MixedMesh->Print(multcmesh);
     mMixedOperator = dynamic_cast<TPZMultiphysicsCompMesh *>(MixedMesh);
     
+    {
+        int64_t nel = MixedMesh->NElements();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            TPZCompEl *cel = MixedMesh->Element(el);
+            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
+            if(sub)
+            {
+//                sub->SetAnalysisSparse(0);
+            }
+        }
+    }
     
 }
 

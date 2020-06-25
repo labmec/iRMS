@@ -407,6 +407,8 @@ public:
         std::vector<REAL> m_gravity;
         
         bool m_ISLinearKrModelQ;
+        
+        int m_nThreadsMixedProblem = 0;
         /** @brief Default constructor */
         TNumerics(){
             
@@ -425,6 +427,7 @@ public:
             m_gravity.resize(3,0.0);
             m_gravity[2] = -10.0;
             m_ISLinearKrModelQ = true;
+            m_nThreadsMixedProblem  =0;
             
         }
          /** @brief Destructor */
@@ -449,7 +452,7 @@ public:
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
             m_gravity               = other.m_gravity;
             m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
-            
+            m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
         }
         
         /** @brief Copy assignment operator*/
@@ -473,7 +476,8 @@ public:
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
             m_gravity               = other.m_gravity;
-            m_ISLinearKrModelQ               = other.m_ISLinearKrModelQ;
+            m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
+            m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
             return *this;
         }
         
@@ -498,8 +502,8 @@ public:
             m_four_approx_spaces_Q  == other.m_four_approx_spaces_Q &&
             m_mhm_mixed_Q           == other.m_mhm_mixed_Q&&
             m_gravity               == other.m_gravity&&
-            m_ISLinearKrModelQ        == other.m_ISLinearKrModelQ;
-            
+            m_ISLinearKrModelQ      == other.m_ISLinearKrModelQ&&
+            m_nThreadsMixedProblem  == other.m_nThreadsMixedProblem;
         }
         
         void Write(TPZStream &buf, int withclassid) const{ //ok
@@ -518,7 +522,7 @@ public:
             buf.Write(&temp);
             buf.Write(m_gravity);
             buf.Write(m_ISLinearKrModelQ);
-          
+            buf.Write(m_nThreadsMixedProblem);
         }
         
         void Read(TPZStream &buf, void *context){ //ok
@@ -538,6 +542,7 @@ public:
             buf.Read(&temp);
             m_mhm_mixed_Q = temp;
             buf.Read(m_ISLinearKrModelQ);
+            buf.Read(&m_nThreadsMixedProblem);
            
         }
         
@@ -558,6 +563,7 @@ public:
             std::cout << m_four_approx_spaces_Q << std::endl;
             std::cout << m_mhm_mixed_Q << std::endl;
             std::cout << m_ISLinearKrModelQ << std::endl;
+            std::cout << m_nThreadsMixedProblem << std::endl;
         }
         
     };

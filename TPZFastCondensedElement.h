@@ -31,6 +31,11 @@ class TPZFastCondensedElement : public TPZCondensedCompEl
     // reference stifness matrix and rhs
     TPZElementMatrix fEK, fEF;
     
+public:
+    static bool fSkipLoadSolution;
+    
+private:
+    
     void ShrinkElementMatrix(TPZElementMatrix &ekinput, TPZElementMatrix &output);
     
 public:
@@ -79,6 +84,14 @@ public:
      */
     virtual void CalcResidual(TPZElementMatrix &ef) override;
     
+    /** @brief Loads the solution within the internal data structure of the element */
+    /**
+     * Is used to initialize the solution of connect objects with dependency \n
+     * Is also used to load the solution within SuperElements
+     */
+    virtual void LoadSolution() override;
+    
+
     void SetLambda(REAL lambda);
     REAL GetLambda();
     
