@@ -419,15 +419,15 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTrans
 
     
 #ifdef PZDEBUG
-    std::stringstream file_name;
-    if (order == 0) {
-        file_name << "s_cmesh" << ".txt";
-    }
-    else{
-        file_name << "p_cmesh" << ".txt";
-    }
-    std::ofstream sout(file_name.str().c_str());
-    cmesh->Print(sout);
+//    std::stringstream file_name;
+//    if (order == 0) {
+//        file_name << "s_cmesh" << ".txt";
+//    }
+//    else{
+//        file_name << "p_cmesh" << ".txt";
+//    }
+//    std::ofstream sout(file_name.str().c_str());
+//    cmesh->Print(sout);
 #endif
     
     return cmesh;
@@ -854,10 +854,7 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
 //    mTransportOperator->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
     
-#ifdef PZDEBUG
-    std::ofstream transport_a("transport_cmesh_after.txt");
-    mTransportOperator->Print(transport_a);
-#endif
+
     
     {
         mTransportOperator->Reference()->ResetReference();
@@ -1033,10 +1030,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     active_approx_spaces[4] = 1;
 //    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
     mTransportOperator->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
-#ifdef PZDEBUG
-    std::ofstream transport_a("transport_cmesh_after.txt");
-    mTransportOperator->Print(transport_a);
-#endif
+
     
     {
         mTransportOperator->Reference()->ResetReference();
