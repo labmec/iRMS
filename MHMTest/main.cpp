@@ -95,11 +95,52 @@ void PaperTest3D();
 
 void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *alg);
 
+class imrs_timer
+{
+    struct rusage m_start, m_stop;
+public:
+    imrs_timer()
+    {}
+    
+    void tic()
+    {
+        getrusage(RUSAGE_SELF, &m_start);
+    }
+
+    void toc()
+    {
+        getrusage(RUSAGE_SELF, &m_stop);
+    }
+
+    double get_usertime() const
+    {
+        double start, stop;
+        start = m_start.ru_utime.tv_sec + double(m_start.ru_utime.tv_usec)/1e6;
+        stop = m_stop.ru_utime.tv_sec + double(m_stop.ru_utime.tv_usec)/1e6;
+        return stop - start;
+    }
+
+    double get_systime() const
+    {
+        double start, stop;
+        start = m_start.ru_stime.tv_sec + double(m_start.ru_stime.tv_usec)/1e6;
+        stop = m_stop.ru_stime.tv_sec + double(m_stop.ru_stime.tv_usec)/1e6;
+        return stop - start;
+    }
+
+    double to_double() const
+    {
+        return get_usertime();
+    }
+};
+
+
+
 //
 int main(){
     InitializePZLOG();
 //    Gravity2D();
-    PaperTest2D();
+//    PaperTest2D();
 
 //    PaperTest3D();
 //    SimpleTest3D();
@@ -598,13 +639,18 @@ void SimpleTest3D(){
 }
 void UNISIMTest(){
     
+    imrs_timer timer;
+    
+    timer.tic();
     // spatial properties
     int64_t n_cells = 38466;
     std::string grid_data = "maps/corner_grid_coordinates.dat";
     std::string props_data = "maps/corner_grid_props.dat";
     TRMSpatialPropertiesMap properties_map;
-    std::vector<size_t> SAMe_blocks = {5,5,5}; // keep it small as you can
+    std::vector<size_t> SAMe_blocks = {5,5,5};
     properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
+    timer.toc();
+    std::cout << "iMRS:: Time for construction of spatial properties map : " << timer.to_double() << std::endl;
 
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
@@ -613,7 +659,7 @@ void UNISIMTest(){
     auto s0 = reservoir_properties.Create_s0();
 
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
-    int nLayers = 3;
+    int nLayers = 1;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -627,7 +673,7 @@ void UNISIMTest(){
     aspace.SetGeometry(gmesh);
     std::string name="unisim_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(1);
     std::string name_ref = "unisim_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -636,24 +682,36 @@ void UNISIMTest(){
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
     bool UsePardiso_Q = true;
+    
+    timer.tic();
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
+    timer.toc();
+    std::cout << "iMRS:: Time for construction of MHM-Hdiv operator : " << timer.to_double() << std::endl;
 
-
+    timer.tic();
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-
+    timer.toc();
+    std::cout << "iMRS:: Time for construction of transport operator : " << timer.to_double() << std::endl;
     
+    timer.tic();
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
+    timer.toc();
+    std::cout << "iMRS:: Time for construction of SFI object :  " << timer.to_double() << std::endl;
 
     // Render a graphical map
+    
+    timer.tic();
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
     PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
     std::cout << "Spatial properties are transferred." << std::endl;
     std::cout << "Memory used by SpatialPropertiesMap is released. " << std::endl;
     properties_map.Clear();
+    timer.toc();
+    std::cout << "iMRS:: Time for writing vtk file with spatial properties :  " << timer.to_double() << std::endl;
 
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
@@ -663,7 +721,7 @@ void UNISIMTest(){
     reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
 
     REAL sim_time = 0.0;
-    int pos =0;
+    int pos = 0;
     REAL current_report_time = reporting_times[pos];
 
     // Mass integral - Injection - Production data
@@ -706,17 +764,26 @@ void UNISIMTest(){
     time_fluxOutlet(0,0) =0.0;
     time_fluxOutlet(0,1) =fluxOutlet_data;
     
+    REAL sec_to_days = 1/86400;
     for (int it = 1; it <= n_steps; it++) {
 
+     std::cout << "iMRS:: Simulation time :  " << sim_time*sec_to_days << std::endl;
      sim_time = it*dt;
      sfi_analysis->m_transport_module->SetCurrentTime(dt);
+        
+     timer.tic();
      sfi_analysis->RunTimeStep();
-
-
+     timer.toc();
+     std::cout << "iMRS:: Time for execution of SFI step :  " << timer.to_double() << std::endl;
+     
+     
      if (sim_time >=  current_report_time) {
          std::cout << "Time step number:  " << it << std::endl;
-         std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
+         timer.tic();
          sfi_analysis->PostProcessTimeStep();
+         timer.toc();
+         std::cout << "iMRS:: Time for post-process vtk's :  " << timer.to_double() << std::endl;
+         
          pos++;
          current_report_time = reporting_times[pos];
 
@@ -750,6 +817,8 @@ void UNISIMTest(){
          time_fluxOutlet(it,1) = fluxOutlet_data;
 
      }
+    std::cout << std::endl;
+    std::cout << std::endl;
 
     }
 
@@ -1388,7 +1457,7 @@ void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
                 if (co[0]>1000.00) {
                    baseinterpol = val_base-80;
                 }
-                std::cout<<"{"<<co[0]<<","<<co[1]<<"};"<<std::endl;
+//                std::cout<<"{"<<co[0]<<","<<co[1]<<"};"<<std::endl;
 //                    if (ipoint==npointsPerLayer) {
 //                        bool find = 0;
 //                        int i =1;

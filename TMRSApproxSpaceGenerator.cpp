@@ -251,7 +251,6 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
             volume = new TPZMixedDarcyFlow(materia_id,d);
             volume->SetPermeability(kappa);
