@@ -12,6 +12,8 @@
 #include "pzmultiphysicselement.h"
 #include "TPZMixedDarcyWithFourSpaces.h"
 
+bool TPZFastCondensedElement::fSkipLoadSolution = true;
+
 /**
  * @brief Computes the element stifness matrix and right hand side
  * @param ek element stiffness matrix
@@ -166,3 +168,21 @@ void TPZFastCondensedElement::Solution(TPZVec<REAL> &qsi,int var,TPZVec<STATE> &
             break;
     }
 }
+
+/** @brief Loads the solution within the internal data structure of the element */
+/**
+ * Is used to initialize the solution of connect objects with dependency \n
+ * Is also used to load the solution within SuperElements
+ */
+void TPZFastCondensedElement::LoadSolution()
+{
+    if(fSkipLoadSolution)
+    {
+        TPZCompEl::LoadSolution();
+    }
+    else
+    {
+        TPZCondensedCompEl::LoadSolution();
+    }
+}
+

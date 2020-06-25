@@ -119,20 +119,59 @@ void TMRSMixedAnalysis::NewtonIteration(){
     boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
 #endif
 
+    static int firstassemble = 1;
+    if(firstassemble == 1)
+    {
+        fStructMatrix->SetNumThreads(0);
+        int64_t nel = fCompMesh->NElements();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            TPZCompEl *cel = fCompMesh->Element(el);
+            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
+            if(sub)
+            {
+                sub->Analysis()->StructMatrix()->SetNumThreads(0);
+            }
+        }
+        std::cout << "First Assembly\n";
+    }
+    else{
+        std::cout << "Assembling Darcy operator\n";
+    }
+    
     Assemble();
 
+    std::cout << "Rhs norm " << Norm(Rhs()) << std::endl;
+    std::cout << "done\n";
+    if(firstassemble == 1)
+    {
+        firstassemble = 0;
+        fStructMatrix->SetNumThreads(this->fNthreadsError);
+        int64_t nel = fCompMesh->NElements();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            TPZCompEl *cel = fCompMesh->Element(el);
+            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
+            if(sub)
+            {
+                sub->Analysis()->StructMatrix()->SetNumThreads(this->fNthreadsError);
+            }
+        }
+    }
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
     auto deltat = tsim2-tsim1;
-    std::cout << "Mixed Analysis Assembly time " << deltat;
+    std::cout << "Mixed Analysis Assembly time " << deltat << std::endl;
 #endif
 //    Rhs() *= -1.0;
 
     Solve();
+    
+    std::cout << "Solution Norm " << Norm(Solution()) << std::endl;
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
     auto deltat2 = tsim3-tsim1;
-    std::cout << "Mixed Analysis Solve time " << deltat2;
+    std::cout << "Mixed Analysis Solve time " << deltat2 << std::endl;
 #endif
 }
 
