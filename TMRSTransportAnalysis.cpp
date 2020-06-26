@@ -355,13 +355,8 @@ void TMRSTransportAnalysis::NewtonIteration_pz(){
 void TMRSTransportAnalysis::NewtonIteration_eigen(){
     
     Assemble_eigen();
-    Rhs() *= -1.0;
     
-    Eigen::Matrix<REAL, Eigen::Dynamic, 1> rhs_eigen;
-    rhs_eigen.resize(Rhs().Rows());
-    for (int i = 0; i < Rhs().Rows(); i++) {
-        rhs_eigen(i,0) = Rhs()(i,0);
-    }
+    Eigen::Matrix<REAL, Eigen::Dynamic, 1> rhs_eigen = -1.0*m_rhs.toDense();
     
     Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  analysis;
     m_transmissibility += m_mass;
@@ -413,6 +408,7 @@ void TMRSTransportAnalysis::Assemble_eigen(){
     
     int n_cells = fAlgebraicTransport.fCellsData.fVolume.size();
     m_transmissibility =  Eigen::SparseMatrix<REAL>( n_cells, n_cells );
+    m_rhs =  Eigen::SparseMatrix<REAL>( n_cells, 1 );
     if(!this->fSolver){
         DebugStop();
     }
@@ -428,21 +424,49 @@ void TMRSTransportAnalysis::Assemble_eigen(){
     int n_inlet_faces = fAlgebraicTransport.fInterfaceData[inlet_faces_id].fFluxSign.size();
     int n_outlet_faces = fAlgebraicTransport.fInterfaceData[outlet_faces_id].fFluxSign.size();
 
-    size_t n_nzeros = n_internal_faces * 2 + n_outlet_faces;
-    m_trans_triplets.reserve(n_nzeros);
+    size_t n_nzeros_trans = n_internal_faces * 4 + n_outlet_faces;
+    size_t n_nzeros_res = n_cells + n_internal_faces * 2 + n_inlet_faces + n_outlet_faces;
+    m_trans_triplets.resize(n_nzeros_trans);
+    m_rhs_triplets.resize(n_nzeros_res);
     
 #ifdef USING_TBB2
+    
     tbb::parallel_for(size_t(0), size_t(n_cells), size_t(1),
         [this] (size_t & ivol){
         int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
-        TPZFMatrix<double> elmat, ef;
-        elmat.Resize(1, 1);
+        TPZFMatrix<double> ef;
         ef.Resize(1,1);
-        fAlgebraicTransport.Contribute(ivol, elmat, ef);
-        m_mass_triplets[ivol] = Triplet<REAL>(eqindex,eqindex, elmat(0,0));
-        fRhs.AddSub(eqindex, 0,ef);
+        fAlgebraicTransport.ContributeResidual(ivol, ef);
+        m_rhs_triplets[ivol] = Triplet<REAL>(eqindex,0, ef(0,0));
+//        fRhs.AddSub(eqindex, 0,ef);
         }
     );
+    
+    for (int iface = 0; iface < n_internal_faces; iface++) {
+        
+        std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[internal_faces_id].fLeftRightVolIndex[iface];
+        int left = lrindex.first;
+        int right = lrindex.second;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+        int righteq = fAlgebraicTransport.fCellsData.fEqNumber[right];
+
+        TPZVec<int64_t> indexes(2);
+        indexes[0]=lefteq;
+        indexes[1]=righteq;
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(2, 2);
+        ef.Resize(2, 1);
+        fAlgebraicTransport.ContributeInterface(iface,elmat, ef);
+        size_t i_begin = 2*2*(iface);
+        m_trans_triplets[i_begin] = (Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
+        m_trans_triplets[i_begin+1] = (Triplet<REAL>(indexes[0],indexes[1], elmat(0,1)));
+        m_trans_triplets[i_begin+2] = (Triplet<REAL>(indexes[1],indexes[0], elmat(1,0)));
+        m_trans_triplets[i_begin+3] = (Triplet<REAL>(indexes[1],indexes[1], elmat(1,1)));
+        size_t i_rhs_begin = 2*(iface) + n_cells;
+        m_rhs_triplets[i_rhs_begin] = Triplet<REAL>(indexes[0],0, ef(0,0));
+        m_rhs_triplets[i_rhs_begin+1] = Triplet<REAL>(indexes[1],0, ef(1,0));
+    }
+    
 #else
     
     for (int ivol = 0; ivol < n_cells; ivol++) {
@@ -451,7 +475,7 @@ void TMRSTransportAnalysis::Assemble_eigen(){
       elmat.Resize(1, 1);
       ef.Resize(1,1);
       fAlgebraicTransport.ContributeResidual(ivol, ef);
-      fRhs.AddSub(eqindex, 0,ef);
+      m_rhs_triplets[ivol] = Triplet<REAL>(eqindex,0, ef(0,0));
     }
     
     for (int iface = 0; iface < n_internal_faces; iface++) {
@@ -469,11 +493,15 @@ void TMRSTransportAnalysis::Assemble_eigen(){
         elmat.Resize(2, 2);
         ef.Resize(2, 1);
         fAlgebraicTransport.ContributeInterface(iface,elmat, ef);
-        m_trans_triplets.push_back(Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
-        m_trans_triplets.push_back(Triplet<REAL>(indexes[0],indexes[1], elmat(0,1)));
-        m_trans_triplets.push_back(Triplet<REAL>(indexes[1],indexes[0], elmat(1,0)));
-        m_trans_triplets.push_back(Triplet<REAL>(indexes[1],indexes[1], elmat(1,1)));
-        fRhs.AddFel(ef, indexes);
+        size_t i_begin = 2*2*(iface);
+        m_trans_triplets[i_begin] = (Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
+        m_trans_triplets[i_begin+1] = (Triplet<REAL>(indexes[0],indexes[1], elmat(0,1)));
+        m_trans_triplets[i_begin+2] = (Triplet<REAL>(indexes[1],indexes[0], elmat(1,0)));
+        m_trans_triplets[i_begin+3] = (Triplet<REAL>(indexes[1],indexes[1], elmat(1,1)));
+        
+        size_t i_rhs_begin = 2*(iface) + n_cells;
+        m_rhs_triplets[i_rhs_begin] = Triplet<REAL>(indexes[0],0, ef(0,0));
+        m_rhs_triplets[i_rhs_begin+1] = Triplet<REAL>(indexes[1],0, ef(1,0));
     }
     
     for (int iface = 0; iface < n_inlet_faces; iface++) {
@@ -487,7 +515,8 @@ void TMRSTransportAnalysis::Assemble_eigen(){
         TPZFMatrix<double> ef;
         ef.Resize(1, 1);
         fAlgebraicTransport.ContributeBCInletInterface(iface,ef);
-        fRhs.AddFel(ef, indexes);
+        size_t i_rhs_begin = (iface) + n_cells + 2*n_internal_faces;
+        m_rhs_triplets[i_rhs_begin] = Triplet<REAL>(indexes[0],0, ef(0,0));
     }
     
     for (int iface = 0; iface < n_outlet_faces; iface++) {
@@ -502,11 +531,17 @@ void TMRSTransportAnalysis::Assemble_eigen(){
         elmat.Resize(1, 1);
         ef.Resize(1, 1);
         fAlgebraicTransport.ContributeBCOutletInterface(iface,elmat, ef);
-        m_trans_triplets.push_back(Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
-        fRhs.AddFel(ef, indexes);
+        size_t i_begin = iface + n_internal_faces * 4;
+        m_trans_triplets[i_begin] = (Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
+        
+        size_t i_rhs_begin = (iface) + n_cells + 2*n_internal_faces + n_inlet_faces;
+        m_rhs_triplets[i_rhs_begin] = Triplet<REAL>(indexes[0],0, ef(0,0));
     }
     
 #endif
+    
+    m_rhs.setFromTriplets( m_rhs_triplets.begin(), m_rhs_triplets.end() );
+    m_rhs_triplets.clear();
     
     m_transmissibility.setFromTriplets( m_trans_triplets.begin(), m_trans_triplets.end() );
     m_trans_triplets.clear();

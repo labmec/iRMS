@@ -65,7 +65,10 @@ private:
     
     Eigen::SparseMatrix<REAL> m_transmissibility;
     
+    Eigen::SparseMatrix<REAL> m_rhs;
+    
     std::vector< Triplet<REAL> >           m_trans_triplets;
+    std::vector< Triplet<REAL> >           m_rhs_triplets;
     std::vector< Triplet<REAL> >           m_mass_triplets;
     
 public:
