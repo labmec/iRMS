@@ -61,10 +61,10 @@ private:
     
     TPZFMatrix<STATE>  M_diag;
     
+    bool m_parallel_execution_Q = true;
+    
     Eigen::SparseMatrix<REAL> m_mass;
-    
     Eigen::SparseMatrix<REAL> m_transmissibility;
-    
     Eigen::SparseMatrix<REAL> m_rhs;
     
     std::vector< Triplet<REAL> >           m_trans_triplets;
@@ -117,14 +117,18 @@ public:
     void NewtonIteration();
     
     /// Perform a Newton iteration pz based.
-    void NewtonIteration_pz();
+    void NewtonIteration_serial();
+    
+    void Assemble_serial();
+    
+    void AssembleResidual_serial();
     
     /// Perform a Newton iteration eigen based.
-    void NewtonIteration_eigen();
+    void NewtonIteration_parallel();
     
-    void Assemble_mass_eigen();
-    void Assemble_eigen();
-    void AssembleResidual_eigen();
+    void Assemble_mass_parallel();
+    void Assemble_parallel();
+    void AssembleResidual_parallel();
     void AnalyzePattern();
     
     void ComputeInitialGuess(TPZFMatrix<STATE> &x);

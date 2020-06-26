@@ -88,7 +88,6 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     }
     
     m_transport_module->fAlgebraicTransport.fdt = sim_data->mTNumerics.m_dt;
-    m_transport_module->Assemble_mass_eigen();
     m_transport_module->AnalyzePattern();
     
 }
@@ -117,32 +116,28 @@ void TMRSSFIAnalysis::RunTimeStep(){
         
         SFIIteration();
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
-        //        PostProcessTimeStep();
         error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         
-        //        stop_criterion_Q = error_rel_mixed < eps_tol && error_rel_transport < eps_tol;
-        stop_criterion_Q = error_rel_transport < eps_tol;
+        stop_criterion_Q = error_rel_transport < eps_tol; // Stop by saturation variation
         if (stop_criterion_Q && i > 1) {
             std::cout << "SFI converged " << std::endl;
             std::cout << "Number of iterations = " << i << std::endl;
-            std::cout << "Mixed problem variations = " << error_rel_mixed << std::endl;
-            std::cout << "Transport problem variations = " << error_rel_transport << std::endl;
+            std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
+            std::cout << "Transport problem variation = " << error_rel_transport << std::endl;
             m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
             break;
         }
         
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
-        
-        //        m_mixed_module->PostProcessTimeStep();
     }
     
     if (!stop_criterion_Q) {
         std::cout << "SFI fail to converge " << std::endl;
         std::cout << "Number of iterations = " << n_iterations << std::endl;
         std::cout << "SFI will continue with : " << std::endl;
-        std::cout << "Mixed problem variations = " << error_rel_mixed << std::endl;
-        std::cout << "Transport problem variations = " << error_rel_transport << std::endl;
+        std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
+        std::cout << "Transport problem variation = " << error_rel_transport << std::endl;
         m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
         return;
     }

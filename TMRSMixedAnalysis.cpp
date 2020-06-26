@@ -118,7 +118,6 @@ void TMRSMixedAnalysis::NewtonIteration(){
     boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
 #endif
     
-    //    static int firstassemble = 1;
     if(mIsFirstAssembleQ == true)
     {
         fStructMatrix->SetNumThreads(0);
@@ -133,7 +132,6 @@ void TMRSMixedAnalysis::NewtonIteration(){
             }
         }
         mIsFirstAssembleQ=false;
-        std::cout << "First Assembly\n";
     }
     else{
         fStructMatrix->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
@@ -148,36 +146,26 @@ void TMRSMixedAnalysis::NewtonIteration(){
             }
         }
     }
-    std::cout << "Assembling Darcy operator\n";
+    
     Assemble();
     
-    //    std::cout << "Rhs norm " << Norm(Rhs()) << std::endl;
-    //    std::cout << "done\n";
-    //    if(firstassemble == 1)
-    //    {
-    //        firstassemble = 0;
-    //
-    //    }
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
     auto deltat = tsim2-tsim1;
-    std::cout << "Mixed Analysis Assembly time " << deltat << std::endl;
+    std::cout << "Mixed:: Assembly time " << deltat << std::endl;
 #endif
-    //    Rhs() *= -1.0;
     
     Solve();
     
-    std::cout << "Solution Norm " << Norm(Solution()) << std::endl;
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
     auto deltat2 = tsim3-tsim1;
-    std::cout << "Mixed Analysis Solve time " << deltat2 << std::endl;
+    std::cout << "Mixed:: Solve time " << deltat2 << std::endl;
 #endif
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(){
     TPZStack<std::string,10> scalnames, vecnames;
-    // @TODO:: Locate these variables in mTPostProcess
     
     scalnames = m_sim_data->mTPostProcess.m_scalnames;
     vecnames = m_sim_data->mTPostProcess.m_vecnames;

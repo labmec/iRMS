@@ -103,8 +103,8 @@ void SimpleTest2D();
 //
 int main(){
     InitializePZLOG();
-//    Gravity2D();
-    PaperTest2D();
+    Gravity2D();
+//    PaperTest2D();
 //    PaperTest3D();
 //    SimpleTest3D();
 
@@ -209,7 +209,7 @@ void Gravity2D(){
     std::string name = "g_segregation_geo";
     aspace.PrintGeometry(name);
     
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.GenerateMHMUniformMesh(3);
     std::string name_ref = "g_segregation_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -264,12 +264,11 @@ void Gravity2D(){
     std::cout << "Mass integral :  " << initial_mass << std::endl;
     
     for (int it = 1; it <= n_steps; it++) {
-       // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = false;
+       
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
       
-       
         if (sim_time >=  current_report_time) {
             std::cout << "Time step number:  " << it << std::endl;
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
@@ -282,7 +281,6 @@ void Gravity2D(){
             std::cout << "Mass integral :  " << mass << std::endl;
             
         }
-       // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = true;
     }
     
     std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
@@ -455,7 +453,7 @@ void PaperTest2D(){
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
     auto deltat = tsim2-tsim1;
-    std::cout << "Total timestepping time " << deltat;
+    std::cout << "Total timestepping time " << deltat << std::endl;
 #endif
 
     std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
@@ -874,16 +872,13 @@ void UNISIMTest(){
           
           time_fluxOutlet(it,0)=sim_time;
           time_fluxOutlet(it,1) =outletflow;
-//         // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = true;
-
       }
-       // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = true;
     }
 
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
     auto deltat = tsim2-tsim1;
-    std::cout << "Total timestepping time " << deltat;
+    std::cout << "Oveal SFI simulation time " << deltat << std::endl;;
 #endif
 
 
@@ -1028,9 +1023,9 @@ TMRSDataTransfer SettingGravity2D(){
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
+    sim_data.mTNumerics.m_sfi_tol = 0.000001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0*day;
@@ -1047,7 +1042,6 @@ TMRSDataTransfer SettingGravity2D(){
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("q");
-//    scalnames.Push("p");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");

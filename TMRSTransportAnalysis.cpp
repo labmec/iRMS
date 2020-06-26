@@ -63,6 +63,14 @@ void TMRSTransportAnalysis::Configure(int n_threads, bool UsePardiso_Q){
 }
 
 void TMRSTransportAnalysis::Assemble(){
+    if (m_parallel_execution_Q) {
+        Assemble_parallel();
+    }else{
+        Assemble_serial();
+    }
+}
+
+void TMRSTransportAnalysis::Assemble_serial(){
     int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
     if(!this->fSolver){
         DebugStop();
@@ -145,74 +153,11 @@ void TMRSTransportAnalysis::Assemble(){
 }
 
 void TMRSTransportAnalysis::AssembleResidual(){
-    int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
-    if(!this->fSolver){
-        DebugStop();
+    if (m_parallel_execution_Q) {
+        AssembleResidual_parallel();
+    }else{
+        AssembleResidual_serial();
     }
-    fRhs.Resize(ncells,1);
-    fRhs.Zero();
-    
-    //Volumetric Elements
-    for (int ivol = 0; ivol<ncells; ivol++) {
-        int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
-        TPZFMatrix<double> ef;
-        ef.Resize(1,1);
-        fAlgebraicTransport.ContributeResidual(ivol, ef);
-        fRhs.AddSub(eqindex, 0,ef);
-    }
-   
-    //Interface Elements
-    int interID = m_sim_data->mTGeometry.mInterface_material_id;
-    int ninterfaces = fAlgebraicTransport.fInterfaceData[interID].fFluxSign.size();
-    if (ninterfaces<1) {
-        DebugStop();
-    }
-    for (int interf = 0; interf<ninterfaces; interf++) {
-        std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[interID].fLeftRightVolIndex[interf];
-        int left = lrindex.first;
-        int right = lrindex.second;
-        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
-        int righteq = fAlgebraicTransport.fCellsData.fEqNumber[right];
-        TPZVec<int64_t> destinationindex(2);
-        destinationindex[0]=lefteq;
-        destinationindex[1]=righteq;
-        TPZFMatrix<double> ef;
-        ef.Resize(2, 1);
-        fAlgebraicTransport.ContributeInterfaceResidual(interf, ef);
-        fRhs.AddFel(ef, destinationindex);
-    }
-    
-    int inlet_mat_id = -2;
-    //INLET
-    ninterfaces = fAlgebraicTransport.fInterfaceData[inlet_mat_id].fFluxSign.size();
-    for (int interf = 0; interf<ninterfaces; interf++) {
-        std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[inlet_mat_id].fLeftRightVolIndex[interf];
-        int left = lrindex.first;
-        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
-        TPZVec<int64_t> destinationindex(1);
-        destinationindex[0]=lefteq;
-        TPZFMatrix<double> ef;
-        ef.Resize(1, 1);
-        fAlgebraicTransport.ContributeBCInletInterface(interf,ef);
-        fRhs.AddFel(ef, destinationindex);
-    }
-    
-    int outlet_mat_id = -4;
-    //outlet
-    ninterfaces = fAlgebraicTransport.fInterfaceData[outlet_mat_id].fFluxSign.size();
-    for (int interf = 0; interf<ninterfaces; interf++) {
-        std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[outlet_mat_id].fLeftRightVolIndex[interf];
-        int left = lrindex.first;
-        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
-        TPZVec<int64_t> destinationindex(1);
-        destinationindex[0]=lefteq;
-        TPZFMatrix<double> ef;
-        ef.Resize(1, 1);
-        fAlgebraicTransport.ContributeBCOutletInterfaceResidual(interf,ef);
-        fRhs.AddFel(ef, destinationindex);
-    }
-    
-    
 }
 
 void TMRSTransportAnalysis::RunTimeStep(){
@@ -235,20 +180,17 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
     
-    ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-//    x.Print("x0 = ",std::cout,EMathematicaInput);
-    bool QN_converge_Q = QuasiNewtonSteps(x,25); // assuming linear operator
+//    ComputeInitialGuess(x); // from the linear problem (tangent and residue)
+    bool QN_converge_Q = QuasiNewtonSteps(x,10); // assuming linear operator (tangent)
     if(QN_converge_Q){
         return;
     }
-//    x.Print("QNx = ",std::cout,EMathematicaInput);
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
         dx = Solution();
 
         x += dx;
-//        x.Print("xk = ",std::cout,EMathematicaInput);
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
@@ -285,7 +227,6 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     cmesh->LoadSolutionFromMultiPhysics();
     
     NewtonIteration();
-    Solution().Print("dsn = ",std::cout,EMathematicaInput);
     x += Solution();
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
@@ -322,7 +263,7 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
             fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambdaQuasiNewton();
         }
         
-        //AssembleResidual();
+        AssembleResidual();
         REAL res_norm = Norm(Rhs());
         std::cout << " Residue norm : " <<  res_norm << std::endl;
         
@@ -331,7 +272,7 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         if (stop_criterion_Q) {
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Quasi-Newton iterations = " << m_k_iteration << std::endl;
-            std::cout << "residue norm = " << res_norm << std::endl;
+            std::cout << "Residue norm = " << res_norm << std::endl;
             return true;
         }
     }
@@ -341,60 +282,74 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
 
 void TMRSTransportAnalysis::NewtonIteration(){
     
-    int oko = 0;
-    #ifdef USING_BOOST
-        boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
-    #endif
-    
-    NewtonIteration_eigen();
-    #ifdef USING_BOOST
-        boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
-        auto deltat = tsim2-tsim1;
-        std::cout << "Total NewtonIteration time eigen " << deltat << std::endl;
-    #endif
-    
-    #ifdef USING_BOOST
-        boost::posix_time::ptime tsim1c = boost::posix_time::microsec_clock::local_time();
-    #endif
-    
-//    NewtonIteration_pz();
-    #ifdef USING_BOOST
-        boost::posix_time::ptime tsim2c = boost::posix_time::microsec_clock::local_time();
-        auto deltatc = tsim2c-tsim1c;
-        std::cout << "Total NewtonIteration time pz " << deltatc << std::endl;
-    #endif
-    int aka = 0;
+    if (m_parallel_execution_Q) {
+        #ifdef USING_BOOST
+            boost::posix_time::ptime tnewton1 = boost::posix_time::microsec_clock::local_time();
+        #endif
+
+        NewtonIteration_parallel();
+        #ifdef USING_BOOST
+            boost::posix_time::ptime tnewton2 = boost::posix_time::microsec_clock::local_time();
+            auto deltat = tnewton2-tnewton1;
+            std::cout << "Transport:: Parallel Newton step time: " << deltat << std::endl;
+        #endif
+    }else{
+        #ifdef USING_BOOST
+            boost::posix_time::ptime tnewtons1 = boost::posix_time::microsec_clock::local_time();
+        #endif
+
+        NewtonIteration_serial();
+        #ifdef USING_BOOST
+            boost::posix_time::ptime tnewtons2 = boost::posix_time::microsec_clock::local_time();
+            auto deltats = tnewtons2-tnewtons1;
+            std::cout << "Transport:: Serial Newton step time: " << deltats << std::endl;
+        #endif
+    }
 }
 
-void TMRSTransportAnalysis::NewtonIteration_pz(){
-        Assemble();
-        Rhs() *= -1.0;
-        Solve();
-    //    this->PostProcessTimeStep();
+void TMRSTransportAnalysis::NewtonIteration_serial(){
+    Assemble();
+    Rhs() *= -1.0;
+//    Solver().Matrix()->Print("j = ",std::cout,EMathematicaInput);
+//    Rhs().Print("r = ",std::cout,EMathematicaInput);
+    Solve();
 }
 
 void TMRSTransportAnalysis::AnalyzePattern(){
-    Assemble_eigen();
-    m_analysis.analyzePattern(m_transmissibility);
-}
-
-void TMRSTransportAnalysis::NewtonIteration_eigen(){
-    
-    Assemble_eigen();
-    
-    Eigen::Matrix<REAL, Eigen::Dynamic, 1> rhs_eigen = -1.0*m_rhs.toDense();
-    
+    Assemble_mass_parallel();
+    Assemble_parallel();
     m_transmissibility += m_mass;
-    m_analysis.factorize(m_transmissibility);
-    Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(rhs_eigen);
-    for (int i = 0; i < Rhs().Rows(); i++) {
-        Solution()(i,0) = ds(i,0);
-    }
+    m_analysis.analyzePattern(m_transmissibility);
     
-//    this->PostProcessTimeStep();
+    // Because in some parts this objects are needed.
+    Solution().Resize(m_rhs.rows(), 1);
+    Rhs().Resize(m_rhs.rows(), 1);
 }
 
-void TMRSTransportAnalysis::Assemble_mass_eigen(){
+void TMRSTransportAnalysis::NewtonIteration_parallel(){
+    
+    Assemble_parallel();
+
+    m_transmissibility += m_mass;
+    m_rhs *= -1.0;
+    m_analysis.factorize(m_transmissibility);
+    Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
+    assert(Solution().Rows() == ds.rows());
+    
+    #ifdef USING_TBB
+        tbb::parallel_for(size_t(0), size_t(ds.rows()), size_t(1),
+            [this,&ds] (size_t & i){
+            Solution()(i,0) = ds(i,0);
+            }
+        );
+    #else
+        for (int i = 0; i < ds.rows(); i++) {
+            Solution()(i,0) = ds(i,0);
+        }
+    #endif
+}
+
+void TMRSTransportAnalysis::Assemble_mass_parallel(){
     
     int n_cells = fAlgebraicTransport.fCellsData.fVolume.size();
     m_mass =  Eigen::SparseMatrix<REAL>( n_cells, n_cells );
@@ -428,7 +383,7 @@ void TMRSTransportAnalysis::Assemble_mass_eigen(){
     m_mass_triplets.clear();
 }
 
-void TMRSTransportAnalysis::Assemble_eigen(){
+void TMRSTransportAnalysis::Assemble_parallel(){
     
     int n_cells = fAlgebraicTransport.fCellsData.fVolume.size();
     m_transmissibility =  Eigen::SparseMatrix<REAL>( n_cells, n_cells );
@@ -607,16 +562,80 @@ void TMRSTransportAnalysis::Assemble_eigen(){
     m_trans_triplets.clear();
 }
 
-void TMRSTransportAnalysis::AssembleResidual_eigen(){
+void TMRSTransportAnalysis::AssembleResidual_serial(){
+    
+    int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
+     if(!this->fSolver){
+         DebugStop();
+     }
+     fRhs.Resize(ncells,1);
+     fRhs.Zero();
+     
+     //Volumetric Elements
+     for (int ivol = 0; ivol<ncells; ivol++) {
+         int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
+         TPZFMatrix<double> ef;
+         ef.Resize(1,1);
+         fAlgebraicTransport.ContributeResidual(ivol, ef);
+         fRhs.AddSub(eqindex, 0,ef);
+     }
+    
+     //Interface Elements
+     int interID = m_sim_data->mTGeometry.mInterface_material_id;
+     int ninterfaces = fAlgebraicTransport.fInterfaceData[interID].fFluxSign.size();
+     if (ninterfaces<1) {
+         DebugStop();
+     }
+     for (int interf = 0; interf<ninterfaces; interf++) {
+         std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[interID].fLeftRightVolIndex[interf];
+         int left = lrindex.first;
+         int right = lrindex.second;
+         int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+         int righteq = fAlgebraicTransport.fCellsData.fEqNumber[right];
+         TPZVec<int64_t> destinationindex(2);
+         destinationindex[0]=lefteq;
+         destinationindex[1]=righteq;
+         TPZFMatrix<double> ef;
+         ef.Resize(2, 1);
+         fAlgebraicTransport.ContributeInterfaceResidual(interf, ef);
+         fRhs.AddFel(ef, destinationindex);
+     }
+     
+     int inlet_mat_id = -2;
+     //INLET
+     ninterfaces = fAlgebraicTransport.fInterfaceData[inlet_mat_id].fFluxSign.size();
+     for (int interf = 0; interf<ninterfaces; interf++) {
+         std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[inlet_mat_id].fLeftRightVolIndex[interf];
+         int left = lrindex.first;
+         int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+         TPZVec<int64_t> destinationindex(1);
+         destinationindex[0]=lefteq;
+         TPZFMatrix<double> ef;
+         ef.Resize(1, 1);
+         fAlgebraicTransport.ContributeBCInletInterface(interf,ef);
+         fRhs.AddFel(ef, destinationindex);
+     }
+     
+     int outlet_mat_id = -4;
+     //outlet
+     ninterfaces = fAlgebraicTransport.fInterfaceData[outlet_mat_id].fFluxSign.size();
+     for (int interf = 0; interf<ninterfaces; interf++) {
+         std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[outlet_mat_id].fLeftRightVolIndex[interf];
+         int left = lrindex.first;
+         int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+         TPZVec<int64_t> destinationindex(1);
+         destinationindex[0]=lefteq;
+         TPZFMatrix<double> ef;
+         ef.Resize(1, 1);
+         fAlgebraicTransport.ContributeBCOutletInterfaceResidual(interf,ef);
+         fRhs.AddFel(ef, destinationindex);
+     }
+}
+
+void TMRSTransportAnalysis::AssembleResidual_parallel(){
  
     int n_cells = fAlgebraicTransport.fCellsData.fVolume.size();
     m_rhs =  Eigen::SparseMatrix<REAL>( n_cells, 1 );
-    if(!this->fSolver){
-        DebugStop();
-    }
-    
-    fRhs.Resize(n_cells,1);
-    fRhs.Zero();
     
     int internal_faces_id = m_sim_data->mTGeometry.mInterface_material_id;
     int inlet_faces_id = -2;
@@ -626,10 +645,9 @@ void TMRSTransportAnalysis::AssembleResidual_eigen(){
     int n_inlet_faces = fAlgebraicTransport.fInterfaceData[inlet_faces_id].fFluxSign.size();
     int n_outlet_faces = fAlgebraicTransport.fInterfaceData[outlet_faces_id].fFluxSign.size();
 
-    size_t n_nzeros_trans = n_internal_faces * 4 + n_outlet_faces;
     size_t n_nzeros_res = n_cells + n_internal_faces * 2 + n_inlet_faces + n_outlet_faces;
-    m_trans_triplets.resize(n_nzeros_trans);
     m_rhs_triplets.resize(n_nzeros_res);
+    m_rhs.setZero();
     
 #ifdef USING_TBB
     
@@ -764,6 +782,21 @@ void TMRSTransportAnalysis::AssembleResidual_eigen(){
     
     m_rhs.setFromTriplets( m_rhs_triplets.begin(), m_rhs_triplets.end() );
     m_rhs_triplets.clear();
+    
+    Eigen::Matrix<REAL, Eigen::Dynamic, 1> r = m_rhs.toDense();
+    assert(Rhs().Rows() == r.rows());
+    #ifdef USING_TBB
+        tbb::parallel_for(size_t(0), size_t(r.rows()), size_t(1),
+            [this,&r] (size_t & i){
+             Rhs()(i,0) = r(i,0);
+            }
+        );
+    #else
+        for (int i = 0; i < r.rows(); i++) {
+            Rhs()(i,0) = r(i,0);
+        }
+    #endif
+    
 }
 
 
