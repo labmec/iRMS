@@ -228,11 +228,19 @@ public:
     ~TPZAlgebraicTransport();
     
     void BuildDataStructures(TPZMultiphysicsCompMesh &transportmesh);
+    
     void Contribute(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
+    void ContributeResidual(int index, TPZFMatrix<double> &ef);
+    
     void ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     void ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
+    
+    void ContributeInterfaceResidual(int index, TPZFMatrix<double> &ef);
+    void ContributeInterfaceIHUResidual(int index, TPZFMatrix<double> &ef);
+    
     void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef);
     void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef);
+    void ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef);
 
     
     // IHU auxiliary functions

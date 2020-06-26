@@ -112,10 +112,16 @@ public:
     /// Perform a Newton iteration
     void NewtonIteration();
     
+    /// Perform a Newton iteration pz based.
+    void NewtonIteration_pz();
+    
+    /// Perform a Newton iteration eigen based.
+    void NewtonIteration_eigen();
+    
     void Assemble_mass_eigen();
     void Assemble_eigen();
     void AssembleResidual_eigen();
-    void NewtonIteration_eigen();
+
     
     void ComputeInitialGuess(TPZFMatrix<STATE> &x);
     

@@ -156,10 +156,9 @@ void TMRSTransportAnalysis::AssembleResidual(){
     //Volumetric Elements
     for (int ivol = 0; ivol<ncells; ivol++) {
         int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
-        TPZFMatrix<double> elmat, ef;
-        elmat.Resize(1, 1);
+        TPZFMatrix<double> ef;
         ef.Resize(1,1);
-        fAlgebraicTransport.Contribute(ivol, elmat, ef); // @jose -> res at element level
+        fAlgebraicTransport.ContributeResidual(ivol, ef);
         fRhs.AddSub(eqindex, 0,ef);
     }
    
@@ -178,10 +177,9 @@ void TMRSTransportAnalysis::AssembleResidual(){
         TPZVec<int64_t> destinationindex(2);
         destinationindex[0]=lefteq;
         destinationindex[1]=righteq;
-        TPZFMatrix<double> elmat, ef;
-        elmat.Resize(2, 2);
+        TPZFMatrix<double> ef;
         ef.Resize(2, 1);
-        fAlgebraicTransport.ContributeInterface(interf,elmat, ef);
+        fAlgebraicTransport.ContributeInterfaceResidual(interf, ef);
         fRhs.AddFel(ef, destinationindex);
     }
     
@@ -192,10 +190,9 @@ void TMRSTransportAnalysis::AssembleResidual(){
         std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[inlet_mat_id].fLeftRightVolIndex[interf];
         int left = lrindex.first;
         int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
-//        int right = lrindex.second;
         TPZVec<int64_t> destinationindex(1);
         destinationindex[0]=lefteq;
-        TPZFMatrix<double> elmat, ef;
+        TPZFMatrix<double> ef;
         ef.Resize(1, 1);
         fAlgebraicTransport.ContributeBCInletInterface(interf,ef);
         fRhs.AddFel(ef, destinationindex);
@@ -210,10 +207,9 @@ void TMRSTransportAnalysis::AssembleResidual(){
         int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
         TPZVec<int64_t> destinationindex(1);
         destinationindex[0]=lefteq;
-        TPZFMatrix<double> elmat, ef;
-        elmat.Resize(1, 1);
+        TPZFMatrix<double> ef;
         ef.Resize(1, 1);
-        fAlgebraicTransport.ContributeBCOutletInterface(interf,elmat,ef);
+        fAlgebraicTransport.ContributeBCOutletInterfaceResidual(interf,ef);
         fRhs.AddFel(ef, destinationindex);
     }
     
@@ -289,7 +285,7 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
     
-    NewtonIteration_eigen();
+    NewtonIteration();
     Solution().Print("dsn = ",std::cout,EMathematicaInput);
     x += Solution();
     LoadSolution(x);
@@ -345,11 +341,15 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
 }
 
 void TMRSTransportAnalysis::NewtonIteration(){
-    
-    Assemble();
-    Rhs() *= -1.0;
-    Solve();
-//    this->PostProcessTimeStep();
+    NewtonIteration_eigen();
+//    NewtonIteration_pz();
+}
+
+void TMRSTransportAnalysis::NewtonIteration_pz(){
+        Assemble();
+        Rhs() *= -1.0;
+        Solve();
+    //    this->PostProcessTimeStep();
 }
 
 void TMRSTransportAnalysis::NewtonIteration_eigen(){
@@ -450,7 +450,7 @@ void TMRSTransportAnalysis::Assemble_eigen(){
       TPZFMatrix<double> elmat, ef;
       elmat.Resize(1, 1);
       ef.Resize(1,1);
-      fAlgebraicTransport.Contribute(ivol, elmat, ef);
+      fAlgebraicTransport.ContributeResidual(ivol, ef);
       fRhs.AddSub(eqindex, 0,ef);
     }
     
