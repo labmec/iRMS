@@ -354,7 +354,6 @@ void TMRSTransportAnalysis::NewtonIteration(){
 
 void TMRSTransportAnalysis::NewtonIteration_eigen(){
     
-    Assemble_mass_eigen();
     Assemble_eigen();
     Rhs() *= -1.0;
     
@@ -393,7 +392,6 @@ void TMRSTransportAnalysis::Assemble_mass_eigen(){
         ef.Resize(1,1);
         fAlgebraicTransport.Contribute(ivol, elmat, ef);
         m_mass_triplets[ivol] = Triplet<REAL>(eqindex,eqindex, elmat(0,0));
-        fRhs.AddSub(eqindex, 0,ef);
         }
     );
 #else
@@ -404,7 +402,6 @@ void TMRSTransportAnalysis::Assemble_mass_eigen(){
       ef.Resize(1,1);
       fAlgebraicTransport.Contribute(ivol, elmat, ef);
       m_mass_triplets[ivol] = Triplet<REAL>(eqindex,eqindex, elmat(0,0));
-      fRhs.AddSub(eqindex, 0,ef);
     }
 #endif
     

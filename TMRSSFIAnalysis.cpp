@@ -27,7 +27,6 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-    m_transport_module->Assemble_mass_eigen();
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     
 }
@@ -44,7 +43,6 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fphi = phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-    m_transport_module->Assemble_mass_eigen();
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
 }
 
@@ -57,7 +55,6 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fkappa_phi = kappa_phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-    m_transport_module->Assemble_mass_eigen();
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
 }
 
@@ -89,6 +86,9 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     for (int icell =0; icell<ncells; icell++) {
         m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
     }
+    
+    m_transport_module->fAlgebraicTransport.fdt = sim_data->mTNumerics.m_dt;
+    m_transport_module->Assemble_mass_eigen();
 }
 
 TMRSDataTransfer * TMRSSFIAnalysis::GetDataTransfer(){
@@ -191,7 +191,6 @@ void TMRSSFIAnalysis::SFIIteration(){
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
-    m_transport_module->fAlgebraicTransport.fdt = m_transport_module->GetCurrentTime();
     m_transport_module->RunTimeStep();
     
     //    m_transport_module->PostProcessTimeStep();

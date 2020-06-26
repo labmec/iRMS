@@ -413,7 +413,7 @@ void PaperTest2D(){
     for (int it = 1; it <= n_steps; it++) {
       // TPZFastCondensedElement::fSkipLoadSolution = false;
       sim_time = it*dt;
-      sfi_analysis->m_transport_module->SetCurrentTime(dt);
+      sfi_analysis->m_transport_module->SetCurrentTime(sim_time);
       sfi_analysis->RunTimeStep();
       
      
