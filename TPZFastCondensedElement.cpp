@@ -12,6 +12,8 @@
 #include "pzmultiphysicselement.h"
 #include "TPZMixedDarcyWithFourSpaces.h"
 
+bool TPZFastCondensedElement::fSkipLoadSolution = true;
+
 /**
  * @brief Computes the element stifness matrix and right hand side
  * @param ek element stiffness matrix
@@ -53,8 +55,45 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     }
     ek.fMat(nrows-1,ncols-1) *=fLambda;
     
-    ef.fMat *= -1.0*Glambda;
+    TPZFMatrix<STATE> solvec(fEK.fMat.Rows(),1,0.);
+    GetSolutionVector(solvec);
     
+    /** @brief Computes z = alpha * opt(this)*x + beta * y */
+    /** @note z and x cannot overlap in memory */
+//    void MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,
+//                 const TVar alpha=1.,const TVar beta = 0.,const int opt = 0) const override;
+
+
+        ef.fMat *= -1.0*Glambda;
+        ef.fMat(nrows-1,0) *= (-1.0/Glambda);
+        
+//        ef.fMat *= -1.0*Glambda;
+//        ef.fMat(nrows-1,0) *= (-1.0/Glambda);
+//        STATE alpha = -1.;
+//        ek.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1.);
+    
+}
+
+// extract the solution vector of the condensed element
+void TPZFastCondensedElement::GetSolutionVector(TPZFMatrix<STATE> &solvec)
+{
+    int nc = fEK.fConnect.size();
+    TPZCompMesh *cmesh = Mesh();
+    int64_t vecsize = fEK.fMat.Rows();
+    int count = 0;
+    for(int ic=0; ic<nc; ic++)
+    {
+        int64_t cindex = fEK.fConnect[ic];
+        TPZConnect &c = cmesh->ConnectVec()[cindex];
+        int64_t seqnum = c.SequenceNumber();
+        int blsize = c.NShape()*c.NState();
+        for(int dof=0; dof<blsize; dof++)
+        {
+            solvec(count+dof,0) = cmesh->Block()(seqnum,0,dof,0);
+        }
+        count += blsize;
+    }
+    if(count != vecsize) DebugStop();
 }
 
 /**
@@ -63,9 +102,13 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
  */
 void TPZFastCondensedElement::CalcResidual(TPZElementMatrix &ef)
 {
-    //JOSE: ¿Como vai ser calculado o residuo agora?
-    TPZCondensedCompEl::CalcResidual(ef);
-    
+
+      TPZCondensedCompEl::CalcResidual(ef);
+//    TPZFMatrix<STATE> solvec(fEK.fMat.Rows(),1,0.);
+//    GetSolutionVector(solvec);
+//    STATE alpha = -1.;
+//    fEK.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1.);
+//    
 }
 
 void TPZFastCondensedElement::ShrinkElementMatrix(TPZElementMatrix &input, TPZElementMatrix &output)
@@ -166,3 +209,21 @@ void TPZFastCondensedElement::Solution(TPZVec<REAL> &qsi,int var,TPZVec<STATE> &
             break;
     }
 }
+
+/** @brief Loads the solution within the internal data structure of the element */
+/**
+ * Is used to initialize the solution of connect objects with dependency \n
+ * Is also used to load the solution within SuperElements
+ */
+void TPZFastCondensedElement::LoadSolution()
+{
+    if(fSkipLoadSolution)
+    {
+        TPZCompEl::LoadSolution();
+    }
+    else
+    {
+        TPZCondensedCompEl::LoadSolution();
+    }
+}
+

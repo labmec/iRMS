@@ -145,7 +145,9 @@ public:
     /** @brief Gravity field */
     std::vector<REAL> m_gravity;
     /** @brief Sets Gravity field */
-    void SetGravity(std::vector<REAL> & gravity){ m_gravity = gravity; }
+    void SetGravity(std::vector<REAL> & gravity){
+        m_gravity = gravity;
+    }
     
     /** @brief Set fracture dim */
     void SetDimensionalFactor(REAL d){

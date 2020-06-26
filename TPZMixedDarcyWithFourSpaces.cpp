@@ -43,8 +43,7 @@ void TPZMixedDarcyWithFourSpaces::Contribute(TPZVec<TPZMaterialData> &datavec,RE
     {
         DebugStop();
     }
-    
-    TPZManVector<STATE> force(1);
+    TPZManVector<STATE> force(1,0.);
     if(fForcingFunction) {
         fForcingFunction->Execute(datavec[qb].x,force);
     }

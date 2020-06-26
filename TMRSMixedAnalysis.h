@@ -29,7 +29,10 @@ private:
     /// Number of iterations
     int m_k_iteration;
     
+    
+    
 public:
+    bool  mIsFirstAssembleQ=true;
     
     TPZMFSolutionTransfer m_soltransportTransfer;
 

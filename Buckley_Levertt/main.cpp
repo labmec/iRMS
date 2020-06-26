@@ -323,8 +323,8 @@ void BuckleyLeverettCase(TMRSDataTransfer sim_data){
     TPZAnalysis *an = new TPZAnalysis(transport_operator);
     TPZCompMesh *cmesh = transport_operator->MeshVector()[2];
     
-    std::ofstream filetxt("bl.txt");
-    cmesh->Print(filetxt);
+//    std::ofstream filetxt("bl.txt");
+//    cmesh->Print(filetxt);
     
     const TPZVec<std::string> scalnames(1);
     const TPZVec<std::string> vecnames;

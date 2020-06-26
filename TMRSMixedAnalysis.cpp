@@ -5,6 +5,10 @@
 //
 
 #include "TMRSMixedAnalysis.h"
+#ifdef USING_BOOST
+#include "boost/date_time/posix_time/posix_time.hpp"
+#endif
+
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(){
     
@@ -49,7 +53,7 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
         SetSolver(step);
         SetStructuralMatrix(matrix);
     }
-//    Assemble();
+    //    Assemble();
 }
 
 void TMRSMixedAnalysis::RunTimeStep(){
@@ -58,7 +62,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
     if (!cmesh) {
         DebugStop();
     }
-
+    
     int n = 1;//m_sim_data->mTNumerics.m_max_iter_mixed;
     bool stop_criterion_Q = false;
     bool stop_criterion_corr_Q = false;
@@ -67,25 +71,24 @@ void TMRSMixedAnalysis::RunTimeStep(){
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_mixed;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_mixed;
     
-
-    TPZFMatrix<STATE> dx,x(Solution());
     
+    TPZFMatrix<STATE> dx,x(Solution());
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
-
+        
         //        cmesh->UpdatePreviousState(1);
         //        Rhs() *=-1.0;
-
+        
         dx = Solution();
-//        x += dx;
-//        LoadSolution(x);
+        //        x += dx;
+        //        LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         
         corr_norm = Norm(dx);
-
+        
         res_norm = Norm(Rhs());
-//        this->PostProcessTimeStep();
+        //        this->PostProcessTimeStep();
         
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
@@ -99,9 +102,9 @@ void TMRSMixedAnalysis::RunTimeStep(){
             //            Rhs().Print("r = ",std::cout,EMathematicaInput);
             break;
         }
-//        if (m_k_iteration >= n) {
-//            std::cout << "Mixed operator not converge " << std::endl;
-//        }
+        //        if (m_k_iteration >= n) {
+        //            std::cout << "Mixed operator not converge " << std::endl;
+        //        }
         
     }
     
@@ -111,20 +114,62 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
 void TMRSMixedAnalysis::NewtonIteration(){
     
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+#endif
+    
+    if(mIsFirstAssembleQ == true)
+    {
+        fStructMatrix->SetNumThreads(0);
+        int64_t nel = fCompMesh->NElements();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            TPZCompEl *cel = fCompMesh->Element(el);
+            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
+            if(sub)
+            {
+                sub->Analysis()->StructMatrix()->SetNumThreads(0);
+            }
+        }
+        mIsFirstAssembleQ=false;
+    }
+    else{
+        fStructMatrix->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+        int64_t nel = fCompMesh->NElements();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            TPZCompEl *cel = fCompMesh->Element(el);
+            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
+            if(sub)
+            {
+                sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+            }
+        }
+    }
+    
     Assemble();
-
-//    Rhs() *= -1.0; 
-
+    
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+    auto deltat = tsim2-tsim1;
+    std::cout << "Mixed:: Assembly time " << deltat << std::endl;
+#endif
+    
     Solve();
+    
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
+    auto deltat2 = tsim3-tsim1;
+    std::cout << "Mixed:: Solve time " << deltat2 << std::endl;
+#endif
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(){
     TPZStack<std::string,10> scalnames, vecnames;
-    // @TODO:: Locate these variables in mTPostProcess
     
     scalnames = m_sim_data->mTPostProcess.m_scalnames;
     vecnames = m_sim_data->mTPostProcess.m_vecnames;
-
+    
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
