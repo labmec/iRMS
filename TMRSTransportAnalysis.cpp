@@ -285,6 +285,7 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     cmesh->LoadSolutionFromMultiPhysics();
     
     NewtonIteration();
+    Solution().Print("dsn = ",std::cout,EMathematicaInput);
     x += Solution();
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
@@ -356,7 +357,7 @@ void TMRSTransportAnalysis::NewtonIteration(){
         boost::posix_time::ptime tsim1c = boost::posix_time::microsec_clock::local_time();
     #endif
     
-    NewtonIteration_pz();
+//    NewtonIteration_pz();
     #ifdef USING_BOOST
         boost::posix_time::ptime tsim2c = boost::posix_time::microsec_clock::local_time();
         auto deltatc = tsim2c-tsim1c;
@@ -436,8 +437,8 @@ void TMRSTransportAnalysis::Assemble_eigen(){
         DebugStop();
     }
     
-    fRhs.Resize(n_cells,1);
-    fRhs.Zero();
+    m_rhs.setZero();
+    m_transmissibility.setZero();
     
     int internal_faces_id = m_sim_data->mTGeometry.mInterface_material_id;
     int inlet_faces_id = -2;
