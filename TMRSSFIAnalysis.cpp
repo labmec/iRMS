@@ -27,6 +27,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+    m_transport_module->Assemble_mass_eigen();
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     
 }
@@ -43,6 +44,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fphi = phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+    m_transport_module->Assemble_mass_eigen();
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
 }
 
@@ -55,6 +57,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fkappa_phi = kappa_phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+    m_transport_module->Assemble_mass_eigen();
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
 }
 

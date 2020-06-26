@@ -8,6 +8,14 @@
 #include "pzfunction.h"
 #include "TPZTracerFlow.h"
 
+#ifdef USING_BOOST
+#include "boost/date_time/posix_time/posix_time.hpp"
+#endif
+
+#ifdef USING_TBB
+#include <tbb/parallel_for.h>
+#endif
+
 TMRSTransportAnalysis::TMRSTransportAnalysis(){
     
 }
@@ -281,7 +289,8 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
     
-    NewtonIteration();
+    NewtonIteration_eigen();
+    Solution().Print("dsn = ",std::cout,EMathematicaInput);
     x += Solution();
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
@@ -341,6 +350,174 @@ void TMRSTransportAnalysis::NewtonIteration(){
     Rhs() *= -1.0;
     Solve();
 //    this->PostProcessTimeStep();
+}
+
+void TMRSTransportAnalysis::NewtonIteration_eigen(){
+    
+    Assemble_mass_eigen();
+    Assemble_eigen();
+    Rhs() *= -1.0;
+    
+    Eigen::Matrix<REAL, Eigen::Dynamic, 1> rhs_eigen;
+    rhs_eigen.resize(Rhs().Rows());
+    for (int i = 0; i < Rhs().Rows(); i++) {
+        rhs_eigen(i,0) = Rhs()(i,0);
+    }
+    
+    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  analysis;
+    m_transmissibility += m_mass;
+    analysis.analyzePattern(m_transmissibility);
+    analysis.factorize(m_transmissibility);
+    Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = analysis.solve(rhs_eigen);
+    for (int i = 0; i < Rhs().Rows(); i++) {
+        Solution()(i,0) = ds(i,0);
+    }
+    
+//    this->PostProcessTimeStep();
+}
+
+void TMRSTransportAnalysis::Assemble_mass_eigen(){
+    
+    int n_cells = fAlgebraicTransport.fCellsData.fVolume.size();
+    m_mass =  Eigen::SparseMatrix<REAL>( n_cells, n_cells );
+    
+    m_mass_triplets.resize(n_cells);
+    //Volumetric Elements
+    
+#ifdef USING_TBB
+    tbb::parallel_for(size_t(0), size_t(n_cells), size_t(1),
+        [this] (size_t & ivol){
+        int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(1, 1);
+        ef.Resize(1,1);
+        fAlgebraicTransport.Contribute(ivol, elmat, ef);
+        m_mass_triplets[ivol] = Triplet<REAL>(eqindex,eqindex, elmat(0,0));
+        fRhs.AddSub(eqindex, 0,ef);
+        }
+    );
+#else
+    for (int ivol = 0; ivol < n_cells; ivol++) {
+      int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
+      TPZFMatrix<double> elmat, ef;
+      elmat.Resize(1, 1);
+      ef.Resize(1,1);
+      fAlgebraicTransport.Contribute(ivol, elmat, ef);
+      m_mass_triplets[ivol] = Triplet<REAL>(eqindex,eqindex, elmat(0,0));
+      fRhs.AddSub(eqindex, 0,ef);
+    }
+#endif
+    
+    m_mass.setFromTriplets( m_mass_triplets.begin(), m_mass_triplets.end() );
+    m_mass_triplets.clear();
+}
+
+void TMRSTransportAnalysis::Assemble_eigen(){
+    
+    int n_cells = fAlgebraicTransport.fCellsData.fVolume.size();
+    m_transmissibility =  Eigen::SparseMatrix<REAL>( n_cells, n_cells );
+    if(!this->fSolver){
+        DebugStop();
+    }
+    
+    fRhs.Resize(n_cells,1);
+    fRhs.Zero();
+    
+    int internal_faces_id = m_sim_data->mTGeometry.mInterface_material_id;
+    int inlet_faces_id = -2;
+    int outlet_faces_id = -4;
+
+    int n_internal_faces = fAlgebraicTransport.fInterfaceData[internal_faces_id].fFluxSign.size();
+    int n_inlet_faces = fAlgebraicTransport.fInterfaceData[inlet_faces_id].fFluxSign.size();
+    int n_outlet_faces = fAlgebraicTransport.fInterfaceData[outlet_faces_id].fFluxSign.size();
+
+    size_t n_nzeros = n_internal_faces * 2 + n_outlet_faces;
+    m_trans_triplets.reserve(n_nzeros);
+    
+#ifdef USING_TBB2
+    tbb::parallel_for(size_t(0), size_t(n_cells), size_t(1),
+        [this] (size_t & ivol){
+        int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(1, 1);
+        ef.Resize(1,1);
+        fAlgebraicTransport.Contribute(ivol, elmat, ef);
+        m_mass_triplets[ivol] = Triplet<REAL>(eqindex,eqindex, elmat(0,0));
+        fRhs.AddSub(eqindex, 0,ef);
+        }
+    );
+#else
+    
+    for (int ivol = 0; ivol < n_cells; ivol++) {
+      int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
+      TPZFMatrix<double> elmat, ef;
+      elmat.Resize(1, 1);
+      ef.Resize(1,1);
+      fAlgebraicTransport.Contribute(ivol, elmat, ef);
+      fRhs.AddSub(eqindex, 0,ef);
+    }
+    
+    for (int iface = 0; iface < n_internal_faces; iface++) {
+        
+        std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[internal_faces_id].fLeftRightVolIndex[iface];
+        int left = lrindex.first;
+        int right = lrindex.second;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+        int righteq = fAlgebraicTransport.fCellsData.fEqNumber[right];
+
+        TPZVec<int64_t> indexes(2);
+        indexes[0]=lefteq;
+        indexes[1]=righteq;
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(2, 2);
+        ef.Resize(2, 1);
+        fAlgebraicTransport.ContributeInterface(iface,elmat, ef);
+        m_trans_triplets.push_back(Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
+        m_trans_triplets.push_back(Triplet<REAL>(indexes[0],indexes[1], elmat(0,1)));
+        m_trans_triplets.push_back(Triplet<REAL>(indexes[1],indexes[0], elmat(1,0)));
+        m_trans_triplets.push_back(Triplet<REAL>(indexes[1],indexes[1], elmat(1,1)));
+        fRhs.AddFel(ef, indexes);
+    }
+    
+    for (int iface = 0; iface < n_inlet_faces; iface++) {
+        
+        std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport.fInterfaceData[inlet_faces_id].fLeftRightVolIndex[iface];
+        int left = lrindex.first;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+        
+        TPZVec<int64_t> indexes(1);
+        indexes[0]=lefteq;
+        TPZFMatrix<double> ef;
+        ef.Resize(1, 1);
+        fAlgebraicTransport.ContributeBCInletInterface(iface,ef);
+        fRhs.AddFel(ef, indexes);
+    }
+    
+    for (int iface = 0; iface < n_outlet_faces; iface++) {
+        
+        std::pair<int64_t, int64_t> lrindex = fAlgebraicTransport.fInterfaceData[outlet_faces_id].fLeftRightVolIndex[iface];
+        int left = lrindex.first;
+        int lefteq = fAlgebraicTransport.fCellsData.fEqNumber[left];
+
+        TPZVec<int64_t> indexes(1);
+        indexes[0]=lefteq;
+        TPZFMatrix<double> elmat, ef;
+        elmat.Resize(1, 1);
+        ef.Resize(1, 1);
+        fAlgebraicTransport.ContributeBCOutletInterface(iface,elmat, ef);
+        m_trans_triplets.push_back(Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
+        fRhs.AddFel(ef, indexes);
+    }
+    
+#endif
+    
+    m_transmissibility.setFromTriplets( m_trans_triplets.begin(), m_trans_triplets.end() );
+    m_trans_triplets.clear();
+}
+
+void TMRSTransportAnalysis::AssembleResidual_eigen(){
+ 
+    assert(0 == 1);
 }
 
 

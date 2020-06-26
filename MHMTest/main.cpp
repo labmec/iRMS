@@ -72,11 +72,6 @@
 #include <libInterpolate/Interpolate.hpp>
 #include <libInterpolate/AnyInterpolator.hpp>
 
-
-#include <Eigen/Dense>
-#include <Eigen/SparseCore>
-#include <Eigen/SparseLU>
-
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
@@ -109,9 +104,9 @@ void SimpleTest2D();
 int main(){
     InitializePZLOG();
 //    Gravity2D();
-//    PaperTest2D();
+    PaperTest2D();
 //    PaperTest3D();
-    SimpleTest3D();
+//    SimpleTest3D();
 
 //    SimpleTest2D();
 //    UNISIMTest();
@@ -324,7 +319,7 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.GenerateMHMUniformMesh(1);
+    aspace.GenerateMHMUniformMesh(0);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -359,7 +354,7 @@ void PaperTest2D(){
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
-
+    
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
 
     // Render a graphical map
@@ -376,7 +371,7 @@ void PaperTest2D(){
     reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
 
     REAL sim_time = 0.0;
-    int pos =0;
+    int pos = 0;
     REAL current_report_time = reporting_times[pos];
 
     // Mass integral - Injection - Production data
@@ -409,7 +404,6 @@ void PaperTest2D(){
     time_prod(0,1) = prod_data.first;
     time_prod(0,2) = prod_data.second;
     
-    sfi_analysis->m_mixed_module->SetThreadsForError(16);
    // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = true;
 
 #ifdef USING_BOOST
@@ -1225,7 +1219,7 @@ TMRSDataTransfer SettingPaper2D(){
     grav[1] = -9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 10;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     
     
     // PostProcess controls

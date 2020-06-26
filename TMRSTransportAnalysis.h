@@ -18,6 +18,33 @@
 #include "TPZMFSolutionTransfer.h"
 #include "TPZAlgebraicTransport.h"
 
+#include <Eigen/Dense>
+#include <Eigen/SparseCore>
+#include <Eigen/SparseLU>
+#include <Eigen/PardisoSupport>
+
+template<typename StorageIndex = typename Eigen::SparseMatrix<REAL>::StorageIndex >
+class Triplet
+{
+public:
+  
+ Triplet() : m_row(0), m_col(0), m_value(0) {}
+
+  Triplet(const StorageIndex& i, const StorageIndex& j, const REAL& v = REAL(0))
+    : m_row(i), m_col(j), m_value(v)
+  {}
+
+    const StorageIndex& row() const { return m_row; }
+    const StorageIndex& col() const { return m_col; }
+    const REAL & value() const { return m_value; }
+    
+protected:
+    
+  StorageIndex m_row, m_col;
+    
+  REAL m_value;
+};
+
 class TMRSTransportAnalysis : public TPZAnalysis {
     
 private:
@@ -34,7 +61,12 @@ private:
     
     TPZFMatrix<STATE>  M_diag;
     
-    bool isLinear_Q = false;
+    Eigen::SparseMatrix<REAL> m_mass;
+    
+    Eigen::SparseMatrix<REAL> m_transmissibility;
+    
+    std::vector< Triplet<REAL> >           m_trans_triplets;
+    std::vector< Triplet<REAL> >           m_mass_triplets;
     
 public:
     
@@ -79,6 +111,11 @@ public:
     
     /// Perform a Newton iteration
     void NewtonIteration();
+    
+    void Assemble_mass_eigen();
+    void Assemble_eigen();
+    void AssembleResidual_eigen();
+    void NewtonIteration_eigen();
     
     void ComputeInitialGuess(TPZFMatrix<STATE> &x);
     
