@@ -111,10 +111,10 @@ int main(){
 //    Gravity2D();
 //    PaperTest2D();
 //    PaperTest3D();
-//    SimpleTest3D();
+    SimpleTest3D();
 
 //    SimpleTest2D();
-    UNISIMTest();
+//    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
