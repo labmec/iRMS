@@ -104,12 +104,12 @@ void SimpleTest2D();
 int main(){
     InitializePZLOG();
 //    Gravity2D();
-    PaperTest2D();
+//    PaperTest2D();
 //    PaperTest3D();
 //    SimpleTest3D();
 
 //    SimpleTest2D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
@@ -319,7 +319,7 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(2);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -348,7 +348,7 @@ void PaperTest2D(){
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
     
-    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
     auto s0 = reservoir_properties.Create_s0();
 
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
@@ -632,7 +632,7 @@ void SimpleTest3D(){
     double H = 10;
     double W = 10;
     aspace.CreateUniformMesh(nx, L, ny, H,nz,W);
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.GenerateMHMUniformMesh(3);
     
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);

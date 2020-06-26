@@ -53,7 +53,7 @@ private:
     TMRSDataTransfer * m_sim_data;
     
     /// Number of iterations
-    int m_k_iteration;
+    int m_k_iteration = 0;
     
     REAL m_current_time;
     
@@ -70,6 +70,7 @@ private:
     std::vector< Triplet<REAL> >           m_trans_triplets;
     std::vector< Triplet<REAL> >           m_rhs_triplets;
     std::vector< Triplet<REAL> >           m_mass_triplets;
+    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
     
 public:
     
@@ -124,7 +125,7 @@ public:
     void Assemble_mass_eigen();
     void Assemble_eigen();
     void AssembleResidual_eigen();
-
+    void AnalyzePattern();
     
     void ComputeInitialGuess(TPZFMatrix<STATE> &x);
     
