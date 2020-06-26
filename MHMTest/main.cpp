@@ -731,8 +731,6 @@ void UNISIMTest(){
 
 
     auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
-
-//    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
     auto s0 = reservoir_properties.Create_s0();
 
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
@@ -1438,6 +1436,7 @@ TPZGeoMesh * CreateGeoMeshWithTopeAndBase(std::string geometry_file2D, int nLaye
     dim_name_and_physical_tag[1]["Injectors"] = -2;
     dim_name_and_physical_tag[1]["Productors"] = -4;
     dim_name_and_physical_tag[1]["ZeroFlux"] = -1;
+    
     
     TPZGmshReader Geometry;
     TPZGeoMesh * gmesh2d;
