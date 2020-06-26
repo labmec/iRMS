@@ -739,7 +739,7 @@ void UNISIMTest(){
 #endif
     
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
-    int nLayers = 1;
+    int nLayers = 5;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -752,7 +752,7 @@ void UNISIMTest(){
     aspace.SetGeometry(gmesh);
     std::string name="unisim_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(2);
     std::string name_ref = "unisim_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -1394,10 +1394,11 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
+    sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 10;
+    sim_data.mTNumerics.m_n_steps = 1300;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -1425,7 +1426,7 @@ TMRSDataTransfer SettingUNISIM(){
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    REAL time = 10*sim_data.mTPostProcess.m_file_time_step;
     int n_reporting_times =(n_steps)/(time/dt) + 1;
     REAL r_time =0.0;
     for (int i =1; i<= n_reporting_times; i++) {
