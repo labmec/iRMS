@@ -318,13 +318,13 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
             fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambdaQuasiNewton();
         }
         
-        AssembleResidual();
+        //AssembleResidual();
         REAL res_norm = Norm(Rhs());
         std::cout << " Residue norm : " <<  res_norm << std::endl;
         
         res_norm = Norm(Rhs());
         bool stop_criterion_Q = res_norm < res_tol;
-        if (stop_criterion_Q) {
+        if (m_k_iteration==1) {
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Quasi-Newton iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;

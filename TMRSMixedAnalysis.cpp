@@ -53,7 +53,7 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
         SetSolver(step);
         SetStructuralMatrix(matrix);
     }
-//    Assemble();
+    //    Assemble();
 }
 
 void TMRSMixedAnalysis::RunTimeStep(){
@@ -62,8 +62,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
     if (!cmesh) {
         DebugStop();
     }
-
-    int n = m_sim_data->mTNumerics.m_max_iter_mixed;
+    
+    int n = 1;//m_sim_data->mTNumerics.m_max_iter_mixed;
     bool stop_criterion_Q = false;
     bool stop_criterion_corr_Q = false;
     REAL res_norm = 1.0;
@@ -71,24 +71,24 @@ void TMRSMixedAnalysis::RunTimeStep(){
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_mixed;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_mixed;
     
-
+    
     TPZFMatrix<STATE> dx,x(Solution());
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
         
-        cmesh->UpdatePreviousState(1);
-        Rhs() *=-1.0;
-
+        //        cmesh->UpdatePreviousState(1);
+        //        Rhs() *=-1.0;
+        
         dx = Solution();
-        x += dx;
-        LoadSolution(x);
+        //        x += dx;
+        //        LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         
         corr_norm = Norm(dx);
-
+        
         res_norm = Norm(Rhs());
-//        this->PostProcessTimeStep();
+        //        this->PostProcessTimeStep();
         
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
@@ -102,10 +102,9 @@ void TMRSMixedAnalysis::RunTimeStep(){
             //            Rhs().Print("r = ",std::cout,EMathematicaInput);
             break;
         }
-        if (m_k_iteration >= n) {
-            std::cout << "Mixed operator no convergence " <<
-            " corr_norm = " << corr_norm << " res_norm " << res_norm << std::endl;
-        }
+        //        if (m_k_iteration >= n) {
+        //            std::cout << "Mixed operator not converge " << std::endl;
+        //        }
         
     }
     
@@ -118,8 +117,8 @@ void TMRSMixedAnalysis::NewtonIteration(){
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
 #endif
-
-//    static int firstassemble = 1;
+    
+    //    static int firstassemble = 1;
     if(mIsFirstAssembleQ == true)
     {
         fStructMatrix->SetNumThreads(0);
@@ -151,21 +150,21 @@ void TMRSMixedAnalysis::NewtonIteration(){
     }
     std::cout << "Assembling Darcy operator\n";
     Assemble();
-
-//    std::cout << "Rhs norm " << Norm(Rhs()) << std::endl;
-//    std::cout << "done\n";
-//    if(firstassemble == 1)
-//    {
-//        firstassemble = 0;
-//
-//    }
+    
+    //    std::cout << "Rhs norm " << Norm(Rhs()) << std::endl;
+    //    std::cout << "done\n";
+    //    if(firstassemble == 1)
+    //    {
+    //        firstassemble = 0;
+    //
+    //    }
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
     auto deltat = tsim2-tsim1;
     std::cout << "Mixed Analysis Assembly time " << deltat << std::endl;
 #endif
-//    Rhs() *= -1.0;
-
+    //    Rhs() *= -1.0;
+    
     Solve();
     
     std::cout << "Solution Norm " << Norm(Solution()) << std::endl;
@@ -182,7 +181,7 @@ void TMRSMixedAnalysis::PostProcessTimeStep(){
     
     scalnames = m_sim_data->mTPostProcess.m_scalnames;
     vecnames = m_sim_data->mTPostProcess.m_vecnames;
-
+    
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;

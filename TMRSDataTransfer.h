@@ -413,9 +413,9 @@ public:
         TNumerics(){
             
             m_dt                    = 0.0;
-            m_res_tol_mixed         = 1.0e-7;
+            m_res_tol_mixed         = 1.0e-4;
             m_res_tol_transport     = 1.0e-7;
-            m_corr_tol_mixed        = 1.0e-7;
+            m_corr_tol_mixed        = 1.0e-4;
             m_corr_tol_transport    = 1.0e-7;
             m_max_iter_mixed        = 0;
             m_max_iter_transport    = 0;

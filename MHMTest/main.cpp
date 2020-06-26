@@ -111,10 +111,10 @@ int main(){
 //    Gravity2D();
 //    PaperTest2D();
 //    PaperTest3D();
-    SimpleTest3D();
+//    SimpleTest3D();
 
 //    SimpleTest2D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
@@ -638,7 +638,7 @@ void SimpleTest3D(){
     double H = 10;
     double W = 10;
     aspace.CreateUniformMesh(nx, L, ny, H,nz,W);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(2);
     
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -736,7 +736,7 @@ void UNISIMTest(){
     auto s0 = reservoir_properties.Create_s0();
 
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
-    int nLayers = 3;
+    int nLayers = 2;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -857,9 +857,12 @@ void UNISIMTest(){
           current_report_time = reporting_times[pos];
           
           REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-      sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
+          sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
           std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
           std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
+          
+          REAL inletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
+          REAL outletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
           std::cout << "Mass report at time : " << sim_time << std::endl;
           std::cout << "Mass integral :  " << mass << std::endl;
           
@@ -873,6 +876,12 @@ void UNISIMTest(){
           time_prod(it,0) = sim_time;
           time_prod(it,1) = prod_data.first;
           time_prod(it,2) = prod_data.second;
+          
+          time_fluxInlet(it,0)=sim_time;
+          time_fluxInlet(it,1) =inletflow;
+          
+          time_fluxOutlet(it,0)=sim_time;
+          time_fluxOutlet(it,1) =outletflow;
 //         // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = true;
 
       }
@@ -1120,10 +1129,10 @@ TMRSDataTransfer Setting3D(){
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
-    sim_data.mTNumerics.m_max_iter_sfi = 50;
+    sim_data.mTNumerics.m_max_iter_sfi = 40;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
+    sim_data.mTNumerics.m_sfi_tol = 0.00001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_n_steps = 20;
@@ -1285,7 +1294,7 @@ TMRSDataTransfer SettingPaper3D(){
     
     
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 3;
+    sim_data.mTNumerics.m_max_iter_mixed = 1;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
     
@@ -1375,14 +1384,14 @@ TMRSDataTransfer SettingUNISIM(){
 
 
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 3;
+    sim_data.mTNumerics.m_max_iter_mixed = 1;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 30;
 
     sim_data.mTNumerics.m_sfi_tol = 0.001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_n_steps = 500;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
