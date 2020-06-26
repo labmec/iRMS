@@ -68,7 +68,7 @@ public:
     void LoadGeometry(std::string geometry_file,TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tag);
     
     void CreateUniformMesh(int nx, REAL L, int ny=0, REAL h=0, int nz=0, REAL w=0);
-    void GenerateMHMUniformMesh(int nelref);
+    void ApplyUniformRefinement(int nelref);
     
     void PrintGeometry(std::string name);
     

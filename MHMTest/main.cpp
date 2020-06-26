@@ -105,12 +105,12 @@ void SimpleTest2D();
 int main(){
     InitializePZLOG();
 //    Gravity2D();
-//    PaperTest2D();
+    PaperTest2D();
 //    PaperTest3D();
 //    SimpleTest3D();
 
 //    SimpleTest2D();
-    UNISIMTest();
+//    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
@@ -121,7 +121,7 @@ void SimpleTest2D(){
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.ApplyUniformRefinement(2);
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -210,7 +210,7 @@ void Gravity2D(){
     std::string name = "g_segregation_geo";
     aspace.PrintGeometry(name);
     
-    aspace.GenerateMHMUniformMesh(3);
+    aspace.ApplyUniformRefinement(3);
     std::string name_ref = "g_segregation_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -318,7 +318,7 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.ApplyUniformRefinement(2);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -487,7 +487,7 @@ void PaperTest3D(){
     aspace.SetGeometry(gmesh);
     std::string name = "paper_3d_test_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.ApplyUniformRefinement(2);
     std::string name_ref = "paper_3d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -630,7 +630,7 @@ void SimpleTest3D(){
     double H = 10;
     double W = 10;
     aspace.CreateUniformMesh(nx, L, ny, H,nz,W);
-    aspace.GenerateMHMUniformMesh(3);
+    aspace.ApplyUniformRefinement(3);
     
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -752,7 +752,7 @@ void UNISIMTest(){
     aspace.SetGeometry(gmesh);
     std::string name="unisim_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(2);
+    aspace.ApplyUniformRefinement(2);
     std::string name_ref = "unisim_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -1195,7 +1195,7 @@ TMRSDataTransfer SettingPaper2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 20.0;
+    REAL pressure_in = 25.0;
     REAL pressure_out = 10.0;
         
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -1215,9 +1215,9 @@ TMRSDataTransfer SettingPaper2D(){
     
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
-    sim_data.mTFluidProperties.mOilViscosity = 0.001;
+    sim_data.mTFluidProperties.mOilViscosity = 0.002;
     sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 500.0;
+    sim_data.mTFluidProperties.mOilDensity = 800.0;
 
 
     // Numerical controls
@@ -1229,15 +1229,15 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 10;
+    sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 1.0*day;
+    sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
     grav[1] = -9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     
     
