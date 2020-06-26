@@ -641,6 +641,7 @@ void TMRSTransportAnalysis::AssembleResidual_eigen(){
         m_rhs_triplets[ivol] = Triplet<REAL>(eqindex,0, ef(0,0));
         }
     );
+  
     
     tbb::parallel_for(size_t(0), size_t(n_internal_faces), size_t(1),
         [this,&internal_faces_id,&n_cells] (size_t & iface){
@@ -717,15 +718,10 @@ void TMRSTransportAnalysis::AssembleResidual_eigen(){
         TPZVec<int64_t> indexes(2);
         indexes[0]=lefteq;
         indexes[1]=righteq;
-        TPZFMatrix<double> elmat, ef;
-        elmat.Resize(2, 2);
+        TPZFMatrix<double> ef;
+      
         ef.Resize(2, 1);
-        fAlgebraicTransport.ContributeInterface(iface,elmat, ef);
-        size_t i_begin = 2*2*(iface);
-        m_trans_triplets[i_begin] = (Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
-        m_trans_triplets[i_begin+1] = (Triplet<REAL>(indexes[0],indexes[1], elmat(0,1)));
-        m_trans_triplets[i_begin+2] = (Triplet<REAL>(indexes[1],indexes[0], elmat(1,0)));
-        m_trans_triplets[i_begin+3] = (Triplet<REAL>(indexes[1],indexes[1], elmat(1,1)));
+        fAlgebraicTransport.ContributeInterfaceResidual(iface, ef);
         
         size_t i_rhs_begin = 2*(iface) + n_cells;
         m_rhs_triplets[i_rhs_begin] = Triplet<REAL>(indexes[0],0, ef(0,0));
@@ -755,12 +751,9 @@ void TMRSTransportAnalysis::AssembleResidual_eigen(){
 
         TPZVec<int64_t> indexes(1);
         indexes[0]=lefteq;
-        TPZFMatrix<double> elmat, ef;
-        elmat.Resize(1, 1);
+        TPZFMatrix<double> ef;
         ef.Resize(1, 1);
-        fAlgebraicTransport.ContributeBCOutletInterface(iface,elmat, ef);
-        size_t i_begin = iface + n_internal_faces * 4;
-        m_trans_triplets[i_begin] = (Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
+        fAlgebraicTransport.ContributeBCOutletInterfaceResidual(iface, ef);
         
         size_t i_rhs_begin = (iface) + n_cells + 2*n_internal_faces + n_inlet_faces;
         m_rhs_triplets[i_rhs_begin] = Triplet<REAL>(indexes[0],0, ef(0,0));
