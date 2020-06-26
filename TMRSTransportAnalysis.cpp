@@ -75,12 +75,18 @@ void TMRSTransportAnalysis::Assemble_serial(){
     if(!this->fSolver){
         DebugStop();
     }
-    TPZMatrix<STATE> *mat = fStructMatrix->Create();
-    fSolver->SetMatrix(mat);
-    mat->Resize(ncells, ncells);
-    fRhs.Resize(ncells,1);
-    mat->Zero();
-    fRhs.Zero();
+    TPZMatrix<STATE> *mat = 0;
+    if(!fSolver->Matrix())
+    {
+        mat = fStructMatrix->Create();
+        fSolver->SetMatrix(mat);
+    }
+    else
+    {
+        mat = fSolver->Matrix().operator->();
+    }
+    mat->Redim(ncells, ncells);
+    fRhs.Redim(ncells,1);
     
     //Volumetric Elements
     for (int ivol = 0; ivol<ncells; ivol++) {
@@ -200,8 +206,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
         
-        stop_criterion_Q = res_norm < res_tol;
-        stop_criterion_corr_Q = corr_norm < corr_tol;
+        stop_criterion_Q = (res_norm < res_tol);
+        stop_criterion_corr_Q = (corr_norm < corr_tol);
         if (stop_criterion_Q || stop_criterion_corr_Q) {
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
@@ -268,7 +274,7 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         std::cout << " Residue norm : " <<  res_norm << std::endl;
         
         res_norm = Norm(Rhs());
-        bool stop_criterion_Q = res_norm < res_tol;
+        bool stop_criterion_Q = (res_norm < res_tol);
         if (stop_criterion_Q) {
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Quasi-Newton iterations = " << m_k_iteration << std::endl;
