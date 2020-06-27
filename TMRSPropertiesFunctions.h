@@ -57,15 +57,12 @@ class TMRSPropertiesFunctions
         return [] (const TPZVec<REAL> & pt) -> std::vector<REAL> {
             std::vector<REAL> kappa_and_phi;
             REAL k_c,phi_c;
-            k_c = 1.0e-7;
+            k_c = (1.0e-12)*1.0e6;
             phi_c = 0.1;
-            REAL x = pt[0];
-            REAL y = pt[1];
-            REAL z = pt[2];
-            REAL kx = k_c ;//* fabs(std::cos(0.2*x)*std::sin(0.1*y)*std::sin(0.1*z)) + k_c;
-            REAL ky = 10.0 * k_c ;//* fabs(std::sin(0.1*x)*std::cos(0.2*y)*std::sin(0.1*z)) + k_c;
-            REAL kz = 10.0 * k_c ;//* fabs(std::sin(0.1*x)*std::sin(0.1*y)*std::cos(0.2*z)) + k_c;
-            REAL phi = phi_c ;//* fabs(std::cos(0.2*x)*std::cos(0.3*y)*std::cos(0.1*z)) + phi_c;
+            REAL kx = k_c ;
+            REAL ky = k_c ;
+            REAL kz = k_c ;
+            REAL phi = phi_c ;
             kappa_and_phi.push_back(kx);
             kappa_and_phi.push_back(ky);
             kappa_and_phi.push_back(kz);
@@ -348,10 +345,10 @@ class TMRSPropertiesFunctions
                     return [] (const TPZVec<REAL> & pt) -> REAL {
                             REAL y,s;
                             y = pt[1];
-                            if(y<5){
-                                 s = 0.0;
+                            if(y > 2 && y < 5){
+                                 s = 0.8;
                              }else{
-                                 s = 1.0;
+                                 s = 0.0;
                              }
                              return s;
                         };
