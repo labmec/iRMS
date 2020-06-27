@@ -216,7 +216,7 @@ void PlumeGravity2D(){
   TMRSDataTransfer sim_data  = SettingPlumeGravity2D();
       
   TMRSApproxSpaceGenerator aspace;
-  aspace.CreateUniformMesh(1, 1, 640, 10);
+  aspace.CreateUniformMesh(1, 1, 1280, 10);
   std::string name = "g_segregation_geo";
   aspace.PrintGeometry(name);
   
@@ -1213,9 +1213,9 @@ TMRSDataTransfer SettingPlumeGravity2D(){
     sim_data.mTNumerics.m_sfi_tol = 0.000001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
-    sim_data.mTNumerics.m_n_steps = 200;
+    sim_data.mTNumerics.m_n_steps = 10;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 0.005*day;
+    sim_data.mTNumerics.m_dt      = 0.1*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
