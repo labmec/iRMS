@@ -105,12 +105,12 @@ void SimpleTest2D();
 int main(){
     InitializePZLOG();
 //    Gravity2D();
-//    PaperTest2D();
+    PaperTest2D();
 //    PaperTest3D();
 //    SimpleTest3D();
 
 //    SimpleTest2D();
-    UNISIMTest();
+//    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
@@ -322,7 +322,7 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(2);
+    aspace.ApplyUniformRefinement(3);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -351,7 +351,7 @@ void PaperTest2D(){
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
     
-    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
     auto s0 = reservoir_properties.Create_s0();
 
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
@@ -421,6 +421,7 @@ void PaperTest2D(){
       
      
       if (sim_time >=  current_report_time) {
+          TPZFastCondensedElement::fSkipLoadSolution = false;
           std::cout << "Time step number:  " << it << std::endl;
           std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
          
@@ -449,7 +450,7 @@ void PaperTest2D(){
           time_prod(it,0) = sim_time;
           time_prod(it,1) = prod_data.first;
           time_prod(it,2) = prod_data.second;
-          
+          TPZFastCondensedElement::fSkipLoadSolution = true;
 
       }
        // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = true;
@@ -1234,7 +1235,7 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_n_steps = 400;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -1250,10 +1251,11 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
     TPZStack<std::string,10> scalnames, vecnames;
-    vecnames.Push("q");
+//    vecnames.Push("q");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
-        scalnames.Push("p_average");
+        scalnames.Push("p");
+//        scalnames.Push("g_average");
+//        scalnames.Push("p_average");
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
     sim_data.mTPostProcess.m_vecnames = vecnames;
@@ -1262,7 +1264,7 @@ TMRSDataTransfer SettingPaper2D(){
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    REAL time = 20*sim_data.mTPostProcess.m_file_time_step;
     int n_reporting_times =(n_steps)/(time/dt) + 1;
     REAL r_time =0.0;
     for (int i =1; i<= n_reporting_times; i++) {
