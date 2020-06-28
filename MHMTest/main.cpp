@@ -266,6 +266,10 @@ void Gravity2D(){
     for (int it = 1; it <= n_steps; it++) {
        
         sim_time = it*dt;
+        if (sim_time >= current_report_time)
+        {
+            TPZFastCondensedElement::fSkipLoadSolution = false;
+        }
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
       
@@ -279,7 +283,7 @@ void Gravity2D(){
             REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
             std::cout << "Mass report at time : " << sim_time << std::endl;
             std::cout << "Mass integral :  " << mass << std::endl;
-            
+            TPZFastCondensedElement::fSkipLoadSolution = true;
         }
     }
     
@@ -948,9 +952,9 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -9.81*0.0*(1.0e-6);
+//    grav[1] = -9.81*0.0*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 10;
     
     // PostProcess controls
@@ -960,7 +964,7 @@ TMRSDataTransfer SettingSimple2D(){
     vecnames.Push("q");
     //    scalnames.Push("p");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
+        scalnames.Push("p");
         scalnames.Push("p_average");
         scalnames.Push("kxx");
         scalnames.Push("kyy");
@@ -995,7 +999,7 @@ TMRSDataTransfer SettingGravity2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_on_top = 10.0;
+    REAL pressure_on_top = 0.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
@@ -1049,6 +1053,7 @@ TMRSDataTransfer SettingGravity2D(){
         scalnames.Push("kyy");
         scalnames.Push("kzz");
         scalnames.Push("lambda");
+        scalnames.Push("p");
 
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
@@ -1739,7 +1744,7 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
      cmesh->MeshVector()[3]->Solution() = Kz;
      int dim = cmesh->Reference()->Dimension();
      TPZStack<std::string,10> scalnames, vecnames;
-     vecnames.Push("q");
+//     vecnames.Push("q");
      scalnames.Push("Porosity");
      scalnames.Push("Permeability_x");
      scalnames.Push("Permeability_y");
