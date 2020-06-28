@@ -206,6 +206,15 @@ void TMRSTransportAnalysis::RunTimeStep(){
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
         
+#ifdef PZDEBUG
+        {
+            if(std::isnan(corr_norm) || std::isnan(res_norm))
+            {
+                DebugStop();
+            }
+        }
+#endif
+        std::cout << "res_norm " << res_norm << " corr_norm " << corr_norm << std::endl;
         stop_criterion_Q = (res_norm < res_tol);
         stop_criterion_corr_Q = (corr_norm < corr_tol);
         if (stop_criterion_Q || stop_criterion_corr_Q) {
@@ -257,6 +266,16 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         NewtonIteration();
         
         x += Solution();
+        
+#ifdef PZDEBUG
+        {
+            REAL norm = Norm(x);
+            if(std::isnan(norm))
+            {
+                DebugStop();
+            }
+        }
+#endif
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         
@@ -274,6 +293,14 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         std::cout << " Residue norm : " <<  res_norm << std::endl;
         
         res_norm = Norm(Rhs());
+        
+#ifdef PZDEBUG
+        if(std::isnan(res_norm))
+        {
+            DebugStop();
+        }
+#endif
+        
         bool stop_criterion_Q = (res_norm < res_tol);
         if (stop_criterion_Q) {
             std::cout << "Transport operator: Converged" << std::endl;
@@ -289,20 +316,20 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
 void TMRSTransportAnalysis::NewtonIteration(){
     
     if (m_parallel_execution_Q) {
-        #ifdef USING_BOOST
-            boost::posix_time::ptime tnewton1 = boost::posix_time::microsec_clock::local_time();
-        #endif
+#ifdef USING_BOOST
+    boost::posix_time::ptime tnewton1 = boost::posix_time::microsec_clock::local_time();
+#endif
 
         NewtonIteration_parallel();
-        #ifdef USING_BOOST
-            boost::posix_time::ptime tnewton2 = boost::posix_time::microsec_clock::local_time();
-            auto deltat = tnewton2-tnewton1;
-            std::cout << "Transport:: Parallel Newton step time: " << deltat << std::endl;
-        #endif
+#ifdef USING_BOOST
+        boost::posix_time::ptime tnewton2 = boost::posix_time::microsec_clock::local_time();
+        auto deltat = tnewton2-tnewton1;
+        std::cout << "Transport:: Parallel Newton step time: " << deltat << std::endl;
+#endif
     }else{
-        #ifdef USING_BOOST
-            boost::posix_time::ptime tnewtons1 = boost::posix_time::microsec_clock::local_time();
-        #endif
+#ifdef USING_BOOST
+        boost::posix_time::ptime tnewtons1 = boost::posix_time::microsec_clock::local_time();
+#endif
 
         NewtonIteration_serial();
         #ifdef USING_BOOST
@@ -336,23 +363,36 @@ void TMRSTransportAnalysis::NewtonIteration_parallel(){
     
     Assemble_parallel();
 
+#ifdef PZDEBUG
+    {
+        auto norm = m_rhs.norm();
+        if(std::isnan(norm))
+        {
+            DebugStop();
+        }
+    }
+#endif
     m_transmissibility += m_mass;
     m_rhs *= -1.0;
     m_analysis.factorize(m_transmissibility);
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
     assert(Solution().Rows() == ds.rows());
     
-    #ifdef USING_TBB
-        tbb::parallel_for(size_t(0), size_t(ds.rows()), size_t(1),
-            [this,&ds] (size_t & i){
-            Solution()(i,0) = ds(i,0);
-            }
-        );
-    #else
-        for (int i = 0; i < ds.rows(); i++) {
-            Solution()(i,0) = ds(i,0);
+#ifdef USING_TBB
+    tbb::parallel_for(size_t(0), size_t(ds.rows()), size_t(1),
+        [this,&ds] (size_t & i){
+        Solution()(i,0) = ds(i,0);
         }
-    #endif
+    );
+#else
+    for (int i = 0; i < ds.rows(); i++) {
+        Solution()(i,0) = ds(i,0);
+    }
+#endif
+#ifdef PZDEBUG
+    STATE norm = Norm(Solution());
+    if(std::isnan(norm)) DebugStop();
+#endif
 }
 
 void TMRSTransportAnalysis::Assemble_mass_parallel(){
@@ -441,6 +481,19 @@ void TMRSTransportAnalysis::Assemble_parallel(){
         elmat.Resize(2, 2);
         ef.Resize(2, 1);
         fAlgebraicTransport.ContributeInterface(iface,elmat, ef);
+#ifdef PZDEBUG
+        {
+            STATE normek = Norm(elmat);
+            STATE normef = Norm(ef);
+            if(std::isnan(normek) || std::isnan(normef))
+            {
+                std::cout << "matriz ou residuo nan";
+                elmat.Print("elmat");
+                ef.Print("ef");
+                DebugStop();
+            }
+        }
+#endif
         size_t i_begin = 2*2*(iface);
         m_trans_triplets[i_begin] = (Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
         m_trans_triplets[i_begin+1] = (Triplet<REAL>(indexes[0],indexes[1], elmat(0,1)));
