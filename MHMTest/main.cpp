@@ -209,7 +209,7 @@ void Gravity2D(){
     std::string name = "g_segregation_geo";
     aspace.PrintGeometry(name);
     
-    aspace.GenerateMHMUniformMesh(3);
+    aspace.GenerateMHMUniformMesh(0);
     std::string name_ref = "g_segregation_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
