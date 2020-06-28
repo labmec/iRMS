@@ -556,7 +556,7 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(2);
+    aspace.ApplyUniformRefinement(3);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -1590,7 +1590,7 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
 
-    sim_data.mTGeometry.mSkeletonDiv = 1;
+    sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.00001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
@@ -1622,7 +1622,7 @@ TMRSDataTransfer SettingPaper2D(){
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    REAL time = 10*sim_data.mTPostProcess.m_file_time_step;
     int n_reporting_times =(n_steps)/(time/dt) + 1;
     REAL r_time =0.0;
     for (int i =1; i<= n_reporting_times; i++) {
