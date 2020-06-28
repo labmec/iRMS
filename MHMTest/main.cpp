@@ -103,13 +103,13 @@ void SimpleTest2D();
 //
 int main(){
     InitializePZLOG();
-    Gravity2D();
+//    Gravity2D();
 //    PaperTest2D();
 //    PaperTest3D();
 //    SimpleTest3D();
 
 //    SimpleTest2D();
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
@@ -730,7 +730,7 @@ void UNISIMTest(){
     auto s0 = reservoir_properties.Create_s0();
 
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
-    int nLayers = 2;
+    int nLayers = 5;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
@@ -739,12 +739,12 @@ void UNISIMTest(){
     TMRSApproxSpaceGenerator aspace;
     
     TMRSDataTransfer sim_data  = SettingUNISIM();
-    sim_data.mTGeometry.mSkeletonDiv =0;
+  
     
     aspace.SetGeometry(gmesh);
     std::string name="unisim_geo";
     aspace.PrintGeometry(name);
-    aspace.GenerateMHMUniformMesh(0);
+    aspace.GenerateMHMUniformMesh(1);
     std::string name_ref = "unisim_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -824,7 +824,7 @@ void UNISIMTest(){
     time_fluxOutlet(0,1) =fluxOutlet_data;
     
     
-    sfi_analysis->m_mixed_module->SetThreadsForError(0);
+//    sfi_analysis->m_mixed_module->SetThreadsForError(0);
    // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = false;
 
 #ifdef USING_BOOST
@@ -832,13 +832,14 @@ void UNISIMTest(){
 #endif
 
     for (int it = 1; it <= n_steps; it++) {
-     // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = false;
+      
       sim_time = it*dt;
       sfi_analysis->m_transport_module->SetCurrentTime(dt);
       sfi_analysis->RunTimeStep();
       
      
       if (sim_time >=  current_report_time) {
+          TPZFastCondensedElement::fSkipLoadSolution = false;
           std::cout << "Time step number:  " << it << std::endl;
           std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
          // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = false;
@@ -849,34 +850,35 @@ void UNISIMTest(){
           sfi_analysis->PostProcessTimeStep();
           pos++;
           current_report_time = reporting_times[pos];
+          TPZFastCondensedElement::fSkipLoadSolution = true;
           
-          REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-          sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
-          std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
-          std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
-          
-          REAL inletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
-          REAL outletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
-          std::cout << "Mass report at time : " << sim_time << std::endl;
-          std::cout << "Mass integral :  " << mass << std::endl;
-          
-          time_mass(it,0) = sim_time;
-          time_mass(it,1) = mass;
-          
-          time_inj(it,0) = sim_time;
-          time_inj(it,1) = inj_data.first;
-          time_inj(it,2) = inj_data.second;
-          
-          time_prod(it,0) = sim_time;
-          time_prod(it,1) = prod_data.first;
-          time_prod(it,2) = prod_data.second;
-          
-          time_fluxInlet(it,0)=sim_time;
-          time_fluxInlet(it,1) =inletflow;
-          
-          time_fluxOutlet(it,0)=sim_time;
-          time_fluxOutlet(it,1) =outletflow;
       }
+        REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+        sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
+        std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
+        std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
+        
+        REAL inletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
+        REAL outletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
+        std::cout << "Mass report at time : " << sim_time << std::endl;
+        std::cout << "Mass integral :  " << mass << std::endl;
+        
+        time_mass(it,0) = sim_time;
+        time_mass(it,1) = mass;
+        
+        time_inj(it,0) = sim_time;
+        time_inj(it,1) = inj_data.first;
+        time_inj(it,2) = inj_data.second;
+        
+        time_prod(it,0) = sim_time;
+        time_prod(it,1) = prod_data.first;
+        time_prod(it,2) = prod_data.second;
+        
+        time_fluxInlet(it,0)=sim_time;
+        time_fluxInlet(it,1) =inletflow;
+        
+        time_fluxOutlet(it,0)=sim_time;
+        time_fluxOutlet(it,1) =outletflow;
     }
 
 #ifdef USING_BOOST
@@ -1382,13 +1384,13 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 500;
+    sim_data.mTNumerics.m_n_steps = 2;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[2] = -9.8*(1.0e-6);
+    grav[2] = 9.8*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 16;
@@ -1401,6 +1403,7 @@ TMRSDataTransfer SettingUNISIM(){
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
+        scalnames.Push("p");
 
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
@@ -1410,7 +1413,7 @@ TMRSDataTransfer SettingUNISIM(){
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     TPZStack<REAL,100> reporting_times;
-    REAL time = 10*sim_data.mTPostProcess.m_file_time_step;
+    REAL time = sim_data.mTPostProcess.m_file_time_step;
     int n_reporting_times =(n_steps)/(time/dt) + 1;
     REAL r_time =0.0;
     for (int i =1; i<= n_reporting_times; i++) {
