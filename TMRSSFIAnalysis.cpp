@@ -112,16 +112,16 @@ void TMRSSFIAnalysis::RunTimeStep(){
     REAL error_rel_mixed = 1.0;
     REAL error_rel_transport = 1.0;
     
-    for (int i = 1; i <= n_iterations; i++) {
+    for (m_k_iteration = 1; m_k_iteration <= n_iterations; m_k_iteration++) {
         
         SFIIteration();
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
         error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         
         stop_criterion_Q = error_rel_transport < eps_tol; // Stop by saturation variation
-        if (stop_criterion_Q && i > 1) {
+        if (stop_criterion_Q && m_k_iteration > 1) {
             std::cout << "SFI converged " << std::endl;
-            std::cout << "Number of iterations = " << i << std::endl;
+            std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
             std::cout << "Transport problem variation = " << error_rel_transport << std::endl;
             m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;

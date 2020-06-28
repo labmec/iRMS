@@ -196,7 +196,7 @@ void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h,
 #endif
 }
 
-void TMRSApproxSpaceGenerator::GenerateMHMUniformMesh(int nelref){
+void TMRSApproxSpaceGenerator::ApplyUniformRefinement(int nelref){
     
     
     for (int iref=0; iref<nelref; iref++) {
@@ -251,7 +251,6 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
             volume = new TPZMixedDarcyFlow(materia_id,d);
             volume->SetPermeability(kappa);
@@ -451,7 +450,9 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     if (!cond1 && !cond2) {
         BuildMixed2SpacesMultiPhysicsCompMesh(order);
     }
-  
+    
+    std::string name_ref = "mhm_geo";
+    PrintGeometry(name_ref);
 }
 
 void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
@@ -709,12 +710,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
     mhm->SetInternalPOrder(1);
     mhm->SetSkeletonPOrder(1);
     
-    if (0) {
-        std::ofstream filemesh("AfterInterface.txt");
-        mhm->Print(filemesh);
-    }
-    
-    mhm->DivideSkeletonElements(0);
+    mhm->DivideSkeletonElements(mSimData.mTGeometry.mSkeletonDiv);
     mhm->DivideBoundarySkeletonElements();
     if (0) {
         std::ofstream file_geo("geometry.txt");
@@ -728,8 +724,6 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
     
  
     TPZCompMesh *MixedMesh = mhm->CMesh().operator->();
-//        std::ofstream multcmesh("multcompmesh.txt");
-//        MixedMesh->Print(multcmesh);
     mMixedOperator = dynamic_cast<TPZMultiphysicsCompMesh *>(MixedMesh);
     
     {

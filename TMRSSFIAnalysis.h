@@ -26,15 +26,15 @@ private:
     
     /// Data transfer object
     TMRSDataTransfer * m_sim_data;
-    
-    /// Number of iterations
-    int m_k_iteration;
+
     TPZFMatrix<STATE> m_x_mixed;
     TPZFMatrix<STATE> m_x_transport;
     
-    
-    
 public:
+    
+    /// Number of iterations
+    int m_k_iteration = 0;
+    
     /// Mixed module
     TMRSMixedAnalysis * m_mixed_module;
     
