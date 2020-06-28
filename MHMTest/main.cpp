@@ -433,26 +433,27 @@ void PaperTest2D(){
           pos++;
           current_report_time = reporting_times[pos];
           
-          REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-      sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
-          std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
-          std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
-          std::cout << "Mass report at time : " << sim_time << std::endl;
-          std::cout << "Mass integral :  " << mass << std::endl;
-          
-          time_mass(it,0) = sim_time;
-          time_mass(it,1) = mass;
-          
-          time_inj(it,0) = sim_time;
-          time_inj(it,1) = inj_data.first;
-          time_inj(it,2) = inj_data.second;
-          
-          time_prod(it,0) = sim_time;
-          time_prod(it,1) = prod_data.first;
-          time_prod(it,2) = prod_data.second;
           TPZFastCondensedElement::fSkipLoadSolution = true;
 
       }
+        
+        REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+        sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
+        std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
+        std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
+        std::cout << "Mass report at time : " << sim_time << std::endl;
+        std::cout << "Mass integral :  " << mass << std::endl;
+
+        time_mass(it,0) = sim_time;
+        time_mass(it,1) = mass;
+
+        time_inj(it,0) = sim_time;
+        time_inj(it,1) = inj_data.first;
+        time_inj(it,2) = inj_data.second;
+
+        time_prod(it,0) = sim_time;
+        time_prod(it,1) = prod_data.first;
+        time_prod(it,2) = prod_data.second;
        // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = true;
     }
 
@@ -1231,11 +1232,11 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
 
-    sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 400;
+    sim_data.mTGeometry.mSkeletonDiv = 2;
+    sim_data.mTNumerics.m_sfi_tol = 0.00001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_n_steps = 240;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
