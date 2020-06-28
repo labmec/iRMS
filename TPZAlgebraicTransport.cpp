@@ -154,18 +154,19 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     REAL rho_oL = fCellsData.fDensityOil[lr_index.first];
     REAL rho_oR = fCellsData.fDensityOil[lr_index.second];
     
+    REAL rho_eps = 1.0e-12;
+    if(std::fabs(rho_wL - rho_oL) < rho_eps){
+        return;
+    }
+    
     // The upwinding logic should be the same for each function
     std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, foR, fwL, fwR, g_dot_n);
     std::pair<REAL, std::pair<REAL, REAL>> fstarR = f_star(foR, foL, fwR, fwL, -g_dot_n);
     
-//    REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
-//    REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
-//    REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
-//    REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
-    REAL rho_ratio_wL = 1.;
-    REAL rho_ratio_wR = 1.;
-    REAL rho_ratio_oL = 0.;
-    REAL rho_ratio_oR = 0.;
+    REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
+    REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
+    REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
+    REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
 
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_w_star(lambda_wL, lambda_wR, g_dot_n, rho_ratio_wL);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_w_star(lambda_wR, lambda_wL, -g_dot_n, rho_ratio_wR);
@@ -238,40 +239,41 @@ void TPZAlgebraicTransport::ContributeInterfaceIHUResidual(int index, TPZFMatrix
     REAL rho_oL = fCellsData.fDensityOil[lr_index.first];
     REAL rho_oR = fCellsData.fDensityOil[lr_index.second];
     
+    REAL rho_eps = 1.0e-12;
+    if(std::fabs(rho_wL - rho_oL) < rho_eps){
+        return;
+    }
+    
     // The upwinding logic should be the same for each function
     std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, foR, fwL, fwR, g_dot_n);
     std::pair<REAL, std::pair<REAL, REAL>> fstarR = f_star(foR, foL, fwR, fwL, -g_dot_n);
     
-//    REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
-//    REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
-//    REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
-//    REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
-    REAL rho_ratio_wL = 1.;
-    REAL rho_ratio_wR = 1.;
-    REAL rho_ratio_oL = 0.;
-    REAL rho_ratio_oR = 0.;
+    REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
+    REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
+    REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
+    REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
 
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_w_star(lambda_wL, lambda_wR, g_dot_n, rho_ratio_wL);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_w_star(lambda_wR, lambda_wL, -g_dot_n, rho_ratio_wR);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_o_star(lambda_oL, lambda_oR, g_dot_n, rho_ratio_oL);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starR = lambda_o_star(lambda_oR, lambda_oL, -g_dot_n, rho_ratio_oR);
-    
+
     // Harmonic permeability mean
     REAL Kx_L =  fCellsData.fKx[lr_index.first];
     REAL Ky_L =  fCellsData.fKy[lr_index.first];
     REAL Kz_L =  fCellsData.fKz[lr_index.first];
-    
+
     REAL Kx_R =  fCellsData.fKx[lr_index.first];
     REAL Ky_R =  fCellsData.fKy[lr_index.first];
     REAL Kz_R =  fCellsData.fKz[lr_index.first];
-    
+
     REAL K_x = 2.0*(Kx_L * Kx_R)/(Kx_L + Kx_R);
     REAL K_y = 2.0*(Ky_L * Ky_R)/(Ky_L + Ky_R);
     REAL K_z = 2.0*(Kz_L * Kz_R)/(Kz_L + Kz_R);
-    
+
     // Beacuse we assume diagonal abs. perm tensor
     REAL K_times_g_dot_n = (K_x*n[0]*fgravity[0]+K_y*n[1]*fgravity[1]+K_z*n[2]*fgravity[2]);
-    
+
     REAL res1 = fstarL.first * (lamba_w_starL.first + lamba_o_starL.first) * K_times_g_dot_n * (rho_wL - rho_oL);
     REAL res2 = fstarR.first * (lamba_w_starR.first + lamba_o_starR.first) * K_times_g_dot_n * (rho_wR - rho_oR);
     ef(0) += res1;

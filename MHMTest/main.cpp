@@ -1027,9 +1027,9 @@ TMRSDataTransfer SettingGravity2D(){
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
-    sim_data.mTNumerics.m_sfi_tol = 0.000001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_sfi_tol = 0.00001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0*day;

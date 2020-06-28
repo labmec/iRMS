@@ -186,8 +186,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
     
-//    ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-    bool QN_converge_Q = QuasiNewtonSteps(x,10); // assuming linear operator (tangent)
+    ComputeLinearRelStep(x); // from the linear problem (tangent and residue)
+    bool QN_converge_Q = QuasiNewtonSteps(x,20); // assuming linear operator (tangent)
     if(QN_converge_Q){
         return;
     }
@@ -228,7 +228,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
     
 }
 
-void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
+void TMRSTransportAnalysis::ComputeLinearRelStep(TPZFMatrix<STATE> &x){
     
     TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
     if (!cmesh) {
@@ -250,7 +250,7 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     
     AssembleResidual();
     REAL res_norm = Norm(Rhs());
-    std::cout << "Initial guess residue norm : " <<  res_norm << std::endl;
+    std::cout << "Linear Rel operator residue norm : " <<  res_norm << std::endl;
 }
 
 bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
@@ -259,6 +259,7 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
     if (!cmesh) {
         DebugStop();
     }
+    REAL res_norm = std::numeric_limits<REAL>::max();
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
     std::cout << "Quasi-Newton process : " <<  std::endl;
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
@@ -266,19 +267,8 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         NewtonIteration();
         
         x += Solution();
-        
-#ifdef PZDEBUG
-        {
-            REAL norm = Norm(x);
-            if(std::isnan(norm))
-            {
-                DebugStop();
-            }
-        }
-#endif
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
-        
         
         if (m_sim_data->mTNumerics.m_ISLinearKrModelQ) {
             fAlgebraicTransport.fCellsData.UpdateSaturations(x);
@@ -289,17 +279,8 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         }
         
         AssembleResidual();
-        REAL res_norm = Norm(Rhs());
-        std::cout << " Residue norm : " <<  res_norm << std::endl;
-        
         res_norm = Norm(Rhs());
-        
-#ifdef PZDEBUG
-        if(std::isnan(res_norm))
-        {
-            DebugStop();
-        }
-#endif
+        std::cout << " Residue norm : " <<  res_norm << std::endl;
         
         bool stop_criterion_Q = (res_norm < res_tol);
         if (stop_criterion_Q) {

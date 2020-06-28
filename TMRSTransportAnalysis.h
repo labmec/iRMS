@@ -131,7 +131,7 @@ public:
     void AssembleResidual_parallel();
     void AnalyzePattern();
     
-    void ComputeInitialGuess(TPZFMatrix<STATE> &x);
+    void ComputeLinearRelStep(TPZFMatrix<STATE> &x);
     
     bool QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n);
     
