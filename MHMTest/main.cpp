@@ -108,11 +108,11 @@ int main(){
     InitializePZLOG();
     
     // Gravity cases.
-    PlumeGravity2D();
+//    PlumeGravity2D();
 //    Gravity2D();
     
     // Refinement effect examples
-//    PaperTest2D();
+    PaperTest2D();
 //    PaperTest3D();
 
     // Box meshes examples
@@ -294,6 +294,10 @@ void PlumeGravity2D(){
 
 void Gravity2D(){
     
+    #ifdef USING_BOOST
+        boost::posix_time::ptime toverhead1 = boost::posix_time::microsec_clock::local_time();
+    #endif
+    
     TMRSDataTransfer sim_data  = SettingGravity2D();
     
     TMRSApproxSpaceGenerator aspace;
@@ -301,7 +305,7 @@ void Gravity2D(){
     std::string name = "g_segregation_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(3);
+    aspace.ApplyUniformRefinement(0);
     std::string name_ref = "g_segregation_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -331,51 +335,165 @@ void Gravity2D(){
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
   
-    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
-
+    // Common section
+            
     // Render a graphical map
+    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
     PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
-    
+    std::cout << "Spatial properties are transferred." << std::endl;
+
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
-    
-    
+
     TPZStack<REAL,100> reporting_times;
     reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
-    
+
     REAL sim_time = 0.0;
-    int pos =0;
+    int pos = 0;
     REAL current_report_time = reporting_times[pos];
-    
+
+    // Mass integral - Injection - Production data
+    TPZFNMatrix<200,REAL> time_mass(n_steps+1,2,0.0);
+    TPZFNMatrix<200,REAL> time_inj(n_steps+1,3,0.0);
+    TPZFNMatrix<200,REAL> time_prod(n_steps+1,3,0.0);
+    TPZFNMatrix<200,REAL> time_fluxInlet(n_steps+1,2,0.0);
+    TPZFNMatrix<200,REAL> time_fluxOutlet(n_steps+1,2,0.0);
+    TPZFNMatrix<200,REAL> time_sfi_interations(n_steps+1,2,0.0);
     // Print initial condition
+    sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
+    sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
     sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
     sfi_analysis->PostProcessTimeStep();
+    
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+    sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
+    std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
+    std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
+    REAL fluxInlet_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
+    REAL fluxOutlet_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
+    
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
+
+    time_mass(0,0) = 0.0;
+    time_mass(0,1) = initial_mass;
+
+    time_inj(0,0) = 0.0;
+    time_inj(0,1) = inj_data.first;
+    time_inj(0,2) = inj_data.second;
+
+    time_prod(0,0) = 0.0;
+    time_prod(0,1) = prod_data.first;
+    time_prod(0,2) = prod_data.second;
     
+    time_fluxInlet(0,0) =0.0;
+    time_fluxInlet(0,1) =fluxInlet_data;
+
+    time_fluxOutlet(0,0) =0.0;
+    time_fluxOutlet(0,1) =fluxOutlet_data;
+    
+    time_sfi_interations(0,0) = 0;
+    time_sfi_interations(0,1) = 0;
+    
+#ifdef USING_BOOST
+    boost::posix_time::ptime toverhead2 = boost::posix_time::microsec_clock::local_time();
+    auto delta_overhead = toverhead2-toverhead1;
+    std::cout << "Overhead time " << delta_overhead << std::endl;;
+#endif
+
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+#endif
+
     for (int it = 1; it <= n_steps; it++) {
-       
+        
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
+        
+        #ifdef USING_BOOST
+            boost::posix_time::ptime tsfi_step1 = boost::posix_time::microsec_clock::local_time();
+        #endif
+        
         sfi_analysis->RunTimeStep();
-      
-        if (sim_time >=  current_report_time) {
-            std::cout << "Time step number:  " << it << std::endl;
-            std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
-            sfi_analysis->PostProcessTimeStep();
-            pos++;
-            current_report_time =reporting_times[pos];
-            
-            REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-            std::cout << "Mass report at time : " << sim_time << std::endl;
-            std::cout << "Mass integral :  " << mass << std::endl;
-            
-        }
-    }
     
-    std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
+        #ifdef USING_BOOST
+            boost::posix_time::ptime tsfi_step2 = boost::posix_time::microsec_clock::local_time();
+            auto delta_sfi_step = tsfi_step2-tsfi_step1;
+            std::cout << "SFI step time " << delta_sfi_step << std::endl;;
+        #endif
+        
+        if (sim_time >=  current_report_time) {
+          std::cout << "Time step number:  " << it << std::endl;
+          std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
+          sfi_analysis->m_mixed_module->LoadSolution();
+          TPZMultiphysicsCompMesh *mphys = dynamic_cast<TPZMultiphysicsCompMesh *>(sfi_analysis->m_mixed_module->Mesh());
+          if(!mphys) DebugStop();
+            
+          mphys->LoadSolutionFromMultiPhysics();
+            
+          sfi_analysis->PostProcessTimeStep();
+          pos++;
+          current_report_time = reporting_times[pos];
+        }
+        
+        REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+        sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
+        std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
+        std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
+
+        REAL inletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
+        REAL outletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
+        std::cout << "Mass report at time : " << sim_time << std::endl;
+        std::cout << "Mass integral :  " << mass << std::endl;
+
+        time_mass(it,0) = sim_time;
+        time_mass(it,1) = mass;
+
+        time_inj(it,0) = sim_time;
+        time_inj(it,1) = inj_data.first;
+        time_inj(it,2) = inj_data.second;
+
+        time_prod(it,0) = sim_time;
+        time_prod(it,1) = prod_data.first;
+        time_prod(it,2) = prod_data.second;
+
+        time_fluxInlet(it,0)=sim_time;
+        time_fluxInlet(it,1) =inletflow;
+
+        time_fluxOutlet(it,0)=sim_time;
+        time_fluxOutlet(it,1) =outletflow;
+        
+        time_sfi_interations(it,0) = sim_time;
+        time_sfi_interations(it,1) = sfi_analysis->m_k_iteration;
+    }
+
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+    auto deltat = tsim2-tsim1;
+    std::cout << "Overall SFI simulation time " << deltat << std::endl;;
+#endif
+
+
+    // Writing relevant output
+
+    std::ofstream outdata_mass("imrs_mass.txt");
+    time_mass.Print("mass = ",outdata_mass,EMathematicaInput);
+
+    std::ofstream outdata_inj("imrs_inj.txt");
+    time_inj.Print("inj = ",outdata_inj,EMathematicaInput);
+
+    std::ofstream outdata_prod("imrs_prod.txt");
+    time_prod.Print("prod = ",outdata_prod,EMathematicaInput);
+    
+    std::ofstream outdata_fluxin("imrs_fluxinlet.txt");
+    time_fluxInlet.Print("fluxint = ",outdata_fluxin,EMathematicaInput);
+    
+    std::ofstream outdata_fluxout("imrs_fluxoutlet.txt");
+    time_fluxOutlet.Print("fluxint = ",outdata_fluxout,EMathematicaInput);
+    
+    std::ofstream outdata_iterations("imrs_iterations.txt");
+    time_sfi_interations.Print("iters = ",outdata_iterations,EMathematicaInput);
 }
 
 void PaperTest2D(){
@@ -397,7 +515,7 @@ void PaperTest2D(){
     TMRSPropertiesFunctions reservoir_properties;
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
     
-    auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
     auto s0 = reservoir_properties.Create_s0();
    
     #ifdef USING_BOOST
@@ -438,7 +556,7 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(0);
+    aspace.ApplyUniformRefinement(2);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -488,7 +606,7 @@ void PaperTest2D(){
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
     sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
-    
+    sfi_analysis->PostProcessTimeStep();
     
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
     sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
@@ -1277,11 +1395,11 @@ TMRSDataTransfer SettingGravity2D(){
     //Transport boundary Conditions
     int bc_inlet = 0;
     int bc_outlet = 1;
-    REAL sat_in = 1.0;
+    REAL sat_in = 0.0;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(-1,bc_outlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(-2,bc_inlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(-3,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(-2,bc_outlet,0.0);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(-3,bc_inlet,sat_in);
      sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(-4,bc_outlet,1.0);
     
     //Fluid Properties
@@ -1291,12 +1409,13 @@ TMRSDataTransfer SettingGravity2D(){
     sim_data.mTFluidProperties.mOilDensity = 800.0;
 
     // Numerical controls
+    sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
-    sim_data.mTNumerics.m_sfi_tol = 0.000001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_sfi_tol = 0.00001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0000000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0000000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0*day;
@@ -1471,13 +1590,13 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
 
-    sim_data.mTGeometry.mSkeletonDiv = 0;
+    sim_data.mTGeometry.mSkeletonDiv = 1;
     sim_data.mTNumerics.m_sfi_tol = 0.00001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
-    sim_data.mTNumerics.m_n_steps = 10;
+    sim_data.mTNumerics.m_n_steps = 200;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 20.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -1556,18 +1675,18 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_max_iter_sfi = 50;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 10;
+    sim_data.mTNumerics.m_sfi_tol = 0.00001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_n_steps = 200;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 20.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
     grav[1] = -9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 10;
     
     

@@ -180,7 +180,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
     
-//    ComputeInitialGuess(x); // from the linear problem (tangent and residue)
+    ComputeInitialGuess(x); // from the linear problem (tangent and residue)
     bool QN_converge_Q = QuasiNewtonSteps(x,20); // assuming linear operator (tangent)
     if(QN_converge_Q){
         return;
