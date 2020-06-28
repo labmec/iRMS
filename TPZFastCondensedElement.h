@@ -40,6 +40,19 @@ private:
     
     // extract the solution vector of the condensed element
     void GetSolutionVector(TPZFMatrix<STATE> &solvec);
+    
+    // global indices of the pressure equations
+    void PressureEquations(TPZVec<int64_t> &eqs);
+    
+    // global index of the average pressure equation
+    int64_t AveragePressureEquation();
+    
+    // global indices of the boundary flux equations
+    void BoundaryFluxEquations(TPZVec<int64_t> &eqs);
+    
+    // adjust the multiplying coeficients of the pressure equations
+    void AdjustPressureCoefficients();
+
 public:
     
     TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix = true) :
