@@ -691,7 +691,9 @@ void PaperTest2D(){
         sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
         std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
         std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
-
+        REAL inletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
+        REAL outletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
+        
         std::cout << "Mass report at time : " << sim_time << std::endl;
         std::cout << "Mass integral :  " << mass << std::endl;
 
