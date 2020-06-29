@@ -1229,13 +1229,13 @@ TMRSDataTransfer SettingPaper2D(){
 
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
-    sim_data.mTNumerics.m_max_iter_transport = 100;
+    sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
 
     sim_data.mTGeometry.mSkeletonDiv = 3;
     sim_data.mTNumerics.m_sfi_tol = 0.000001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.000000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.000000001;
     sim_data.mTNumerics.m_n_steps = 240;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10.0*day;

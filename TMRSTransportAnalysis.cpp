@@ -187,7 +187,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
     correction.Zero();
     
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-    bool QN_converge_Q = QuasiNewtonSteps(x,20); // assuming linear operator (tangent)
+    bool QN_converge_Q = QuasiNewtonSteps(x,50); // assuming linear operator (tangent)
     if(QN_converge_Q){
         return;
     }
