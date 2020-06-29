@@ -108,7 +108,7 @@ public:
     int GetNumberOfIterations();
     
     /// Run a time step
-    void RunTimeStep();
+    void RunTimeStep(int sif_k_iteration = 1);
     
     /// Render a vtk file with requested variables for a time step
     void PostProcessTimeStep();

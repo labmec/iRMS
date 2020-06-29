@@ -188,7 +188,7 @@ void TMRSSFIAnalysis::SFIIteration(){
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
-    m_transport_module->RunTimeStep();
+    m_transport_module->RunTimeStep(m_k_iteration);
     
     //    m_transport_module->PostProcessTimeStep();
     //    m_transport_module->PostProcessTimeStep();

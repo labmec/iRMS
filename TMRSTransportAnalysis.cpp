@@ -166,7 +166,7 @@ void TMRSTransportAnalysis::AssembleResidual(){
     }
 }
 
-void TMRSTransportAnalysis::RunTimeStep(){
+void TMRSTransportAnalysis::RunTimeStep(int sif_k_iteration){
     
     TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
     if (!cmesh) {
@@ -186,7 +186,10 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
     
-    ComputeInitialGuess(x); // from the linear problem (tangent and residue)
+    if (sif_k_iteration == 1) {
+        ComputeInitialGuess(x); // from the linear problem (tangent and residue)
+    }
+    
     bool QN_converge_Q = QuasiNewtonSteps(x,50); // assuming linear operator (tangent)
     if(QN_converge_Q){
         return;
