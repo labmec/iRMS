@@ -175,9 +175,12 @@ void SimpleTest2D(){
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
     
+    TPZFastCondensedElement::fSkipLoadSolution = true;
     for (int it = 1; it <= n_steps; it++) {
-        TPZFastCondensedElement::fSkipLoadSolution = false;
         sim_time = it*dt;
+        if (sim_time >=  current_report_time) {
+            TPZFastCondensedElement::fSkipLoadSolution = false;
+        }
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
         
@@ -192,9 +195,8 @@ void SimpleTest2D(){
             REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
             std::cout << "Mass report at time : " << sim_time << std::endl;
             std::cout << "Mass integral :  " << mass << std::endl;
-            
+            TPZFastCondensedElement::fSkipLoadSolution = true;
         }
-        TPZFastCondensedElement::fSkipLoadSolution = true;
     }
     
     std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
@@ -688,9 +690,12 @@ void SimpleTest3D(){
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
     
+    TPZFastCondensedElement::fSkipLoadSolution = true;
     for (int it = 1; it <= n_steps; it++) {
-       // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = false;
         sim_time = it*dt;
+        if (sim_time >=  current_report_time) {
+            TPZFastCondensedElement::fSkipLoadSolution = false;
+        }
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
         
@@ -705,9 +710,9 @@ void SimpleTest3D(){
             REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
             std::cout << "Mass report at time : " << sim_time << std::endl;
             std::cout << "Mass integral :  " << mass << std::endl;
-            
+            TPZFastCondensedElement::fSkipLoadSolution = true;
+
         }
-       // TPZFastCondensedElement::fSkipLoadSolutionfSkipLoadSolution = false;
     }
     
     std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
@@ -977,7 +982,7 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-//    grav[1] = -9.81*0.0*(1.0e-6);
+    grav[1] = -9.81e-6;
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 10;
@@ -1169,7 +1174,7 @@ TMRSDataTransfer Setting3D(){
     TPZStack<std::string,10> scalnames, vecnames;
     vecnames.Push("q");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
+        scalnames.Push("p");
         scalnames.Push("p_average");
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
