@@ -89,7 +89,16 @@ void TMRSMixedAnalysis::RunTimeStep(){
         
         res_norm = Norm(Rhs());
         //        this->PostProcessTimeStep();
-        
+#ifdef PZDEBUG
+        {
+ 
+            if(std::isnan(corr_norm) || std::isnan(res_norm))
+            {
+                DebugStop();
+            }
+        }
+#endif
+
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
         //        if (stop_criterion_Q && stop_criterion_corr_Q) {

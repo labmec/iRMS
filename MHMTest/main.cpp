@@ -409,6 +409,10 @@ void Gravity2D(){
     for (int it = 1; it <= n_steps; it++) {
         
         sim_time = it*dt;
+        if (sim_time >= current_report_time)
+        {
+            TPZFastCondensedElement::fSkipLoadSolution = false;
+        }
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         
         #ifdef USING_BOOST
@@ -664,8 +668,10 @@ void PaperTest2D(){
             auto delta_sfi_step = tsfi_step2-tsfi_step1;
             std::cout << "SFI step time " << delta_sfi_step << std::endl;;
         #endif
-        
-        if (sim_time >=  current_report_time) {
+             
+      if (sim_time >=  current_report_time) {
+          TPZFastCondensedElement::fSkipLoadSolution = false;
+
           std::cout << "Time step number:  " << it << std::endl;
           std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
           sfi_analysis->m_mixed_module->LoadSolution();
@@ -676,16 +682,16 @@ void PaperTest2D(){
             
           sfi_analysis->PostProcessTimeStep();
           pos++;
-          current_report_time = reporting_times[pos];
-        }
+          current_report_time = reporting_times[pos];          
+          TPZFastCondensedElement::fSkipLoadSolution = true;
+
+      }
         
         REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
         std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
         std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
 
-        REAL inletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
-        REAL outletflow = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
         std::cout << "Mass report at time : " << sim_time << std::endl;
         std::cout << "Mass integral :  " << mass << std::endl;
 
@@ -708,6 +714,7 @@ void PaperTest2D(){
         
         time_sfi_interations(it,0) = sim_time;
         time_sfi_interations(it,1) = sfi_analysis->m_k_iteration;
+
     }
 
 #ifdef USING_BOOST
@@ -1251,9 +1258,9 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -9.81*0.0*(1.0e-6);
+//    grav[1] = -9.81*0.0*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 10;
     
     // PostProcess controls
@@ -1263,7 +1270,7 @@ TMRSDataTransfer SettingSimple2D(){
     vecnames.Push("q");
     //    scalnames.Push("p");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
+        scalnames.Push("p");
         scalnames.Push("p_average");
         scalnames.Push("kxx");
         scalnames.Push("kyy");
@@ -1299,7 +1306,7 @@ TMRSDataTransfer SettingPlumeGravity2D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_on_top = 10.0;
+    REAL pressure_on_top = 0.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
@@ -1439,6 +1446,7 @@ TMRSDataTransfer SettingGravity2D(){
         scalnames.Push("kyy");
         scalnames.Push("kzz");
         scalnames.Push("lambda");
+        scalnames.Push("p");
 
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
@@ -1590,11 +1598,12 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
 
-    sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTNumerics.m_sfi_tol = 0.00001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
-    sim_data.mTNumerics.m_n_steps = 200;
+    sim_data.mTGeometry.mSkeletonDiv = 3;
+    sim_data.mTNumerics.m_sfi_tol = 0.000001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
+    sim_data.mTNumerics.m_n_steps = 240;
+
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 20.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -1610,10 +1619,11 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
     TPZStack<std::string,10> scalnames, vecnames;
-    vecnames.Push("q");
+//    vecnames.Push("q");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
-        scalnames.Push("p_average");
+        scalnames.Push("p");
+//        scalnames.Push("g_average");
+//        scalnames.Push("p_average");
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
     sim_data.mTPostProcess.m_vecnames = vecnames;
@@ -1622,7 +1632,7 @@ TMRSDataTransfer SettingPaper2D(){
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     TPZStack<REAL,100> reporting_times;
-    REAL time = 10*sim_data.mTPostProcess.m_file_time_step;
+    REAL time = 20*sim_data.mTPostProcess.m_file_time_step;
     int n_reporting_times =(n_steps)/(time/dt) + 1;
     REAL r_time =0.0;
     for (int i =1; i<= n_reporting_times; i++) {
@@ -2123,7 +2133,7 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
      cmesh->MeshVector()[3]->Solution() = Kz;
      int dim = cmesh->Reference()->Dimension();
      TPZStack<std::string,10> scalnames, vecnames;
-     vecnames.Push("q");
+//     vecnames.Push("q");
      scalnames.Push("Porosity");
      scalnames.Push("Permeability_x");
      scalnames.Push("Permeability_y");

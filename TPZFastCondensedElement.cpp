@@ -223,7 +223,159 @@ void TPZFastCondensedElement::LoadSolution()
     }
     else
     {
-        TPZCondensedCompEl::LoadSolution();
+        AdjustPressureCoefficients();
     }
 }
 
+// global indices of the pressure equations
+void TPZFastCondensedElement::PressureEquations(TPZVec<int64_t> &eqs)
+{
+    TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(fReferenceCompEl);
+    if(!mphys) DebugStop();
+    int nel = mphys->NMeshes();
+    if(nel != 4 && nel != 6) DebugStop();
+    int firstpressure_connect = mphys->Element(0)->NConnects();
+    int numpressure_connects = mphys->Element(1)->NConnects();
+    int numpressure_equations = 0;
+    for(int ic = firstpressure_connect; ic < firstpressure_connect+numpressure_connects; ic++)
+    {
+        TPZConnect &c = fReferenceCompEl->Connect(ic);
+        int neq = c.NShape()*c.NState();
+        numpressure_equations += neq;
+    }
+    TPZCompMesh *cmesh = Mesh();
+    TPZBlock<STATE> &block = cmesh->Block();
+    eqs.Resize(numpressure_equations, 0);
+    int count = 0;
+    for(int ic = firstpressure_connect; ic < firstpressure_connect+numpressure_connects; ic++)
+    {
+        TPZConnect &c = fReferenceCompEl->Connect(ic);
+        int neq = c.NShape()*c.NState();
+        int64_t seqnum = c.SequenceNumber();
+        int64_t firsteq = block.Position(seqnum);
+        for(int i = 0; i<neq; i++)
+        {
+            eqs[count] = firsteq+i;
+            count++;
+        }
+    }
+}
+
+// global index of the average pressure equation
+int64_t TPZFastCondensedElement::AveragePressureEquation()
+{
+    TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(fReferenceCompEl);
+    if(!mphys) DebugStop();
+    int nel = mphys->NMeshes();
+    if(nel != 4 && nel != 6) DebugStop();
+    int firstpressure_connect = mphys->Element(0)->NConnects()+mphys->Element(1)->NConnects()
+        +mphys->Element(2)->NConnects();
+    int numpressure_connects = mphys->Element(3)->NConnects();
+    if(numpressure_connects != 1) DebugStop();
+    TPZConnect &c = mphys->Connect(firstpressure_connect);
+    int64_t seq_num = c.SequenceNumber();
+    int64_t globeq = Mesh()->Block().Position(seq_num);
+    return globeq;
+}
+
+// global indices of the boundary flux equations
+void TPZFastCondensedElement::BoundaryFluxEquations(TPZVec<int64_t> &eqs)
+{
+    TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(fReferenceCompEl);
+    if(!mphys) DebugStop();
+    int nel = mphys->NMeshes();
+    if(nel != 4 && nel != 6) DebugStop();
+    int firstflux_connect = 0;
+    int numflux_connects = mphys->Element(0)->NConnects();
+    int numflux_equations = 0;
+    TPZCompMesh *cmesh = Mesh();
+
+    // skip the internal flux connect
+    for(int ic = firstflux_connect; ic < firstflux_connect+numflux_connects-1; ic++)
+    {
+        TPZConnect &c = fReferenceCompEl->Connect(ic);
+        int neq = c.NShape()*c.NState();
+        numflux_equations += neq;
+        if(c.HasDependency())
+        {
+            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
+            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
+            neq = cdep.NShape()*cdep.NState();
+            numflux_equations += neq;
+        }
+    }
+    TPZBlock<STATE> &block = cmesh->Block();
+    eqs.Resize(numflux_equations, 0);
+    int count = 0;
+    for(int ic = firstflux_connect; ic < firstflux_connect+numflux_connects-1; ic++)
+    {
+        TPZConnect &c = fReferenceCompEl->Connect(ic);
+        int neq = c.NShape()*c.NState();
+        int64_t seqnum = c.SequenceNumber();
+        int64_t firsteq = block.Position(seqnum);
+        for(int i = 0; i<neq; i++)
+        {
+            eqs[count] = firsteq+i;
+            count++;
+        }
+        if(c.HasDependency())
+        {
+            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
+            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
+            seqnum = cdep.SequenceNumber();
+            firsteq = block.Position(seqnum);
+            for(int i = 0; i<neq; i++)
+            {
+                eqs[count] = firsteq+i;
+                count++;
+            }
+        }
+    }
+}
+
+// adjust the multiplying coeficients of the pressure equations
+void TPZFastCondensedElement::AdjustPressureCoefficients()
+{
+    TPZManVector<int64_t,20> fluxeqs, pressureqs;
+    PressureEquations(pressureqs);
+    BoundaryFluxEquations(fluxeqs);
+    int64_t averagepressureq = AveragePressureEquation();
+    TPZMatrix<STATE> &solution = *(Mesh()->Block().Matrix());
+    int npres = pressureqs.size();
+    int nflux = fluxeqs.size();
+    TPZManVector<STATE> gravity_pressure(npres,0.);
+    TPZManVector<STATE> average_pressure(npres,0.);
+    TPZManVector<STATE> flux_pressure(npres,0.);
+    TPZManVector<STATE> boundary_fluxes(nflux,0.);
+    STATE average = solution(averagepressureq,0);
+    for (int ifl = 0; ifl<nflux; ifl++) {
+        boundary_fluxes[ifl] = solution(fluxeqs[ifl],0);
+    }
+    // build the gravity pressure coefs
+    solution(averagepressureq,0) = 0.;
+    // zero de boundary fluxes
+    for(int ifl=0; ifl < nflux; ifl++) solution(fluxeqs[ifl],0) = 0.;
+    TPZCondensedCompEl::LoadSolution();
+    for(int ipr=0; ipr < npres; ipr++) gravity_pressure[ipr] = solution(pressureqs[ipr],0);
+    
+    // build the pressure for constant pressure
+    // zero the boundary fluxes
+    for(int ifl=0; ifl < nflux; ifl++) solution(fluxeqs[ifl],0) = 0.;
+    solution(averagepressureq,0) = average;
+    TPZCondensedCompEl::LoadSolution();
+    for(int ipr=0; ipr < npres; ipr++) average_pressure[ipr] = solution(pressureqs[ipr],0)-gravity_pressure[ipr];
+
+    // build the pressure solution due to boundary fluxes
+    // restore the boundary fluxes
+    for(int ifl=0; ifl < nflux; ifl++) solution(fluxeqs[ifl],0) = boundary_fluxes[ifl];
+    solution(averagepressureq,0) = 0.;
+    TPZCondensedCompEl::LoadSolution();
+    for(int ipr=0; ipr < npres; ipr++) flux_pressure[ipr] = solution(pressureqs[ipr],0)-gravity_pressure[ipr];
+    // compose the final pressure coeficients
+    solution(averagepressureq,0) = average;
+    for (int ipr = 0; ipr < npres; ipr++) {
+        solution(pressureqs[ipr],0) = average_pressure[ipr]-
+            fMixedDensity*gravity_pressure[ipr]+
+            flux_pressure[ipr]/fLambda;
+    }
+}

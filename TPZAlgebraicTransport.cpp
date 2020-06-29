@@ -113,6 +113,12 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
     // Gravity fluxes contribution
     ContributeInterfaceIHUResidual(index, ef);
     
+#ifdef PZDEBUG
+    if(std::isnan(Norm(ef)))
+    {
+        std::cout << __PRETTY_FUNCTION__ << " nan" << std::endl;
+    }
+#endif
 }
 
 void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
@@ -152,11 +158,15 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, foR, fwL, fwR, g_dot_n);
     std::pair<REAL, std::pair<REAL, REAL>> fstarR = f_star(foR, foL, fwR, fwL, -g_dot_n);
     
-    REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
-    REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
-    REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
-    REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
-    
+//    REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
+//    REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
+//    REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
+//    REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
+    REAL rho_ratio_wL = 1.;
+    REAL rho_ratio_wR = 1.;
+    REAL rho_ratio_oL = 0.;
+    REAL rho_ratio_oR = 0.;
+
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_w_star(lambda_wL, lambda_wR, g_dot_n, rho_ratio_wL);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_w_star(lambda_wR, lambda_wL, -g_dot_n, rho_ratio_wR);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_o_star(lambda_oL, lambda_oR, g_dot_n, rho_ratio_oL);
@@ -232,11 +242,15 @@ void TPZAlgebraicTransport::ContributeInterfaceIHUResidual(int index, TPZFMatrix
     std::pair<REAL, std::pair<REAL, REAL>> fstarL = f_star(foL, foR, fwL, fwR, g_dot_n);
     std::pair<REAL, std::pair<REAL, REAL>> fstarR = f_star(foR, foL, fwR, fwL, -g_dot_n);
     
-    REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
-    REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
-    REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
-    REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
-    
+//    REAL rho_ratio_wL = ((rho_wL - rho_oL)/(rho_wL - rho_oL));
+//    REAL rho_ratio_wR = ((rho_wR - rho_oR)/(rho_wR - rho_oR));
+//    REAL rho_ratio_oL = ((rho_oL - rho_oL)/(rho_wL - rho_oL));
+//    REAL rho_ratio_oR = ((rho_oR - rho_oR)/(rho_wR - rho_oR));
+    REAL rho_ratio_wL = 1.;
+    REAL rho_ratio_wR = 1.;
+    REAL rho_ratio_oL = 0.;
+    REAL rho_ratio_oR = 0.;
+
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starL = lambda_w_star(lambda_wL, lambda_wR, g_dot_n, rho_ratio_wL);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_w_starR = lambda_w_star(lambda_wR, lambda_wL, -g_dot_n, rho_ratio_wR);
     std::pair<REAL, std::pair<REAL, REAL>> lamba_o_starL = lambda_o_star(lambda_oL, lambda_oR, g_dot_n, rho_ratio_oL);
