@@ -109,10 +109,10 @@ int main(){
     
     // Gravity cases.
 //    PlumeGravity2D();
-//    Gravity2D();
+    Gravity2D();
     
     // Refinement effect examples
-    PaperTest2D();
+//    PaperTest2D();
 //    PaperTest3D();
 
     // Box meshes examples
@@ -305,7 +305,7 @@ void Gravity2D(){
     std::string name = "g_segregation_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(0);
+    aspace.ApplyUniformRefinement(3);
     std::string name_ref = "g_segregation_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -1422,9 +1422,9 @@ TMRSDataTransfer SettingGravity2D(){
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
-    sim_data.mTNumerics.m_sfi_tol = 0.00001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0000000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0000000001;
+    sim_data.mTNumerics.m_sfi_tol = 0.000001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0*day;
@@ -1458,7 +1458,7 @@ TMRSDataTransfer SettingGravity2D(){
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    REAL time = 10*sim_data.mTPostProcess.m_file_time_step;
     int n_reporting_times =(n_steps)/(time/dt) + 1;
     REAL r_time =0.0;
     for (int i =1; i<= n_reporting_times; i++) {
