@@ -194,6 +194,7 @@ void TMRSTransportAnalysis::RunTimeStep(int sif_k_iteration){
     if(QN_converge_Q){
         return;
     }
+    std::cout << "Newton process : " <<  std::endl;
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
