@@ -1236,9 +1236,9 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_sfi_tol = 0.000001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 240;
+    sim_data.mTNumerics.m_n_steps = 480;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 5.0*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -1265,7 +1265,7 @@ TMRSDataTransfer SettingPaper2D(){
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     TPZStack<REAL,100> reporting_times;
-    REAL time = 20*sim_data.mTPostProcess.m_file_time_step;
+    REAL time = 40*sim_data.mTPostProcess.m_file_time_step;
     int n_reporting_times =(n_steps)/(time/dt) + 1;
     REAL r_time =0.0;
     for (int i =1; i<= n_reporting_times; i++) {
