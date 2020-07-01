@@ -155,8 +155,8 @@ void TMRSMixedAnalysis::NewtonIteration(){
             }
         }
     }
-    
     Assemble();
+    Solver().Matrix()->SetIsDecomposed(0);
     
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();

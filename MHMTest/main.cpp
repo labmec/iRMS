@@ -322,7 +322,7 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(4);
+    aspace.ApplyUniformRefinement(2);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -1232,8 +1232,8 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_max_iter_transport = 50;
     sim_data.mTNumerics.m_max_iter_sfi = 50;
 
-    sim_data.mTGeometry.mSkeletonDiv = 4;
-    sim_data.mTNumerics.m_sfi_tol = 0.000001;
+    sim_data.mTGeometry.mSkeletonDiv = 1;
+    sim_data.mTNumerics.m_sfi_tol = 0.00001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
     sim_data.mTNumerics.m_n_steps = 240;
