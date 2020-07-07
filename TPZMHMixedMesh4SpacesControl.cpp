@@ -6,6 +6,7 @@
 #include "TPZFastCondensedElement.h"
 #include "TMRSApproxSpaceGenerator.h"
 #include "TPZReservoirTools.h"
+#include "pzcompelwithmem.h"
 //#include "ConfigurateCase.h"
 
 #ifdef LOG4CXX
@@ -108,8 +109,30 @@ void TPZMHMixedMesh4SpacesControl::CreateHDivPressureMHMMesh()
     TPZCompMesh * MixedFluxPressureCmesh = fCMesh.operator->();
     MixedFluxPressureCmesh->SetDimModel(dim);
     MixedFluxPressureCmesh->SetAllCreateFunctionsMultiphysicElem();
-    
+    MixedFluxPressureCmesh->SetAllCreateFunctionsMultiphysicElemWithMem();
+    gSinglePointMemory = true;
+
     BuildMultiPhysicsMesh();
+    
+    // neste ponto eh preciso inicializar as regras de integracao
+    std::cout << "Initializing the material memory objects\n";
+    
+    {
+        int dim = MixedFluxPressureCmesh->Dimension();
+        int64_t nelem = MixedFluxPressureCmesh->NElements();
+        for(int64_t el=0; el<nelem; el++)
+        {
+            TPZCompEl *cel = MixedFluxPressureCmesh->Element(el);
+            if(!cel) DebugStop();
+            TPZGeoEl *gel = cel->Reference();
+            if(!gel) DebugStop();
+            if(gel->Dimension() == dim)
+            {
+                cel->PrepareIntPtIndices();
+            }
+        }
+    }
+    
     TPZManVector<TPZCompMesh * ,4> meshvector;
     
     meshvector = cmeshes;
@@ -343,6 +366,7 @@ void TPZMHMixedMesh4SpacesControl::BuildMultiPhysicsMesh()
         DebugStop();
     }
     fCMesh->SetAllCreateFunctionsMultiphysicElem();
+    fCMesh->SetAllCreateFunctionsMultiphysicElemWithMem();
     TPZMultiphysicsCompMesh *mphysics = dynamic_cast<TPZMultiphysicsCompMesh *>(fCMesh.operator->());
    
     int vecsize = 4;
