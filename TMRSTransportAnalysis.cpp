@@ -247,7 +247,7 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     cmesh->LoadSolutionFromMultiPhysics();
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
-    
+//    PostProcessTimeStep();
     AssembleResidual();
     REAL res_norm = Norm(Rhs());
     std::cout << "Initial guess residue norm : " <<  res_norm << std::endl;

@@ -11,6 +11,7 @@
 #include "pzcmesh.h"
 #include "pzmultiphysicselement.h"
 #include "TPZMixedDarcyWithFourSpaces.h"
+#include "TPZDarcyFlowWithMem.h"
 
 bool TPZFastCondensedElement::fSkipLoadSolution = true;
 
@@ -25,12 +26,13 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     if(this->fMatrixComputed == false)
     {
      
-        TPZMixedDarcyWithFourSpaces *matDarcy = dynamic_cast<TPZMixedDarcyWithFourSpaces *>(Material());
+//        TPZMixedDarcyWithFourSpaces *matDarcy = dynamic_cast<TPZMixedDarcyWithFourSpaces *>(Material());
+        TPZDarcyFlowWithMem *matDarcy = dynamic_cast<TPZDarcyFlowWithMem *>(Material());
         if (!matDarcy) {
             DebugStop();
         }
         
-        matDarcy->SetPermeability(fPermeabilityTensor);
+//        matDarcy->SetPermeability(fPermeabilityTensor);
         TPZCondensedCompEl::CalcStiff(ek, ef);
         
         ShrinkElementMatrix(ek, fEK);

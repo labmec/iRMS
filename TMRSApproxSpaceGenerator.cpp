@@ -13,6 +13,8 @@
 #include "TPZFastCondensedElement.h"
 #include "TPZReservoirTools.h"
 #include "TPZPostProcessResProp.h"
+#include "TPZDarcyMemory.h"
+#include "TPZDarcyFlowWithMem.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -1526,8 +1528,35 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
         
         
     }
+}
+
+void TMRSApproxSpaceGenerator::FillMaterialMemoryDarcy(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZAlgebraicTransport *algebraicTranspor){
     
+    if (!MixedOperator || !algebraicTranspor) {
+        DebugStop();
+    }
     
+    TPZCompMesh * cmesh = MixedOperator;
+    TPZMaterial * material = cmesh->FindMaterial(material_id);
+    if (!material) {
+        DebugStop();
+    }
+    
+    TPZMatWithMem<TPZDarcyMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TPZDarcyMemory> * >(material);
+    if (!mat_with_memory) {
+        DebugStop();
+    }
+    int nels = cmesh->NElements();
+    for (int iel =0; iel<=nels; iel++) {
+        TPZCompEl *cel = cmesh->Element(iel);
+        if (!cel) {
+            continue;
+        }
+        TPZManVector<int64_t,20> indices;
+        cel->GetMemoryIndices(indices);
+        
+        
+    }
 }
 
 void TMRSApproxSpaceGenerator::SetUpdateMaterialMemory(int material_id, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q){
@@ -1634,7 +1663,8 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
     
     int dimension = mGeometry->Dimension();
     
-    TPZMixedDarcyWithFourSpaces *volume = nullptr;
+//    TPZMixedDarcyWithFourSpaces *volume = nullptr;
+    TPZDarcyFlowWithMem *volume = nullptr;
     
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
@@ -1642,9 +1672,11 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int material_id = chunk.second;
-            volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
-            volume->SetPermeability(1.0);
+//            volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
+            volume = new TPZDarcyFlowWithMem(material_id, d);
+//            volume->SetPermeability(1.0);
             volume->SetGravity(mSimData.mTNumerics.m_gravity);
+            volume->mSimData = mSimData;
             MixedFluxPressureCmesh->InsertMaterialObject(volume);
         }
     }

@@ -144,8 +144,20 @@ file(COPY ${mapsdata} DESTINATION ./MHMTest/Release/maps)
 file (COPY PetroPhysics  DESTINATION ./MHMTest/Debug)
 file (COPY PetroPhysics  DESTINATION ./MHMTest/Release)
 
-file(COPY Reservoir DESTINATION ./MHMTest/Debug)
-file(COPY Reservoir DESTINATION ./MHMTest/Release)
+file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Debug)
+file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Release)
+
+file(COPY ${mesh} DESTINATION ./GeoMeshAndPropsGenerator/Debug/gmsh)
+file(COPY ${mesh} DESTINATION ./GeoMeshAndPropsGenerator/Release/gmsh)
+
+file(COPY ${mapsdata} DESTINATION ./GeoMeshAndPropsGenerator/Debug/maps)
+file(COPY ${mapsdata} DESTINATION ./GeoMeshAndPropsGenerator/Release/maps)
+
+file (COPY PetroPhysics  DESTINATION ./GeoMeshAndPropsGenerator/Debug)
+file (COPY PetroPhysics  DESTINATION ./GeoMeshAndPropsGenerator/Release)
+
+file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Debug)
+file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Release)
 
 file(GLOB headers_files *.h)
 
@@ -159,8 +171,10 @@ set(common_dir ${CMAKE_CURRENT_SOURCE_DIR} )
 
 #add_subdirectory(LinearTracer)
 #add_subdirectory(FourSpacesTest)
-add_subdirectory(Buckley_Levertt)
+#add_subdirectory(Buckley_Levertt)
 add_subdirectory(MHMTest)
-add_subdirectory(CGP)
+add_subdirectory(GeoMeshAndPropsGenerator)
+#add_subdirectory(CGP)
+
 
 

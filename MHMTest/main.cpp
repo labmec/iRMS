@@ -76,7 +76,8 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
 
-
+#include "TPZFileStream.h"
+#include "TPZBFileStream.h"
 TMRSDataTransfer SettingGravity2D();
 TMRSDataTransfer Setting3D();
 TMRSDataTransfer SettingUNISIM();
@@ -109,19 +110,19 @@ int main(){
 //    PaperTest3D();
 //    SimpleTest3D();
 
-//    SimpleTest2D();
-    UNISIMTest();
+    SimpleTest2D();
+//    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(10, 10, 10, 10);
+    aspace.CreateUniformMesh(10, 10, 1, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(2);
+    aspace.ApplyUniformRefinement(0);
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -169,8 +170,8 @@ void SimpleTest2D(){
     
     // Print initial condition
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
-    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
-    sfi_analysis->PostProcessTimeStep();
+//    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
+//    sfi_analysis->PostProcessTimeStep();
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
@@ -754,6 +755,21 @@ void UNISIMTest(){
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
     TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
+    
+//    TPZFileStream buf;
+//     TPZBFileStream buf2;
+//    std::string fileName("test.txt");
+//    buf.OpenWrite(fileName);
+//    gmesh->Write(buf, 0);
+//    TPZGeoMesh *newmesh = new TPZGeoMesh;
+//    newmesh->CleanUp();
+//    std::string fileName2("test.txt");
+//    buf2.OpenRead(fileName2);
+//    buf2.OpenWrite(fileName2);
+//    void *val =0;
+//    gmesh->Read(buf2,0);
+//    std::ofstream file("testprint.vtk");
+//    TPZVTKGeoMesh::PrintGMeshVTK(newmesh, file);
  
     TMRSApproxSpaceGenerator aspace;
     
@@ -773,15 +789,16 @@ void UNISIMTest(){
         std::string name_ref = "unisim_ref_geo";
         aspace.PrintGeometry(name_ref);
     }
+ 
     aspace.SetDataTransfer(sim_data);
-    
+
     std::cout << "Geometry generated\n";
-    
+
     int order = 1;
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
     bool UsePardiso_Q = true;
-    
+
     std::cout << "Building approximation mixed space\n";
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
@@ -789,7 +806,7 @@ void UNISIMTest(){
     std::cout << "Building transport approximation space\n";
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-    
+
     std::cout << "Generating analysis\n";
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
@@ -797,7 +814,7 @@ void UNISIMTest(){
 
 
     // Common section
-    
+
     // Render a graphical map
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
     PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
@@ -829,15 +846,15 @@ void UNISIMTest(){
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
     sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
-    
-    
+
+
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
     sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
     std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
     std::pair<REAL, REAL> prod_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-4);
     REAL fluxInlet_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
     REAL fluxOutlet_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
-    
+
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
 
@@ -851,16 +868,16 @@ void UNISIMTest(){
     time_prod(0,0) = 0.0;
     time_prod(0,1) = prod_data.first;
     time_prod(0,2) = prod_data.second;
-    
+
     time_fluxInlet(0,0) =0.0;
     time_fluxInlet(0,1) =fluxInlet_data;
 
     time_fluxOutlet(0,0) =0.0;
     time_fluxOutlet(0,1) =fluxOutlet_data;
-    
+
     time_sfi_interations(0,0) = 0;
     time_sfi_interations(0,1) = 0;
-    
+
 #ifdef USING_BOOST
     boost::posix_time::ptime toverhead2 = boost::posix_time::microsec_clock::local_time();
     auto delta_overhead = toverhead2-toverhead1;
@@ -872,25 +889,25 @@ void UNISIMTest(){
 #endif
 
     for (int it = 1; it <= n_steps; it++) {
-        
+
         sim_time = it*dt;
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
-    
+
         if (sim_time >=  current_report_time) {
           std::cout << "Time step number:  " << it << std::endl;
           std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
           sfi_analysis->m_mixed_module->LoadSolution();
           TPZMultiphysicsCompMesh *mphys = dynamic_cast<TPZMultiphysicsCompMesh *>(sfi_analysis->m_mixed_module->Mesh());
           if(!mphys) DebugStop();
-            
+
           mphys->LoadSolutionFromMultiPhysics();
-            
+
           sfi_analysis->PostProcessTimeStep();
           pos++;
           current_report_time = reporting_times[pos];
         }
-        
+
         REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
         std::pair<REAL, REAL> inj_data = sfi_analysis->m_transport_module->fAlgebraicTransport.FLuxWaterOilIntegralbyID(-2);
@@ -917,7 +934,7 @@ void UNISIMTest(){
 
         time_fluxOutlet(it,0)=sim_time;
         time_fluxOutlet(it,1) =outletflow;
-        
+
         time_sfi_interations(it,0) = sim_time;
         time_sfi_interations(it,1) = sfi_analysis->m_k_iteration;
     }
@@ -939,13 +956,13 @@ void UNISIMTest(){
 
     std::ofstream outdata_prod("imrs_prod.txt");
     time_prod.Print("prod = ",outdata_prod,EMathematicaInput);
-    
+
     std::ofstream outdata_fluxin("imrs_fluxinlet.txt");
     time_fluxInlet.Print("fluxint = ",outdata_fluxin,EMathematicaInput);
-    
+
     std::ofstream outdata_fluxout("imrs_fluxoutlet.txt");
     time_fluxOutlet.Print("fluxint = ",outdata_fluxout,EMathematicaInput);
-    
+
     std::ofstream outdata_iterations("imrs_iterations.txt");
     time_sfi_interations.Print("iters = ",outdata_iterations,EMathematicaInput);
     

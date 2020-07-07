@@ -6,7 +6,9 @@
 
 #include "TMRSSFIAnalysis.h"
 #include "TPZMFSolutionTransfer.h"
-
+#include "TPZDarcyMemory.h"
+#include "TPZFastCondensedElement.h"
+#include "TPZDarcyFlowWithMem.h"
 
 TMRSSFIAnalysis::TMRSSFIAnalysis(){
     m_sim_data = nullptr;
@@ -26,7 +28,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
-    fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
     fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     
 }
@@ -43,7 +45,8 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fphi = phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+    FillMaterialMemoryDarcy(1);
+//    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
 }
 
 TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
@@ -61,6 +64,56 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
 void TMRSSFIAnalysis::Configure(int n_threads, bool UsePardiso_Q){
     m_mixed_module->Configure(n_threads, UsePardiso_Q);
     m_transport_module->Configure(n_threads, UsePardiso_Q);
+    
+}
+void TMRSSFIAnalysis::FillMaterialMemoryDarcy(int material_id){
+  
+    if (!m_mixed_module|| !m_transport_module) {
+        DebugStop();
+    }
+    
+    TPZCompMesh * cmesh = m_mixed_module->Mesh();
+    TPZMaterial * material = cmesh->FindMaterial(material_id);
+    TPZDarcyFlowWithMem *mat = dynamic_cast<TPZDarcyFlowWithMem *>(material);
+    mat->SetAlgebraicTransport(&m_transport_module->fAlgebraicTransport);
+    if (!material) {
+        DebugStop();
+    }
+    
+    TPZMatWithMem<TPZDarcyMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TPZDarcyMemory> * >(material);
+    if (!mat_with_memory) {
+        DebugStop();
+    }
+    
+    std::shared_ptr<TPZAdmChunkVector<TPZDarcyMemory>> & memory_vector = mat_with_memory->GetMemory();
+    
+    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
+    {
+        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
+#ifdef PZDEBUG
+        if(meshit.fTransport == 0)
+        {
+            DebugStop();
+        }
+#endif
+        for (int icell = 0; icell < ncells; icell++)
+        {
+            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
+            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
+            if(fastCond->Reference()->MaterialId()!=material_id){
+                continue;
+            }
+            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
+            
+            TPZVec<int64_t> indices;
+            celcomp->GetMemoryIndices(indices);
+            for (int index = 0; index<indices.size(); index++) {
+                int valIndex = indices[index];
+                TPZDarcyMemory &mem = memory_vector.get()->operator [](valIndex);
+                mem.fTransportCellIndex = algbindex;
+            }
+        }
+    }
     
 }
 

@@ -77,16 +77,13 @@ void TMRSMixedAnalysis::RunTimeStep(){
         
         NewtonIteration();
         
-        //        cmesh->UpdatePreviousState(1);
-        //        Rhs() *=-1.0;
         
         dx = Solution();
-        //        x += dx;
-        //        LoadSolution(x);
+        x += dx;
+//        LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
         
         corr_norm = Norm(dx);
-        
         res_norm = Norm(Rhs());
         //        this->PostProcessTimeStep();
 #ifdef PZDEBUG
@@ -157,7 +154,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
     }
     
     Assemble();
-    
+    Rhs() *= -1.0;
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
     auto deltat = tsim2-tsim1;

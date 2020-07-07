@@ -126,10 +126,10 @@ void TPZMHMixedMesh4SpacesControl::CreateHDivPressureMHMMesh()
             if(!cel) DebugStop();
             TPZGeoEl *gel = cel->Reference();
             if(!gel) DebugStop();
-            if(gel->Dimension() == dim)
-            {
+//            if(gel->Dimension() == dim)
+//            {
                 cel->PrepareIntPtIndices();
-            }
+//            }
         }
     }
     
