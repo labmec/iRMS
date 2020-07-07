@@ -451,8 +451,8 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
         BuildMixed2SpacesMultiPhysicsCompMesh(order);
     }
     
-    std::string name_ref = "mhm_geo";
-    PrintGeometry(name_ref);
+//    std::string name_ref = "mhm_geo";
+//    PrintGeometry(name_ref);
 }
 
 void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
@@ -725,7 +725,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
  
     TPZCompMesh *MixedMesh = mhm->CMesh().operator->();
     mMixedOperator = dynamic_cast<TPZMultiphysicsCompMesh *>(MixedMesh);
-    
+    std::cout << "Changing the analysis to sparse\n";
     {
         int64_t nel = MixedMesh->NElements();
         for(int64_t el = 0; el<nel; el++)

@@ -801,6 +801,8 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     transport.fCellsData.fViscosity.resize(2);
     transport.fCellsData.fViscosity[0] = 0.5;
     transport.fCellsData.fViscosity[1] = 0.1;
+    std::cout << __PRETTY_FUNCTION__ << "Filling in property map\n";
+
     for (int64_t i=0 ; i<nvols; i++) {
         int64_t celindex = volData[i];
        

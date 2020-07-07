@@ -719,6 +719,7 @@ void SimpleTest3D(){
 }
 void UNISIMTest(){
     
+    std::cout << "Reading the unisim data files\n";
 #ifdef USING_BOOST
     boost::posix_time::ptime tspatialmap1 = boost::posix_time::microsec_clock::local_time();
 #endif
@@ -759,24 +760,37 @@ void UNISIMTest(){
     TMRSDataTransfer sim_data  = SettingUNISIM();
     
     aspace.SetGeometry(gmesh);
-    std::string name="unisim_geo";
-    aspace.PrintGeometry(name);
-    aspace.ApplyUniformRefinement(2);
-    std::string name_ref = "unisim_ref_geo";
-    aspace.PrintGeometry(name_ref);
+    if(0)
+    {
+        std::string name="unisim_geo";
+        aspace.PrintGeometry(name);
+    }
+    int numref = 1;
+    std::cout << "Applying uniform refinement numref = " << numref << "\n";
+    aspace.ApplyUniformRefinement(numref);
+    if(0)
+    {
+        std::string name_ref = "unisim_ref_geo";
+        aspace.PrintGeometry(name_ref);
+    }
     aspace.SetDataTransfer(sim_data);
+    
+    std::cout << "Geometry generated\n";
     
     int order = 1;
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
     bool UsePardiso_Q = true;
     
+    std::cout << "Building approximation mixed space\n";
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
 
+    std::cout << "Building transport approximation space\n";
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     
+    std::cout << "Generating analysis\n";
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
@@ -791,6 +805,8 @@ void UNISIMTest(){
     std::cout << "Memory used by SpatialPropertiesMap is released. " << std::endl;
     properties_map.Clear();
 
+    std::cout << __PRETTY_FUNCTION__ << " returning from timing \n";
+    return;
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
 
