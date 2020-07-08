@@ -126,22 +126,18 @@ void UNISIMGeoMesh(){
     aspace.ApplyUniformRefinement(0);
     std::ofstream file("geo.vtk");
     TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
-    TPZFileStream buf;
-    TPZBFileStream buf2;
-    std::string fileName("test.txt");
-    buf.OpenWrite(fileName);
-    gmesh->Write(buf, 1);
-    
-//    TPZGeoMesh *newmesh = new TPZGeoMesh;
-//    newmesh->CleanUp();
-//    std::string fileName2("test.txt");
-//    buf2.OpenRead(fileName2);
-//    buf2.OpenWrite(fileName2);
-//    void *val =0;
-//    gmesh->Read(buf2,0);
-//    std::ofstream file("testprint.vtk");
-//    TPZVTKGeoMesh::PrintGMeshVTK(newmesh, file);
- 
+    {
+        TPZPersistenceManager::OpenWrite("test.txt");
+        TPZPersistenceManager::WriteToFile(gmesh);
+        TPZPersistenceManager::CloseWrite();
+    }
+    {
+        TPZGeoMesh *newmesh;
+        TPZPersistenceManager::OpenRead("test.txt");
+        TPZSavable *restore = TPZPersistenceManager::ReadFromFile();
+        newmesh = dynamic_cast<TPZGeoMesh *>(restore);
+        TPZVTKGeoMesh::PrintGMeshVTK(newmesh, file);
+    }
     
     
 }
