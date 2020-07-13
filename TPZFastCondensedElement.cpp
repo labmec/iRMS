@@ -34,7 +34,6 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
         
 //        matDarcy->SetPermeability(fPermeabilityTensor);
         TPZCondensedCompEl::CalcStiff(ek, ef);
-        
         ShrinkElementMatrix(ek, fEK);
         ShrinkElementMatrix(ef, fEF);
         this->fMatrixComputed = true;
@@ -48,6 +47,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     
 
     REAL Glambda = fMixedDensity;
+    fLambda=1.0;
     ek.fMat *= (1./fLambda);
     for (int icol=0; icol<ncols; icol++) {
         ek.fMat(nrows-1,icol) *= fLambda;
@@ -66,9 +66,13 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
 //                 const TVar alpha=1.,const TVar beta = 0.,const int opt = 0) const override;
 
 
-        ef.fMat *= -1.0*Glambda;
-        ef.fMat(nrows-1,0) *= (-1.0/Glambda);
-        
+//        ef.fMat *= -1.0*Glambda;
+//        ef.fMat(nrows-1,0) *= (-1.0/Glambda);
+    
+//        ef.fMat *= -1.0*0.0;
+//        ef.fMat(nrows-1,0) *= (-1.0/0.0);
+    
+//        ef.fMat *= fSource;
 //        ef.fMat *= -1.0*Glambda;
 //        ef.fMat(nrows-1,0) *= (-1.0/Glambda);
 //        STATE alpha = -1.;

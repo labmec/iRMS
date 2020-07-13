@@ -831,50 +831,50 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         TPZManVector<REAL,3> coord(3,0.0);
         gel->X(ximasscent, coord);
         
-        REAL kx_v = 1.e-7;
-        REAL ky_v = 1.e-7;
-        REAL kz_v = 1.e-7;
+        REAL kx_v = 1.0;
+        REAL ky_v = 1.0;
+        REAL kz_v = 1.0;
         REAL s0_v = 0.0;
         REAL phi_v = 0.1;
         
-        if(fkappa_phi){
-            std::vector<REAL> kappa_phi = fkappa_phi(coord);
-            kx_v = kappa_phi[0];
-            ky_v = kappa_phi[1];
-            kz_v = kappa_phi[2];
-            phi_v= kappa_phi[3] + 0.01;
-        }else{
-            if(fkx)
-            {
-                kx_v   = fkx(coord);
-            }
-            if(fky)
-            {
-                ky_v   = fky(coord);
-            }
-            if(fkz)
-            {
-                kz_v   = fkz(coord);
-            }
-            if(fphi)
-            {
-                phi_v   = fphi(coord);
-            }
-        }
-        
-        
-        if(fs0)
-        {
-            s0_v   = fs0(coord);
-        }
-   
+//        if(fkappa_phi){
+//            std::vector<REAL> kappa_phi = fkappa_phi(coord);
+//            kx_v = kappa_phi[0];
+//            ky_v = kappa_phi[1];
+//            kz_v = kappa_phi[2];
+//            phi_v= kappa_phi[3] + 0.01;
+//        }else{
+//            if(fkx)
+//            {
+//                kx_v   = fkx(coord);
+//            }
+//            if(fky)
+//            {
+//                ky_v   = fky(coord);
+//            }
+//            if(fkz)
+//            {
+//                kz_v   = fkz(coord);
+//            }
+//            if(fphi)
+//            {
+//                phi_v   = fphi(coord);
+//            }
+//        }
+//        
+//        
+//        if(fs0)
+//        {
+//            s0_v   = fs0(coord);
+//        }
+//   
         
         
 
-        transport.fCellsData.fKx[i]=kx_v;
-        transport.fCellsData.fKy[i]=ky_v;
-        transport.fCellsData.fKz[i]=kz_v;
-        transport.fCellsData.fporosity[i] = phi_v;
+//        transport.fCellsData.fKx[i]=kx_v;
+//        transport.fCellsData.fKy[i]=ky_v;
+//        transport.fCellsData.fKz[i]=kz_v;
+//        transport.fCellsData.fporosity[i] = phi_v;
         transport.fCellsData.fSaturation[i]=s0_v;
         transport.fCellsData.fSaturationLastState[i]=s0_v;
         

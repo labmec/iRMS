@@ -188,10 +188,11 @@ public:
         
     public:
         REAL mPorosity;
-     
+        bool fPropsFromPreProcess;
         /** @brief Default constructor */
         TReservoirProperties(){
             mPorosity=1.0;
+            fPropsFromPreProcess = false;
         }
         
         /** @brief Destructor */
@@ -202,11 +203,13 @@ public:
         /** @brief Copy constructor */
         TReservoirProperties(const TReservoirProperties &other){
             mPorosity = other.mPorosity;
+            fPropsFromPreProcess = other.fPropsFromPreProcess;
         }
         
         /** @brief Copy assignment operator*/
         TReservoirProperties &operator=(const TReservoirProperties &other){
             mPorosity = other.mPorosity;
+            fPropsFromPreProcess = other.fPropsFromPreProcess;
             return *this;
         }
         

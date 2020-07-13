@@ -24,6 +24,7 @@ TPZAlgebraicTransport::TPZAlgebraicTransport(const TPZAlgebraicTransport & other
     outletmatid=other.outletmatid;
     interfaceid=other.interfaceid;
     fgravity=other.fgravity;
+    fHasPropQ = other.fHasPropQ;
 }
 
 /// Assignement constructor
@@ -36,6 +37,7 @@ const TPZAlgebraicTransport & TPZAlgebraicTransport::operator=(const TPZAlgebrai
     outletmatid=other.outletmatid;
     interfaceid=other.interfaceid;
     fgravity=other.fgravity;
+    fHasPropQ = other.fHasPropQ;
     return *this;
 }
 TPZAlgebraicTransport::~TPZAlgebraicTransport(){

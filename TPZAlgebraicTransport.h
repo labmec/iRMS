@@ -202,6 +202,7 @@ public:
     int inletmatid;
     int outletmatid;
     int interfaceid;
+    bool fHasPropQ=false;
     
     //number of volumetric elements in the transport mesh
     int fNVolumesTransport = 0;

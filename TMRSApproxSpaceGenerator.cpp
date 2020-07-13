@@ -736,7 +736,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-                sub->SetAnalysisSparse(0);
+//                sub->SetAnalysisSparse(0);
             }
         }
     }
@@ -1196,7 +1196,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     
 #ifdef PZDEBUG
     std::ofstream transport("transport_cmesh.txt");
-    mTransportOperator->Print(transport);
+//    mTransportOperator->Print(transport);
 #endif
     
 }

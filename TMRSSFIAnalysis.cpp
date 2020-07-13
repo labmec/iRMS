@@ -38,14 +38,24 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
-    
-    fAlgebraicDataTransfer.fkx = kx;
-    fAlgebraicDataTransfer.fky = ky;
-    fAlgebraicDataTransfer.fkz = kz;
-    fAlgebraicDataTransfer.fphi = phi;
-    fAlgebraicDataTransfer.fs0 = s0;
+    bool propsfromPre = m_sim_data->mTReservoirProperties.fPropsFromPreProcess;
+    if (propsfromPre==false) {
+            fAlgebraicDataTransfer.fkx = kx;
+            fAlgebraicDataTransfer.fky = ky;
+            fAlgebraicDataTransfer.fkz = kz;
+            fAlgebraicDataTransfer.fphi = phi;
+            fAlgebraicDataTransfer.fs0 = s0;
+    }
+
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
     FillMaterialMemoryDarcy(1);
+    std::string fileprops("Props.txt");
+
+    std::ofstream file(fileprops);
+    if(file && !propsfromPre){
+        FillProperties(fileprops, &m_transport_module->fAlgebraicTransport);
+    }
+
 //    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
 }
 
@@ -58,7 +68,11 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fkappa_phi = kappa_phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+//    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+    
+    FillMaterialMemoryDarcy(1);
+    std::string fileprops("Props.txt");
+    FillProperties(fileprops, &m_transport_module->fAlgebraicTransport);
 }
 
 void TMRSSFIAnalysis::Configure(int n_threads, bool UsePardiso_Q){
@@ -111,12 +125,54 @@ void TMRSSFIAnalysis::FillMaterialMemoryDarcy(int material_id){
                 int valIndex = indices[index];
                 TPZDarcyMemory &mem = memory_vector.get()->operator [](valIndex);
                 mem.fTransportCellIndex = algbindex;
+                
+                
+                m_transport_module->fAlgebraicTransport.fCellsData.fKx[algbindex] = 1.0;
+                m_transport_module->fAlgebraicTransport.fCellsData.fKy[algbindex] = 1.0;
+                m_transport_module->fAlgebraicTransport.fCellsData.fKz[algbindex] = 1.0;
+                m_transport_module->fAlgebraicTransport.fCellsData.fporosity[algbindex] = 0.1;
             }
         }
     }
     
 }
-
+void TMRSSFIAnalysis::FillProperties(std::string fileprops, TPZAlgebraicTransport *algebraicTransport){
+    
+    if (!m_mixed_module|| !m_transport_module) {
+        DebugStop();
+    }
+    std::vector<REAL> Kx, Ky, Kz, Phi;
+    ReadProperties(fileprops, false, Kx, Ky, Kz, Phi);
+    
+    TPZCompMesh * cmesh = m_mixed_module->Mesh();
+    
+    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
+    {
+        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
+#ifdef PZDEBUG
+        if(meshit.fTransport == 0)
+        {
+            DebugStop();
+        }
+#endif
+        for (int icell = 0; icell < ncells; icell++)
+        {
+            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
+            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
+            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
+            int geoIndexMixed = celcomp->Reference()->Index();
+            if (Kx[geoIndexMixed] <0) {
+                DebugStop();
+            }
+            algebraicTransport->fCellsData.fKx[algbindex] = Kx[geoIndexMixed];
+            algebraicTransport->fCellsData.fKy[algbindex] = Ky[geoIndexMixed];
+            algebraicTransport->fCellsData.fKz[algbindex] = Kz[geoIndexMixed];
+            algebraicTransport->fCellsData.fporosity[algbindex] = Phi[geoIndexMixed];
+        }
+    }
+    m_transport_module->fAlgebraicTransport.fHasPropQ=true;
+    
+}
 void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
     m_mixed_module->SetDataTransfer(sim_data);
@@ -368,4 +424,44 @@ void TMRSSFIAnalysis::SetMixedMeshElementSolution(TPZCompMesh *cmesh)
         cmesh->ElementSolution()(el,2) = fast->GetPermTensor()(2,2);
         cmesh->ElementSolution()(el,3) = fast->GetLambda();
     }
+}
+void TMRSSFIAnalysis::ReadProperties(std::string name, bool print_table_Q, std::vector<REAL> &Kx, std::vector<REAL> &Ky, std::vector<REAL> &Kz, std::vector<REAL> &Phi){
+    
+    
+    std::ifstream file;
+    file.open(name);
+    int i=1;
+    
+    
+    std::string line;
+    while (std::getline(file, line))
+    {
+        std::istringstream iss(line);
+        std::istringstream issText(line);
+        char l = line[0];
+        if(l != '/'){
+            i=i+1;
+//            int val = i%15;
+//            if(val ==0){
+                double a, b, c, d;
+                if(iss >> a >> b >> c >> d) ;
+                Kx.push_back(a);
+                Ky.push_back(b);
+                Kz.push_back(c);
+                Phi.push_back(d);
+//            };
+        };
+    };
+    
+    if(Kx.size() == 0){
+        std::cout<<"No data read."<<std::endl;
+        
+        DebugStop();
+    }
+    if(print_table_Q){
+        std::cout<<"*************************"<<std::endl;
+        std::cout<<"Reading file... ok!"<<std::endl;
+        std::cout<<"*************************"<<std::endl;
+    }
+    file.close();
 }

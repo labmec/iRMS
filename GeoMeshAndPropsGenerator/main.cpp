@@ -117,13 +117,13 @@ void UNISIMGeoMesh(){
     
     TMRSApproxSpaceGenerator aspace;
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
-    int nLayers = 5;
+    int nLayers = 2;
     bool is3DQ = true;
     bool print3DMesh = true;
     gRefDBase.InitializeAllUniformRefPatterns();
     TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
     aspace.SetGeometry(gmesh);
-    aspace.ApplyUniformRefinement(0);
+    aspace.ApplyUniformRefinement(1);
     std::ofstream file("geo.vtk");
     TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
     {
@@ -131,14 +131,51 @@ void UNISIMGeoMesh(){
         TPZPersistenceManager::WriteToFile(gmesh);
         TPZPersistenceManager::CloseWrite();
     }
-    {
-        TPZGeoMesh *newmesh;
-        TPZPersistenceManager::OpenRead("test.txt");
-        TPZSavable *restore = TPZPersistenceManager::ReadFromFile();
-        newmesh = dynamic_cast<TPZGeoMesh *>(restore);
-        TPZVTKGeoMesh::PrintGMeshVTK(newmesh, file);
-    }
+//    {
+//        TPZGeoMesh *newmesh;
+//        std::ofstream file("geo2.vtk");
+//        TPZPersistenceManager::OpenRead("test.txt");
+//        TPZSavable *restore = TPZPersistenceManager::ReadFromFile();
+//        newmesh = dynamic_cast<TPZGeoMesh *>(restore);
+//        TPZVTKGeoMesh::PrintGMeshVTK(newmesh, file);
+//    }
     
+    // spatial properties
+    int64_t n_cells = 38466;
+    std::string grid_data = "maps/corner_grid_coordinates.dat";
+    std::string props_data = "maps/corner_grid_props.dat";
+    TRMSpatialPropertiesMap properties_map;
+    std::vector<size_t> SAMe_blocks = {5,5,5};
+    properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
+    
+    TMRSPropertiesFunctions reservoir_properties;
+    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
+    
+    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
+    auto s0 = reservoir_properties.Create_s0();
+    
+    int nels = gmesh->NElements();
+    TPZFMatrix<REAL> propsmat(nels-1,4,-1.0);
+    propsmat.Print("Ek=",std::cout, EMathematicaInput);
+    std::vector<std::tuple<REAL, REAL, REAL, REAL>> props;
+    for (int iel =0; iel<nels; iel++) {
+        TPZGeoEl *gel = gmesh->Element(iel);
+        if (gel->Dimension() != gmesh->Dimension()) {
+            continue;
+        }
+        TPZVec<REAL> masscent(gel->Dimension(),0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        TPZVec<REAL> coord;
+        gel->X(masscent, coord);
+        std::vector<REAL> props = kappa_phi(coord);
+        //kx,ky, kz, phi
+        for(int iprop = 0; iprop<4; iprop++){
+            propsmat(iel, iprop) = props[iprop];
+        }
+    }
+    std::ofstream fileprint("Props.txt");
+    propsmat.Print(fileprint);
+    return 0;
     
 }
 

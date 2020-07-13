@@ -9,16 +9,16 @@
 
 TPZDarcyFlowWithMem::TPZDarcyFlowWithMem() :  mSimData() {
     m_dimension = 0;
-    m_gravity.resize(3,0.0);
-    m_gravity[2] = -9.8;
+    m_gravity.resize(3);
+    for(int i=0; i<3; i++) m_gravity[i] = 0.;
     m_is_four_spaces_Q = true;
 }
 
 
 TPZDarcyFlowWithMem::TPZDarcyFlowWithMem(int mat_id, int dimension) : TPZMatWithMem<TPZDarcyMemory>(mat_id), mSimData(){
     m_dimension = dimension;
-    m_gravity.resize(3,0.0);
-    m_gravity[2] = -9.8;
+    m_gravity.resize(3);
+    for(int i=0; i<3; i++) m_gravity[i] = 0.;
     m_is_four_spaces_Q = true;
 }
 
@@ -166,7 +166,7 @@ void TPZDarcyFlowWithMem::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weig
     
     int qb = 0;
     int pb = 1;
-    int sb = 4;
+  
     
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;

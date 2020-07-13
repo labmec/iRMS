@@ -57,6 +57,10 @@ public:
     TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0);
    
     void FillMaterialMemoryDarcy(int material_id);
+    
+    void FillProperties(std::string fileprops, TPZAlgebraicTransport *algebraicTransport);
+    
+    static  void ReadProperties(std::string name, bool print_table_Q, std::vector<REAL> &Kx, std::vector<REAL> &Ky, std::vector<REAL> &Kz, std::vector<REAL> &Phi);
     /// Configurates iternal members
     void Configure(int n_threads, bool UsePardiso_Q);
     

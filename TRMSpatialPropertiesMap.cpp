@@ -420,7 +420,7 @@ void TRMSpatialPropertiesMap::SetCornerGridMeshData(size_t n_cells, std::string 
         m_properties[i].push_back(phi);
     }
     
-    BuildSAMeForCornerGridMesh();
+//    BuildSAMeForCornerGridMesh();
 }
 
 
