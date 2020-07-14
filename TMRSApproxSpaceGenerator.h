@@ -69,8 +69,9 @@ public:
     
     void CreateUniformMesh(int nx, REAL L, int ny=0, REAL h=0, int nz=0, REAL w=0);
     void ApplyUniformRefinement(int nelref);
+    void ApplyUniformRefinement();
     
-    void PrintGeometry(std::string name);
+    void PrintGeometry(std::string name,  bool vtkFile=true, bool textfile=false);
     
     TPZGeoMesh * GetGeometry();
     

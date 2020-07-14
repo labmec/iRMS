@@ -73,6 +73,31 @@ public:
     {
         m_grid_coordinates  = other.m_grid_coordinates;
         m_properties        = other.m_properties;
+//        m_map_type          =other.m_map_type;
+//
+//         m_kappa_default =other.m_kappa_default;
+//
+//         m_phi_default=other.m_phi_default;
+//
+//        // Structured Auxiliary Mesh with Element Storage (SAMe)
+//        m_n_SAMe_blocks=other.m_n_SAMe_blocks;
+//
+//        m_size_SAMe_blocks=other.m_size_SAMe_blocks;
+//
+//        // SPE case 10
+//         m_n_spe_blocks=other.m_n_spe_blocks;
+//
+//        m_size_spe_blocks=other.m_size_spe_blocks;
+//
+//        m_spe_translation=other.m_spe_translation;
+//
+//        m_SAMe_to_SPE=other.m_SAMe_to_SPE;
+//
+//        m_SAMe_to_CornerGrid=other.m_SAMe_to_CornerGrid;
+//
+//        m_x_box=other.m_x_box;
+//        m_y_box=other.m_y_box;
+//        m_z_box=other.m_z_box;
     }
     
     /** @brief default constructor */
@@ -83,7 +108,32 @@ public:
             return *this;
         }
         m_grid_coordinates  = other.m_grid_coordinates;
-        m_properties        =   other.m_properties;
+        m_properties        = other.m_properties;
+//        m_map_type          =other.m_map_type;
+//        
+//        m_kappa_default =other.m_kappa_default;
+//        
+//        m_phi_default=other.m_phi_default;
+//        
+//        // Structured Auxiliary Mesh with Element Storage (SAMe)
+//        m_n_SAMe_blocks=other.m_n_SAMe_blocks;
+//        
+//        m_size_SAMe_blocks=other.m_size_SAMe_blocks;
+//        
+//        // SPE case 10
+//        m_n_spe_blocks=other.m_n_spe_blocks;
+//        
+//        m_size_spe_blocks=other.m_size_spe_blocks;
+//        
+//        m_spe_translation=other.m_spe_translation;
+//        
+//        m_SAMe_to_SPE=other.m_SAMe_to_SPE;
+//        
+//        m_SAMe_to_CornerGrid=other.m_SAMe_to_CornerGrid;
+//        
+//        m_x_box=other.m_x_box;
+//        m_y_box=other.m_y_box;
+//        m_z_box=other.m_z_box;
         
         return *this;
     }

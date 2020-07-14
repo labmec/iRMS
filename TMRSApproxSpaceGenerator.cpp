@@ -217,19 +217,32 @@ void TMRSApproxSpaceGenerator::ApplyUniformRefinement(int nelref){
     }
    
 }
-void TMRSApproxSpaceGenerator::PrintGeometry(std::string name)
+void TMRSApproxSpaceGenerator::ApplyUniformRefinement(){
+    std::cout << "Applying uniform refinement numref = " << mSimData.mTGeometry.mnref << "\n";
+
+    ApplyUniformRefinement(mSimData.mTGeometry.mnref);
+}
+void TMRSApproxSpaceGenerator::PrintGeometry(std::string name, bool vtkFile, bool textfile)
 {
     if (!mGeometry) {
         DebugStop();
     }
     std::stringstream text_name;
     std::stringstream vtk_name;
-    text_name  << name << "_geometry" << ".txt";
-    vtk_name   << name << "_geometry"  << ".vtk";
-    std::ofstream textfile(text_name.str().c_str());
-    mGeometry->Print(textfile);
-    std::ofstream vtkfile(vtk_name.str().c_str());
-    TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, vtkfile, true);
+    if (vtkFile) {
+        vtk_name   << name << "_geometry"  << ".vtk";
+        std::ofstream vtkfile(vtk_name.str().c_str());
+        TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, vtkfile, true);
+    }
+    if (textfile) {
+        text_name  << name << "_geometry" << ".txt";
+        std::ofstream textfile(text_name.str().c_str());
+        mGeometry->Print(textfile);
+        
+    }
+   
+
+   
     
 }
 
@@ -1266,6 +1279,32 @@ TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(TPZAl
 
 void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){
     mSimData = SimData;
+    
+    if (mSimData.mTGeometry.mGmeshFileName=="") {
+        std::string geoname = "PreProcess/meshes/"+mSimData.mSimulationName + "_nLayers_"+ std::to_string(mSimData.mTGeometry.mnLayers)  +"_nRef_"+std::to_string(mSimData.mTGeometry.mnref)+".txt" ;
+        mSimData.mTGeometry.mGmeshFileName = geoname;
+    }
+   
+    std::ifstream file(mSimData.mTGeometry.mGmeshFileName);
+    
+    if(!mGeometry){
+        if (file) {
+            std::cout<<"The geometric mesh will be loaded from the " + mSimData.mTGeometry.mGmeshFileName + " file."<<std::endl;
+            std::string filename = mSimData.mTGeometry.mGmeshFileName;
+            TPZPersistenceManager::OpenRead(filename);
+            TPZSavable *restore = TPZPersistenceManager::ReadFromFile();
+            mGeometry = dynamic_cast<TPZGeoMesh *>(restore);
+            PrintGeometry(mSimData.mSimulationName,1,0);
+            std::cout<<"The geometric mesh has been loaded successfully."<<std::endl;
+        }
+        else{
+           std::cout<<" Geometric mesh information has not been entered. Please enter the mesh in a text file or set it in the approximation space object."<<std::endl;
+            DebugStop();
+        }
+        
+    }
+ 
+    
 }
 
 TMRSDataTransfer & TMRSApproxSpaceGenerator::GetDataTransfer(){

@@ -26,6 +26,8 @@ public:
     /// Default constructor
     TMRSDataTransfer();
     
+    std::string mSimulationName = "";
+    
     /// Copy constructor
     TMRSDataTransfer(const TMRSDataTransfer &other);
     
@@ -64,6 +66,10 @@ public:
          */
         int mInterface_material_id = 100;
         int mSkeletonDiv =0;
+        int mnLayers = 1;
+        int mnref =0;
+        std::string mGmeshFileName="";
+        
         
          /** @brief Default constructor */
         TGeometry(){
@@ -83,6 +89,10 @@ public:
             mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
             mInterface_material_id=other.mInterface_material_id;
             mSkeletonDiv = other.mSkeletonDiv;
+            mnLayers = other.mnLayers;
+            mnref = other.mnref;
+            mGmeshFileName = other.mGmeshFileName;
+            
         }
         /** @brief Copy assignment operator*/
         TGeometry &operator=(const TGeometry &other){
@@ -92,6 +102,10 @@ public:
                 mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
                 mInterface_material_id=other.mInterface_material_id;
                 mSkeletonDiv = other.mSkeletonDiv;
+                mnLayers = other.mnLayers;
+                mnref = other.mnref;
+                mGmeshFileName = other.mGmeshFileName;
+               
             }
             return *this;
         }
@@ -189,6 +203,9 @@ public:
     public:
         REAL mPorosity;
         bool fPropsFromPreProcess;
+        std::function<std::vector<REAL>(const TPZVec<REAL> & )> kappa_phi;
+        std::function<REAL(const TPZVec<REAL> & )> s0;
+        std::string mPropsFileName="";
         /** @brief Default constructor */
         TReservoirProperties(){
             mPorosity=1.0;
@@ -204,12 +221,18 @@ public:
         TReservoirProperties(const TReservoirProperties &other){
             mPorosity = other.mPorosity;
             fPropsFromPreProcess = other.fPropsFromPreProcess;
+            kappa_phi = other.kappa_phi;
+            s0=other.s0;
+            mPropsFileName=other.mPropsFileName;
         }
         
         /** @brief Copy assignment operator*/
         TReservoirProperties &operator=(const TReservoirProperties &other){
             mPorosity = other.mPorosity;
             fPropsFromPreProcess = other.fPropsFromPreProcess;
+            kappa_phi = other.kappa_phi;
+            s0=other.s0;
+            mPropsFileName=other.mPropsFileName;
             return *this;
         }
         

@@ -24,7 +24,19 @@ class TMRSPropertiesFunctions
         m_function_type_phi = EConstantFunction;
         m_function_type_s0 = EConstantFunction;
     }
-    
+    TMRSPropertiesFunctions &operator=(TMRSPropertiesFunctions &other)
+    {
+        m_function_type_kappa = other.m_function_type_kappa;
+        m_function_type_phi = other.m_function_type_phi;
+        m_function_type_s0 = other.m_function_type_s0;
+    };
+    TMRSPropertiesFunctions(TMRSPropertiesFunctions &other)
+    {
+        m_function_type_kappa = other.m_function_type_kappa;
+        m_function_type_phi = other.m_function_type_phi;
+        m_function_type_s0 = other.m_function_type_s0;
+        return *this;
+    };
     ~TMRSPropertiesFunctions(){
         
     }

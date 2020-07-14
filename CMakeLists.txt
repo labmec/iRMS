@@ -144,6 +144,9 @@ file(COPY ${mapsdata} DESTINATION ./MHMTest/Release/maps)
 file (COPY PetroPhysics  DESTINATION ./MHMTest/Debug)
 file (COPY PetroPhysics  DESTINATION ./MHMTest/Release)
 
+file (COPY PreProcess  DESTINATION ./MHMTest/Debug)
+file (COPY PreProcess  DESTINATION ./MHMTest/Release)
+
 file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Debug)
 file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Release)
 
@@ -158,6 +161,9 @@ file (COPY PetroPhysics  DESTINATION ./GeoMeshAndPropsGenerator/Release)
 
 file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Debug)
 file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Release)
+
+file (COPY PreProcess  DESTINATION ./GeoMeshAndPropsGenerator/Debug)
+file (COPY PreProcess  DESTINATION ./GeoMeshAndPropsGenerator/Release)
 
 file(GLOB headers_files *.h)
 

@@ -55,10 +55,12 @@ public:
     TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<REAL(const TPZVec<REAL> & )> & kx, std::function<REAL(const TPZVec<REAL> & )> & ky, std::function<REAL(const TPZVec<REAL> & )> & kz, std::function<REAL(const TPZVec<REAL> & )> & phi, std::function<REAL(const TPZVec<REAL> & )> & s0);
     
     TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0);
-   
+    void BuildAlgebraicDataStructure();
     void FillMaterialMemoryDarcy(int material_id);
-    
+    void FillProperties();
     void FillProperties(std::string fileprops, TPZAlgebraicTransport *algebraicTransport);
+    void FillProperties(TPZAlgebraicTransport *algebraicTransport);
+    void FillProperties(TPZAlgebraicTransport *algebraicTransport, std::vector<REAL> kappa_phi);
     
     static  void ReadProperties(std::string name, bool print_table_Q, std::vector<REAL> &Kx, std::vector<REAL> &Ky, std::vector<REAL> &Kz, std::vector<REAL> &Phi);
     /// Configurates iternal members

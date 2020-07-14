@@ -83,7 +83,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         cmesh->UpdatePreviousState(-1);
         cmesh->LoadSolutionFromMeshes();
         
-        AssembleResidual();
+//        AssembleResidual();
         res_norm = Norm(Rhs());
      
     
@@ -135,24 +135,12 @@ void TMRSMixedAnalysis::NewtonIteration(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-//                sub->Analysis()->StructMatrix()->SetNumThreads(0);
+                sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
             }
         }
         mIsFirstAssembleQ=false;
     }
-    else{
-        fStructMatrix->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
-        int64_t nel = fCompMesh->NElements();
-        for(int64_t el = 0; el<nel; el++)
-        {
-            TPZCompEl *cel = fCompMesh->Element(el);
-            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
-            if(sub)
-            {
-                sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
-            }
-        }
-    }
+
     
    Assemble();
 

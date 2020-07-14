@@ -26,10 +26,16 @@ TMRSSFIAnalysis::~TMRSSFIAnalysis(){
 TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q){
     m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
-    
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
-fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
+    
+    
+}
+
+void TMRSSFIAnalysis::BuildAlgebraicDataStructure(){
+  fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+//    SetDataTransfer(m_mixed_module->GetDataTransfer());
+    FillProperties();
+    FillMaterialMemoryDarcy(1);
     
 }
 
@@ -125,16 +131,51 @@ void TMRSSFIAnalysis::FillMaterialMemoryDarcy(int material_id){
                 int valIndex = indices[index];
                 TPZDarcyMemory &mem = memory_vector.get()->operator [](valIndex);
                 mem.fTransportCellIndex = algbindex;
-                
-                
-                m_transport_module->fAlgebraicTransport.fCellsData.fKx[algbindex] = 1.0;
-                m_transport_module->fAlgebraicTransport.fCellsData.fKy[algbindex] = 1.0;
-                m_transport_module->fAlgebraicTransport.fCellsData.fKz[algbindex] = 1.0;
-                m_transport_module->fAlgebraicTransport.fCellsData.fporosity[algbindex] = 0.1;
+//                m_transport_module->fAlgebraicTransport.fCellsData.fKx[algbindex] = 1.0;
+//                m_transport_module->fAlgebraicTransport.fCellsData.fKy[algbindex] = 1.0;
+//                m_transport_module->fAlgebraicTransport.fCellsData.fKz[algbindex] = 1.0;
+//                m_transport_module->fAlgebraicTransport.fCellsData.fporosity[algbindex] = 0.1;
             }
         }
     }
     
+}
+void TMRSSFIAnalysis::FillProperties(){
+    
+    bool propsfromPre = m_sim_data->mTReservoirProperties.fPropsFromPreProcess;
+    if (propsfromPre==false) {
+        if (m_sim_data->mTReservoirProperties.kappa_phi) {
+            fAlgebraicDataTransfer.fkappa_phi = m_sim_data->mTReservoirProperties.kappa_phi;
+            fAlgebraicDataTransfer.fs0=m_sim_data->mTReservoirProperties.s0;
+            FillProperties(&m_transport_module->fAlgebraicTransport);
+        }
+        else{
+            std::vector<REAL> kappa_phi(4,1.0);
+            kappa_phi[3]=0.1;
+            FillProperties(&m_transport_module->fAlgebraicTransport, kappa_phi);
+        }
+        
+    }
+    else{
+        if (m_sim_data->mTReservoirProperties.mPropsFileName=="") {
+            std::string propsname ="PreProcess/props/"+ m_sim_data->mSimulationName + "Props_nL_"+ std::to_string(m_sim_data->mTGeometry.mnLayers)  +"_nRef_"+std::to_string(m_sim_data->mTGeometry.mnref)+".txt" ;
+            m_sim_data->mTReservoirProperties.mPropsFileName = propsname;
+        }
+        
+        std::ifstream file(m_sim_data->mTReservoirProperties.mPropsFileName);
+        
+        if(file){
+            FillProperties(m_sim_data->mTReservoirProperties.mPropsFileName, &m_transport_module->fAlgebraicTransport);
+        }
+        else{
+            
+            std::cout<<"The properties of the reservoir have not been loaded. Please enter the properties in a text file or set the functions in the simulationdata object"<<std::endl;
+            std::vector<REAL> kappa_phi(4,1.0e-7);
+            kappa_phi[3]=0.1;
+            FillProperties(&m_transport_module->fAlgebraicTransport, kappa_phi);
+        }
+        
+    }
 }
 void TMRSSFIAnalysis::FillProperties(std::string fileprops, TPZAlgebraicTransport *algebraicTransport){
     
@@ -173,10 +214,69 @@ void TMRSSFIAnalysis::FillProperties(std::string fileprops, TPZAlgebraicTranspor
     m_transport_module->fAlgebraicTransport.fHasPropQ=true;
     
 }
+void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport){
+    
+    if (!m_mixed_module|| !m_transport_module) {
+        DebugStop();
+    }
+
+    
+    TPZCompMesh * cmesh = m_mixed_module->Mesh();
+    
+    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
+    {
+        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
+#ifdef PZDEBUG
+        if(meshit.fTransport == 0)
+        {
+            DebugStop();
+        }
+#endif
+        for (int icell = 0; icell < ncells; icell++)
+        {
+            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
+            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
+            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
+            TPZGeoEl *gel = celcomp->Reference();
+            int dim= gel->Dimension();
+            TPZVec<REAL> ximasscent(dim);
+            gel->CenterPoint(gel->NSides()-1, ximasscent);
+            std::vector<REAL> center(3,0.0);
+            TPZManVector<REAL,3> coord(3,0.0);
+            gel->X(ximasscent, coord);
+            
+            std::vector<REAL> kappa_phi = m_sim_data->mTReservoirProperties.kappa_phi(coord);
+                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[0];
+                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[1];
+                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[2];
+                algebraicTransport->fCellsData.fKx[algbindex] = kappa_phi[3] + 0.01;
+        }
+    }
+    m_transport_module->fAlgebraicTransport.fHasPropQ=true;
+}
+
+void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport, std::vector<REAL> kappa_phi){
+    if (!m_mixed_module|| !m_transport_module) {
+        DebugStop();
+    }
+    
+    int ncells = algebraicTransport->fCellsData.fVolume.size();
+    for (int icell =0; icell<ncells; icell++) {
+        algebraicTransport->fCellsData.fKx[icell]  = kappa_phi[0];
+        algebraicTransport->fCellsData.fKy[icell]  = kappa_phi[1];
+        algebraicTransport->fCellsData.fKz[icell]  = kappa_phi[2];
+        algebraicTransport->fCellsData.fporosity[icell] = kappa_phi[3] ;
+    }
+    
+   
+    m_transport_module->fAlgebraicTransport.fHasPropQ=true;
+    
+}
 void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
     m_mixed_module->SetDataTransfer(sim_data);
     m_transport_module->SetDataTransfer(sim_data);
+    BuildAlgebraicDataStructure();
     
     m_transport_module->fAlgebraicTransport.interfaceid = 100;
     m_transport_module->fAlgebraicTransport.inletmatid = -2;

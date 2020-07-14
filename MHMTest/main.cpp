@@ -113,7 +113,6 @@ int main(){
 //    SimpleTest3D();
 
     SimpleTest2D();
-//    UNISIMTest2();
     
 //    UNISIMTest();
     return 0;
@@ -122,11 +121,11 @@ void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(3, 10, 1, 10);
+    aspace.CreateUniformMesh(10, 10, 10, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(0);
+    aspace.ApplyUniformRefinement(2);
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -141,18 +140,7 @@ void SimpleTest2D(){
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     
-    TMRSPropertiesFunctions reservoir_properties;
-    reservoir_properties.set_function_type_kappa(TMRSPropertiesFunctions::EConstantFunction);
-    reservoir_properties.set_function_type_phi(TMRSPropertiesFunctions::EConstantFunction);
-    reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
-    
-    auto kx = reservoir_properties.Create_Kx();
-    auto ky = reservoir_properties.Create_Ky();
-    auto kz = reservoir_properties.Create_Kz();
-    auto phi = reservoir_properties.Create_phi();
-    auto s0 = reservoir_properties.Create_s0();
-    
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi,s0);
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     
@@ -723,55 +711,29 @@ void SimpleTest3D(){
     std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
 }
 void UNISIMTest(){
+    gRefDBase.InitializeAllUniformRefPatterns();
+    TMRSApproxSpaceGenerator aspace;
+    TMRSDataTransfer sim_data  = SettingUNISIM();
     
-    std::function<std::vector<REAL>(const TPZVec<REAL> & )> kappa_phi;
-    std::function<REAL(const TPZVec<REAL> & )> s0;
-    CreateResPropertiesFunction(kappa_phi, s0);
-
-   
     
-//    auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
-//    auto s0 = reservoir_properties.Create_s0();
-
-
+    std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
+    int nLayers = sim_data.mTGeometry.mnLayers;
+    bool is3DQ = true;
+    bool print3DMesh = true;
+//    TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
+//    
+//    aspace.mGeometry = gmesh;
+    
+    
+    
+    aspace.SetDataTransfer(sim_data);
 #ifdef USING_BOOST
     boost::posix_time::ptime toverhead1 = boost::posix_time::microsec_clock::local_time();
 #endif
     
-    std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
-    int nLayers = 2;
-    bool is3DQ = true;
-    bool print3DMesh = true;
-    gRefDBase.InitializeAllUniformRefPatterns();
-    TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
-    
-    TPZGeoMesh *gmesh2 = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
+  
+   
 
- 
-    TMRSApproxSpaceGenerator aspace;
-    TMRSApproxSpaceGenerator aspace2;
-    TMRSDataTransfer sim_data  = SettingUNISIM();
-    
-    aspace.SetGeometry(gmesh);
-    aspace2.SetGeometry(gmesh2);
-    if(0)
-    {
-        std::string name="unisim_geo";
-        aspace.PrintGeometry(name);
-    }
-    int numref = 1;
-    std::cout << "Applying uniform refinement numref = " << numref << "\n";
-    aspace.ApplyUniformRefinement(numref);
-    aspace2.ApplyUniformRefinement(numref);
-    if(0)
-    {
-        std::string name_ref = "unisim_ref_geo";
-        aspace.PrintGeometry(name_ref);
-    }
- 
-    aspace.SetDataTransfer(sim_data);
-
-    std::cout << "Geometry generated\n";
 
     int order = 1;
     bool must_opt_band_width_Q = true;
@@ -781,75 +743,18 @@ void UNISIMTest(){
     std::cout << "Building approximation mixed space\n";
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    std::ofstream file("mixed.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(mixed_operator, file);
-    int nels = mixed_operator->NElements();
-    for (int iel =0; iel<nels; iel++) {
-        TPZCompEl *cel = mixed_operator->Element(iel);
-        if (!cel) {
-            continue;
-        }
-        TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh*>(cel);
-        if (sub) {
-            int nelsub = sub->NElements();
-            for (int ielsub=0; ielsub<nelsub; ielsub++) {
-                TPZCompEl *celsub = sub->Element(ielsub);
-                TPZGeoEl *gel = celsub->Reference();
-                int geldim = gel->Dimension();
-                if (geldim!=3) {
-                    continue;
-                }
-                int indexmixed = gel->Index();
-                TPZVec<REAL> masscent(3,0.0);
-                gel->CenterPoint(gel->NSides()-1, masscent);
-                TPZVec<REAL> coordsmixed;
-                gel->X(masscent, coordsmixed);
-                
-                TPZGeoEl *gelorin = gmesh2->Element(indexmixed);
-                TPZVec<REAL> masscent2(3,0.0);
-                gelorin->CenterPoint(gel->NSides()-1, masscent2);
-                TPZVec<REAL> coordsgeo;
-                gelorin->X(masscent2, coordsgeo);
-                REAL diff=0.0;
-                for (int ind=0; ind<3; ind++) {
-                    diff += abs(coordsgeo[ind] - coordsmixed[ind]);
-                }
-                if (diff>0.00000001) {
-                    DebugStop();
-                }
-            }
-        }
-    }
-    
-    
-    
     std::cout << "Building transport approximation space\n";
     aspace.BuildTransportMultiPhysicsCompMesh();
     TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
     std::cout << "Generating analysis\n";
-    TMRSSFIAnalysis * sfi_analysis;
-    if (sim_data.mTReservoirProperties.fPropsFromPreProcess) {
-        sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+    
+    TMRSSFIAnalysis *sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
         sfi_analysis->SetDataTransfer(&sim_data);
         sfi_analysis->Configure(n_threads, UsePardiso_Q);
-    }
-    else{
-        sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
-        sfi_analysis->SetDataTransfer(&sim_data);
-        sfi_analysis->Configure(n_threads, UsePardiso_Q);
-    }
     
-
-
-    // Common section
-
-    // Render a graphical map
-    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
-    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+//    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
+//    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
     
-
-    std::cout << __PRETTY_FUNCTION__ << " returning from timing \n";
-    return;
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
 
@@ -871,7 +776,8 @@ void UNISIMTest(){
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
-    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
+    //acertar isso
+//    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
 
 
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
@@ -1280,9 +1186,13 @@ void CreateResPropertiesFunction(std::function<std::vector<REAL>(const TPZVec<RE
     reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
     
     
-    Kappa_Phi = reservoir_properties.Create_Kappa_Phi(properties_map);
+    auto k_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
+    Kappa_Phi = k_phi;
     S0 = reservoir_properties.Create_s0();
-    
+    std::vector<REAL> point(4,0.0);
+    TPZVec<REAL> point2(3,0.0);
+    point = Kappa_Phi(point2);
+    int aka=1;
 //    std::cout << "Spatial properties are transferred." << std::endl;
 //    std::cout << "Memory used by SpatialPropertiesMap is released. " << std::endl;
 //    properties_map.Clear();
@@ -1721,6 +1631,7 @@ TMRSDataTransfer SettingUNISIM(){
     
     TMRSDataTransfer sim_data;
     
+    sim_data.mSimulationName = "Unisim";
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["RockMatrix"] = 1;
 //    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["RockMatrix"] = 1;
     sim_data.mTGeometry.mInterface_material_id = 100;
@@ -1756,14 +1667,32 @@ TMRSDataTransfer SettingUNISIM(){
 
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 1;
-    sim_data.mTNumerics.m_max_iter_transport = 50;
-    sim_data.mTNumerics.m_max_iter_sfi = 30;
+    sim_data.mTNumerics.m_max_iter_transport = 5;
+    sim_data.mTNumerics.m_max_iter_sfi = 10;
 
     sim_data.mTGeometry.mSkeletonDiv = 0;
+    sim_data.mTGeometry.mnLayers=2;
+    sim_data.mTGeometry.mnref=1;
+    
+    //Reservoir Props
+//    std::function<std::vector<REAL>(const TPZVec<REAL> & )> kappa_phi;
+//    std::function<REAL(const TPZVec<REAL> & )> s0;
+//    CreateResPropertiesFunction(kappa_phi, s0);
+//    std::vector<REAL> point(4,0.0);
+//    TPZVec<REAL> point2(3,0.0);
+//    point = kappa_phi(point2);
+//
+//    sim_data.mTReservoirProperties.kappa_phi = kappa_phi;
+//    sim_data.mTReservoirProperties.s0= s0;
+    sim_data.mTReservoirProperties.fPropsFromPreProcess=true;
+//    sim_data.mTReservoirProperties.mPropsFileName = "props.txt";
+    
+    
+    
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 1300;
+    sim_data.mTNumerics.m_n_steps = 2;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -1778,7 +1707,7 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
     TPZStack<std::string,10> scalnames, vecnames;
-    vecnames.Push("q");
+    vecnames.Push("Flux");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
@@ -1791,7 +1720,7 @@ TMRSDataTransfer SettingUNISIM(){
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
     TPZStack<REAL,100> reporting_times;
-    REAL time = 10*sim_data.mTPostProcess.m_file_time_step;
+    REAL time = sim_data.mTPostProcess.m_file_time_step;
     int n_reporting_times =(n_steps)/(time/dt) + 1;
     REAL r_time =0.0;
     for (int i =1; i<= n_reporting_times; i++) {
@@ -2130,5 +2059,6 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
      scalnames.Push("Permeability_z");
      std::string file("Props.vtk");
      an->DefineGraphMesh(dim,scalnames,vecnames,file);
+    
      an->PostProcess(0,dim);
 }

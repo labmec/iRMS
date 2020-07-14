@@ -22,6 +22,7 @@ TMRSDataTransfer::TMRSDataTransfer(const TMRSDataTransfer &other){
     mTBoundaryConditions = other.mTBoundaryConditions;
     mTNumerics = other.mTNumerics;
     mTPostProcess = other.mTPostProcess;
+    mSimulationName = other.mSimulationName;
 }
 
 
@@ -37,6 +38,7 @@ TMRSDataTransfer & TMRSDataTransfer::operator=(const TMRSDataTransfer &other){
         mTBoundaryConditions = other.mTBoundaryConditions;
         mTNumerics = other.mTNumerics;
         mTPostProcess = other.mTPostProcess;
+        mSimulationName = other.mSimulationName;
     }
     return *this;
 }
