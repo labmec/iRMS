@@ -47,6 +47,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     
 
     REAL Glambda = fMixedDensity;
+
     ek.fMat *= (1./fLambda);
     for (int icol=0; icol<ncols; icol++) {
         ek.fMat(nrows-1,icol) *= fLambda;
@@ -60,19 +61,13 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     GetSolutionVector(solvec);
     
 
-
-
-        ef.fMat *= 1.0*Glambda;
-        ef.fMat(nrows-1,0) *= 1.0/Glambda;
-    
-//        ef.fMat *= -1.0*0.0;
-//        ef.fMat(nrows-1,0) *= (-1.0/0.0);
-    
-//        ef.fMat *= fSource;
-//        ef.fMat *= -1.0*Glambda;
-//        ef.fMat(nrows-1,0) *= (-1.0/Glambda);
-//        STATE alpha = -1.;
-//        ek.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1.);
+//    ef.fMat *= -1.0*Glambda;
+    /** @brief Computes z = alpha * opt(this)*x + beta * y */
+    /** @note z and x cannot overlap in memory */
+    //    void MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,
+    //                 const TVar alpha=1.,const TVar beta = 0.,const int opt = 0) const override;
+    STATE alpha = 1.;
+    ek.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1,1);
     
 }
 
@@ -104,13 +99,9 @@ void TPZFastCondensedElement::GetSolutionVector(TPZFMatrix<STATE> &solvec)
  */
 void TPZFastCondensedElement::CalcResidual(TPZElementMatrix &ef)
 {
+      TPZElementMatrix ek;
+      CalcStiff(ek, ef);
 
-      TPZCondensedCompEl::CalcResidual(ef);
-//    TPZFMatrix<STATE> solvec(fEK.fMat.Rows(),1,0.);
-//    GetSolutionVector(solvec);
-//    STATE alpha = -1.;
-//    fEK.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1.);
-//    
 }
 
 void TPZFastCondensedElement::ShrinkElementMatrix(TPZElementMatrix &input, TPZElementMatrix &output)

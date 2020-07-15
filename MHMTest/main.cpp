@@ -121,11 +121,11 @@ void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(10, 10, 10, 10);
+    aspace.CreateUniformMesh(2, 10, 2, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(2);
+    aspace.ApplyUniformRefinement(1);
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -171,9 +171,9 @@ void SimpleTest2D(){
     TPZFastCondensedElement::fSkipLoadSolution = true;
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
-        if (sim_time >=  current_report_time) {
-            TPZFastCondensedElement::fSkipLoadSolution = false;
-        }
+//        if (sim_time >=  current_report_time) {
+//            TPZFastCondensedElement::fSkipLoadSolution = false;
+//        }
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
         
@@ -1236,21 +1236,21 @@ TMRSDataTransfer SettingSimple2D(){
     
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
-    sim_data.mTNumerics.m_max_iter_transport = 4;
-    sim_data.mTNumerics.m_max_iter_sfi = 2;
+    sim_data.mTNumerics.m_max_iter_transport = 5;
+    sim_data.mTNumerics.m_max_iter_sfi = 5;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 20;
+    sim_data.mTNumerics.m_n_steps = 2;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 0.001 ;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[0] = -0.0 ;//1*9.81;//e-6;
+    grav[1] = -0.0;//9.82e-6;
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 10;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -1259,7 +1259,7 @@ TMRSDataTransfer SettingSimple2D(){
     vecnames.Push("Flux");
     //    scalnames.Push("p");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("Pressure");
+//        scalnames.Push("Pressure");
         scalnames.Push("p_average");
         scalnames.Push("g_average");
         //        scalnames.Push("kyy");

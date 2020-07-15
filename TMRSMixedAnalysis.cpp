@@ -63,7 +63,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         DebugStop();
     }
     
-    int n = 1;//m_sim_data->mTNumerics.m_max_iter_mixed;
+    int n = m_sim_data->mTNumerics.m_max_iter_mixed;
     bool stop_criterion_Q = false;
     bool stop_criterion_corr_Q = false;
     REAL res_norm = 1.0;
@@ -78,14 +78,16 @@ void TMRSMixedAnalysis::RunTimeStep(){
         
         NewtonIteration();
         dx = Solution();
-        corr_norm = Norm(dx);
-        
-        cmesh->UpdatePreviousState(-1);
-        cmesh->LoadSolutionFromMeshes();
-        
-//        AssembleResidual();
-        res_norm = Norm(Rhs());
+        x +=dx;
      
+        corr_norm = Norm(dx);
+          
+        cmesh->UpdatePreviousState(-1);
+        cmesh->LoadSolutionFromMultiPhysics();
+     
+        AssembleResidual();
+        res_norm = Norm(Rhs());
+
     
 #ifdef PZDEBUG
         {
@@ -99,23 +101,18 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
-        //        if (stop_criterion_Q && stop_criterion_corr_Q) {
-        if (stop_criterion_corr_Q) {
-            
+        if (stop_criterion_Q) {
             std::cout << "Mixed operator: " << std::endl;
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
-            //            x.Print("x = ",std::cout,EMathematicaInput);
-            //            Rhs().Print("r = ",std::cout,EMathematicaInput);
+  
             break;
         }
-        //        if (m_k_iteration >= n) {
-        //            std::cout << "Mixed operator not converge " << std::endl;
-        //        }
+                if (m_k_iteration >= n) {
+                    std::cout << "Mixed operator not converge " << std::endl;
+                }
         
     }
-    
-    
 }
 
 
@@ -149,7 +146,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
     auto deltat = tsim2-tsim1;
     std::cout << "Mixed:: Assembly time " << deltat << std::endl;
 #endif
-    
+
     Solve();
     
 #ifdef USING_BOOST
