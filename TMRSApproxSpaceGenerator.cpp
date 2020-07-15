@@ -749,7 +749,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-//                sub->SetAnalysisSparse(0);
+                sub->SetAnalysisSparse(0);
             }
         }
     }

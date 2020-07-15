@@ -2,7 +2,6 @@
 //  TMRSMixedAnalysis.cpp
 //
 //  Created by Omar Durán on 10/15/19.
-//
 
 #include "TMRSMixedAnalysis.h"
 #ifdef USING_BOOST
@@ -71,24 +70,16 @@ void TMRSMixedAnalysis::RunTimeStep(){
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_mixed;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_mixed;
     
-    
     TPZFMatrix<STATE> dx,x(Solution());
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
-        
-        
         NewtonIteration();
         dx = Solution();
-        x +=dx;
-     
         corr_norm = Norm(dx);
-          
         cmesh->UpdatePreviousState(-1);
         cmesh->LoadSolutionFromMultiPhysics();
-     
         AssembleResidual();
         res_norm = Norm(Rhs());
 
-    
 #ifdef PZDEBUG
         {
  
@@ -146,7 +137,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
     auto deltat = tsim2-tsim1;
     std::cout << "Mixed:: Assembly time " << deltat << std::endl;
 #endif
-
+   
     Solve();
     
 #ifdef USING_BOOST

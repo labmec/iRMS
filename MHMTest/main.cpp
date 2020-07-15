@@ -126,6 +126,7 @@ void SimpleTest2D(){
     aspace.PrintGeometry(name);
     
     aspace.ApplyUniformRefinement(1);
+    
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -171,9 +172,9 @@ void SimpleTest2D(){
     TPZFastCondensedElement::fSkipLoadSolution = true;
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
-//        if (sim_time >=  current_report_time) {
-//            TPZFastCondensedElement::fSkipLoadSolution = false;
-//        }
+        if (sim_time >=  current_report_time) {
+            TPZFastCondensedElement::fSkipLoadSolution = false;
+        }
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
         
@@ -1236,7 +1237,7 @@ TMRSDataTransfer SettingSimple2D(){
     
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
-    sim_data.mTNumerics.m_max_iter_transport = 5;
+    sim_data.mTNumerics.m_max_iter_transport = 10;
     sim_data.mTNumerics.m_max_iter_sfi = 5;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.000001;
