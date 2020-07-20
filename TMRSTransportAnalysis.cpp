@@ -437,7 +437,7 @@ void TMRSTransportAnalysis::Assemble_parallel(){
     if(!this->fSolver){
         DebugStop();
     }
-    
+
     m_rhs.setZero();
     m_transmissibility.setZero();
     

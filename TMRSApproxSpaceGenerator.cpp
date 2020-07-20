@@ -108,12 +108,21 @@ void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h,
     
     TPZGeoMesh *gmesh = new TPZGeoMesh;
     TPZGenGrid2D gen(nels,x0,x1);
+    
     gen.SetRefpatternElements(true);
     
     //    if (ny!=0) {
     //        <#statements#>
     //    }
-    //    gen.SetElementType(EQuadrilateral);
+    bool IsQuad= false;
+    if (IsQuad) {
+        gen.SetElementType(MMeshType::EQuadrilateral);
+    }
+    else{
+         gen.SetElementType(MMeshType::ETriangular);
+    }
+    
+   
     gen.Read(gmesh);
     
     if (nz!=0 ) {
@@ -127,25 +136,71 @@ void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h,
         for (auto gel:gmesh->ElementVec()) {
             TPZFMatrix<REAL> coordinates;
             gel->NodesCoordinates(coordinates);
+            int nsides = gel->NSides();
             if(coordinates(2,0)==0){
+                if(IsQuad){
                 gel->CreateBCGeoEl(20, -1);
+                }
+                else{
+                gel->CreateBCGeoEl(15, -1);
+                }
             }
+            
             if(coordinates(2,4)==w){
-                gel->CreateBCGeoEl(25, -1);
+                if(IsQuad){
+                    gel->CreateBCGeoEl(25, -1);
+                }
+                else{
+                    gel->CreateBCGeoEl(19, -1);
+                }
+                
             }
-            
+            REAL sum_cords =coordinates(0,0)+coordinates(0,2)+coordinates(0,3)+coordinates(0,5);
             if(coordinates(0,0)==0.0 ){
-                gel->CreateBCGeoEl(24, -4);
+                if (IsQuad) {
+                    gel->CreateBCGeoEl(24, -4);
+                }
+                else if(sum_cords==0){
+                   
+                    gel->CreateBCGeoEl(18, -4);
+                }
+                
             }
+            sum_cords =coordinates(1,0)+coordinates(1,1)+coordinates(1,3)+coordinates(1,4);
             if(coordinates(1,0)==0.0 ){
-                gel->CreateBCGeoEl(21, -3);
+                
+                
+                if (IsQuad) {
+                    gel->CreateBCGeoEl(21, -3);
+                }
+                else if (sum_cords==0){
+                   
+                    gel->CreateBCGeoEl(16, -3);
+                }
+                
             }
-            
+            sum_cords =coordinates(0,1)+coordinates(0,2)+coordinates(0,4)+coordinates(0,5);
             if(coordinates(0,1)== L ){
-                gel->CreateBCGeoEl(22, -2);
+                if (IsQuad) {
+                     gel->CreateBCGeoEl(22, -2);
+                }
+                else if (sum_cords==4*L)
+                {
+                    
+                    gel->CreateBCGeoEl(17, -2);
+                }
+               
             }
-            if(coordinates(1,3)==h){
-                gel->CreateBCGeoEl(23, -3);
+            if(coordinates(1,1)==h){
+                if (IsQuad) {
+                    gel->CreateBCGeoEl(23, -3);
+                }
+                else{
+                    std::cout<<"Cords: "<<std::endl;
+                    coordinates.Print(std::cout);
+                    gel->CreateBCGeoEl(17, -3);
+                }
+                
             }
         };
         gmesh->SetDimension(3);
@@ -749,7 +804,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-                sub->SetAnalysisSparse(0);
+//                sub->SetAnalysisSparse(0);
             }
         }
     }

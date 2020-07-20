@@ -75,9 +75,18 @@ void TMRSMixedAnalysis::RunTimeStep(){
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
+        x +=dx;
+//        PostProcessTimeStep();
         cmesh->UpdatePreviousState(-1);
-        cmesh->LoadSolutionFromMultiPhysics();
-        AssembleResidual();
+//        PostProcessTimeStep();
+//        cmesh->LoadSolutionFromMultiPhysics();
+        TPZMFSolutionTransfer soltransfer;
+        soltransfer.BuildTransferData(cmesh);
+        soltransfer.TransferFromMultiphysics();
+//        PostProcessTimeStep();
+//        Solution() = x;
+
+        Assemble();
         res_norm = Norm(Rhs());
 
 #ifdef PZDEBUG
@@ -115,7 +124,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
 
     if(mIsFirstAssembleQ == true)
     {
-        fStructMatrix->SetNumThreads(0);
+        fStructMatrix->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
         int64_t nel = fCompMesh->NElements();
         for(int64_t el = 0; el<nel; el++)
         {

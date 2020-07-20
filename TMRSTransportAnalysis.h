@@ -22,6 +22,7 @@
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 #include <Eigen/PardisoSupport>
+#include "TPZSparseMatrixEigen.h"
 
 template<typename StorageIndex = typename Eigen::SparseMatrix<REAL>::StorageIndex >
 class Triplet
@@ -49,6 +50,7 @@ class TMRSTransportAnalysis : public TPZAnalysis {
     
 private:
     
+    TPZSparseMatrixAT_Eigen *fTransportSpMatrix;
     /// Data transfer object
     TMRSDataTransfer * m_sim_data;
     
@@ -61,7 +63,7 @@ private:
     
     TPZFMatrix<STATE>  M_diag;
     
-    bool m_parallel_execution_Q = true;
+    bool m_parallel_execution_Q = false;
     
     Eigen::SparseMatrix<REAL> m_mass;
     Eigen::SparseMatrix<REAL> m_transmissibility;

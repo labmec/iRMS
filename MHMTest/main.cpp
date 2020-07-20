@@ -125,7 +125,7 @@ void SimpleTest2D(){
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(1);
+    aspace.ApplyUniformRefinement(0);
     
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
@@ -623,14 +623,14 @@ void SimpleTest3D(){
     
     TMRSApproxSpaceGenerator aspace;
 //    aspace.LoadGeometry(geometry_file);
-    double nx = 2;
+    double nx = 3;
     double ny = 2;
-    double nz = 1;
+    double nz = 3;
     double L = 10;
     double H = 10;
     double W = 10;
     aspace.CreateUniformMesh(nx, L, ny, H,nz,W);
-    aspace.ApplyUniformRefinement(3);
+    aspace.ApplyUniformRefinement(2);
     
     aspace.PrintGeometry(name);
     aspace.SetDataTransfer(sim_data);
@@ -656,7 +656,7 @@ void SimpleTest3D(){
     auto phi = reservoir_properties.Create_phi();
     auto s0 = reservoir_properties.Create_s0();
     
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kx,ky,kz,phi,s0);
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     
@@ -678,7 +678,7 @@ void SimpleTest3D(){
     
     // Print initial condition
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
-    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
+//    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
     sfi_analysis->PostProcessTimeStep();
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
     std::cout << "Mass report at time : " << 0.0 << std::endl;
@@ -722,7 +722,7 @@ void UNISIMTest(){
     bool is3DQ = true;
     bool print3DMesh = true;
 //    TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
-//    
+//
 //    aspace.mGeometry = gmesh;
     
     
@@ -753,8 +753,8 @@ void UNISIMTest(){
         sfi_analysis->SetDataTransfer(&sim_data);
         sfi_analysis->Configure(n_threads, UsePardiso_Q);
     
-//    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
-//    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
+    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
     
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
@@ -830,7 +830,7 @@ void UNISIMTest(){
         if (sim_time >=  current_report_time) {
           std::cout << "Time step number:  " << it << std::endl;
           std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
-          sfi_analysis->m_mixed_module->LoadSolution();
+//        sfi_analysis->m_mixed_module->LoadSolution();
           TPZMultiphysicsCompMesh *mphys = dynamic_cast<TPZMultiphysicsCompMesh *>(sfi_analysis->m_mixed_module->Mesh());
           if(!mphys) DebugStop();
 
@@ -1248,7 +1248,7 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -0.0;//9.82e-6;
+    grav[1] = -0.0;//-9.81;
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
@@ -1424,7 +1424,7 @@ TMRSDataTransfer Setting3D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_n_steps = 20;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 0.001*day;
+    sim_data.mTNumerics.m_dt      = 0.001;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -1672,8 +1672,8 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_max_iter_sfi = 10;
 
     sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTGeometry.mnLayers=2;
-    sim_data.mTGeometry.mnref=1;
+    sim_data.mTGeometry.mnLayers=1;
+    sim_data.mTGeometry.mnref=0;
     
     //Reservoir Props
 //    std::function<std::vector<REAL>(const TPZVec<REAL> & )> kappa_phi;
@@ -1693,7 +1693,7 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 2;
+    sim_data.mTNumerics.m_n_steps = 20;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 10*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -1701,7 +1701,7 @@ TMRSDataTransfer SettingUNISIM(){
     std::vector<REAL> grav(3,0.0);
     grav[2] = -9.8*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     
     // PostProcess controls
@@ -1844,7 +1844,7 @@ void ModifyTopeAndBase(TPZGeoMesh * gmesh, std::string filename){
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
 //    std::string filename2 = "Reservoir/base_unisimMOD.txt";
     
-     std::string filename1 = "Reservoir/topeMOD.txt";
+    std::string filename1 = "Reservoir/topeMOD.txt";
     std::string filename2 = "Reservoir/baseMOD.txt";
     std::vector<double> x, y, z, x1,y1,z1;
     ReadData(filename1, true, x, y, z);

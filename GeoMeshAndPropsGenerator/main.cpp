@@ -123,7 +123,7 @@ void UNISIMGeoMesh(){
     gRefDBase.InitializeAllUniformRefPatterns();
     TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
     aspace.SetGeometry(gmesh);
-    aspace.ApplyUniformRefinement(1);
+//    aspace.ApplyUniformRefinement(1);
     std::ofstream file("geo.vtk");
     TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
     {

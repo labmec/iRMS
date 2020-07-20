@@ -147,6 +147,9 @@ file (COPY PetroPhysics  DESTINATION ./MHMTest/Release)
 file (COPY PreProcess  DESTINATION ./MHMTest/Debug)
 file (COPY PreProcess  DESTINATION ./MHMTest/Release)
 
+file(COPY Reservoir DESTINATION ./MHMTest/Debug)
+file(COPY Reservoir DESTINATION ./MHMTest/Release)
+
 file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Debug)
 file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Release)
 

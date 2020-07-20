@@ -61,7 +61,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     GetSolutionVector(solvec);
     
 
-//    ef.fMat *= -1.0*Glambda;
+    ef.fMat *= -1.0*Glambda;
     /** @brief Computes z = alpha * opt(this)*x + beta * y */
     /** @note z and x cannot overlap in memory */
     //    void MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,

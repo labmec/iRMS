@@ -202,7 +202,7 @@ public:
         
     public:
         REAL mPorosity;
-        bool fPropsFromPreProcess;
+        bool fPropsFromPreProcess = false;
         std::function<std::vector<REAL>(const TPZVec<REAL> & )> kappa_phi;
         std::function<REAL(const TPZVec<REAL> & )> s0;
         std::string mPropsFileName="";
