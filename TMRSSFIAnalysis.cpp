@@ -298,6 +298,7 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     }
     
     m_transport_module->fAlgebraicTransport.fdt = sim_data->mTNumerics.m_dt;
+    
     m_transport_module->AnalyzePattern();
     
 }

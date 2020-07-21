@@ -114,7 +114,7 @@ void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h,
     //    if (ny!=0) {
     //        <#statements#>
     //    }
-    bool IsQuad= false;
+    bool IsQuad= true;
     if (IsQuad) {
         gen.SetElementType(MMeshType::EQuadrilateral);
     }

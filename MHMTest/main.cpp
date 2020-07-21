@@ -121,7 +121,7 @@ void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(2, 10, 2, 10);
+    aspace.CreateUniformMesh(4, 10, 1, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     
@@ -143,6 +143,7 @@ void SimpleTest2D(){
     
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
+
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);

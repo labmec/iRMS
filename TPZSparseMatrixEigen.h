@@ -57,13 +57,13 @@ protected:
 };
 
 
-class TPZSparseMatrixAT_Eigen {
+class TPZAnalysisAuxEigen {
 private:
     TPZAlgebraicTransport *fAlgebraicTransport;
     Eigen::SparseMatrix<REAL> m_mass;
     Eigen::SparseMatrix<REAL> m_transmissibility;
     Eigen::SparseMatrix<REAL> m_rhs;
-    Eigen::Matrix<REAL, Eigen::Dynamic, 1> fds;
+    Eigen::Matrix<REAL, Eigen::Dynamic, 1> m_ds;
     
     std::vector<Triplet2<REAL> >           m_trans_triplets;
     std::vector<Triplet2<REAL> >           m_rhs_triplets;
@@ -71,14 +71,27 @@ private:
     Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
     
 public:
-    TPZSparseMatrixAT_Eigen(){
+    TPZAnalysisAuxEigen(){
         
     }
-    void SetAlgebraicTransport(TPZAlgebraicTransport *algebraicTransport){
-        fAlgebraicTransport =algebraicTransport;
+    TPZAnalysisAuxEigen(TPZAlgebraicTransport *algebraicTransport){
+        fAlgebraicTransport = algebraicTransport;
     }
-    void AssembleMassParallel();
-    void AssembleParallel();
+    void SetAlgebraicTransport(TPZAlgebraicTransport *algebraicTransport){
+        fAlgebraicTransport = algebraicTransport;
+    }
+    void AssembleMass();
+    void Assemble();
+    void AssembleResidual();
+    int  NRhsRows();
+    Eigen::SparseMatrix<REAL> Rhs();
+    REAL RhsNorm(){
+        return m_rhs.norm();
+    }
+    Eigen::Matrix<REAL, Eigen::Dynamic, 1> Solution(){
+        return m_ds;
+    }
+    
     void AnalyzePattern();
     void Solve();
     

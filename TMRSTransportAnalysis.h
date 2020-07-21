@@ -50,7 +50,7 @@ class TMRSTransportAnalysis : public TPZAnalysis {
     
 private:
     
-    TPZSparseMatrixAT_Eigen *fTransportSpMatrix;
+    TPZAnalysisAuxEigen *fTransportSpMatrix;
     /// Data transfer object
     TMRSDataTransfer * m_sim_data;
     
@@ -126,11 +126,11 @@ public:
     void AssembleResidual_serial();
     
     /// Perform a Newton iteration eigen based.
-    void NewtonIteration_parallel();
+    void NewtonIteration_Eigen();
     
     void Assemble_mass_parallel();
     void Assemble_parallel();
-    void AssembleResidual_parallel();
+    void AssembleResidual_Eigen();
     void AnalyzePattern();
     
     void ComputeInitialGuess(TPZFMatrix<STATE> &x);

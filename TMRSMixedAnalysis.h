@@ -24,7 +24,7 @@ private:
     
     /// Data transfer object
     TMRSDataTransfer * m_sim_data;
-    
+    TPZMFSolutionTransfer fsoltransfer;
 
     /// Number of iterations
     int m_k_iteration;
@@ -34,8 +34,7 @@ private:
 public:
     bool  mIsFirstAssembleQ=true;
     
-    TPZMFSolutionTransfer m_soltransportTransfer;
-
+    
     
     /// Default constructor
     TMRSMixedAnalysis();

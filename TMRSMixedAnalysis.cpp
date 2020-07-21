@@ -18,7 +18,7 @@ TMRSMixedAnalysis::~TMRSMixedAnalysis(){
 }
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZAnalysis(cmesh_mult, must_opt_band_width_Q){
-    m_soltransportTransfer.BuildTransferData(cmesh_mult);
+    fsoltransfer.BuildTransferData(cmesh_mult);
 }
 
 void TMRSMixedAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
@@ -52,6 +52,8 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
         SetSolver(step);
         SetStructuralMatrix(matrix);
     }
+    
+   
     //    Assemble();
 }
 
@@ -76,16 +78,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
         dx = Solution();
         corr_norm = Norm(dx);
         x +=dx;
-//        PostProcessTimeStep();
         cmesh->UpdatePreviousState(-1);
-//        PostProcessTimeStep();
-//        cmesh->LoadSolutionFromMultiPhysics();
-        TPZMFSolutionTransfer soltransfer;
-        soltransfer.BuildTransferData(cmesh);
-        soltransfer.TransferFromMultiphysics();
-//        PostProcessTimeStep();
-//        Solution() = x;
-
+        fsoltransfer.TransferFromMultiphysics();
         Assemble();
         res_norm = Norm(Rhs());
 
