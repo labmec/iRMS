@@ -79,7 +79,7 @@ void TMRSTransportAnalysis::Assemble(){
 }
 
 void TMRSTransportAnalysis::Assemble_serial(){
-    TPZAnalysis::Assemble();
+//    TPZAnalysis::Assemble();
     int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
     if(!this->fSolver){
         DebugStop();
@@ -95,9 +95,10 @@ void TMRSTransportAnalysis::Assemble_serial(){
     {
         mat = fSolver->Matrix().operator->();
     }
-    mat->Redim(ncells, ncells);
-    fRhs.Redim(ncells,1);
-    
+//    mat->Redim(ncells, ncells);
+//    fRhs.Redim(ncells,1);
+    mat->Zero();
+    fRhs.Zero();
     //Volumetric Elements
     for (int ivol = 0; ivol<ncells; ivol++) {
         int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
@@ -165,6 +166,11 @@ void TMRSTransportAnalysis::Assemble_serial(){
         fRhs.AddFel(ef, destinationindex);
     }
     
+   TPZSpMatrixEigen<REAL> *mat2 = dynamic_cast<TPZSpMatrixEigen<REAL>*>(mat);
+   std::cout<<mat2->fsparse_eigen.toDense()<<std::endl;
+    TPZFMatrix<double> A;
+    mat2->GetSub(2, 3, 2, 1, A);
+    A.Print(std::cout);
     
 }
 
@@ -363,7 +369,8 @@ void TMRSTransportAnalysis::NewtonIteration_serial(){
     TPZMatrix<STATE>*mat = Solver().Matrix().operator->();
     
     TPZSpMatrixEigen<STATE> *mateig = dynamic_cast<TPZSpMatrixEigen<STATE> *>(mat);
-    mateig->fsparse_eigen.setZero();
+//    mateig->fsparse_eigen*0.0;
+   
     Rhs() *= 0.0;
 }
 

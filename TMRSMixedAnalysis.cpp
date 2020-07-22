@@ -7,7 +7,8 @@
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
-
+#include "TPZSpStructMatrix_Eigen.h"
+#include "TPZSpMatrixEigen.h"
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(){
     
@@ -43,6 +44,13 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
         TPZStepSolver<STATE> step;
         step.SetDirect(ELDLt);
         SetSolver(step);
+//        TPZSpStructMatrixEigen matrix(Mesh());
+//        matrix.SetNumThreads(n_threads);
+//        SetStructuralMatrix(matrix);
+//        TPZStepSolver<STATE> step;
+//        step.SetDirect(ELU);
+//        SetSolver(step);
+        
         
     }else{
         TPZSkylineStructMatrix matrix(Mesh());
@@ -148,6 +156,10 @@ void TMRSMixedAnalysis::NewtonIteration(){
     auto deltat2 = tsim3-tsim1;
     std::cout << "Mixed:: Solve time " << deltat2 << std::endl;
 #endif
+//    TPZMatrix<STATE>*mat = Solver().Matrix().operator->();
+//    
+//    TPZSpMatrixEigen<STATE> *mateig = dynamic_cast<TPZSpMatrixEigen<STATE> *>(mat);
+//    mateig->fsparse_eigen*0.0;
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(){

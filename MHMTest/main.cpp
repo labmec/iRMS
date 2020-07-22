@@ -1239,11 +1239,11 @@ TMRSDataTransfer SettingSimple2D(){
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
     sim_data.mTNumerics.m_max_iter_transport = 10;
-    sim_data.mTNumerics.m_max_iter_sfi = 5;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.000001;
-    sim_data.mTNumerics.m_n_steps = 2;
+    sim_data.mTNumerics.m_max_iter_sfi = 20;
+    sim_data.mTNumerics.m_sfi_tol = 0.01;
+    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
+    sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 0.01 ;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;

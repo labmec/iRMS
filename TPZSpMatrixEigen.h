@@ -5,8 +5,8 @@
 //  Created by Jose on 7/20/20.
 //
 
-#ifndef TPZSpMatrixEigen_hpp
-#define TPZSpMatrixEigen_hpp
+#ifndef TPZSpMatrixEigen_h
+#define TPZSpMatrixEigen_h
 
 #include <stdio.h>
 #include "pzanalysis.h"
@@ -25,6 +25,9 @@
 #include <Eigen/PardisoSupport>
 #include "TPZAnalysisAuxEigen.h"
 #include "TPZSpMatrixEigen.h"
+#include <Eigen/Sparse>
+#include <vector>
+#include <iostream>
 
 template<typename StorageIndex = typename Eigen::SparseMatrix<REAL>::StorageIndex >
 class Triplet3
@@ -34,7 +37,7 @@ public:
     Triplet3() : m_row(0), m_col(0), m_value(0) {}
     
     Triplet3(const StorageIndex& i, const StorageIndex& j, const REAL& v = REAL(0))
-    : m_row(i), m_col(j), m_value(v)
+    : m_row(i), m_col(j),m_value(v)
     {}
     
     const StorageIndex& row() const { return m_row; }
@@ -44,7 +47,6 @@ public:
 protected:
     
     StorageIndex m_row, m_col;
-    
     REAL m_value;
 };
 
@@ -53,7 +55,7 @@ protected:
     class TPZSpMatrixEigen : public TPZMatrix<TVar> {
         
         public :
-        
+
         /** @brief An auxiliary structure to hold the data of the subset \n of equations used to multiply in a multi-threaded environment */
         /**
          In future versions this structure should be defined in a derived class
@@ -73,15 +75,12 @@ protected:
         static void * ExecuteMT(void *entrydata);
         
     public:
-        Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  *f_solver;
+        
         TPZSpMatrixEigen();
-        int jose=1;
         TPZSpMatrixEigen(const int64_t rows,const int64_t cols );
-        
         TPZSpMatrixEigen(const TPZVerySparseMatrix<TVar> &cp);
-        
         TPZSpMatrixEigen &operator=(const TPZSpMatrixEigen<TVar> &copy);
-//        TPZSpMatrixEigen &operator=(const TPZVerySparseMatrix<TVar> &cp);
+//      TPZSpMatrixEigen &operator=(const TPZVerySparseMatrix<TVar> &cp);
         
         CLONEDEF(TPZSpMatrixEigen)
         
@@ -97,12 +96,8 @@ protected:
         virtual const TVar &GetVal(const int64_t row,const int64_t col ) const override;
         
         
-        bool isNull(const Eigen::SparseMatrix<TVar>& mat, int row, int col);
+        bool isNull( Eigen::SparseMatrix<REAL>& mat, int row, int col);
 
-        int64_t NumTerms()
-        {
-            return fIA[this->Rows()];
-        }
         
         int PutVal(const int64_t row, const int64_t col, const TVar &Value) override;
         
@@ -144,23 +139,7 @@ protected:
          * @param tol The tolerance value.
          * @param FromCurrent It starts the solution based on FromCurrent. Obtaining solution FromCurrent + 1.
          */
-        virtual void SolveJacobi(int64_t & numiterations, const TPZFMatrix<TVar> & F, TPZFMatrix<TVar> & result,
-                                 TPZFMatrix<TVar> * residual, TPZFMatrix<TVar> & scratch, REAL & tol, const int FromCurrent = 0)  override;
         
-        void SolveSOR(int64_t &numiterations, const TPZFMatrix<TVar> &rhs, TPZFMatrix<TVar> &x,
-                      TPZFMatrix<TVar> *residual, TPZFMatrix<TVar> &scratch,
-                      const REAL overrelax, REAL &tol,
-                      const int FromCurrent = 0,const int direction = 1 )  override;
-        // @}
-        
-        /**
-         * @brief Add a contribution of a stiffness matrix
-         * putting it on destination indexes position
-         */
-//        virtual void AddKelOld(
-//                               TPZFMatrix<TVar> & elmat //! Member stiffness matrix beeing added
-//                               , TPZVec < int > & destinationindex //! Positioning of such members on global stiffness matrix
-//        );
         
         virtual void AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & destinationindex) override;
         
@@ -206,18 +185,17 @@ protected:
         /*
          * @brief Perform row update of the sparse matrix
          */
-        void RowLUUpdate(int64_t sourcerow, int64_t destrow);
+        
         
  
     public:
         Eigen::SparseMatrix<REAL> fsparse_eigen;
-       
+//        Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> valor;
         Eigen::SparseMatrix<REAL> rhs;
         protected:
         TPZVec<int64_t>  fIA;
         TPZVec<int64_t>  fJA;
         TPZVec<TVar> fA;
-        
         TPZVec<TVar> fDiag;
         
         int   fSymmetric;
@@ -271,45 +249,7 @@ protected:
             }
         }
         fsparse_eigen.setFromTriplets(triplets.begin(), triplets.end());
-        Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  *solver;
-        f_solver->analyzePattern(fsparse_eigen);
-//        std::cout<<fsparse_eigen<<std::endl;
-////        fsparse_eigen.insert(0,3)=4.0;
-//        std::cout<<fsparse_eigen<<std::endl;
         
-       
-        std::cout<<"IA VECTOR: "<<std::endl;
-        for (int i=0; i< IA.size(); i++) {
-            std::cout<<IA[i]<<std::endl;
-        }
-        std::cout<<std::endl;
-        std::cout<<"JA VECTOR: "<<std::endl;
-        for (int i=0; i< JA.size(); i++) {
-            std::cout<<JA[i]<<std::endl;
-        }
-        std::cout<<std::endl;
-        std::cout<<"A VECTOR: "<<std::endl;
-        for (int i=0; i< A.size(); i++) {
-            std::cout<<A[i]<<std::endl;
-        }
-        std::cout<<std::endl;
-        
-        std::cout<<"ni= "<<IA.size()<<" nj= "<<JA.size()<<" a= "<<A.size()<<std::endl;
-        for(int ival =0; ival < IA.size(); ival++){
-            for(int jval =0; jval < JA.size(); jval++){
-                
-//                tripletsinitial[count] = trip;
-                std::cout<<"Triplet: i="<<ival<<" j= "<<jval<<" val= "<<ival+jval<<std::endl;
-                count++;
-            }
-           
-        }
-//
-//       
-//        fsparse_eigen.setFromTriplets(tripletsinitial.begin(), tripletsinitial.end());
-//        std::cout<<std::endl;
-//        std::cout<<":o "<<fsparse_eigen.toDense();
-//        sparse_eigen.AnalysePattern();
         if (IA.size() != this->Rows() + 1 ) {
             DebugStop();
         }
@@ -318,9 +258,9 @@ protected:
             DebugStop();
         }
         
-        fIA = IA;
-        fJA = JA;
-        fA = A;
+//        fIA = IA;
+//        fJA = JA;
+//        fA = A;
     }
 ;
 
