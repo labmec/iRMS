@@ -22,7 +22,7 @@
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 #include <Eigen/PardisoSupport>
-#include "TPZSparseMatrixEigen.h"
+#include "TPZAnalysisAuxEigen.h"
 
 template<typename StorageIndex = typename Eigen::SparseMatrix<REAL>::StorageIndex >
 class Triplet

@@ -23,8 +23,8 @@
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 #include <Eigen/PardisoSupport>
-#include "TPZSparseMatrixEigen.h"
-
+#include "TPZAnalysisAuxEigen.h"
+#include "TPZSpMatrixEigen.h"
 
 template<typename StorageIndex = typename Eigen::SparseMatrix<REAL>::StorageIndex >
 class Triplet3
@@ -52,10 +52,6 @@ protected:
     template<class TVar>
     class TPZSpMatrixEigen : public TPZMatrix<TVar> {
         
-#ifdef USING_MKL
-        friend class TPZPardisoControl<TVar>;
-#endif
-        
         public :
         
         /** @brief An auxiliary structure to hold the data of the subset \n of equations used to multiply in a multi-threaded environment */
@@ -77,15 +73,14 @@ protected:
         static void * ExecuteMT(void *entrydata);
         
     public:
-        
+        Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  *f_solver;
         TPZSpMatrixEigen();
-        
+        int jose=1;
         TPZSpMatrixEigen(const int64_t rows,const int64_t cols );
         
         TPZSpMatrixEigen(const TPZVerySparseMatrix<TVar> &cp);
         
         TPZSpMatrixEigen &operator=(const TPZSpMatrixEigen<TVar> &copy);
-        
 //        TPZSpMatrixEigen &operator=(const TPZVerySparseMatrix<TVar> &cp);
         
         CLONEDEF(TPZSpMatrixEigen)
@@ -101,6 +96,9 @@ protected:
         /** @brief Get the matrix entry at (row,col) without bound checking */
         virtual const TVar &GetVal(const int64_t row,const int64_t col ) const override;
         
+        
+        bool isNull(const Eigen::SparseMatrix<TVar>& mat, int row, int col);
+
         int64_t NumTerms()
         {
             return fIA[this->Rows()];
@@ -213,6 +211,8 @@ protected:
  
     public:
         Eigen::SparseMatrix<REAL> fsparse_eigen;
+       
+        Eigen::SparseMatrix<REAL> rhs;
         protected:
         TPZVec<int64_t>  fIA;
         TPZVec<int64_t>  fJA;
@@ -257,19 +257,53 @@ protected:
     template<class TVar>
     inline void TPZSpMatrixEigen<TVar>::SetData( TPZVec<int64_t> &IA, TPZVec<int64_t> &JA, TPZVec<TVar> &A ){
         fsparse_eigen.setZero();
+        std::vector<Triplet3<REAL> > triplets(A.size());
+        int nrows = IA.size()-1;
+        int count =0;
+        for (int irow = 0; irow < nrows; irow++) {
+            for(int k=IA[irow]; k<IA[irow+1]; k++){
+                int row= irow;
+                int col = JA[k];
+                REAL val = A[k];
+                Triplet3<REAL> trip(row, col, val);
+                triplets[count] = trip;
+                count++;
+            }
+        }
+        fsparse_eigen.setFromTriplets(triplets.begin(), triplets.end());
+        Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  *solver;
+        f_solver->analyzePattern(fsparse_eigen);
+//        std::cout<<fsparse_eigen<<std::endl;
+////        fsparse_eigen.insert(0,3)=4.0;
+//        std::cout<<fsparse_eigen<<std::endl;
         
-//        std::vector<Triplet3<REAL> > tripletsinitial(16);
-//        int count =0;
-//        std::cout<<"ni= "<<IA.size()<<" nj= "<<JA.size()<<" a= "<<A.size()<<std::endl;
-//        for(int ival =0; ival < IA.size(); ival++){
-//            for(int jval =0; jval < JA.size(); jval++){
-//                Triplet3<REAL> trip(ival, jval, 10.0);
+       
+        std::cout<<"IA VECTOR: "<<std::endl;
+        for (int i=0; i< IA.size(); i++) {
+            std::cout<<IA[i]<<std::endl;
+        }
+        std::cout<<std::endl;
+        std::cout<<"JA VECTOR: "<<std::endl;
+        for (int i=0; i< JA.size(); i++) {
+            std::cout<<JA[i]<<std::endl;
+        }
+        std::cout<<std::endl;
+        std::cout<<"A VECTOR: "<<std::endl;
+        for (int i=0; i< A.size(); i++) {
+            std::cout<<A[i]<<std::endl;
+        }
+        std::cout<<std::endl;
+        
+        std::cout<<"ni= "<<IA.size()<<" nj= "<<JA.size()<<" a= "<<A.size()<<std::endl;
+        for(int ival =0; ival < IA.size(); ival++){
+            for(int jval =0; jval < JA.size(); jval++){
+                
 //                tripletsinitial[count] = trip;
-//                std::cout<<"Triplet: i="<<ival<<" j= "<<jval<<" val= "<<ival+jval<<std::endl;
-//                count++;
-//            }
-//           
-//        }
+                std::cout<<"Triplet: i="<<ival<<" j= "<<jval<<" val= "<<ival+jval<<std::endl;
+                count++;
+            }
+           
+        }
 //
 //       
 //        fsparse_eigen.setFromTriplets(tripletsinitial.begin(), tripletsinitial.end());
@@ -288,6 +322,8 @@ protected:
         fJA = JA;
         fA = A;
     }
+;
+
     
 #endif
 

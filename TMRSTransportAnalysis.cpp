@@ -16,7 +16,7 @@
 #include <tbb/parallel_for.h>
 #endif
 #include "TPZSpStructMatrix_Eigen.h"
-
+#include "TPZSpMatrixEigen.h"
 TMRSTransportAnalysis::TMRSTransportAnalysis(){
     
 }
@@ -255,6 +255,8 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     x += Solution();
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
+    x.Print("Sol=",std::cout, EMathematicaInput);
+//    PostProcessTimeStep();
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
 //    PostProcessTimeStep();
@@ -351,12 +353,18 @@ void TMRSTransportAnalysis::NewtonIteration(){
 }
 
 void TMRSTransportAnalysis::NewtonIteration_serial(){
+    
     Assemble();
     Rhs() *= -1.0;
     Rhs().Print(std::cout);
 //    Solver().Matrix()->Print("j = ",std::cout,EMathematicaInput);
 //    Rhs().Print("r = ",std::cout,EMathematicaInput);
     Solve();
+    TPZMatrix<STATE>*mat = Solver().Matrix().operator->();
+    
+    TPZSpMatrixEigen<STATE> *mateig = dynamic_cast<TPZSpMatrixEigen<STATE> *>(mat);
+    mateig->fsparse_eigen.setZero();
+    Rhs() *= 0.0;
 }
 
 void TMRSTransportAnalysis::AnalyzePattern(){

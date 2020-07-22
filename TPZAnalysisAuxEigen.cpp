@@ -4,7 +4,7 @@
 //
 //  Created by Jose on 7/17/20.
 //
-#include "TPZSparseMatrixEigen.h"
+#include "TPZAnalysisAuxEigen.h"
 
 void TPZAnalysisAuxEigen::AssembleMass(){
     int n_cells = fAlgebraicTransport->fCellsData.fVolume.size();

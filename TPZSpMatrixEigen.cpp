@@ -29,23 +29,7 @@ using namespace std;
 template<class TVar>
 void TPZSpMatrixEigen<TVar>::InitializeData(){}
 
-template<class TVar>
-void TPZSpMatrixEigen<TVar>::MultiplyDummy(TPZSpMatrixEigen<TVar> & B, TPZSpMatrixEigen<TVar> & Res){
-    int64_t i,j,k;
-    if (B.Rows()!=this->Rows()) return;
-    int64_t rows = this->Rows();
-    REAL aux=0.;
-    for(i=0;i<rows;i++){
-        for(j=0;j<rows;j++){
-            for(k=0;k<rows;k++){
-                // C[i][j] += A[i][k]*B[k][j];
-                aux+=GetVal(i,k)*B.GetVal(i,k);
-            }
-            Res.PutVal(i,j,aux);
-            aux=0.;
-        }
-    }
-}
+
 
 // ****************************************************************************
 //
@@ -71,7 +55,6 @@ TPZMatrix<TVar>(), fIA(1,0),fJA(),fA(),fDiag(), fsparse_eigen(0,0)
 
 template<class TVar>
 TPZSpMatrixEigen<TVar> &TPZSpMatrixEigen<TVar>::operator=(const TPZSpMatrixEigen<TVar> &cp) {
-    // Deletes everything associated with a TPZSpMatrixEigen
     TPZMatrix<TVar>::operator=(cp);
     fsparse_eigen = cp.fsparse_eigen;
     fIA = cp.fIA;
@@ -82,75 +65,23 @@ TPZSpMatrixEigen<TVar> &TPZSpMatrixEigen<TVar>::operator=(const TPZSpMatrixEigen
     return *this;
 }
 
-//template<class TVar>
-//TPZSpMatrixEigen<TVar> &TPZSpMatrixEigen<TVar>::operator=(const TPZVerySparseMatrix<TVar> &cp)
-//{
-//    // Deletes everything associated with a TPZSpMatrixEigen
-//    int64_t nrows = cp.Rows();
-//    
-//    int64_t count = 0, c = 0, r = 0;
-//    
-//    count = cp.fExtraSparseData.size();
-//    fJA.resize(count);
-//    fA.resize(count);
-//    fIA.resize(nrows+1);
-//    fIA[0] = 0;
-//    
-//    typename map< pair<int64_t,int64_t>, TVar>::const_iterator it;
-//    c = 0;
-//    r = 0;
-//    for(it=cp.fExtraSparseData.begin(); it!= cp.fExtraSparseData.end(); it++)
-//    {
-//        int64_t row = it->first.first;
-//        if(r != row)
-//        {
-//            r++;
-//            while(r < row)
-//            {
-//                fIA[r] = c;
-//                r++;
-//            }
-//            fIA[row] = c;
-//            r = row;
-//        }
-//        int64_t col = it->first.second;
-//        fJA[c] = col;
-//        TVar val = it->second;
-//        fA[c] = val;
-//        c++;
-//    }
-//    r++;
-//    while(r<=nrows)
-//    {
-//        fIA[r] = c;
-//        r++;
-//    }
-//    return *this;
-//}
 
 template<class TVar>
 int TPZSpMatrixEigen<TVar>::PutVal(const int64_t row, const int64_t col, const TVar &Value){
     
-    fsparse_eigen.insert(row,col)=Value;
-    int64_t k;
-    int flag=0;
-    for(k=fIA[row];k<fIA[row+1];k++){
-        if(fJA[k]==col){
-            flag=1;
-            fA[k]=Value;
-            break;
-        }
-    }
-    if(!flag)
-    {
-        cout << "TPZSpMatrixEigen::PutVal: Non existing position on sparse matrix: line = " << row << " column " << col << endl;
-        DebugStop();
-        return 0;
-    }
-    else
-    {
-        return 1;
-    }
+    fsparse_eigen.coeffRef(row,col)=Value;
+    
+//    int64_t k;
+//    int flag=0;
+//    for(k=fIA[row];k<fIA[row+1];k++){
+//        if(fJA[k]==col){
+//            flag=1;
+//            fA[k]=Value;
+//            break;
+//        }
+//    }
+
+    return 1;
 }
 template<class TVar>
 void TPZSpMatrixEigen<TVar>::AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & destinationindex){
@@ -165,9 +96,9 @@ void TPZSpMatrixEigen<TVar>::AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & 
             value=elmat.GetVal(i,j);
 //          std::cout<<fsparse_eigen.toDense();
             fsparse_eigen.coeffRef(ipos, jpos) += value;
-            std::cout<<std::endl;
-            std::cout<<std::endl;
-            std::cout<<fsparse_eigen.toDense();
+//            std::cout<<std::endl;
+//            std::cout<<std::endl;
+//            std::cout<<fsparse_eigen.toDense();
            
         }
     }
@@ -226,9 +157,7 @@ TPZRegisterClassId(&TPZSpMatrixEigen::ClassId),TPZMatrix<TVar>(rows,cols) {
     Eigen::SparseMatrix<REAL> sparse_eigen(rows, cols);
     fsparse_eigen = sparse_eigen;
     fsparse_eigen.setZero();
-    std::cout<<fsparse_eigen.toDense();
-    fsparse_eigen.insert(1, 1)=2.0;
-    std::cout<<fsparse_eigen.toDense();
+
     fSymmetric = 0;
     //    fMaxIterations = 4;
     //    fSORRelaxation = 1.;
@@ -849,12 +778,12 @@ int TPZSpMatrixEigen<TVar>::Decompose_LU()
         DebugStop();
     }
     Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
-    m_analysis.analyzePattern(fsparse_eigen);
+//    m_analysis.analyzePattern(fsparse_eigen);
     m_analysis.factorize(fsparse_eigen);
     
-//  s fPardisoControl.SetMatrixType(TPZPardisoControl<TVar>::ENonSymmetric,TPZPardisoControl<TVar>::EIndefinite);
-  //  fPardisoControl.Decompose();
-    
+//   fPardisoControl.SetMatrixType(TPZPardisoControl<TVar>::ENonSymmetric,TPZPardisoControl<TVar>::EIndefinite);
+//    fPardisoControl.Decompose();
+   
     this->SetIsDecomposed(ELU);
     return 1;
 #endif
@@ -881,62 +810,25 @@ template<class TVar>
 int TPZSpMatrixEigen<TVar>::Substitution( TPZFMatrix<TVar> *B ) const
 {
     
-#ifdef USING_MKL
     TPZFMatrix<TVar> x(*B);
+    x.Print(std::cout);
+    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
+    m_analysis.analyzePattern(fsparse_eigen);
+    m_analysis.factorize(fsparse_eigen);
+    int nrows = x.Rows();
+    Eigen::SparseMatrix<REAL> r_hs(nrows,1);
+    for (int i=0; i< nrows; i++) {
+        r_hs.insert(i, 0) = x.Get(i, 0);
+    }
+    std::cout<<r_hs.toDense()<<std::endl;
+    Eigen::SparseMatrix<REAL> dsol = m_analysis.solve(r_hs);
+    std::cout<<dsol.toDense()<<std::endl;
 //    fPardisoControl.Solve(*B,x);
+    for (int i=0; i< nrows; i++) {
+        x(i, 0) = dsol.coeff(i, 0);
+    }
    
     *B = x;
-    return 1;
-#endif
-    
-    int64_t row;
-    int64_t bcol = B->Cols();
-    int64_t col;
-    int64_t neq = this->Rows();
-    
-    // forward substitution
-    for(row=0; row<neq; row++)
-    {
-        int64_t firstrow = fIA[row];
-        int64_t lastrow = fIA[row+1];
-        if(fJA[firstrow] > row || fJA[lastrow-1] < row)
-        {
-            cout << __PRETTY_FUNCTION__ << " " << __LINE__ << " inconsistent column information for row " << row << endl;
-            continue;
-        }
-        int64_t rowcounter = firstrow;
-        while(fJA[rowcounter] < row)
-        {
-            for(col=0; col<bcol; col++)
-            {
-                (*B)(row,col) -= fA[rowcounter]*(*B)(fJA[rowcounter],col);
-            }
-        }
-        for(col=0; col<bcol; col++)
-        {
-            (*B)(row,col) /= fA[rowcounter];
-        }
-    }
-    // backward substitution
-    for(row = neq-1; row >= 0; row--)
-    {
-        int64_t firstrow = fIA[row];
-        int64_t lastrow = fIA[row+1];
-        int64_t col = FindCol(&fJA[0]+firstrow,&fJA[0]+lastrow-1,row);
-        if(col < 0)
-        {
-            cout << __PRETTY_FUNCTION__ << " " << __LINE__ << " inconsistent column information for row " << row << endl;
-            continue;
-        }
-        int64_t coldist = firstrow+col+1;
-        while(coldist < lastrow)
-        {
-            for(col=0; col<bcol; col++)
-            {
-                (*B)(row,col) -= fA[coldist]*(*B)(fJA[coldist],col);
-            }
-        }
-    }
     return 1;
 }
 
