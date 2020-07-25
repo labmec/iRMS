@@ -69,7 +69,7 @@ TPZSpMatrixEigen<TVar> &TPZSpMatrixEigen<TVar>::operator=(const TPZSpMatrixEigen
 
 template<class TVar>
 int TPZSpMatrixEigen<TVar>::PutVal(const int64_t row, const int64_t col, const TVar &Value){
-    std::cout<<fsparse_eigen.toDense()<<std::endl;
+//    std::cout<<fsparse_eigen.toDense()<<std::endl;
     if (!isNull(fsparse_eigen, row, col)) {
         fsparse_eigen.coeffRef(row,col)=Value;
     }
@@ -588,18 +588,18 @@ int TPZSpMatrixEigen<TVar>::Substitution( TPZFMatrix<TVar> *B ) const
 {
     
     TPZFMatrix<TVar> x(*B);
-    x.Print(std::cout);
+//    x.Print(std::cout);
     Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
     m_analysis.analyzePattern(fsparse_eigen);
     m_analysis.factorize(fsparse_eigen);
     int nrows = x.Rows();
-    Eigen::SparseMatrix<REAL> r_hs(nrows,1);
+    Eigen::SparseMatrix<REAL> rhs(nrows,1);
     for (int i=0; i< nrows; i++) {
-        r_hs.insert(i, 0) = x.Get(i, 0);
+        rhs.insert(i, 0) = x.Get(i, 0);
     }
-    std::cout<<r_hs.toDense()<<std::endl;
-    Eigen::SparseMatrix<REAL> dsol = m_analysis.solve(r_hs);
-    std::cout<<dsol.toDense()<<std::endl;
+//    std::cout<<r_hs.toDense()<<std::endl;
+    Eigen::SparseMatrix<REAL> dsol = m_analysis.solve(rhs);
+//    std::cout<<dsol.toDense()<<std::endl;
 //    fPardisoControl.Solve(*B,x);
     for (int i=0; i< nrows; i++) {
         x(i, 0) = dsol.coeff(i, 0);

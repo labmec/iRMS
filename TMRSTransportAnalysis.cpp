@@ -165,13 +165,6 @@ void TMRSTransportAnalysis::Assemble_serial(){
         mat->AddKel(elmat, destinationindex);
         fRhs.AddFel(ef, destinationindex);
     }
-    
-   TPZSpMatrixEigen<REAL> *mat2 = dynamic_cast<TPZSpMatrixEigen<REAL>*>(mat);
-   std::cout<<mat2->fsparse_eigen.toDense()<<std::endl;
-    TPZFMatrix<double> A;
-    mat2->GetSub(2, 3, 2, 1, A);
-    A.Print(std::cout);
-    
 }
 
 void TMRSTransportAnalysis::AssembleResidual(){
@@ -261,7 +254,6 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     x += Solution();
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
-    x.Print("Sol=",std::cout, EMathematicaInput);
 //    PostProcessTimeStep();
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
@@ -362,16 +354,10 @@ void TMRSTransportAnalysis::NewtonIteration_serial(){
     
     Assemble();
     Rhs() *= -1.0;
-    Rhs().Print(std::cout);
 //    Solver().Matrix()->Print("j = ",std::cout,EMathematicaInput);
 //    Rhs().Print("r = ",std::cout,EMathematicaInput);
     Solve();
-    TPZMatrix<STATE>*mat = Solver().Matrix().operator->();
-    
-    TPZSpMatrixEigen<STATE> *mateig = dynamic_cast<TPZSpMatrixEigen<STATE> *>(mat);
-//    mateig->fsparse_eigen*0.0;
-   
-    Rhs() *= 0.0;
+
 }
 
 void TMRSTransportAnalysis::AnalyzePattern(){
@@ -385,8 +371,7 @@ void TMRSTransportAnalysis::AnalyzePattern(){
     // Because in some parts this objects are needed.
     Solution().Resize(fTransportSpMatrix->NRhsRows(), 1);
     Rhs().Resize(fTransportSpMatrix->NRhsRows(), 1);
-    std::cout<<"Nrows: "<<fTransportSpMatrix->NRhsRows()<<std::endl;
-    int aka=0;
+
 }
 
 void TMRSTransportAnalysis::NewtonIteration_Eigen(){
