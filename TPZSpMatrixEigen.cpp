@@ -38,13 +38,8 @@ void TPZSpMatrixEigen<TVar>::InitializeData(){}
 // ****************************************************************************
 
 template<class TVar>
-TPZSpMatrixEigen<TVar>::TPZSpMatrixEigen(const TPZVerySparseMatrix<TVar> &cp) : TPZRegisterClassId(&TPZSpMatrixEigen::ClassId),
-TPZMatrix<TVar>
-()
-{
+TPZSpMatrixEigen<TVar>::TPZSpMatrixEigen(const TPZSpMatrixEigen &cp){
     
-    *this = cp;
-
 }
 
 template<class TVar>
@@ -161,109 +156,16 @@ const TVar & TPZSpMatrixEigen<TVar>::GetVal(const int64_t row,const int64_t col 
 
 }
 
-
-template<class TVar>
-void TPZSpMatrixEigen<TVar>::MultAddMT(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y,
-                                     TPZFMatrix<TVar> &z,
-                                     const TVar alpha,const TVar beta,const int opt )  {
-    // computes z = beta * y + alpha * opt(this)*x
-    //          z and x cannot share storage
-    if(x.Cols() != y.Cols() || x.Cols() != z.Cols() || y.Rows() != z.Rows() )
-    {
-        cout << "\nERROR! in TPZVerySparseMatrix::MultiplyAdd : incompatible dimensions in x, y or z\n";
-        return;
-    }
-    
-    int64_t  ir, ic, icol, xcols;
-    xcols = x.Cols();
-    TVar sum;
-    int64_t  r = (opt) ? this->Cols() : this->Rows();
-    
-    // Determine how to initialize z
-    for(ic=0; ic<xcols; ic++) {
-        TVar *zp = &(z(0,ic));
-        if(beta != 0) {
-            const TVar *yp = &(y.g(0,0));
-            TVar *zlast = zp+r;
-            
-            if(&z != &y) {
-                memcpy(zp,yp,r*sizeof(TVar));
-            }
-        } else {
-            TVar *zp = &(z(0,0)), *zlast = zp+r;
-            while(zp != zlast) {
-                *zp = 0.;
-                zp ++;
-            }
-        }
-    }
-    // Compute alpha * A * x
-    if(xcols == 1 && opt == 0)
-    {
-        if(this->Cols() != x.Rows() || this->Rows() != y.Rows())
-        {
-            cout << "\nERROR! in TPZSpMatrixEigen::MultiplyAddMT: incompatible dimensions in opt=false\n";
-            return;
-        }
-        for(ir=0; ir<r; ir++) {
-            int64_t icolmin = fIA[ir];
-            int64_t icolmax = fIA[ir+1];
-            const TVar *xptr = &(x.g(0,0));
-            TVar *Aptr = &fA[0];
-            int64_t *JAptr = &fJA[0];
-            for(sum = 0.0, icol=icolmin; icol<icolmax; icol++ ) {
-                sum += Aptr[icol] * xptr[JAptr[icol]];
-            }
-            z(ir,0) += alpha * sum;
-        }
-    }
-    else
-    {
-        for(ic=0; ic<xcols; ic++) {
-            if(opt == 0) {
-                
-                for(ir=0; ir<this->Rows(); ir++) {
-                    for(sum = 0.0, icol=fIA[ir]; icol<fIA[ir+1]; icol++ ) {
-                        sum += fA[icol] * x.g((fJA[icol]),ic);
-                    }
-                    z(ir,ic) += alpha * sum;
-                }
-            }
-            
-            // Compute alpha * A^T * x
-            else
-            {
-                if (this->Rows() != x.Rows() || this->Cols() != y.Rows())
-                {
-                    cout << "\nERROR! in TPZSpMatrixEigen::MultiplyAddMT: incompatible dimensions in opt=true\n";
-                    return;
-                }
-                int64_t jc;
-                int64_t icol;
-                for(ir=0; ir<this->Rows(); ir++) {
-                    for(icol=fIA[ir]; icol<fIA[ir+1]; icol++ ) {
-                        if(fJA[icol]==-1) break; //Checa a exist�cia de dado ou n�
-                        jc = fJA[icol];
-                        TVar aval = fA[icol];
-                        //cout << "FA["<<icol<<"] = "<<aval<< " * x["<< ir<<"] ="<< x.Get(ir,ic)<< endl;
-                        z(jc,ic) += alpha * aval * x.g(ir,ic);
-                    }
-                }
-            }
-        }
-    }
-}
-
-// ****************************************************************************
-//
-// Multiply and Multiply-Add
-//
-// ****************************************************************************
-
 template<class TVar>
 void TPZSpMatrixEigen<TVar>::MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y,
                                    TPZFMatrix<TVar> &z,
                                    const TVar alpha,const TVar beta,const int opt) const {
+    
+    Eigen::Matrix<TVar, Eigen::Dynamic, Eigen::Dynamic> xeigen,yeigen,zeigen;
+    zeigen = beta*yeigen + alpha*xeigen;
+    
+//    STATE alpha = 1.;
+//    ek.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1);
     // computes z = beta * y + alpha * opt(this)*x
     //          z and x cannot share storage
     
@@ -393,8 +295,7 @@ template<class TVar>
 int TPZSpMatrixEigen<TVar>::Zero()
 {
     fsparse_eigen = 0.0*fsparse_eigen;
-//    fA.Fill(TVar(0.));
-//    fDiag.Fill(TVar(0.));
+
     return 1;
 }
 
@@ -490,74 +391,49 @@ int TPZSpMatrixEigen<TVar>::GetSub(const int64_t sRow,const int64_t sCol,const i
 }
 
 
-template<class TVar>
-void TPZSpMatrixEigen<TVar>::GetSub(const TPZVec<int64_t> &indices,TPZFMatrix<TVar> &block) const
-{
-    std::map<int64_t,int64_t> indord;
-    int64_t i,size = indices.NElements();
-    for(i=0; i<size; i++)
-    {
-        indord[indices[i]] = i;
-    }
-    std::map<int64_t,int64_t>::iterator itset,jtset;
-    for(itset = indord.begin(); itset != indord.end(); itset++)
-    {
-        int64_t *jfirst = &fJA[0]+fIA[(*itset).first];
-        int64_t *jlast = &fJA[0]+fIA[(*itset).first+1]-1;
-        //    int row = (*itset).first;
-        for(jtset = indord.begin(); jtset != indord.end(); jtset++)
-        {
-            int64_t col = FindCol(jfirst,jlast,(*jtset).first);
-            int64_t dist = jfirst+col-&fJA[0];
-            block((*itset).second,(*jtset).second) = fA[dist];
-            jfirst += col+1;
-        }
-    }
-}
-
 /*
  * Perform row update of the sparse matrix
  */
 
 /** @brief Fill matrix storage with randomic values */
 /** This method use GetVal and PutVal which are implemented by each type matrices */
-template<class TVar>
-void TPZSpMatrixEigen<TVar>::AutoFill(int64_t nrow, int64_t ncol, int symmetric)
-{
-    if (symmetric && nrow != ncol) {
-        DebugStop();
-    }
-    TPZFMatrix<TVar> orig;
-    orig.AutoFill(nrow,ncol,symmetric);
-    
-    TPZVec<int64_t> IA(nrow+1);
-    TPZStack<int64_t> JA;
-    TPZStack<TVar> A;
-    IA[0] = 0;
-    TPZVec<std::set<int64_t> > eqs(nrow);
-    for (int64_t row=0; row<nrow; row++) {
-        if(nrow == ncol) eqs[row].insert(row);
-        for (int64_t col = 0; col<ncol; col++) {
-            REAL test = rand()*1./RAND_MAX;
-            if (test > 0.5) {
-                eqs[row].insert(col);
-                if (symmetric) {
-                    eqs[col].insert(row);
-                }
-            }
-        }
-    }
-    int64_t pos=0;
-    for (int64_t row=0; row< nrow; row++) {
-        for (std::set<int64_t>::iterator col = eqs[row].begin(); col != eqs[row].end(); col++) {
-            JA.Push(*col);
-            A.Push(orig(row,*col));
-        }
-        IA[row+1] = JA.size();
-    }
-    TPZMatrix<TVar>::Resize(nrow,ncol);
-    SetData(IA, JA, A);
-}
+//template<class TVar>
+//void TPZSpMatrixEigen<TVar>::AutoFill(int64_t nrow, int64_t ncol, int symmetric)
+//{
+//    if (symmetric && nrow != ncol) {
+//        DebugStop();
+//    }
+//    TPZFMatrix<TVar> orig;
+//    orig.AutoFill(nrow,ncol,symmetric);
+//    
+//    TPZVec<int64_t> IA(nrow+1);
+//    TPZStack<int64_t> JA;
+//    TPZStack<TVar> A;
+//    IA[0] = 0;
+//    TPZVec<std::set<int64_t> > eqs(nrow);
+//    for (int64_t row=0; row<nrow; row++) {
+//        if(nrow == ncol) eqs[row].insert(row);
+//        for (int64_t col = 0; col<ncol; col++) {
+//            REAL test = rand()*1./RAND_MAX;
+//            if (test > 0.5) {
+//                eqs[row].insert(col);
+//                if (symmetric) {
+//                    eqs[col].insert(row);
+//                }
+//            }
+//        }
+//    }
+// 
+//    for (int64_t row=0; row< nrow; row++) {
+//        for (std::set<int64_t>::iterator col = eqs[row].begin(); col != eqs[row].end(); col++) {
+//            JA.Push(*col);
+//            A.Push(orig(row,*col));
+//        }
+//        IA[row+1] = JA.size();
+//    }
+//    TPZMatrix<TVar>::Resize(nrow,ncol);
+//    SetData(IA, JA, A);
+//}
 
 
 /**
@@ -575,7 +451,7 @@ int TPZSpMatrixEigen<TVar>::Decompose_LU()
     if (this->IsDecomposed() != ENoDecompose) {
         DebugStop();
     }
-    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
+    
     m_analysis.analyzePattern(fsparse_eigen);
     m_analysis.factorize(fsparse_eigen);
     
@@ -588,25 +464,16 @@ int TPZSpMatrixEigen<TVar>::Substitution( TPZFMatrix<TVar> *B ) const
 {
     
     TPZFMatrix<TVar> x(*B);
-//    x.Print(std::cout);
-    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
-    m_analysis.analyzePattern(fsparse_eigen);
-    m_analysis.factorize(fsparse_eigen);
     int nrows = x.Rows();
-    Eigen::SparseMatrix<REAL> rhs(nrows,1);
+    Eigen::Matrix<REAL, Eigen::Dynamic, 1> rhs(nrows,1);
     for (int i=0; i< nrows; i++) {
-        rhs.insert(i, 0) = x.Get(i, 0);
+        rhs(i, 0) = x.Get(i, 0);
     }
-//    std::cout<<r_hs.toDense()<<std::endl;
-    Eigen::SparseMatrix<REAL> dsol = m_analysis.solve(rhs);
-//    std::cout<<dsol.toDense()<<std::endl;
-//    fPardisoControl.Solve(*B,x);
+    Eigen::Matrix<REAL, Eigen::Dynamic, 1> dsol = m_analysis.solve(rhs);
     for (int i=0; i< nrows; i++) {
-        x(i, 0) = dsol.coeff(i, 0);
+        x(i, 0) = dsol(i, 0);
     }
-    
     *B = x;
-  
     return 1;
 }
 template<class TVar>
@@ -625,5 +492,3 @@ int TPZSpMatrixEigen<TVar>::ClassId() const{
 template class TPZSpMatrixEigen<long double>;
 template class TPZSpMatrixEigen<double>;
 template class TPZSpMatrixEigen<float>;
-
-

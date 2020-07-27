@@ -52,6 +52,7 @@ void TMRSTransportAnalysis::Configure(int n_threads, bool UsePardiso_Q){
 //        TPZStepSolver<STATE> step;
 //        step.SetDirect(ELU);
 //        SetSolver(step);
+        
         TPZSpStructMatrixEigen matrix(Mesh());
         matrix.SetNumThreads(n_threads);
         SetStructuralMatrix(matrix);

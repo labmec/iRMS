@@ -78,7 +78,7 @@ protected:
         
         TPZSpMatrixEigen();
         TPZSpMatrixEigen(const int64_t rows,const int64_t cols );
-        TPZSpMatrixEigen(const TPZVerySparseMatrix<TVar> &cp);
+        TPZSpMatrixEigen(const TPZSpMatrixEigen &cp);
         TPZSpMatrixEigen &operator=(const TPZSpMatrixEigen<TVar> &copy);
 //      TPZSpMatrixEigen &operator=(const TPZVerySparseMatrix<TVar> &cp);
         
@@ -88,7 +88,7 @@ protected:
         
         /** @brief Fill matrix storage with randomic values */
         /** This method use GetVal and PutVal which are implemented by each type matrices */
-        void AutoFill(int64_t nrow, int64_t ncol, int symmetric);
+//        void AutoFill(int64_t nrow, int64_t ncol, int symmetric);
         
         
         
@@ -104,16 +104,11 @@ protected:
         virtual void MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,
                              const TVar alpha=1.,const TVar beta = 0., const int opt = 0) const override;
         
-        virtual void MultAddMT(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,
-                               const TVar alpha=1.,const TVar beta = 0., const int opt = 0);
+
         
         virtual int GetSub(const int64_t sRow,const int64_t sCol,const int64_t rowSize,
                            const int64_t colSize, TPZFMatrix<TVar> & A ) const override;
         
-        void GetSub(const TPZVec<int64_t> &indices,TPZFMatrix<TVar> &block) const override;
-        
-        /** @brief Pass the data to the class. */
-        virtual void SetData( int64_t *IA, int64_t *JA, TVar *A );
         
         /** @brief Pass the data to the class. */
         virtual void SetData( TPZVec<int64_t> &IA, TPZVec<int64_t> &JA, TPZVec<TVar> &A );
@@ -121,31 +116,13 @@ protected:
         /** @brief Print the matrix along with a identification title */
         virtual void Print(const char *title, std::ostream &out = std::cout , const MatrixOutputFormat form = EFormatted) const override;
         
-        /**
-         * @name Solvers
-         * @brief Linear system solvers. \n
-         */
-        /** For symmetric decompositions lower triangular matrix is used. \n
-         * Solves a system A*X = B returning X in B
-         */
-        //@{
-        /**
-         * @brief Solves the linear system using Jacobi method. \n
-         * @param numiterations The number of interations for the process.
-         * @param F The right hand side of the system.
-         * @param result The solution.
-         * @param residual Returns F - A*U which is the solution residual.
-         * @param scratch Available manipulation area on memory.
-         * @param tol The tolerance value.
-         * @param FromCurrent It starts the solution based on FromCurrent. Obtaining solution FromCurrent + 1.
-         */
+       
         
         
         virtual void AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & destinationindex) override;
         
         virtual void AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & sourceindex, TPZVec<int64_t> & destinationindex) override;
         
-        void MultiplyDummy(TPZSpMatrixEigen<TVar> & B, TPZSpMatrixEigen<TVar> & Res);
         
         virtual int Zero() override;
         
@@ -190,8 +167,8 @@ protected:
  
     public:
         Eigen::SparseMatrix<REAL> fsparse_eigen;
-//        Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> valor;
-        Eigen::SparseMatrix<REAL> rhs;
+        mutable Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> m_analysis;
+        
         protected:
         TPZVec<int64_t>  fIA;
         TPZVec<int64_t>  fJA;
@@ -216,20 +193,7 @@ protected:
         void InitializeData();
     };
     
-    
-    template<class TVar>
-    inline void TPZSpMatrixEigen<TVar>::SetData( int64_t *IA, int64_t *JA, TVar *A ) {
-        // Pass the data to the class.
-        int nel = this->Rows()+1;
-        fIA.resize(nel);
-        memccpy(&fIA[0], IA, nel, sizeof(int64_t));
-        int64_t nval = fIA[nel-1];
-        fJA.resize(nval);
-        memccpy(&fJA[0], JA, nval, sizeof(int64_t));
-        fA.resize(nval);
-        memccpy(&fA[0], A, nval, sizeof(TVar));
-        ComputeDiagonal();
-    }
+
     
     /** @brief Pass the data to the class. */
     template<class TVar>
@@ -249,6 +213,9 @@ protected:
             }
         }
         fsparse_eigen.setFromTriplets(triplets.begin(), triplets.end());
+//        triplets.clear();
+        m_analysis.analyzePattern(fsparse_eigen);
+        
         
         if (IA.size() != this->Rows() + 1 ) {
             DebugStop();
