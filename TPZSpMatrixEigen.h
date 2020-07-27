@@ -72,7 +72,7 @@ protected:
         
     private:
         
-        static void * ExecuteMT(void *entrydata);
+//        static void * ExecuteMT(void *entrydata);
         
     public:
         
@@ -157,7 +157,7 @@ protected:
         
     private:
         
-        void ComputeDiagonal();
+//        void ComputeDiagonal();
         
         /*
          * @brief Perform row update of the sparse matrix
@@ -170,10 +170,10 @@ protected:
         mutable Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> m_analysis;
         
         protected:
-        TPZVec<int64_t>  fIA;
-        TPZVec<int64_t>  fJA;
-        TPZVec<TVar> fA;
-        TPZVec<TVar> fDiag;
+//        TPZVec<int64_t>  fIA;
+//        TPZVec<int64_t>  fJA;
+//        TPZVec<TVar> fA;
+//        TPZVec<TVar> fDiag;
         
         int   fSymmetric;
         

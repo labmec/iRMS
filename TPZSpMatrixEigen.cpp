@@ -44,7 +44,7 @@ TPZSpMatrixEigen<TVar>::TPZSpMatrixEigen(const TPZSpMatrixEigen &cp){
 
 template<class TVar>
 TPZSpMatrixEigen<TVar>::TPZSpMatrixEigen() : TPZRegisterClassId(&TPZSpMatrixEigen::ClassId),
-TPZMatrix<TVar>(), fIA(1,0),fJA(),fA(),fDiag(), fsparse_eigen(0,0)
+TPZMatrix<TVar>(),  fsparse_eigen(0,0)
 {
      
 }
@@ -53,11 +53,7 @@ template<class TVar>
 TPZSpMatrixEigen<TVar> &TPZSpMatrixEigen<TVar>::operator=(const TPZSpMatrixEigen<TVar> &cp) {
     TPZMatrix<TVar>::operator=(cp);
     fsparse_eigen = cp.fsparse_eigen;
-    fIA = cp.fIA;
-    fA = cp.fA;
-    fJA = cp.fJA;
-    fDiag = cp.fDiag;
-
+   
     return *this;
 }
 
@@ -125,10 +121,7 @@ TPZRegisterClassId(&TPZSpMatrixEigen::ClassId),TPZMatrix<TVar>(rows,cols) {
     fsparse_eigen.setZero();
 
     fSymmetric = 0;
-    fDiag = 0;
-    fA = 0;
-    fIA = 0;
-    fJA = 0;
+   
 
 #ifdef CONSTRUCTOR
     cerr << "TPZSpMatrixEigen(int rows,int cols)\n";
@@ -230,31 +223,31 @@ void TPZSpMatrixEigen<TVar>::MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<
      REAL fAlpha;
      int fOpt;
      */
-    int numthreads = 2;
-    if(opt) numthreads = 1;
-    TPZVec<pthread_t> allthreads(numthreads);
-    TPZVec<TPZMThread> alldata(numthreads);
-    TPZVec<int> res(numthreads);
-    int i;
-    int eqperthread = r/numthreads;
-    int firsteq = 0;
-    for(i=0;i<numthreads;i++)
-    {
-        alldata[i].target = this;
-        alldata[i].fFirsteq = firsteq;
-        alldata[i].fLasteq = firsteq+eqperthread;
-        firsteq += eqperthread;
-        if(i==numthreads-1) alldata[i].fLasteq = this->Rows();
-        alldata[i].fX = &x;
-        alldata[i].fZ = &z;
-        alldata[i].fAlpha = alpha;
-        alldata[i].fOpt = opt;
-        res[i] = PZ_PTHREAD_CREATE(&allthreads[i], NULL,
-                                   ExecuteMT, &alldata[i], __FUNCTION__);
-    }
-    for(i=0;i<numthreads;i++) {
-        PZ_PTHREAD_JOIN(allthreads[i], NULL, __FUNCTION__);
-    }
+//    int numthreads = 2;
+//    if(opt) numthreads = 1;
+//    TPZVec<pthread_t> allthreads(numthreads);
+//    TPZVec<TPZMThread> alldata(numthreads);
+//    TPZVec<int> res(numthreads);
+//    int i;
+//    int eqperthread = r/numthreads;
+//    int firsteq = 0;
+//    for(i=0;i<numthreads;i++)
+//    {
+//        alldata[i].target = this;
+//        alldata[i].fFirsteq = firsteq;
+//        alldata[i].fLasteq = firsteq+eqperthread;
+//        firsteq += eqperthread;
+//        if(i==numthreads-1) alldata[i].fLasteq = this->Rows();
+//        alldata[i].fX = &x;
+//        alldata[i].fZ = &z;
+//        alldata[i].fAlpha = alpha;
+//        alldata[i].fOpt = opt;
+//        res[i] = PZ_PTHREAD_CREATE(&allthreads[i], NULL,
+//                                   ExecuteMT, &alldata[i], __FUNCTION__);
+//    }
+//    for(i=0;i<numthreads;i++) {
+//        PZ_PTHREAD_JOIN(allthreads[i], NULL, __FUNCTION__);
+//    }
     
 }
 
@@ -280,15 +273,15 @@ void TPZSpMatrixEigen<TVar>::Print(const char *title, ostream &out ,const Matrix
 //
 // ****************************************************************************
 
-template<class TVar>
-void TPZSpMatrixEigen<TVar>::ComputeDiagonal() {
-    if(fDiag.size()) return;
-    int64_t rows = fsparse_eigen.innerSize();
-    fDiag.resize(rows);
-    for(int64_t ir=0; ir<rows; ir++) {
-        fDiag[ir] = fsparse_eigen.coeff(ir,ir);
-    }
-}
+//template<class TVar>
+//void TPZSpMatrixEigen<TVar>::ComputeDiagonal() {
+//    if(fDiag.size()) return;
+//    int64_t rows = fsparse_eigen.innerSize();
+//    fDiag.resize(rows);
+//    for(int64_t ir=0; ir<rows; ir++) {
+//        fDiag[ir] = fsparse_eigen.coeff(ir,ir);
+//    }
+//}
 
 
 template<class TVar>
@@ -301,78 +294,63 @@ int TPZSpMatrixEigen<TVar>::Zero()
 
 
 
-template<class TVar>
-void *TPZSpMatrixEigen<TVar>::ExecuteMT(void *entrydata)
-{
-    //DebugStop();
-    TPZMThread *data = (TPZMThread *) entrydata;
-    const TPZSpMatrixEigen *mat = data->target;
-    TVar sum;
-    int64_t xcols = data->fX->Cols();
-    int64_t ic,ir,icol;
-    // Compute alpha * A * x
-    if(xcols == 1 && data->fOpt == 0)
-    {
-        for(ir=data->fFirsteq; ir<data->fLasteq; ir++) {
-            int64_t icolmin = mat->fIA[ir];
-            int64_t icolmax = mat->fIA[ir+1];
-            const TVar *xptr = &(data->fX->g(0,0));
-            TVar *Aptr = &mat->fA[0];
-            int64_t *JAptr = &mat->fJA[0];
-            for(sum = 0.0, icol=icolmin; icol<icolmax; icol++ ) {
-                sum += Aptr[icol] * xptr[JAptr[icol]];
-            }
-            data->fZ->operator()(ir,0) += data->fAlpha * sum;
-        }
-    }
-    else
-    {
-        for(ic=0; ic<xcols; ic++) {
-            if(data->fOpt == 0) {
-                
-                for(ir=data->fFirsteq; ir<data->fLasteq; ir++) {
-                    for(sum = 0.0, icol=mat->fIA[ir]; icol<mat->fIA[ir+1]; icol++ ) {
-                        sum += mat->fA[icol] * data->fX->g((mat->fJA[icol]),ic);
-                    }
-                    data->fZ->operator()(ir,ic) += data->fAlpha * sum;
-                }
-            }
-            
-            // Compute alpha * A^T * x
-            else
-            {
-                int64_t jc;
-                int64_t icol;
-                for(ir=data->fFirsteq; ir<data->fLasteq; ir++)
-                {
-                    for(icol=mat->fIA[ir]; icol<mat->fIA[ir+1]; icol++ )
-                    {
-                        if(mat->fJA[icol]==-1) break; //Checa a exist�cia de dado ou n�
-                        jc = mat->fJA[icol];
-                        data->fZ->operator()(jc,ic) += data->fAlpha * mat->fA[icol] * data->fX->g(ir,ic);
-                    }
-                }
-                
-            }
-        }
-    }
-    return 0;
-}
-static int  FindCol(int64_t *colf, int64_t *coll, int64_t col)
-{
-    if(col == *colf) return 0;
-    int64_t *begin = colf;
-    int64_t *end = coll;
-    while (begin != end)
-    {
-        int64_t dist = (end-begin)/2;
-        int64_t *mid = begin+dist;
-        if(*mid == col) return (mid-colf);
-        else if(*mid > col) end=mid;
-        else begin = mid;
-    }
-    return -1;
-}
+//template<class TVar>
+//void *TPZSpMatrixEigen<TVar>::ExecuteMT(void *entrydata)
+//{
+//    //DebugStop();
+//    TPZMThread *data = (TPZMThread *) entrydata;
+//    const TPZSpMatrixEigen *mat = data->target;
+//    TVar sum;
+//    int64_t xcols = data->fX->Cols();
+//    int64_t ic,ir,icol;
+//    // Compute alpha * A * x
+//    if(xcols == 1 && data->fOpt == 0)
+//    {
+//        for(ir=data->fFirsteq; ir<data->fLasteq; ir++) {
+//            int64_t icolmin = mat->fIA[ir];
+//            int64_t icolmax = mat->fIA[ir+1];
+//            const TVar *xptr = &(data->fX->g(0,0));
+//            TVar *Aptr = &mat->fA[0];
+//            int64_t *JAptr = &mat->fJA[0];
+//            for(sum = 0.0, icol=icolmin; icol<icolmax; icol++ ) {
+//                sum += Aptr[icol] * xptr[JAptr[icol]];
+//            }
+//            data->fZ->operator()(ir,0) += data->fAlpha * sum;
+//        }
+//    }
+//    else
+//    {
+//        for(ic=0; ic<xcols; ic++) {
+//            if(data->fOpt == 0) {
+//
+//                for(ir=data->fFirsteq; ir<data->fLasteq; ir++) {
+//                    for(sum = 0.0, icol=mat->fIA[ir]; icol<mat->fIA[ir+1]; icol++ ) {
+//                        sum += mat->fA[icol] * data->fX->g((mat->fJA[icol]),ic);
+//                    }
+//                    data->fZ->operator()(ir,ic) += data->fAlpha * sum;
+//                }
+//            }
+//
+//            // Compute alpha * A^T * x
+//            else
+//            {
+//                int64_t jc;
+//                int64_t icol;
+//                for(ir=data->fFirsteq; ir<data->fLasteq; ir++)
+//                {
+//                    for(icol=mat->fIA[ir]; icol<mat->fIA[ir+1]; icol++ )
+//                    {
+//                        if(mat->fJA[icol]==-1) break; //Checa a exist�cia de dado ou n�
+//                        jc = mat->fJA[icol];
+//                        data->fZ->operator()(jc,ic) += data->fAlpha * mat->fA[icol] * data->fX->g(ir,ic);
+//                    }
+//                }
+//
+//            }
+//        }
+//    }
+//    return 0;
+//}
 
 template<class TVar>
 int TPZSpMatrixEigen<TVar>::GetSub(const int64_t sRow,const int64_t sCol,const int64_t rowSize,
