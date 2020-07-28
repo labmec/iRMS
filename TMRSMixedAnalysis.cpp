@@ -38,18 +38,18 @@ int TMRSMixedAnalysis::GetNumberOfIterations(){
 void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
     
     if (UsePardiso_Q) {
-        TPZSymetricSpStructMatrix matrix(Mesh());
+//        TPZSymetricSpStructMatrix matrix(Mesh());
+//        matrix.SetNumThreads(n_threads);
+//        SetStructuralMatrix(matrix);
+//        TPZStepSolver<STATE> step;
+//        step.SetDirect(ELDLt);
+//        SetSolver(step);
+        TPZSymetricSpStructMatrixEigen matrix(Mesh());
         matrix.SetNumThreads(n_threads);
         SetStructuralMatrix(matrix);
         TPZStepSolver<STATE> step;
         step.SetDirect(ELDLt);
         SetSolver(step);
-//        TPZSpStructMatrixEigen matrix(Mesh());
-//        matrix.SetNumThreads(n_threads);
-//        SetStructuralMatrix(matrix);
-//        TPZStepSolver<STATE> step;
-//        step.SetDirect(ELU);
-//        SetSolver(step);
 
     }else{
         TPZSkylineStructMatrix matrix(Mesh());
@@ -86,8 +86,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
         corr_norm = Norm(dx);
         x +=dx;
         cmesh->UpdatePreviousState(-1);
-        cmesh->Solution().Print(std::cout);
         fsoltransfer.TransferFromMultiphysics();
+//        PostProcessTimeStep();
         Assemble();
         res_norm = Norm(Rhs());
 
@@ -134,7 +134,10 @@ void TMRSMixedAnalysis::NewtonIteration(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-                sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+            sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+                TPZSymetricSpStructMatrixEigen matrix(sub);
+                //matrix.SetNumThreads(n_threads);
+                sub->Analysis()->SetStructuralMatrix(matrix);
             }
         }
         mIsFirstAssembleQ=false;
