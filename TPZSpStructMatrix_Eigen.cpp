@@ -265,4 +265,11 @@ int TPZSpStructMatrixEigen::ClassId() const{
     return Hash("TPZSpStructMatrixEigen") ^ TPZStructMatrix::ClassId() << 1;
 }
 
-
+template<class TVar>
+bool TPZSpMatrixEigen<TVar>::isNull( Eigen::SparseMatrix<REAL>& mat, int row, int col)
+{
+    for (Eigen::SparseMatrix<REAL>::InnerIterator it(mat, col); it; ++it) {
+        if (it.row() == row) return false;
+    }
+    return true;
+}

@@ -12,7 +12,7 @@
 #include "pzmultiphysicselement.h"
 #include "TPZMixedDarcyWithFourSpaces.h"
 #include "TPZDarcyFlowWithMem.h"
-
+#include "TPZSSpMatrixEigen.h"
 bool TPZFastCondensedElement::fSkipLoadSolution = true;
 
 /**
@@ -61,12 +61,14 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     GetSolutionVector(solvec);
     
 
-    ef.fMat *= -1.0*Glambda;
+    ef.fMat *= -1.0*0.0*Glambda;
     /** @brief Computes z = alpha * opt(this)*x + beta * y */
     /** @note z and x cannot overlap in memory */
     //    void MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,
     //                 const TVar alpha=1.,const TVar beta = 0.,const int opt = 0) const override;
     STATE alpha = 1.;
+//    TPZSYsmpMatrixEigen<REAL>* mat = dynamic_cast<TPZSYsmpMatrixEigen<REAL> >(ek.fMat) ;
+
     ek.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1);
     
 }

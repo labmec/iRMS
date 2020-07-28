@@ -16,7 +16,8 @@
 #include "pzstepsolver.h"
 #include "TMRSDataTransfer.h"
 #include "TPZMFSolutionTransfer.h"
-
+#include "TPZSymetricSpStructMatrixEigen.h"
+#include "TPZSSpMatrixEigen.h"
 
 class TMRSMixedAnalysis : public TPZAnalysis {
     

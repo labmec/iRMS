@@ -53,26 +53,7 @@ protected:
 //
     template<class TVar>
     class TPZSpMatrixEigen : public TPZMatrix<TVar> {
-        
-        public :
-
-        /** @brief An auxiliary structure to hold the data of the subset \n of equations used to multiply in a multi-threaded environment */
-        /**
-         In future versions this structure should be defined in a derived class
-         */
-        struct TPZMThread {
-            const TPZSpMatrixEigen<TVar> *target;
-            int64_t fFirsteq;
-            int64_t fLasteq;
-            const TPZFMatrix<TVar> *fX;
-            TPZFMatrix<TVar> *fZ;
-            TVar fAlpha;
-            int fOpt;
-        };
-        
-    private:
-        
-//        static void * ExecuteMT(void *entrydata);
+    
         
     public:
         
@@ -80,8 +61,6 @@ protected:
         TPZSpMatrixEigen(const int64_t rows,const int64_t cols );
         TPZSpMatrixEigen(const TPZSpMatrixEigen &cp);
         TPZSpMatrixEigen &operator=(const TPZSpMatrixEigen<TVar> &copy);
-//      TPZSpMatrixEigen &operator=(const TPZVerySparseMatrix<TVar> &cp);
-        
         CLONEDEF(TPZSpMatrixEigen)
         
         virtual ~TPZSpMatrixEigen();
@@ -116,8 +95,6 @@ protected:
         /** @brief Print the matrix along with a identification title */
         virtual void Print(const char *title, std::ostream &out = std::cout , const MatrixOutputFormat form = EFormatted) const override;
         
-       
-        
         
         virtual void AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & destinationindex) override;
         
@@ -150,86 +127,22 @@ protected:
          */
         virtual int Substitution( TPZFMatrix<TVar> * B ) const override;
         
+        void FromPZtoEigen(const TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat) const;
+       
+        void FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat)const;
         //@}
         
     public:
         int ClassId() const override;
-        
-    private:
-        
-//        void ComputeDiagonal();
-        
-        /*
-         * @brief Perform row update of the sparse matrix
-         */
-        
-        
- 
-    public:
         Eigen::SparseMatrix<REAL> fsparse_eigen;
         mutable Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> m_analysis;
         
         protected:
-//        TPZVec<int64_t>  fIA;
-//        TPZVec<int64_t>  fJA;
-//        TPZVec<TVar> fA;
-//        TPZVec<TVar> fDiag;
-        
         int   fSymmetric;
-        
-#ifdef USING_MKL
-//        TPZPardisoControl<TVar> fPardisoControl;
-#endif
-    protected:
-        
-        /**
-         * @brief Implements a initialization method for the sparse structure. It sets the initial value for the fIA and fJA.
-         */
-        /**
-         * -fIA will contain the initial positions for all the equations
-         * -fJA will contain (-1) on all its positions
-         * -fA will contain 0 on all its value
-         */
+    
         void InitializeData();
     };
     
-
-    
-    /** @brief Pass the data to the class. */
-    template<class TVar>
-    inline void TPZSpMatrixEigen<TVar>::SetData( TPZVec<int64_t> &IA, TPZVec<int64_t> &JA, TPZVec<TVar> &A ){
-        fsparse_eigen.setZero();
-        std::vector<Triplet3<REAL> > triplets(A.size());
-        int nrows = IA.size()-1;
-        int count =0;
-        for (int irow = 0; irow < nrows; irow++) {
-            for(int k=IA[irow]; k<IA[irow+1]; k++){
-                int row= irow;
-                int col = JA[k];
-                REAL val = A[k];
-                Triplet3<REAL> trip(row, col, val);
-                triplets[count] = trip;
-                count++;
-            }
-        }
-        fsparse_eigen.setFromTriplets(triplets.begin(), triplets.end());
-//        triplets.clear();
-        m_analysis.analyzePattern(fsparse_eigen);
-        
-        
-        if (IA.size() != this->Rows() + 1 ) {
-            DebugStop();
-        }
-        
-        if (JA.size() != IA[this->Rows()]) {
-            DebugStop();
-        }
-        
-//        fIA = IA;
-//        fJA = JA;
-//        fA = A;
-    }
-;
 
     
 #endif

@@ -50,8 +50,7 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
 //        TPZStepSolver<STATE> step;
 //        step.SetDirect(ELU);
 //        SetSolver(step);
-        
-        
+
     }else{
         TPZSkylineStructMatrix matrix(Mesh());
         matrix.SetNumThreads(n_threads);
@@ -87,6 +86,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         corr_norm = Norm(dx);
         x +=dx;
         cmesh->UpdatePreviousState(-1);
+        cmesh->Solution().Print(std::cout);
         fsoltransfer.TransferFromMultiphysics();
         Assemble();
         res_norm = Norm(Rhs());
