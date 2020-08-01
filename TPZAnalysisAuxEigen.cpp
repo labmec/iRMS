@@ -6,6 +6,10 @@
 //
 #include "TPZAnalysisAuxEigen.h"
 
+#ifdef USING_TBB
+#include <tbb/parallel_for.h>
+#endif
+
 void TPZAnalysisAuxEigen::AssembleMass(){
     int n_cells = fAlgebraicTransport->fCellsData.fVolume.size();
     m_mass =  Eigen::SparseMatrix<REAL>( n_cells, n_cells );
