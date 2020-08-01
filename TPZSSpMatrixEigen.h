@@ -213,6 +213,8 @@ public:
     void FromPZtoEigen(const TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat) const;
     
     void FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat)const;
+    virtual int Decompose_LU() override;
+    virtual int Substitution( TPZFMatrix<TVar> * B ) const override;
    
 private:
     

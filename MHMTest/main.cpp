@@ -121,7 +121,7 @@ void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(3, 10,1, 10);
+    aspace.CreateUniformMesh(20, 10,3, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     
@@ -191,6 +191,10 @@ void SimpleTest2D(){
             std::cout << "Mass report at time : " << sim_time << std::endl;
             std::cout << "Mass integral :  " << mass << std::endl;
             TPZFastCondensedElement::fSkipLoadSolution = true;
+           
+            
+            
+            
         }
     }
     
@@ -1243,7 +1247,7 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 2;
+    sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 0.01 ;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -1251,7 +1255,7 @@ TMRSDataTransfer SettingSimple2D(){
     std::vector<REAL> grav(3,0.0);
     grav[1] = -0.0;//-9.81;
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     // PostProcess controls

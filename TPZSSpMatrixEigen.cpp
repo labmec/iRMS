@@ -255,6 +255,35 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     *b = x;
     return 1;
 }
+//
+template<class TVar>
+int TPZSYsmpMatrixEigen<TVar>::Decompose_LU()
+{
+    if(this->IsDecomposed() == ELU) return 1;
+    if (this->IsDecomposed() != ENoDecompose) {
+        DebugStop();
+    }
+    
+    fanalysis.analyzePattern(fsparse_eigen);
+    fanalysis.factorize(fsparse_eigen);
+    
+    this->SetIsDecomposed(ELU);
+    return 1;
+}
+
+template<class TVar>
+int TPZSYsmpMatrixEigen<TVar>::Substitution( TPZFMatrix<TVar> *B ) const
+{
+    TPZFMatrix<TVar> x(*B);
+    int nrows = x.Rows();
+    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs(nrows,1);
+    this->FromPZtoEigen(x, rhs);
+    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsol = fanalysis.solve(rhs);
+    this->FromEigentoPZ(x, dsol);
+    *B = x;
+    return 1;
+}
+//
 template<class TVar>
 void TPZSYsmpMatrixEigen<TVar>::MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y,
                                      TPZFMatrix<TVar> &z,

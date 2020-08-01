@@ -90,6 +90,11 @@ void TMRSMixedAnalysis::RunTimeStep(){
 //        PostProcessTimeStep();
         Assemble();
         res_norm = Norm(Rhs());
+        TPZMatrix<STATE> *mat = 0;
+        mat = fSolver->Matrix().operator->();
+        TPZSYsmpMatrixEigen<REAL> *mateign = dynamic_cast<TPZSYsmpMatrixEigen<REAL>*>(mat);
+        mateign->fsparse_eigen.setZero();
+        Rhs() *=0.0;
 
 #ifdef PZDEBUG
         {
@@ -153,6 +158,12 @@ void TMRSMixedAnalysis::NewtonIteration(){
 #endif
    
     Solve();
+    
+    TPZMatrix<STATE> *mat = 0;
+    mat = fSolver->Matrix().operator->();
+    TPZSYsmpMatrixEigen<REAL> *mateign = dynamic_cast<TPZSYsmpMatrixEigen<REAL>*>(mat);
+    mateign->fsparse_eigen.setZero();
+    Rhs() *=0.0;
     
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
