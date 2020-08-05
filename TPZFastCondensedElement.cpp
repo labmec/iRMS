@@ -62,6 +62,11 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     
 
     ef.fMat *= -1.0*0.0*Glambda;
+    REAL norm =Norm(ef.fMat);
+    REAL normek = Norm(ek.fMat);
+    if (norm>1000) {
+        DebugStop();
+    }
     /** @brief Computes z = alpha * opt(this)*x + beta * y */
     /** @note z and x cannot overlap in memory */
     //    void MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,
@@ -70,7 +75,17 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
 //    TPZSYsmpMatrixEigen<REAL>* mat = dynamic_cast<TPZSYsmpMatrixEigen<REAL> >(ek.fMat) ;
 
     ek.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1);
-    
+    REAL norm3 =Norm(ef.fMat);
+    REAL normek3 = Norm(ek.fMat);
+    if (norm3>1000) {
+        ef.fMat *=0.0;
+        ek.fMat.Print("Ek=", std::cout, EMathematicaInput);
+        solvec.Print("Solvec=", std::cout, EMathematicaInput);
+        solvec.Print("Ef=", std::cout, EMathematicaInput);
+        ek.fMat.MultAdd(solvec, ef.fMat, ef.fMat, alpha, 1);
+//        DebugStop();
+    }
+    int ol=0;
 }
 
 // extract the solution vector of the condensed element

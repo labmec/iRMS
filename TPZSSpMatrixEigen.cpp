@@ -76,7 +76,10 @@ template<class TVar>
 int TPZSYsmpMatrixEigen<TVar>::PutVal(const int64_t r,const int64_t c,const TVar & val )
 {
     if (!isNull(fsparse_eigen, r, c)) {
-        fsparse_eigen.coeffRef(r,c)=val;
+        fsparse_eigen.coeffRef(r,c) +=val;
+        if (r!=c  ) {
+            fsparse_eigen.coeffRef(c,r) +=val;
+        }
     }
     else{
         std::cout<<"Non existing position on sparse matrix: line =" << r << " column =" << c << std::endl;
@@ -196,21 +199,7 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt(std::list<int64_t> &singular)
     Decompose_LDLt();
     return 1;
 }
-/** @brief Decomposes the current matrix using LDLt. */
-template<class TVar>
-int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
-{
-    if(this->IsDecomposed() == ELDLt) return 1;
-    if (this->IsDecomposed() != ENoDecompose) {
-        DebugStop();
-    }
-//    fPardisoControl.SetMatrixType(TPZPardisoControl<TVar>::ESymmetric,TPZPardisoControl<TVar>::EIndefinite);
-//    fPardisoControl.Decompose();
-    fanalysis.factorize(fsparse_eigen);
-    this->SetIsDecomposed(ELDLt);
-    return 1;
-    
-}
+
 
 /** @brief Decomposes the current matrix using Cholesky method. The current matrix has to be symmetric. */
 template<class TVar>
@@ -236,7 +225,23 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_Cholesky(std::list<int64_t> &singular)
 
 
 /** @} */
-
+/** @brief Decomposes the current matrix using LDLt. */
+template<class TVar>
+int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
+{
+    if(this->IsDecomposed() == ELDLt) return 1;
+    if (this->IsDecomposed() != ENoDecompose) {
+        DebugStop();
+    }
+    //    fanalysis.analyzePattern(fsparse_eigen);
+    //    fanalysis.factorize(fsparse_eigen);
+    //    fPardisoControl.SetMatrixType(TPZPardisoControl<TVar>::ESymmetric,TPZPardisoControl<TVar>::EIndefinite);
+    //    fPardisoControl.Decompose();
+    //    fanalysis.factorize(fsparse_eigen);
+    this->SetIsDecomposed(ELDLt);
+    return 1;
+    
+}
 
 /**
  * @brief Computes B = Y, where A*Y = B, A is lower triangular with A(i,i)=1.
@@ -246,12 +251,29 @@ template<class TVar>
 int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
 {
     TPZFMatrix<TVar> x(*b);
+//    x.Print("RhsEigen=",std::cout, EMathematicaInput);
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs;
     FromPZtoEigen(x, rhs);
-    fanalysis.analyzePattern(fsparse_eigen);
+//    fanalysis.analyzePattern(fsparse_eigen);
     fanalysis.factorize(fsparse_eigen);
+    
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> ds = fanalysis.solve(rhs);
     FromEigentoPZ(x, ds);
+    REAL norm =ds.norm();
+//    if (std::abs(norm)>40.0){
+//        x.Print("solution",std::cout, EMathematicaInput);
+//    }
+   
+//    int nrows=fsparse_eigen.rows();
+//    int ncols=fsparse_eigen.cols();
+//    TPZFMatrix<REAL> matpz(nrows, ncols);
+//    matpz.Zero();
+//    for (int i=0; i< fsparse_eigen.rows(); i++) {
+//        for (int j=0; j< fsparse_eigen.cols(); j++) {
+//            matpz(i,j) = fsparse_eigen.coeff(i, j);
+//        }
+//    }
+//    matpz.Print("EkEigen=",std::cout, EMathematicaInput);
     *b = x;
     return 1;
 }
@@ -263,10 +285,10 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LU()
     if (this->IsDecomposed() != ENoDecompose) {
         DebugStop();
     }
-    
+//
     fanalysis.analyzePattern(fsparse_eigen);
     fanalysis.factorize(fsparse_eigen);
-    
+//
     this->SetIsDecomposed(ELU);
     return 1;
 }
@@ -326,6 +348,7 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_Forward( TPZFMatrix<TVar>* b ) const
 {
     TPZFMatrix<TVar> x(*b);
 //    fPardisoControl.Solve(*b,x);
+    DebugStop();
     *b = x;
     return 1;
 }
@@ -352,7 +375,7 @@ bool TPZSYsmpMatrixEigen<TVar>::isNull( Eigen::SparseMatrix<REAL>& mat, int row,
     for (Eigen::SparseMatrix<REAL>::InnerIterator it(mat, col); it; ++it) {
         if (it.row() == row) return false;
     }
-    return false;
+    return true;
 }
 template<class TVar>
 void TPZSYsmpMatrixEigen<TVar>::FromPZtoEigen(const TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat)const{
@@ -376,7 +399,8 @@ void TPZSYsmpMatrixEigen<TVar>::FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::M
     if (nrows<0 || ncols<0) {
         DebugStop();
     }
-    eigenmat.resize(nrows, ncols);
+    pzmat.Zero();
+//    eigenmat.resize(nrows, ncols);
     for (int i=0; i< nrows; i++) {
         for (int j=0; j< ncols; j++) {
             pzmat(i, j)= eigenmat(i, j) ;

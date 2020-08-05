@@ -38,18 +38,18 @@ int TMRSMixedAnalysis::GetNumberOfIterations(){
 void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
     
     if (UsePardiso_Q) {
-//        TPZSymetricSpStructMatrix matrix(Mesh());
-//        matrix.SetNumThreads(n_threads);
-//        SetStructuralMatrix(matrix);
-//        TPZStepSolver<STATE> step;
-//        step.SetDirect(ELDLt);
-//        SetSolver(step);
-        TPZSymetricSpStructMatrixEigen matrix(Mesh());
+        TPZSymetricSpStructMatrix matrix(Mesh());
         matrix.SetNumThreads(n_threads);
         SetStructuralMatrix(matrix);
         TPZStepSolver<STATE> step;
         step.SetDirect(ELDLt);
         SetSolver(step);
+//        TPZSymetricSpStructMatrixEigen matrix(Mesh());
+//        matrix.SetNumThreads(n_threads);
+//        SetStructuralMatrix(matrix);
+//        TPZStepSolver<STATE> step;
+//        step.SetDirect(ELDLt);
+//        SetSolver(step);
 
     }else{
         TPZSkylineStructMatrix matrix(Mesh());
@@ -84,17 +84,42 @@ void TMRSMixedAnalysis::RunTimeStep(){
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
+        res_norm = Norm(Rhs());
         x +=dx;
         cmesh->UpdatePreviousState(-1);
         fsoltransfer.TransferFromMultiphysics();
+     
 //        PostProcessTimeStep();
         Assemble();
+        TPZMatrix<STATE> *MAT=0;
+        MAT=fSolver->Matrix().operator->();
+        TPZSYsmpMatrixEigen<STATE> *mateigen = dynamic_cast<TPZSYsmpMatrixEigen<STATE>*>(MAT);
+        if(mateigen){
+            mateigen->Zero();
+        }
+        
+//        int nrows=mateigen->fsparse_eigen.rows();
+//        int ncols=mateigen->fsparse_eigen.cols();
+//        TPZFMatrix<REAL> matpz(nrows, ncols);
+//        matpz.Zero();
+//        for (int i=0; i< nrows; i++) {
+//            for (int j=0; j< ncols; j++) {
+//                matpz(i,j) = mateigen->fsparse_eigen.coeff(i, j);
+//            }
+//        }
+//        matpz.Print("Ek2AEigen=",std::cout, EMathematicaInput);
+//        //
+//        Rhs().Print("Rhs2AEigen=", std::cout, EMathematicaInput);
         res_norm = Norm(Rhs());
+        REAL normsol = Norm(Solution());
         TPZMatrix<STATE> *mat = 0;
         mat = fSolver->Matrix().operator->();
         TPZSYsmpMatrixEigen<REAL> *mateign = dynamic_cast<TPZSYsmpMatrixEigen<REAL>*>(mat);
-        mateign->fsparse_eigen.setZero();
-        Rhs() *=0.0;
+        if(mateign){
+            mateign->Zero();
+        }
+
+//        Rhs() *=0.0;
 
 #ifdef PZDEBUG
         {
@@ -117,6 +142,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         }
                 if (m_k_iteration >= n) {
                     std::cout << "Mixed operator not converge " << std::endl;
+//                    DebugStop();
                 }
         
     }
@@ -139,16 +165,16 @@ void TMRSMixedAnalysis::NewtonIteration(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-            sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
-                TPZSymetricSpStructMatrixEigen matrix(sub);
-                //matrix.SetNumThreads(n_threads);
-                sub->Analysis()->SetStructuralMatrix(matrix);
+//            sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+//                TPZSymetricSpStructMatrixEigen matrix(sub);
+//                //matrix.SetNumThreads(n_threads);
+//                sub->Analysis()->SetStructuralMatrix(matrix);
             }
         }
         mIsFirstAssembleQ=false;
     }
 
-    
+   
    Assemble();
 
 #ifdef USING_BOOST
@@ -162,9 +188,25 @@ void TMRSMixedAnalysis::NewtonIteration(){
     TPZMatrix<STATE> *mat = 0;
     mat = fSolver->Matrix().operator->();
     TPZSYsmpMatrixEigen<REAL> *mateign = dynamic_cast<TPZSYsmpMatrixEigen<REAL>*>(mat);
-    mateign->fsparse_eigen.setZero();
-    Rhs() *=0.0;
-    
+    if(mateign){
+        mateign->Zero();
+    }
+//    Rhs() *=0.0;
+//    Solution().Print("SolPz=", std::cout, EMathematicaInput);
+//    Rhs().Print("RhsPz=", std::cout, EMathematicaInput);
+//    TPZMatrix<STATE> *mat = 0;
+//    mat = fSolver->Matrix().operator->();
+//    TPZSYsmpMatrixEigen<STATE>* mateigen = dynamic_cast<TPZSYsmpMatrixEigen<STATE>*>(mat);
+//            int nrows=mateigen->fsparse_eigen.rows();
+//            int ncols=mateigen->fsparse_eigen.cols();
+//            TPZFMatrix<REAL> matpz(nrows, ncols);
+//            matpz.Zero();
+//            for (int i=0; i< nrows; i++) {
+//                for (int j=0; j< ncols; j++) {
+//                    matpz(i,j) = mateigen->fsparse_eigen.coeff(i, j);
+//                }
+//            }
+//            mat->Print("MatPz=",std::cout, EMathematicaInput);
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
     auto deltat2 = tsim3-tsim1;

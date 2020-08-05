@@ -22,6 +22,7 @@
 #include <Eigen/Sparse>
 #include <vector>
 #include <iostream>
+#include<Eigen/SparseCholesky>
 
 #ifdef USING_MKL
 
@@ -70,6 +71,9 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
     
     /** @brief Zeroes the matrix */
     virtual int Zero() override {
+        fsparse_eigen = 0.0*fsparse_eigen;
+        
+        
         fA.Fill(0.);
         fDiag.Fill(0.);
 #ifndef USING_MKL
@@ -209,7 +213,7 @@ public:
     void AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & sourceindex, TPZVec<int64_t> & destinationindex) override;
     bool isNull( Eigen::SparseMatrix<REAL>& mat, int row, int col);
     Eigen::SparseMatrix<REAL> fsparse_eigen;
-    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>> fanalysis;
+    mutable Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> fanalysis;
     void FromPZtoEigen(const TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat) const;
     
     void FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat)const;
@@ -235,8 +239,9 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
 {
     //
     fsparse_eigen.setZero();
-    std::vector<Triplet3<REAL> > triplets(A.size());
+    
     int nrows = IA.size()-1;
+    std::vector<Triplet3<REAL> > triplets(2*A.size() -nrows);
     int count =0;
     for (int irow = 0; irow < nrows; irow++) {
         for(int k=IA[irow]; k<IA[irow+1]; k++){
@@ -244,6 +249,11 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
             int col = JA[k];
             REAL val = A[k];
             Triplet3<REAL> trip(row, col, val);
+            if (row!=col) {
+                Triplet3<REAL> trip(col, row, val);
+                triplets[count] = trip;
+                count++;
+            }
             triplets[count] = trip;
             count++;
         }
