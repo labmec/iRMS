@@ -255,8 +255,14 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs;
     FromPZtoEigen(x, rhs);
 //    fanalysis.analyzePattern(fsparse_eigen);
-    fanalysis.factorize(fsparse_eigen);
     
+//    fanalysis.pardisoParameterArray()[34] = 1;
+//    fanalysis.pardisoParameterArray()[4] = 1;
+//    fanalysis.pardisoParameterArray()[3] = 10*6+2;
+    
+    fanalysis.factorize(fsparse_eigen);
+//    std::cout << "info " << fanalysis.info() << std::endl;
+//    std::cout << "k = " << fsparse_eigen.toDense() << std::endl;
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> ds = fanalysis.solve(rhs);
     FromEigentoPZ(x, ds);
     REAL norm =ds.norm();

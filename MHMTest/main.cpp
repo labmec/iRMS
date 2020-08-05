@@ -121,7 +121,7 @@ void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(50, 20, 50, 10);
+    aspace.CreateUniformMesh(10, 20, 10, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     

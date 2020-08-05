@@ -213,7 +213,7 @@ public:
     void AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & sourceindex, TPZVec<int64_t> & destinationindex) override;
     bool isNull( Eigen::SparseMatrix<REAL>& mat, int row, int col);
     Eigen::SparseMatrix<REAL> fsparse_eigen;
-    mutable Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> fanalysis;
+    mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> fanalysis;
     void FromPZtoEigen(const TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat) const;
     
     void FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat)const;
