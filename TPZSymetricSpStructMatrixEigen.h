@@ -37,7 +37,7 @@ public:
     virtual TPZMatrix<STATE> * CreateAssemble(TPZFMatrix<STATE> &rhs, TPZAutoPointer<TPZGuiInterface> guiInterface);
     
     virtual TPZStructMatrix * Clone();
-    
+    void Serial_Assemble(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface);
     
     /** Used only for testing */
     static int main();
