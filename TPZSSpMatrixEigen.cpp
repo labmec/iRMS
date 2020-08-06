@@ -237,7 +237,7 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
     //    fanalysis.factorize(fsparse_eigen);
     //    fPardisoControl.SetMatrixType(TPZPardisoControl<TVar>::ESymmetric,TPZPardisoControl<TVar>::EIndefinite);
     //    fPardisoControl.Decompose();
-    //    fanalysis.factorize(fsparse_eigen);
+        fanalysis.factorize(fsparse_eigen);
     this->SetIsDecomposed(ELDLt);
     return 1;
     
@@ -260,12 +260,12 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
 //    fanalysis.pardisoParameterArray()[4] = 1;
 //    fanalysis.pardisoParameterArray()[3] = 10*6+2;
     
-    fanalysis.factorize(fsparse_eigen);
+//    fanalysis.factorize(fsparse_eigen);
 //    std::cout << "info " << fanalysis.info() << std::endl;
 //    std::cout << "k = " << fsparse_eigen.toDense() << std::endl;
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> ds = fanalysis.solve(rhs);
     FromEigentoPZ(x, ds);
-    REAL norm =ds.norm();
+//    REAL norm =ds.norm();
 //    if (std::abs(norm)>40.0){
 //        x.Print("solution",std::cout, EMathematicaInput);
 //    }

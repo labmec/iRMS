@@ -16,7 +16,7 @@
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 #include <Eigen/PardisoSupport>
-#include <Eigen/PardisoSupport>
+//#include <Eigen/SuperLUSupport>
 #include "TPZAnalysisAuxEigen.h"
 #include "TPZSpMatrixEigen.h"
 #include <Eigen/Sparse>
@@ -214,6 +214,7 @@ public:
     bool isNull( Eigen::SparseMatrix<REAL>& mat, int row, int col);
     Eigen::SparseMatrix<REAL> fsparse_eigen;
     mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> fanalysis;
+//    mutable Eigen::SimplicialLDLT<Eigen::SparseMatrix<REAL>> fanalysis;
     void FromPZtoEigen(const TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat) const;
     
     void FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat)const;
