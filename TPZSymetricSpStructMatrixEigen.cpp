@@ -301,9 +301,15 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffnes
 #endif
     
     std::vector<Triplet3<REAL> > triplets;
-     TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
-    int nnonzeros = mat->fsparse_eigen.nonZeros();
-    triplets.reserve(nnonzeros);
+    TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
+    if (!mat) {
+        DebugStop();
+    }
+    else{
+        mat->Zero();
+    }
+//    int nnonzeros = mat->fsparse_eigen.nonZeros();
+//    triplets.reserve(nnonzeros);
     int64_t iel;
     int64_t nelem = fMesh->NElements();
     TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
@@ -387,6 +393,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffnes
             int64_t i,j = 0;
             REAL value=0.;
             int64_t ipos,jpos;
+   
             for(i=0;i<ek.fSourceIndex.NElements();i++){
                 for(j=0;j<ek.fSourceIndex.NElements();j++){
                     ipos=ek.fDestinationIndex[i];
@@ -434,23 +441,49 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffnes
 #endif
         } else {
             // the element has dependent nodes
+            
             ek.ApplyConstraints();
             ef.ApplyConstraints();
             ek.ComputeDestinationIndices();
             fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
+            int64_t nelem = ek.fSourceIndex.NElements();
+            int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
+            REAL prevval;
+//            if(IsSimetric()) {
+//                for(icoef=0; icoef<nelem; icoef++) {
+//                    ieq = ek.fDestinationIndex[icoef];
+//                    ieqs = ek.fSourceIndex[icoef];
+//                    for(jcoef=icoef; jcoef<nelem; jcoef++) {
+//                        jeq = ek.fDestinationIndex[jcoef];
+//                        jeqs = ek.fSourceIndex[jcoef];
+//                        prevval = ek.fMat.GetVal(ieq,jeq);
+//                        prevval += ek.fMat(ieqs,jeqs);
+//                        Triplet3<REAL> trip(ieq,jeq,prevval);
+//                        triplets.push_back(trip);
+////                        PutVal(ieq,jeq,prevval);
+//                    }
+//                }
+//            }
+            
+            
 //            stiffness.AddKel(ek.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
-            int64_t i,j = 0;
-            REAL value=0.;
-            int64_t ipos,jpos;
-            for(i=0;i<ek.fSourceIndex.NElements();i++){
-                for(j=0;j<ek.fSourceIndex.NElements();j++){
-                    ipos=ek.fDestinationIndex[i];
-                    jpos=ek.fDestinationIndex[j];
-                    value=ek.fMat.GetVal(ek.fSourceIndex[i],ek.fSourceIndex[j]);
-                    Triplet3<REAL> trip(ipos, jpos, value);
-                    triplets.push_back(trip);
-                }
-            }
+//            int64_t i,j = 0;
+//            REAL value=0.;
+//            int64_t ipos,jpos;
+//            ek.fMat.Print("ek= ",std::cout, EMathematicaInput);
+//            std::cout<<std::endl;
+//            ek.fSourceIndex.Print(std::cout);
+//            std::cout<<std::endl;
+//            ek.fDestinationIndex.Print(std::cout);
+//            for(i=0;i<ek.fSourceIndex.NElements();i++){
+//                for(j=0;j<ek.fSourceIndex.NElements();j++){
+//                    ipos=ek.fDestinationIndex[i];
+//                    jpos=ek.fDestinationIndex[j];
+//                    value=ek.fMat.GetVal(ek.fSourceIndex[i],ek.fSourceIndex[j]);
+//                    Triplet3<REAL> trip(ipos, jpos, value);
+//                    triplets.push_back(trip);
+//                }
+//            }
             rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
             
 #ifdef LOG4CXX
@@ -478,6 +511,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffnes
         assemble.stop();
         
     }//fim for iel
+//    std::cout<<mat->fsparse_eigen;
      mat->fsparse_eigen.setFromTriplets(triplets.begin(), triplets.end());
     if (count > 1000) std::cout << std::endl;
     

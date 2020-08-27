@@ -355,8 +355,6 @@ void TMRSTransportAnalysis::NewtonIteration_serial(){
     
     Assemble();
     Rhs() *= -1.0;
-//    Solver().Matrix()->Print("j = ",std::cout,EMathematicaInput);
-//    Rhs().Print("r = ",std::cout,EMathematicaInput);
     Solve();
 
 }
@@ -378,7 +376,16 @@ void TMRSTransportAnalysis::AnalyzePattern(){
 void TMRSTransportAnalysis::NewtonIteration_Eigen(){
     
 //    Assemble_parallel();
+#ifdef USING_BOOST
+    boost::posix_time::ptime tnewton1 = boost::posix_time::microsec_clock::local_time();
+#endif
     fTransportSpMatrix->Assemble();
+    
+#ifdef USING_BOOST
+    boost::posix_time::ptime tnewton2 = boost::posix_time::microsec_clock::local_time();
+    auto deltat = tnewton2-tnewton1;
+    std::cout << "Transport Assembly::  Parallel Newton  time: " << deltat << std::endl;
+#endif
 #ifdef PZDEBUG
     {
         auto norm = fTransportSpMatrix->RhsNorm();
@@ -390,6 +397,12 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
 #endif
 
     fTransportSpMatrix->Solve();
+#ifdef USING_BOOST
+    boost::posix_time::ptime tnewton3 = boost::posix_time::microsec_clock::local_time();
+    deltat = tnewton3-tnewton2;
+    std::cout << "Transport Solve time: " << deltat << std::endl;
+#endif
+    
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = fTransportSpMatrix->Solution();
     assert(Solution().Rows() == ds.rows());
     

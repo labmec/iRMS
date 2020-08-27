@@ -121,11 +121,10 @@ void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(100, 10, 100, 10);
+    aspace.CreateUniformMesh(30, 10,30, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
-    
-    aspace.ApplyUniformRefinement(0);
+    aspace.ApplyUniformRefinement(3);
     
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
@@ -355,7 +354,8 @@ void PaperTest2D(){
     auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
     auto s0 = reservoir_properties.Create_s0();
 
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
+//    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
+TMRSSFIAnalysis *sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
     sfi_analysis->Configure(n_threads, UsePardiso_Q);
     
@@ -387,8 +387,8 @@ void PaperTest2D(){
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
-    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
-    sfi_analysis->PostProcessTimeStep();
+//    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
+//    sfi_analysis->PostProcessTimeStep();
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
     
     sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
@@ -724,8 +724,8 @@ void UNISIMTest(){
     
     std::string geometry_file2D ="gmsh/UNISIMT4R8P2p5.msh";
     int nLayers = sim_data.mTGeometry.mnLayers;
-    bool is3DQ = true;
-    bool print3DMesh = true;
+//    bool is3DQ = true;
+//    bool print3DMesh = true;
 //    TPZGeoMesh *gmesh = CreateGeoMeshWithTopeAndBase( geometry_file2D,  nLayers, print3DMesh, is3DQ);
 //
 //    aspace.mGeometry = gmesh;
@@ -839,7 +839,7 @@ void UNISIMTest(){
           TPZMultiphysicsCompMesh *mphys = dynamic_cast<TPZMultiphysicsCompMesh *>(sfi_analysis->m_mixed_module->Mesh());
           if(!mphys) DebugStop();
 
-          mphys->LoadSolutionFromMultiPhysics();
+//          mphys->LoadSolutionFromMultiPhysics();
 
           sfi_analysis->PostProcessTimeStep();
           pos++;
@@ -1253,9 +1253,9 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -0.0;//-9.81;
+    grav[1] = -0.0001;//-9.81;
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     // PostProcess controls
@@ -1512,15 +1512,14 @@ TMRSDataTransfer SettingPaper2D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 0.5;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -9.8*(1.0e-6); // hor
+    grav[1] = -9.8;//*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
-    
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -1698,9 +1697,9 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 20;
+    sim_data.mTNumerics.m_n_steps = 400;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10*day;
+    sim_data.mTNumerics.m_dt      = 1000*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);

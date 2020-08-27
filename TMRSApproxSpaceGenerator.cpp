@@ -804,8 +804,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-//               sub->SetAnalysisSparse(0);
-                
+
 //                sub->SaddlePermute();
 //                sub->PermuteExternalConnects();
 //                TPZSymetricSpStructMatrixEigen matrix(sub);
@@ -815,11 +814,9 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
 //                matrix.EquationFilter().Reset();
 //                matrix.SetNumThreads(0);
 //                sub->Analysis()->SetStructuralMatrix(matrix);
-                
 //                TPZStepSolver<STATE> step;
 //                step.SetDirect(ELDLt);
 //                sub->Analysis()->SetSolver(step);
-
             }
         }
     }
@@ -1357,6 +1354,10 @@ void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){
    
     std::ifstream file(mSimData.mTGeometry.mGmeshFileName);
     
+#ifdef USING_BOOST
+    boost::posix_time::ptime LoadMesh1 = boost::posix_time::microsec_clock::local_time();
+#endif
+    
     if(!mGeometry){
         if (file) {
             std::cout<<"The geometric mesh will be loaded from the " + mSimData.mTGeometry.mGmeshFileName + " file."<<std::endl;
@@ -1366,6 +1367,11 @@ void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){
             mGeometry = dynamic_cast<TPZGeoMesh *>(restore);
             PrintGeometry(mSimData.mSimulationName,1,0);
             std::cout<<"The geometric mesh has been loaded successfully."<<std::endl;
+#ifdef USING_BOOST
+            boost::posix_time::ptime LoadMesh2 = boost::posix_time::microsec_clock::local_time();
+            auto delta_LoadMesh = LoadMesh2-LoadMesh1;
+            std::cout << "Load GMesh time " << delta_LoadMesh << std::endl;;
+#endif
         }
         else{
            std::cout<<" Geometric mesh information has not been entered. Please enter the mesh in a text file or set it in the approximation space object."<<std::endl;

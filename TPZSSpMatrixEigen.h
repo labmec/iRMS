@@ -7,6 +7,7 @@
 
 #ifndef TPZSSpMatrixEigen_hpp
 #define TPZSSpMatrixEigen_hpp
+#define EIGEN_SUPERLU_SUPPORT
 
 #include <stdio.h>
 #include "pzmatrix.h"
@@ -15,8 +16,12 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
+//#include <Eigen/SparseLDLt>
 #include <Eigen/PardisoSupport>
-//#include <Eigen/SuperLUSupport>
+
+#include <Eigen/SuperLUSupport>
+
+//#include <Eigen/>
 #include "TPZAnalysisAuxEigen.h"
 #include "TPZSpMatrixEigen.h"
 #include <Eigen/Sparse>
@@ -213,8 +218,11 @@ public:
     void AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & sourceindex, TPZVec<int64_t> & destinationindex) override;
     bool isNull( Eigen::SparseMatrix<REAL>& mat, int row, int col);
     Eigen::SparseMatrix<REAL> fsparse_eigen;
-    mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> fanalysis;
-//    mutable Eigen::SimplicialLDLT<Eigen::SparseMatrix<REAL>> fanalysis;
+//    mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> fanalysis;
+    mutable Eigen::SuperLU<Eigen::SparseMatrix<REAL>> fanalysis;
+//    Eigen::SuperLU<Eigen::SparseMatrix<double> > slu;
+//    slu.compute(A);
+//    x = slu.solve(b);
     void FromPZtoEigen(const TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat) const;
     
     void FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat)const;

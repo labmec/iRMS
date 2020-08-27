@@ -356,6 +356,10 @@ void TMRSSFIAnalysis::RunTimeStep(){
 }
 
 void TMRSSFIAnalysis::PostProcessTimeStep(int val){
+#ifdef USING_BOOST
+    boost::posix_time::ptime t1 = boost::posix_time::microsec_clock::local_time();
+    
+#endif
     if (val == 0) {
         m_mixed_module->PostProcessTimeStep();
         m_transport_module->PostProcessTimeStep();
@@ -366,19 +370,37 @@ void TMRSSFIAnalysis::PostProcessTimeStep(int val){
     if (val == 2) {
         m_transport_module->PostProcessTimeStep();
     }
+#ifdef USING_BOOST
+    boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
+    auto deltat = t2-t1;
+    std::cout << "PostProcess time : " << deltat << std::endl;
+#endif
     
 }
 
 void TMRSSFIAnalysis::SFIIteration(){
     
-    {
+    
+#ifdef USING_BOOST
+        boost::posix_time::ptime t1 = boost::posix_time::microsec_clock::local_time();
+#endif
+m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
         
-        m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
         m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
         fAlgebraicDataTransfer.TransferLambdaCoefficients();
+#ifdef USING_BOOST
+        boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
+        auto deltat = t2-t1;
+        std::cout << "Transfer from transport to mixed time: " << deltat << std::endl;
+#endif
         
         
         m_mixed_module->RunTimeStep();
+#ifdef USING_BOOST
+        boost::posix_time::ptime t3 = boost::posix_time::microsec_clock::local_time();
+        deltat = t3-t2;
+        std::cout << "Total mixed time: " << deltat << std::endl;
+#endif
         
 #ifdef USING_BOOST2
         boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
@@ -389,7 +411,7 @@ void TMRSSFIAnalysis::SFIIteration(){
         REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
         std::cout << "Mixed approximation performed in :" << setw(10) <<  mixed_process_time/1000.0 << setw(5)   << " seconds." << std::endl;
 #endif
-    }
+    
     
     //   m_mixed_module->PostProcessTimeStep();
     
@@ -398,7 +420,19 @@ void TMRSSFIAnalysis::SFIIteration(){
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
+
+#ifdef USING_BOOST
+    boost::posix_time::ptime t4 = boost::posix_time::microsec_clock::local_time();
+    deltat = t4-t3;
+    std::cout << "Transfer mixed to transport time: " << deltat << std::endl;
+#endif
+    
     m_transport_module->RunTimeStep();
+#ifdef USING_BOOST
+    boost::posix_time::ptime t5 = boost::posix_time::microsec_clock::local_time();
+    deltat = t5-t4;
+    std::cout << "Total Transport time: " << deltat << std::endl;
+#endif
     
     //    m_transport_module->PostProcessTimeStep();
     //    m_transport_module->PostProcessTimeStep();
