@@ -112,17 +112,17 @@ int main(){
 //    PaperTest3D();
 //    SimpleTest3D();
 
-      SimpleTest2D();
+//      SimpleTest2D();
     
-//    UNISIMTest();
+    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(30, 10,30, 10);
-//    aspace.CreateUniformMesh(5, 10,5, 10);
+//    aspace.CreateUniformMesh(30, 10,30, 10);
+    aspace.CreateUniformMesh(5, 10,5, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     aspace.ApplyUniformRefinement(3);

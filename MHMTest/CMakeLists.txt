@@ -10,7 +10,7 @@ file(GLOB SOURCE *.cpp)
 add_executable(MHM_Test main.cpp ${SOURCE} ${HEADERS} ${common_files})
 target_include_directories(MHM_Test PUBLIC ${common_dir})
 find_package(libInterpolate REQUIRED)
-find_package (Eigen3 3.3 REQUIRED)
+#find_package (Eigen3 3.3 REQUIRED)
 if (SUPERLU_INCLUDES AND SUPERLU_LIBRARIES)
   set(SUPERLU_FIND_QUIETLY TRUE)
 endif (SUPERLU_INCLUDES AND SUPERLU_LIBRARIES)
@@ -22,6 +22,7 @@ find_path(SUPERLU_INCLUDES
   ${INCLUDE_INSTALL_DIR}
   PATH_SUFFIXES
   superlu
+  CBLAS
   SRC
 )
 find_library(SUPERLU_LIBRARIES
