@@ -1698,13 +1698,13 @@ TMRSDataTransfer SettingUNISIM(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 400;
+    sim_data.mTNumerics.m_n_steps = 2.0;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1000*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[2] = -9.8*(1.0e-6);
+    grav[2] = 0.0;//-9.8*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
