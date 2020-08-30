@@ -388,8 +388,6 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffnes
         if (!ek.HasDependency()) {
             ek.ComputeDestinationIndices();
             fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-          
-            
             int64_t i,j = 0;
             REAL value=0.;
             int64_t ipos,jpos;

@@ -112,9 +112,9 @@ int main(){
 //    PaperTest3D();
 //    SimpleTest3D();
 
-//      SimpleTest2D();
+      SimpleTest2D();
     
-    UNISIMTest();
+//    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
