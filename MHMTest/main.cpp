@@ -122,6 +122,7 @@ void SimpleTest2D(){
     
     TMRSApproxSpaceGenerator aspace;
     aspace.CreateUniformMesh(30, 10,30, 10);
+//    aspace.CreateUniformMesh(5, 10,5, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     aspace.ApplyUniformRefinement(3);
@@ -1253,7 +1254,7 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -0.0001;//-9.81;
+    grav[1] = -0.0;//-9.81;
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;

@@ -3,8 +3,6 @@
 //  ALL_BUILD
 //
 //  Created by Jose on 7/20/20.
-//
-
 #include "TPZSpStructMatrix_Eigen.h"
 #include "TPZSpMatrixEigen.h"
 #include "TPZSpStructMatrix.h"
@@ -17,12 +15,10 @@
 #include "pzanalysis.h"
 #include "pzsolve.h"
 #include "pzstepsolver.h"
-
 #include "pzdxmesh.h"
 #include <fstream>
 
 #include "pzelmat.h"
-
 #include "pzysmp.h"
 #include "pzmetis.h"
 #include "pzbndcond.h"
