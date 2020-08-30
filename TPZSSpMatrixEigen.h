@@ -19,7 +19,7 @@
 //#include <Eigen/SparseLDLt>
 #include <Eigen/PardisoSupport>
 
-#include <Eigen/SuperLUSupport>
+//#include <Eigen/SuperLUSupport>
 
 //#include <Eigen/>
 #include "TPZAnalysisAuxEigen.h"
@@ -218,8 +218,8 @@ public:
     void AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & sourceindex, TPZVec<int64_t> & destinationindex) override;
     bool isNull( Eigen::SparseMatrix<REAL>& mat, int row, int col);
     Eigen::SparseMatrix<REAL> fsparse_eigen;
-//    mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> fanalysis;
-    mutable Eigen::SuperLU<Eigen::SparseMatrix<REAL>> fanalysis;
+    mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> fanalysis;
+//    mutable Eigen::SuperLU<Eigen::SparseMatrix<REAL>> fanalysis;
 //    Eigen::SuperLU<Eigen::SparseMatrix<double> > slu;
 //    slu.compute(A);
 //    x = slu.solve(b);

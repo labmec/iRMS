@@ -7,6 +7,7 @@
 #include "TMRSApproxSpaceGenerator.h"
 #include "TPZReservoirTools.h"
 #include "pzcompelwithmem.h"
+#include "pzsmanal.h"
 //#include "ConfigurateCase.h"
 
 #ifdef LOG4CXX
@@ -495,6 +496,7 @@ void TPZMHMixedMesh4SpacesControl::HideTheElements()
     fCMesh->CleanUpUnconnectedNodes();
    
     GroupandCondenseElements();
+//    GroupandCondenseElementsEigen();
     
     std::cout << "Finished substructuring\n";
 }
@@ -502,6 +504,100 @@ void TPZMHMixedMesh4SpacesControl::HideTheElements()
 /**
  * @brief Group and Condense Elements
  */
+void TPZMHMixedMesh4SpacesControl::GroupandCondenseElementsEigen()
+{
+//    int el = 1;
+//    int nels = fCMesh->NElements();
+    
+    
+    
+    for (std::map<int64_t,int64_t>::iterator it=fMHMtoSubCMesh.begin(); it != fMHMtoSubCMesh.end(); it++) {
+//    for (int el=0; el<nels; el++) {
+        TPZCompEl *cel = fCMesh->Element(it->second);
+        TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
+        if (!subcmesh) {
+//            DebugStop();
+            continue;
+        }
+        TPZElementMatrix ek;
+        TPZElementMatrix ef;
+       
+//        TPZCompMeshTools::GroupElements(subcmesh);
+        subcmesh->ComputeNodElCon();
+
+        
+#ifdef LOG4CXX
+        if(logger->isDebugEnabled())
+        {
+            std::stringstream sout;
+            subcmesh->Print(sout);
+            LOGPZ_DEBUG(logger, sout.str())
+        }
+#endif
+        // Increment nelconnected of exterior connects
+        
+        int nel = subcmesh->NElements();
+        for (int64_t el=0; el<nel; el++) {
+            TPZCompEl *cel = subcmesh->Element(el);
+            if (!cel) {
+                continue;
+            }
+            int nconnects = cel->NConnects();
+            for (int icon=0; icon<nconnects; icon++) {
+                TPZConnect &connect = cel->Connect(icon);
+
+                int lagrangemult = connect.LagrangeMultiplier();
+                //Increment the number of connected elements for the avg pressure in order to not condense them
+                if (lagrangemult==3) {
+                    connect.IncrementElConnected();
+                }
+            }
+        }
+      
+        TPZReservoirTools::CreatedCondensedElements(subcmesh, false, true);
+//        TPZCompMeshTools::CreatedCondensedElements(subcmesh, false);
+        subcmesh->CleanUpUnconnectedNodes();
+      
+        int numthreads = 0;
+        int preconditioned = 0;
+#ifdef LOG4CXX2
+        if(logger->isDebugEnabled())
+        {
+            std::stringstream sout;
+            subcmesh->Print(sout);
+            LOGPZ_DEBUG(logger, sout.str())
+        }
+#endif
+        TPZAutoPointer<TPZGuiInterface> guiInterface;
+//        subcmesh->SetAnalysisSkyline(numthreads, preconditioned, guiInterface);
+        
+        subcmesh->SaddlePermute();
+        subcmesh->PermuteExternalConnects();
+        
+        TPZAutoPointer<TPZSymetricSpStructMatrixEigen> str = new TPZSymetricSpStructMatrixEigen(subcmesh);
+        str->SetNumThreads(0);
+        
+        int64_t numinternal = subcmesh->NumInternalEquations();
+        str->EquationFilter().SetMinMaxEq(0, numinternal);
+        TPZAutoPointer<TPZMatrix<STATE> > mat = str->Create();
+        str->EquationFilter().Reset();
+        
+        
+        
+        TPZAutoPointer<TPZAnalysis> Analysis = new TPZSubMeshAnalysis(subcmesh);
+        Analysis->SetStructuralMatrix(str);
+        TPZStepSolver<STATE> *step = new TPZStepSolver<STATE>(mat);
+        step->SetDirect(ELDLt);
+        TPZAutoPointer<TPZMatrixSolver<STATE> > autostep = step;
+        Analysis->SetSolver(autostep);
+        Analysis->SetGuiInterface(guiInterface);
+        subcmesh->SetAnalysis(Analysis);
+        
+//        std::ofstream filehide2("subcmeshAfter.txt");
+//        subcmesh->Print(filehide2);
+    }
+}
+
 void TPZMHMixedMesh4SpacesControl::GroupandCondenseElements()
 {
 //    int el = 1;
@@ -568,6 +664,9 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElements()
 #endif
         TPZAutoPointer<TPZGuiInterface> guiInterface;
         subcmesh->SetAnalysisSkyline(numthreads, preconditioned, guiInterface);
+        
+        
+        
 //        std::ofstream filehide2("subcmeshAfter.txt");
 //        subcmesh->Print(filehide2);
     }

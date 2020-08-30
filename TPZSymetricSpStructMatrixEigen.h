@@ -18,12 +18,16 @@
 
 #include "pzmatrix.h"
 #include "pzfmatrix.h"
+#include "TPZSSpStructMatrix.h"
+#include "TPZSSpMatrixEigen.h"
 
 /**
  * @brief Implements Sparse Structural Matrices. \ref structural "Structural Matrix"
  * @ingroup structural
  */
 class TPZSymetricSpStructMatrixEigen : public TPZStructMatrix {
+    
+    std::vector<Triplet3<REAL> > m_triplets;
     
 public:
     

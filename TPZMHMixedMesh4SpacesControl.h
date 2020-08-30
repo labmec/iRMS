@@ -106,6 +106,7 @@ public:
     
     void PutinSubmeshes(TPZCompMesh *cmesh, std::map<int64_t,std::set<int64_t> >&elindices, std::map<int64_t,int64_t> &indices, bool KeepOneLagrangian);
     void GroupandCondenseElements();
+    void GroupandCondenseElementsEigen();
 //    void HideTheElements();
 //    
 //    int64_t WhichSubdomain(TPZCompEl *cel);
