@@ -805,29 +805,18 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
             if(sub)
             {
                 
-//                auto matrix_c = sub->Analysis()->Solver().Matrix();
-//                sub->Analysis()->CleanUp();
-//                sub->SaddlePermute();
-//                sub->PermuteExternalConnects();
-//                
-//                TPZAutoPointer<TPZSymetricSpStructMatrixEigen> str = new TPZSymetricSpStructMatrixEigen(sub);
-//                str->SetNumThreads(0);
-//                
-//                int64_t numinternal = sub->NumInternalEquations();
-////                str->EquationFilter().SetMinMaxEq(0, numinternal);
-//                TPZAutoPointer<TPZMatrix<STATE> > mat = str->Create();
-//                str->EquationFilter().Reset();
-//                
-//                
-//                
-//                TPZAutoPointer<TPZAnalysis> Analysis = new TPZSubMeshAnalysis(sub);
-//                Analysis->SetStructuralMatrix(str);
-//                TPZStepSolver<STATE> *step = new TPZStepSolver<STATE>(mat);
-//                step->SetDirect(ELDLt);
-//                TPZAutoPointer<TPZMatrixSolver<STATE> > autostep = step;
-//                Analysis->SetSolver(autostep);
-//                sub->SetAnalysis(Analysis);
-//                int aka = 0;
+                
+
+                                TPZSymetricSpStructMatrixEigen matrix(sub);
+                                int numinternal = sub->NumInternalEquations();
+                                matrix.EquationFilter().SetMinMaxEq(0, numinternal);
+                                TPZAutoPointer<TPZMatrix<STATE> > mat = matrix.Create();
+                                matrix.EquationFilter().Reset();
+                                matrix.SetNumThreads(0);
+                                sub->Analysis()->SetStructuralMatrix(matrix);
+                                TPZStepSolver<STATE> step;
+                                step.SetDirect(ELDLt);
+                                sub->Analysis()->SetSolver(step);
             }
         }
     }

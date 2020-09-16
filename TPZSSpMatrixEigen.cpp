@@ -75,15 +75,26 @@ const TVar &TPZSYsmpMatrixEigen<TVar>::GetVal(const int64_t r,const int64_t c ) 
 template<class TVar>
 int TPZSYsmpMatrixEigen<TVar>::PutVal(const int64_t r,const int64_t c,const TVar & val )
 {
+   
+    hastriplets=1;
+    
     if (!isNull(fsparse_eigen, r, c)) {
         fsparse_eigen.coeffRef(r,c) +=val;
+        Triplet3<REAL> triplet(r,c,val);
+        m_triplets.push_back(triplet);
+    }
+    
+    
+    
         if (r!=c  ) {
-            fsparse_eigen.coeffRef(c,r) +=val;
+//            fsparse_eigen.coeffRef(c,r) +=val;
+            Triplet3<REAL> triplet(c,r,val);
+            m_triplets.push_back(triplet);
         }
-    }
-    else{
-        std::cout<<"Non existing position on sparse matrix: line =" << r << " column =" << c << std::endl;
-    }
+//    }
+//    else{
+//        std::cout<<"Non existing position on sparse matrix: line =" << r << " column =" << c << std::endl;
+//    }
     return 1;
 }
 
@@ -254,6 +265,11 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     *b = x;
     return 1;
 }
+
+//template<class TVar>
+//void TPZSYsmpMatrixEigen<TVar>::SetFromTriplets(){
+//    fsparse_eigen.setFromTriplets(m_triplets.begin(), m_triplets.end());
+//}
 //
 template<class TVar>
 int TPZSYsmpMatrixEigen<TVar>::Decompose_LU()
@@ -268,6 +284,14 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LU()
 //
     this->SetIsDecomposed(ELU);
     return 1;
+}
+template<class TVar>
+void TPZSYsmpMatrixEigen<TVar>::SetFromTriplets(){
+    if(hastriplets==1){
+    fsparse_eigen.setZero();
+    fsparse_eigen.setFromTriplets(m_triplets.begin(), m_triplets.end());
+    m_triplets.clear();
+    }
 }
 
 template<class TVar>

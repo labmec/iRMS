@@ -217,8 +217,16 @@ public:
     
     void AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & sourceindex, TPZVec<int64_t> & destinationindex) override;
     bool isNull( Eigen::SparseMatrix<REAL>& mat, int row, int col);
-    Eigen::SparseMatrix<REAL> fsparse_eigen;
+    
+   
+    int hastriplets=0;
+//    void SetFromTriplets(int ok) override;
+    
+    mutable std::vector<Triplet3<REAL> > m_triplets;
+    mutable Eigen::SparseMatrix<REAL> fsparse_eigen;
     mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> fanalysis;
+    void SetFromTriplets();
+    
 //    mutable Eigen::SuperLU<Eigen::SparseMatrix<REAL>> fanalysis;
 //    Eigen::SuperLU<Eigen::SparseMatrix<double> > slu;
 //    slu.compute(A);

@@ -82,7 +82,9 @@ void TPZSpMatrixEigen<TVar>::AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & 
             jpos=destinationindex[j];
             value=elmat.GetVal(i,j);
             if (!isNull(fsparse_eigen, ipos, jpos)) {
-                fsparse_eigen.coeffRef(ipos, jpos) += value;
+                Triplet3<REAL> triplet(ipos, jpos, value);
+                ftriplets.push_back(triplet);
+//                fsparse_eigen.coeffRef(ipos, jpos) += value;
             }
             else{
                 std::cout<<"Non existing position on sparse matrix: line =" << ipos << " column =" << jpos << std::endl;

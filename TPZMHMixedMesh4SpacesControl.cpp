@@ -591,7 +591,7 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElementsEigen()
         TPZAutoPointer<TPZMatrixSolver<STATE> > autostep = step;
         Analysis->SetSolver(autostep);
         Analysis->SetGuiInterface(guiInterface);
-        subcmesh->SetAnalysis(Analysis);
+//        subcmesh->SetAnalysis(Analysis);
         
 //        std::ofstream filehide2("subcmeshAfter.txt");
 //        subcmesh->Print(filehide2);

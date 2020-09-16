@@ -135,6 +135,7 @@ protected:
     public:
         int ClassId() const override;
         Eigen::SparseMatrix<REAL> fsparse_eigen;
+        mutable std::vector<Triplet3<REAL> > ftriplets;
         mutable Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> m_analysis;
         
         protected:
