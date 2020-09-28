@@ -413,73 +413,100 @@ void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){
    
 
 }
+void TPZAlgebraicTransport::TCellData::SetDataTransfer(TMRSDataTransfer *simdata){
+    fsim_data = simdata;
+}
 void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLinearQ){
+    
+    if (!isLinearQ) {
+        fsim_data->mTPetroPhysics.CreateQuadraticKrModel();
+    }
+    
+    auto labdaWf = fsim_data->mTPetroPhysics.mLambdaW;
+    auto labdaOf = fsim_data->mTPetroPhysics.mLambdaO;
+    auto lambdaTotalf = fsim_data->mTPetroPhysics.mLambdaTotal;
+    auto fwf = fsim_data->mTPetroPhysics.mFw;
+    auto fof = fsim_data->mTPetroPhysics.mFo;
+    
     int nvols = this->fVolume.size();
     for (int ivol =0 ; ivol< nvols; ivol++) {
-        std::pair<std::vector<REAL>,std::vector<REAL>> fWandFo;
+
         REAL sw = this->fSaturation[ivol];
-        REAL Krw, Kro, fw, dfwdsw, fo, dfodsw, dlwdsw,dlodsw;
-        REAL muw = fViscosity[0];
-        REAL muo = fViscosity[1];
-        if (isLinearQ) {
-            Krw = sw;
-            Kro = (1-sw);
-            fw =(muo*Krw)/((muw*Kro) + (muo*Krw));
-            fo =(muw*Kro)/((muw*Kro) + (muo*Krw));
-            dfwdsw = (muo*muw)/ ((muw + (muo-muw)*sw)*(muw + (muo-muw)*sw));
-            dfodsw = -1.0*dfwdsw;
-            dlwdsw = (1.0/muw) ;
-            dlodsw = -1.0*(1.0/muo);
-
-        }
-        else{
-            Krw = sw*sw;
-            Kro = (1-sw)*(1-sw);
-            fw =(muo*Krw)/((muw*Kro) + (muo*Krw));
-            fo =(muw*Kro)/((muw*Kro) + (muo*Krw));
-            REAL num = -2.0*(muo*muw*(sw-1.0)*sw);
-            REAL dem = ((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw))*((muw*(sw-1.0)*(sw-1.0))+(muo*sw*sw));
-            dfwdsw = num/dem;
-            dfodsw = -1.0*dfwdsw;
-            
-            dlwdsw = (2.0*sw/muw) ;
-            dlodsw =(-2*(1.0-sw)/muo);
-        }
-        this->fWaterfractionalflow[ivol] = fw;
-        this->fDerivativeWfractionalflow[ivol] =dfwdsw;
-        this->fOilfractionalflow[ivol] = fo;
-        this->fDerivativeOfractionalflow[ivol] = dfodsw;
-        this->flambda[ivol] = (Krw/muw)+(Kro/muo);
-        this->fdlambdawdsw[ivol] = dlwdsw;
-        this->fdlambdaodsw[ivol] = dlodsw;
-     
-
+        auto fwfvalderiv = fwf(sw);
+        auto fovalderiv  = fof(sw);
+        auto lambdaWvalderiv = labdaWf(sw);
+        auto lambdaOvalderiv = labdaOf(sw);
+        auto lambdaTotalvalderiv = lambdaTotalf(sw);
+        
+        this->fWaterfractionalflow[ivol] = std::get<0>(fwfvalderiv);
+        this->fDerivativeWfractionalflow[ivol] = std::get<1>(fwfvalderiv);
+        this->fOilfractionalflow[ivol] = std::get<0>(fovalderiv);
+        this->fDerivativeOfractionalflow[ivol] = std::get<1>(fovalderiv);
+        this->flambda[ivol] = std::get<0>(lambdaTotalvalderiv);
+        this->fdlambdawdsw[ivol] =std::get<1>(lambdaWvalderiv);
+        this->fdlambdaodsw[ivol] = std::get<1>(lambdaOvalderiv);
+    
     }
+    
 }
 
 void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton(){
-    int nvols = this->fVolume.size();
-    REAL muw= fViscosity[0];
-    REAL muo= fViscosity[1];
-    for (int ivol =0 ; ivol< nvols; ivol++) {
-        std::pair<std::vector<REAL>,std::vector<REAL>> fWandFo;
-        REAL sw =this->fSaturation[ivol];
-        REAL krw, kro, fw, fo,dfwdsw, dlambdadsw, dlambdaodsw;
-        krw = sw*sw;
-        kro = (1-sw)*(1-sw);
-        fw = (muo*krw)/((muw*kro) + (muo*krw));
-        fo = (muw*kro)/((muw*kro) + (muo*krw));
-        dfwdsw =(muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
-        dlambdadsw = (2.0*sw/muw) ;
-        dlambdaodsw =  (-2.0*(1.0-sw)/muo);
-        this->fWaterfractionalflow[ivol] = fw;
-        this->fDerivativeWfractionalflow[ivol] =dfwdsw;
-        this->fOilfractionalflow[ivol] =fo;
-        this->fDerivativeOfractionalflow[ivol] = -1.0*dfwdsw;
-        this->flambda[ivol] = (krw/muw)+(kro/muo);
-        this->fdlambdawdsw[ivol] = dlambdadsw;
-        this->fdlambdaodsw[ivol] = dlambdaodsw;
-    }
+    
+        fsim_data->mTPetroPhysics.CreateQuadraticKrModel();
+        int nvols = this->fVolume.size();
+        auto labdaWf = fsim_data->mTPetroPhysics.mLambdaW;
+        auto labdaOf = fsim_data->mTPetroPhysics.mLambdaO;
+        auto lambdaTotalf = fsim_data->mTPetroPhysics.mLambdaTotal;
+        auto fwf = fsim_data->mTPetroPhysics.mFw;
+        auto fof = fsim_data->mTPetroPhysics.mFo;
+    
+        fsim_data->mTPetroPhysics.CreateLinearKrModel();
+        auto fwLinearf =fsim_data->mTPetroPhysics.mFo;
+    
+        for (int ivol =0 ; ivol< nvols; ivol++) {
+            
+            REAL sw = this->fSaturation[ivol];
+            auto fwfvalderiv = fwf(sw);
+            auto fwflinearvalderiv = fwLinearf(sw);
+            auto fovalderiv  = fof(sw);
+            auto lambdaWvalderiv = labdaWf(sw);
+            auto lambdaOvalderiv = labdaOf(sw);
+            auto lambdaTotalvalderiv = lambdaTotalf(sw);
+            
+            
+            this->fWaterfractionalflow[ivol] = std::get<0>(fwfvalderiv);
+            this->fOilfractionalflow[ivol] = std::get<0>(fovalderiv);
+            this->fDerivativeOfractionalflow[ivol] = std::get<1>(fovalderiv);
+            this->flambda[ivol] = std::get<0>(lambdaTotalvalderiv);
+            this->fdlambdawdsw[ivol] =std::get<1>(lambdaWvalderiv);
+            this->fdlambdaodsw[ivol] = std::get<1>(lambdaOvalderiv);
+            
+            fsim_data->mTPetroPhysics.CreateLinearKrModel();
+            
+            this->fDerivativeWfractionalflow[ivol] =std::get<1>(fwflinearvalderiv);
+        }
+//    int nvols = this->fVolume.size();
+//    REAL muw= fViscosity[0];
+//    REAL muo= fViscosity[1];
+//    for (int ivol =0 ; ivol< nvols; ivol++) {
+//        std::pair<std::vector<REAL>,std::vector<REAL>> fWandFo;
+//        REAL sw =this->fSaturation[ivol];
+//        REAL krw, kro, fw, fo,dfwdsw, dlambdadsw, dlambdaodsw;
+//        krw = sw*sw;
+//        kro = (1-sw)*(1-sw);
+//        fw = (muo*krw)/((muw*kro) + (muo*krw));
+//        fo = (muw*kro)/((muw*kro) + (muo*krw));
+//        dfwdsw =(muo*muw)/ ((muw + muo*sw - muw*sw)*(muw + muo*sw - muw*sw));
+//        dlambdadsw = (2.0*sw/muw) ;
+//        dlambdaodsw =  (-2.0*(1.0-sw)/muo);
+//        this->fWaterfractionalflow[ivol] = fw;
+//        this->fDerivativeWfractionalflow[ivol] =dfwdsw;
+//        this->fOilfractionalflow[ivol] =fo;
+//        this->fDerivativeOfractionalflow[ivol] = -1.0*dfwdsw;
+//        this->flambda[ivol] = (krw/muw)+(kro/muo);
+//        this->fdlambdawdsw[ivol] = dlambdadsw;
+//        this->fdlambdaodsw[ivol] = dlambdaodsw;
+//    }
 }
 
 void TPZAlgebraicTransport::TCellData::UpdateSaturations(TPZFMatrix<STATE> &sw){
@@ -514,6 +541,41 @@ void TPZAlgebraicTransport::TCellData::UpdateMixedDensity(){
         fMixedDensity[i] = mixedDen;
     }
 }
+void TPZAlgebraicTransport::TCellData::UpdateDensities(){
+    UpdateDensitiesLastState();
+    int ncells = fVolume.size();
+    auto fWaterDensityF = fsim_data->mTFluidProperties.mWaterDensityF;
+    auto fOilDensityF = fsim_data->mTFluidProperties.mOilDensityF;
+    if(fWaterDensityF){
+    for (int icell = 0; icell<ncells; icell++) {
+        REAL pressure = fPressure[icell];
+        auto densityWvalderiv = fWaterDensityF(pressure);
+        auto densityOvalderiv = fOilDensityF(pressure);
+        fDensityWater[icell] = std::get<0>(densityWvalderiv);
+        fdDensityWaterdp[icell]= std::get<1>(densityWvalderiv);
+        fDensityOil[icell] = std::get<0>(densityOvalderiv);
+        fdDensityOildp[icell] = std::get<1>(densityOvalderiv);
+    }
+        
+    }
+    else{
+        for (int icell = 0; icell<ncells; icell++) {
+            fDensityWater[icell] = fReferenceDensity[0];
+            fDensityOil[icell] = fReferenceDensity[1];
+        }
+    }
+    
+}
+void TPZAlgebraicTransport::TCellData::UpdateDensitiesLastState(){
+    int ncells = fVolume.size();
+    for (int icell = 0; icell<ncells; icell++) {
+        fDensityWaterLastState[icell] = fDensityWater[icell];
+        fDensityOilLastState[icell] = fDensityOil[icell];
+    }
+    
+}
+
+
 
 REAL TPZAlgebraicTransport::CalculateMass(){
     int ncells = fCellsData.fVolume.size();

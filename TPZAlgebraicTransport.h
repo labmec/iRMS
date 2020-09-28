@@ -11,6 +11,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <vector>
+#include "TMRSDataTransfer.h"
 
 #include "TPZMultiphysicsCompMesh.h"
 
@@ -68,13 +69,20 @@ public:
     // CELL DATA
     struct TCellData{
         int  fMatId;
+        TMRSDataTransfer *fsim_data;
+        
+        
         std::vector<REAL> fEqNumber;
         std::vector<REAL> fVolume;
+        std::vector<REAL> fPressure;
         std::vector<REAL> fSaturation;
         std::vector<REAL> fSaturationLastState;
-        std::vector<REAL> fPressure;
         std::vector<REAL> fDensityOil;
+        std::vector<REAL> fdDensityOildp;
+        std::vector<REAL> fDensityOilLastState;
         std::vector<REAL> fDensityWater;
+         std::vector<REAL> fdDensityWaterdp;
+        std::vector<REAL> fDensityWaterLastState;
         std::vector<REAL> fMixedDensity;
         std::vector<REAL> flambda;
         std::vector<REAL> fdlambdawdsw;
@@ -101,7 +109,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fMatId(-1), fEqNumber(0),fVolume(0), fSaturation(0),fSaturationLastState(0), fPressure(0), fDensityOil(0),fDensityWater(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCoordinate(0),
+        TCellData() : fMatId(-1),fsim_data(0), fEqNumber(0),fVolume(0), fSaturation(0), fPressure(0), fSaturationLastState(0),  fDensityOil(0),fdDensityOildp(0), fDensityOilLastState(0),fDensityWater(0), fdDensityWaterdp(0),fDensityWaterLastState(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCoordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -109,13 +117,19 @@ public:
         }
         TCellData(const TCellData &copy)
         {
+            fsim_data=copy.fsim_data;
             fVolume = copy.fVolume;
             fEqNumber=copy.fEqNumber;
             fSaturation= copy.fSaturation;
+            fPressure=copy.fPressure;
             fSaturationLastState = copy.fSaturationLastState;
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
+            fdDensityOildp = copy.fdDensityOildp;
+            fDensityOilLastState = copy.fDensityOilLastState;
             fDensityWater = copy.fDensityWater;
+            fdDensityWaterdp = copy.fdDensityWaterdp;
+            fDensityWaterLastState = copy.fDensityWaterLastState;
             fMixedDensity = copy.fMixedDensity;
             flambda = copy.flambda;
             fdlambdawdsw = copy.fdlambdawdsw;
@@ -136,13 +150,19 @@ public:
         }
         TCellData &operator=(const TCellData &copy)
         {
+             fsim_data=copy.fsim_data;
             fVolume = copy.fVolume;
             fEqNumber=copy.fEqNumber;
             fSaturation= copy.fSaturation;
+            fPressure=copy.fPressure;
             fSaturationLastState = copy.fSaturationLastState;
             fPressure = copy.fPressure;
             fDensityOil = copy.fDensityOil;
+            fdDensityOildp = copy.fdDensityOildp;
+            fDensityOilLastState = copy.fDensityOilLastState;
             fDensityWater = copy.fDensityWater;
+            fdDensityWaterdp = copy.fdDensityWaterdp;
+            fDensityWaterLastState = copy.fDensityWaterLastState;
             fMixedDensity = copy.fMixedDensity;
             flambda = copy.flambda;
             fdlambdawdsw = copy.fdlambdawdsw;
@@ -167,6 +187,7 @@ public:
             fVolume.resize(ncells);
             fEqNumber.resize(ncells);
             fSaturation.resize(ncells);
+            fPressure.resize(ncells);
             fSaturationLastState.resize(ncells);
             fporosity.resize(ncells);
             fKx.resize(ncells);
@@ -174,7 +195,11 @@ public:
             fKz.resize(ncells);
             fPressure.resize(ncells);
             fDensityOil.resize(ncells);
+            fdDensityOildp.resize(ncells);
+            fDensityOilLastState.resize(ncells);
             fDensityWater.resize(ncells);
+            fdDensityWaterdp.resize(ncells);
+            fDensityWaterLastState.resize(ncells);
             fMixedDensity.resize(ncells);
             flambda.resize(ncells);
             fdlambdawdsw.resize(ncells);
@@ -190,8 +215,10 @@ public:
         void UpdateSaturationsTo(TPZFMatrix<STATE> &sw);
         void UpdateFractionalFlowsAndLambda(bool isLinearQ=false);
         void UpdateFractionalFlowsAndLambdaQuasiNewton();
+        void UpdateDensities();
+        void UpdateDensitiesLastState();
         void UpdateMixedDensity();
-        
+        void SetDataTransfer(TMRSDataTransfer *simdata);
         void Print(std::ostream &out);
     };
     
@@ -208,6 +235,7 @@ public:
     int fNVolumesTransport = 0;
     // Cells data structure, one material at a time
     TCellData fCellsData;
+ 
     
     // Interface data structure, by material, element and side
     std::map<int, TInterfaceDataTransport> fInterfaceData;
@@ -252,6 +280,7 @@ public:
     void UpdateIntegralFlux(int matid);
     REAL FLuxIntegralbyID(int mat_id);
     REAL CalculateMass();
+    
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
 };
 

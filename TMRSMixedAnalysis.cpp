@@ -38,6 +38,7 @@ int TMRSMixedAnalysis::GetNumberOfIterations(){
 void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
     
     if (UsePardiso_Q) {
+        
 //        TPZSymetricSpStructMatrix matrix(Mesh());
 //        matrix.SetNumThreads(n_threads);
 //        SetStructuralMatrix(matrix);
@@ -89,11 +90,11 @@ void TMRSMixedAnalysis::RunTimeStep(){
         x +=dx;
         cmesh->UpdatePreviousState(-1);
         fsoltransfer.TransferFromMultiphysics();
-        PostProcessTimeStep();
+//        PostProcessTimeStep();
         Assemble();
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
-      
+        
 
 #ifdef PZDEBUG
         {
@@ -118,16 +119,12 @@ void TMRSMixedAnalysis::RunTimeStep(){
                     std::cout << "Mixed operator not converge " << std::endl;
 //                    DebugStop();
                 }
-        
     }
 }
 
 
 void TMRSMixedAnalysis::NewtonIteration(){
     
-#ifdef USING_BOOST
-    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
-#endif
 
     if(mIsFirstAssembleQ == true)
     {
@@ -148,19 +145,23 @@ void TMRSMixedAnalysis::NewtonIteration(){
         mIsFirstAssembleQ=false;
     }
 
-   
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+#endif
+
    Assemble();
     
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::time_duration deltat = tsim2-tsim1;
+    std::cout << "Mixed:: Assembly time " << deltat << std::endl;
+#endif
     
     TPZMatrix<STATE> *mat = 0;
     mat = fSolver->Matrix().operator->();
  
     
-    #ifdef USING_BOOST
-        boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
-        auto deltat = tsim2-tsim1;
-        std::cout << "Mixed:: Assembly time " << deltat << std::endl;
-    #endif
+  
        
     Solve();
     

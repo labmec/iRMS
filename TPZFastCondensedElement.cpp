@@ -26,13 +26,11 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     if(this->fMatrixComputed == false)
     {
      
-//        TPZMixedDarcyWithFourSpaces *matDarcy = dynamic_cast<TPZMixedDarcyWithFourSpaces *>(Material());
         TPZDarcyFlowWithMem *matDarcy = dynamic_cast<TPZDarcyFlowWithMem *>(Material());
         if (!matDarcy) {
             DebugStop();
         }
         
-//        matDarcy->SetPermeability(fPermeabilityTensor);
         TPZCondensedCompEl::CalcStiff(ek, ef);
         ShrinkElementMatrix(ek, fEK);
         ShrinkElementMatrix(ef, fEF);
@@ -56,13 +54,17 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
         ek.fMat(irow,ncols-1) *= fLambda;
     }
     ek.fMat(nrows-1,ncols-1) *=fLambda;
+//    ek.fMat(nrows-1,ncols-1) *=fCompressibilityMatrixTerm;
     
     TPZFMatrix<STATE> solvec(fEK.fMat.Rows(),1,0.);
     GetSolutionVector(solvec);
     
 
     ef.fMat *= -1.0*Glambda;
-
+//    ef.fMat(nrows-1) = fCompressibiilityRhsTerm;
+    
+    
+    
     /** @brief Computes z = alpha * opt(this)*x + beta * y */
     /** @note z and x cannot overlap in memory */
     //    void MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,
@@ -164,6 +166,11 @@ REAL TPZFastCondensedElement::GetLambda(){
 void TPZFastCondensedElement::SetMixedDensity(REAL mdensity){
     fMixedDensity = mdensity;
 }
+void TPZFastCondensedElement::SetCompressibiilityTerm(REAL matrix, REAL rhs){
+    fCompressibilityMatrixTerm = matrix;
+    fCompressibiilityRhsTerm = rhs;
+}
+
 REAL TPZFastCondensedElement::GetMixedDensity(){
     return fMixedDensity;
 }

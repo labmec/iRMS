@@ -79,22 +79,21 @@ int TPZSYsmpMatrixEigen<TVar>::PutVal(const int64_t r,const int64_t c,const TVar
     hastriplets=1;
     
     if (!isNull(fsparse_eigen, r, c)) {
-        fsparse_eigen.coeffRef(r,c) +=val;
+      
         Triplet3<REAL> triplet(r,c,val);
         m_triplets.push_back(triplet);
-    }
-    
-    
-    
         if (r!=c  ) {
-//            fsparse_eigen.coeffRef(c,r) +=val;
             Triplet3<REAL> triplet(c,r,val);
             m_triplets.push_back(triplet);
         }
-//    }
-//    else{
-//        std::cout<<"Non existing position on sparse matrix: line =" << r << " column =" << c << std::endl;
-//    }
+        //    }
+    }
+    
+   
+
+    else{
+        std::cout<<"Non existing position on sparse matrix: line =" << r << " column =" << c << std::endl;
+    }
     return 1;
 }
 
@@ -240,6 +239,7 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_Cholesky(std::list<int64_t> &singular)
 template<class TVar>
 int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
 {
+    
     if(this->IsDecomposed() == ELDLt) return 1;
     if (this->IsDecomposed() != ENoDecompose) {
         DebugStop();

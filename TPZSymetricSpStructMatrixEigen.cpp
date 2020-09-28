@@ -297,7 +297,20 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffnes
         Serial_AssembleGlob(stiffness,rhs, guiInterface);
     }
     if (matRed) {
-        Serial_AssembleSub(stiffness,rhs, guiInterface);
+         Serial_AssembleSub(stiffness,rhs, guiInterface);
+//        boost::posix_time::ptime timeactual=boost::posix_time::microsec_clock::local_time();
+//        std::cout<<"TotalSolveSub: "<<timetotalSolve<<std::endl;
+//        std::cout<<"TotalSubMeshes: "<<timetotal<<std::endl;
+//        std::cout<<"TotalCalcStiff: "<<timeTotalCalcStiff<<std::endl;
+//        std::cout<<"TotalAssemble: "<<timeTotalAssemble<<std::endl;
+//        std::cout<<"TotalSetFromTriplets: "<<timeTotalSetFromTrriplets<<std::endl;
+//        timetotal=timeactual-timeactual;
+//        timetotalSolve=timeactual-timeactual;
+//        timeTotalCalcStiff=timeactual-timeactual;
+//        timeTotalAssemble=timeactual-timeactual;
+//        timeTotalSetFromTrriplets=timeactual-timeactual;
+
+        
     }
     
 }
@@ -337,6 +350,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         if (!(count % 20000)) {
             std::cout << "\n";
         }
+        boost::posix_time::ptime initimeCalc = boost::posix_time::microsec_clock::local_time();
         calcstiff.start();
         ek.Reset();
         ef.Reset();
@@ -344,9 +358,11 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         if (guiInterface) if (guiInterface->AmIKilled()) {
             return;
         }
-        
-        
         calcstiff.stop();
+        boost::posix_time::ptime endtimeCalc = boost::posix_time::microsec_clock::local_time();
+        timeTotalCalcStiff += (endtimeCalc-initimeCalc);
+    
+        
         assemble.start();
         
         if (!ek.HasDependency()) {
@@ -366,9 +382,11 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         }
         
         assemble.stop();
+        boost::posix_time::ptime endtimeAssem = boost::posix_time::microsec_clock::local_time();
+        timeTotalAssemble += (endtimeAssem - endtimeCalc);
+    
     }//fim for iel
     matk00eigen->SetFromTriplets();
-    
 }
 void TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
     

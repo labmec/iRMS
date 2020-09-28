@@ -92,6 +92,8 @@ void ModifyTopeAndBase(TPZGeoMesh * gmesh, std::string filename);
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
 void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
 void CreateResPropertiesFunction(std::function<std::vector<REAL>(const TPZVec<REAL> & )> &Kappa_Phi, std::function<REAL(const TPZVec<REAL> & )> &S0);
+
+
 void Gravity2D();
 void SimpleTest3D();
 void UNISIMTest();
@@ -121,15 +123,18 @@ void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(10, 10,10, 10);
+    aspace.CreateUniformMesh(2, 10,2, 10);
+    
 //    aspace.CreateUniformMesh(5, 10,5, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
-    aspace.ApplyUniformRefinement(3);
-    
+    aspace.ApplyUniformRefinement(1);
+    std::cout<<"Num Eq Transport: "<<aspace.mGeometry->NElements()<<std::endl;
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
+    
+    
     
     int order = 1;
     bool must_opt_band_width_Q = true;
@@ -1236,10 +1241,15 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(-4,bc_outlet,1.0);
     
     //Fluid Properties
-    sim_data.mTFluidProperties.mWaterViscosity = 1.0;
-    sim_data.mTFluidProperties.mOilViscosity = 1.0;
-    sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 1000.0;
+    sim_data.mTFluidProperties.mReferencePressure =1.013e5;
+    sim_data.mTFluidProperties.mWaterViscosity = 0.8;
+    sim_data.mTFluidProperties.mOilViscosity = 0.7;
+    sim_data.mTPetroPhysics.mWaterViscosity = sim_data.mTFluidProperties.mWaterViscosity;
+    sim_data.mTPetroPhysics.mOilViscosity = sim_data.mTFluidProperties.mOilViscosity;
+    sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
+    sim_data.mTFluidProperties.mOilDensityRef = 1000.0;
+    sim_data.mTFluidProperties.mOilCompressibility = 1.0e-9;
+    sim_data.mTFluidProperties.mWaterCompressibility = 1.0e-9;
     
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 2;
@@ -1322,8 +1332,8 @@ TMRSDataTransfer SettingGravity2D(){
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
-    sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 800.0;
+    sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
+    sim_data.mTFluidProperties.mOilDensityRef = 800.0;
 
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 3;
@@ -1415,8 +1425,8 @@ TMRSDataTransfer Setting3D(){
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
-    sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 500.0;
+    sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
+    sim_data.mTFluidProperties.mOilDensityRef = 500.0;
     
     
     // Numerical controls
@@ -1498,8 +1508,8 @@ TMRSDataTransfer SettingPaper2D(){
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.002;
-    sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 800.0;
+    sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
+    sim_data.mTFluidProperties.mOilDensityRef = 800.0;
 
 
     // Numerical controls
@@ -1581,8 +1591,8 @@ TMRSDataTransfer SettingPaper3D(){
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
-    sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 500.0;
+    sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
+    sim_data.mTFluidProperties.mOilDensityRef = 500.0;
     
     
     // Numerical controls
@@ -1667,8 +1677,8 @@ TMRSDataTransfer SettingUNISIM(){
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.002;
-    sim_data.mTFluidProperties.mWaterDensity = 1000.0;
-    sim_data.mTFluidProperties.mOilDensity = 800.0;
+    sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
+    sim_data.mTFluidProperties.mOilDensityRef = 800.0;
 
 
     // Numerical controls
@@ -1707,7 +1717,7 @@ TMRSDataTransfer SettingUNISIM(){
     grav[2] = 0.0;//-9.8*(1.0e-6);
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -2068,3 +2078,4 @@ void PostProcessResProps(TPZMultiphysicsCompMesh *cmesh, TPZAlgebraicTransport *
     
      an->PostProcess(0,dim);
 }
+

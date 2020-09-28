@@ -910,7 +910,35 @@ void TPZAlgebraicDataTransfer::TransferMixedMeshMultiplyingCoefficients()
         }
     }
 }
-
+void TPZAlgebraicDataTransfer::TransferPressures(){
+    for(auto &meshit : fTransportMixedCorrespondence)
+    {
+        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
+#ifdef PZDEBUG
+        if(meshit.fTransport == 0)
+        {
+            DebugStop();
+        }
+#endif
+        for (int icell = 0; icell < ncells; icell++)
+        {
+            int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
+            TPZFastCondensedElement *fastcompel =meshit.fMixedCell[icell];
+            if (!fastcompel) {
+                DebugStop();
+            }
+            TPZCompEl *compel = fastcompel->ReferenceCompEl();
+            int dim = compel->Dimension();
+            TPZVec<REAL> qsi(dim,0.0);
+            TPZVec<STATE> sol(dim,0.0);
+            int presureindex= 2;
+            compel->Solution(qsi, presureindex, sol);
+            meshit.fTransport->fCellsData.fPressure[cellindex] =sol[0];
+            
+        }
+    }
+    
+}
 // transfer the permeability multiplier from the transport mesh to the mixed mesh elements
 void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
 {
@@ -928,9 +956,25 @@ void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
         {
             int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
             meshit.fMixedCell[icell]->SetLambda(meshit.fTransport->fCellsData.flambda[cellindex]);
+         meshit.fMixedCell[icell]->SetMixedDensity(meshit.fTransport->fCellsData.fMixedDensity[cellindex]);
             
-            meshit.fMixedCell[icell]->SetMixedDensity(meshit.fTransport->fCellsData.fMixedDensity[cellindex]);
-
+            REAL porosity = meshit.fTransport->fCellsData.fporosity[cellindex];
+            REAL dt = meshit.fTransport->fdt;
+            REAL sw = meshit.fTransport->fCellsData.fSaturation[cellindex];
+            REAL so = 1-sw;
+            REAL drhoWdp = meshit.fTransport->fCellsData.fdDensityWaterdp[cellindex];
+            REAL drhoOdp = meshit.fTransport->fCellsData.fdDensityOildp[cellindex];
+            REAL compterm = (porosity/dt)*((sw*drhoWdp)+(so*drhoOdp));
+            
+            REAL swlast =meshit.fTransport->fCellsData.fSaturationLastState[cellindex];
+            REAL solast = 1.0 - swlast;
+            REAL rhoWlast =meshit.fTransport->fCellsData.fDensityWaterLastState[cellindex];
+            REAL rhoOlast =meshit.fTransport->fCellsData.fDensityOilLastState[cellindex];
+            REAL comptermrhs = (porosity/dt)*((swlast*rhoWlast)+(solast*rhoOlast));
+            
+            meshit.fMixedCell[icell]->SetCompressibiilityTerm(compterm, comptermrhs);
+            
+            
         }
     }
 }

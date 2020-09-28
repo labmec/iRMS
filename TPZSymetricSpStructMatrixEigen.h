@@ -30,6 +30,7 @@ class TPZSymetricSpStructMatrixEigen : public TPZStructMatrix {
     std::vector<Triplet3<REAL> > m_triplets;
     
 public:
+//    boost::posix_time::time_duration timeTotalSetFromTrriplets=timeactual-timeactual;
     
     TPZSymetricSpStructMatrixEigen(TPZCompMesh *);
     

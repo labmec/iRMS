@@ -276,13 +276,17 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
     m_mixed_module->SetDataTransfer(sim_data);
     m_transport_module->SetDataTransfer(sim_data);
+    m_transport_module->fAlgebraicTransport.fCellsData.SetDataTransfer(sim_data);
+    
+    
+    
     BuildAlgebraicDataStructure();
     
     m_transport_module->fAlgebraicTransport.interfaceid = 100;
     m_transport_module->fAlgebraicTransport.inletmatid = -2;
     m_transport_module->fAlgebraicTransport.outletmatid = -4;
-    
     m_transport_module->fAlgebraicTransport.fgravity = m_sim_data->mTNumerics.m_gravity;
+    
     
     //Set initial properties
     std::cout << "interface matid " <<m_sim_data->mTGeometry.mInterface_material_id;
@@ -291,8 +295,8 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[0] = m_sim_data->mTFluidProperties.mWaterViscosity;
     m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[1] = m_sim_data->mTFluidProperties.mOilViscosity;
     int ncells = m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil.size();
-    REAL rhow = m_sim_data->mTFluidProperties.mWaterDensity;
-    REAL rhoo = m_sim_data->mTFluidProperties.mOilDensity;
+    REAL rhow = m_sim_data->mTFluidProperties.mWaterDensityRef;
+    REAL rhoo = m_sim_data->mTFluidProperties.mOilDensityRef;
     for (int icell =0; icell<ncells; icell++) {
         m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
     }
@@ -420,7 +424,11 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
-
+    m_mixed_module->PostProcessTimeStep();
+    
+    fAlgebraicDataTransfer.TransferPressures();
+    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
+    
 #ifdef USING_BOOST
     boost::posix_time::ptime t4 = boost::posix_time::microsec_clock::local_time();
     deltat = t4-t3;

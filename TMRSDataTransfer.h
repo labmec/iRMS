@@ -115,17 +115,31 @@ public:
     /**
      * @brief Class that stores PetroPhysics information
      */
+   
     class TPetroPhysics : public TMRSSavable {
         
     public:
+        REAL mOilViscosity;
+        REAL mWaterViscosity;
         
         /** @brief Contains the water relative permeability model for each layer */
         std::vector<TRSLinearInterpolator > mLayer_Krw_RelPerModel;
         /** @brief Contains the oil relative permeability model for each layer */
         std::vector<TRSLinearInterpolator > mLayer_Kro_RelPerModel;
         
+        std::function<std::tuple<REAL, REAL>(REAL &)> mKro;
+        std::function<std::tuple<REAL, REAL>(REAL &)> mKrw;
+        std::function<std::tuple<REAL, REAL>(REAL &)> mFo;
+        std::function<std::tuple<REAL, REAL>(REAL &)> mFw;
+        std::function<std::tuple<REAL, REAL>(REAL &)> mLambdaW;
+        std::function<std::tuple<REAL, REAL>(REAL &)> mLambdaO;
+        std::function<std::tuple<REAL, REAL>(REAL &)> mLambdaTotal;
+        
         /** @brief Default constructor */
         TPetroPhysics(){
+            mOilViscosity=1.0;
+            mWaterViscosity=1.0;
+            CreateLinearKrModel();
             mLayer_Krw_RelPerModel.clear();
             mLayer_Kro_RelPerModel.clear();
         }
@@ -137,23 +151,41 @@ public:
         
         /** @brief Copy constructor */
         TPetroPhysics(const TPetroPhysics &other){
-            mLayer_Krw_RelPerModel = other.mLayer_Krw_RelPerModel;
-            mLayer_Kro_RelPerModel = other.mLayer_Kro_RelPerModel;
-           
+            mOilViscosity=other.mOilViscosity;
+            mWaterViscosity=other.mWaterViscosity;
+            mKro = other.mKro;
+            mKrw = other.mKrw;
+            mFo  = other.mFo;
+            mFw  = other.mFw;
+            mLambdaW = other.mLambdaW;
+            mLambdaO = other.mLambdaO;
+            mLambdaTotal = other.mLambdaTotal;
+            mLayer_Krw_RelPerModel=other.mLayer_Krw_RelPerModel;
+            mLayer_Kro_RelPerModel=other.mLayer_Kro_RelPerModel;
         }
         
         /** @brief Copy assignment operator*/
         TPetroPhysics &operator=(const TPetroPhysics &other){
             if (this != & other) // prevent self-assignment
             {
-                mLayer_Krw_RelPerModel = other.mLayer_Krw_RelPerModel;
-                mLayer_Kro_RelPerModel = other.mLayer_Kro_RelPerModel;
+                mOilViscosity=other.mOilViscosity;
+                mWaterViscosity=other.mWaterViscosity;
+                mKro = other.mKro;
+                mKrw = other.mKrw;
+                mFo  = other.mFo;
+                mFw  = other.mFw;
+                mLambdaW = other.mLambdaW;
+                mLambdaO = other.mLambdaO;
+                 mLambdaTotal = other.mLambdaTotal;
+                mLayer_Krw_RelPerModel=other.mLayer_Krw_RelPerModel;
+                mLayer_Kro_RelPerModel=other.mLayer_Kro_RelPerModel;
                
             }
             return *this;
         }
-    
-        
+        void CreateLinearKrModel();
+        void CreateQuadraticKrModel();
+        void UpdateLambdasAndFracFlows();
     };
     
     /**
@@ -164,14 +196,26 @@ public:
     public:
         REAL mOilViscosity;
         REAL mWaterViscosity;
-        REAL mOilDensity;
-        REAL mWaterDensity;
+        REAL mWaterCompressibility;
+        REAL mOilCompressibility;
+        REAL mOilDensityRef;
+        REAL mWaterDensityRef;
+        REAL mReferencePressure;
+        std::function<std::tuple<REAL, REAL>(REAL &)> mOilDensityF;
+        std::function<std::tuple<REAL, REAL>(REAL &)> mWaterDensityF;
+        
         /** @brief Default constructor */
         TFluidProperties(){
             mOilViscosity= 1.0;
             mWaterViscosity=1.0;
-            mOilDensity = 800;
-            mWaterDensity = 1000;
+            mOilDensityRef = 800;
+            mWaterDensityRef = 1000;
+            mWaterCompressibility = 1.0e-8;
+            mOilCompressibility = 1.0e-7;
+            mReferencePressure = 1.013e5;
+            mOilDensityF = 0;
+            mWaterDensityF =0;
+            CreateLinearDensityFunction();
         }
         
         /** @brief Destructor */
@@ -183,19 +227,32 @@ public:
         TFluidProperties(const TFluidProperties &other){
             mOilViscosity = other.mOilViscosity;
             mWaterViscosity = other.mWaterViscosity;
-            mOilDensity = other.mOilDensity;
-            mWaterDensity = other.mWaterDensity;
+            mWaterCompressibility = other.mWaterCompressibility;
+            mOilCompressibility = other.mOilCompressibility;
+
+            mReferencePressure = other.mReferencePressure;
+            mOilDensityRef = other.mOilDensityRef;
+            mWaterDensityRef = other.mWaterDensityRef;
+            mOilDensityF = other.mOilDensityF;
+            mWaterDensityF =other.mWaterDensityF;
+
         }
         
         /** @brief Copy assignment operator*/
         TFluidProperties &operator=(const TFluidProperties &other){
             mOilViscosity = other.mOilViscosity;
             mWaterViscosity = other.mWaterViscosity;
-            mOilDensity = other.mOilDensity;
-            mWaterDensity = other.mWaterDensity;
+            mWaterCompressibility = other.mWaterCompressibility;
+            mOilCompressibility = other.mOilCompressibility;
+            mOilDensityRef = other.mOilDensityRef;
+            mWaterDensityRef = other.mWaterDensityRef;
+             mReferencePressure = other.mReferencePressure;
+            mOilDensityF = other.mOilDensityF;
+            mWaterDensityF =other.mWaterDensityF;
             return *this;
         }
-        
+        void CreateLinearDensityFunction();
+        void CreateExponentialDensityFunction();
         
     };
     class TReservoirProperties : public TMRSSavable {

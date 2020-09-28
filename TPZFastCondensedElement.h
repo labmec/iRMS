@@ -22,7 +22,8 @@ class TPZFastCondensedElement : public TPZCondensedCompEl
     
     //mixture density = rhow*fw + rhoo*fo
     REAL fMixedDensity = 1.;
-     
+    REAL fCompressibilityMatrixTerm = 1.0;
+    REAL fCompressibiilityRhsTerm = 1.0;
     // this constant contains the source term
     REAL fSource = 0.;
     // this flag indicates whether the matrix of the father element has been computed
@@ -111,6 +112,7 @@ public:
     REAL GetLambda();
     
     void SetMixedDensity(REAL density);
+    void SetCompressibiilityTerm(REAL matrix, REAL rhs);
     REAL GetMixedDensity();
 
     /**
