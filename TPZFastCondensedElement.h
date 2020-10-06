@@ -14,9 +14,9 @@
 
 class TPZFastCondensedElement : public TPZCondensedCompEl
 {
+    
     // this will be the multiplying factor for the condensed stiffness matrix K11
     REAL fLambda = 1.0;
-    
     TPZFNMatrix<9, REAL> fPermeabilityTensor;
     TPZFNMatrix<9, REAL> fInvPerm;
     
@@ -34,6 +34,16 @@ class TPZFastCondensedElement : public TPZCondensedCompEl
     
 public:
     static bool fSkipLoadSolution;
+    
+    bool hasIndexes = false;
+   
+    std::vector<int> faIndexK00;
+    std::vector<int> faIndexK01;
+    std::vector<int> faIndexK11;
+    
+    std::vector<int> faValK00;
+    std::vector<int> faValK01;
+    std::vector<int> faValK11;
     
 private:
     

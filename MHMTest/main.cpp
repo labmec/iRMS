@@ -120,10 +120,64 @@ int main(){
     return 0;
 }
 void SimpleTest2D(){
-    TMRSDataTransfer sim_data  = SettingSimple2D();
     
+    std::vector<Triplet3<REAL> > m_triplets;
+    Triplet3<REAL> trip1(0,0,10);
+    m_triplets.push_back(trip1);
+    Triplet3<REAL> trip2(0,2,30);
+    m_triplets.push_back(trip2);
+    Triplet3<REAL> trip3(0,3,5);
+    m_triplets.push_back(trip3);
+    Triplet3<REAL> trip4(1,1,45);
+    m_triplets.push_back(trip4);
+    Triplet3<REAL> trip5(1,2,80);
+    m_triplets.push_back(trip5);
+    
+//    Triplet3<REAL> trip6(2,0,30);
+//    m_triplets.push_back(trip6);
+//    Triplet3<REAL> trip7(2,1,80);
+//    m_triplets.push_back(trip7);
+    
+    Triplet3<REAL> trip8(2,2,171);
+    m_triplets.push_back(trip8);
+    Triplet3<REAL> trip9(2,3,1);
+    m_triplets.push_back(trip9);
+    
+//    Triplet3<REAL> trip10(3,0,5);
+//    m_triplets.push_back(trip10);
+//    Triplet3<REAL> trip11(3,2,1);
+//    m_triplets.push_back(trip11);
+    
+    Triplet3<REAL> trip12(3,3,50);
+    m_triplets.push_back(trip12);
+
+    Eigen::SparseMatrix<REAL> fsparse_eigen(4,4);
+    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs;
+    rhs.resize(4,1);
+    rhs(0,0)=5;
+    rhs(1,0)=4;
+    rhs(2,0)=10;
+    rhs(3,0)=6;
+    fsparse_eigen.setFromTriplets(m_triplets.begin(), m_triplets.end());
+    Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>, Eigen::Upper> fanalysis;
+   
+//    fanalysis.pardisoParameterArray()[56] = 1;
+
+    fanalysis.compute(fsparse_eigen);
+    auto sol = fanalysis.solve(rhs);
+    std::cout<<sol<<std::endl;
+    fsparse_eigen.valuePtr()[3]=98;
+    fanalysis.compute(fsparse_eigen);
+    auto sol2 = fanalysis.solve(rhs);
+    std::cout<<sol2<<std::endl;
+    int ok=0;
+
+    
+
+    TMRSDataTransfer sim_data  = SettingSimple2D();
+   
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(2, 10,2, 10);
+    aspace.CreateUniformMesh(2, 10, 1, 10);
     
 //    aspace.CreateUniformMesh(5, 10,5, 10);
     std::string name = "2D_geo";
@@ -134,12 +188,11 @@ void SimpleTest2D(){
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
     
-    
-    
     int order = 1;
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
     bool UsePardiso_Q = true;
+    
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     
@@ -1258,9 +1311,9 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.00001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 2;
+    sim_data.mTNumerics.m_n_steps = 1;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 0.01 ;//*day;
+    sim_data.mTNumerics.m_dt      = 0.03 ;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);

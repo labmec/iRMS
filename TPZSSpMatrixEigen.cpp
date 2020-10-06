@@ -6,6 +6,11 @@
 //
 
 #include "TPZSSpMatrixEigen.h"
+#include <Eigen/Dense>
+#include <unsupported/Eigen/SparseExtra>
+#include<Eigen/SparseCholesky>
+
+
 /**
  * @file
  * @brief Contains the implementation of the TPZSYsmpMatrixEigen methods.
@@ -26,7 +31,7 @@
 template<class TVar>
 TPZSYsmpMatrixEigen<TVar>::TPZSYsmpMatrixEigen() : TPZRegisterClassId(&TPZSYsmpMatrixEigen::ClassId),
 TPZMatrix<TVar>() {
-
+//fanalysis.pardisoParameterArray()[59] = 1;
 }
 
 template<class TVar>
@@ -35,7 +40,7 @@ TPZMatrix<TVar>(rows,cols) {
     Eigen::SparseMatrix<REAL> sparse_eigen(rows, cols);
     fsparse_eigen = sparse_eigen;
     fsparse_eigen.setZero();
-    
+//    fanalysis.pardisoParameterArray()[59] = 1;
 }
 
 template<class TVar>
@@ -64,8 +69,17 @@ template<class TVar>
 const TVar &TPZSYsmpMatrixEigen<TVar>::GetVal(const int64_t r,const int64_t c ) const {
     // Get the matrix entry at (row,col) without bound checking
     
-    TVar val = fsparse_eigen.coeff(r, c);
-    return val;
+    int64_t row(r),col(c);
+    if (r > c) {
+        int64_t temp = r;
+        row = col;
+        col = temp;
+    }
+    for(int ic=fIA[row] ; ic < fIA[row+1]; ic++ ) {
+        if ( fJA[ic] == col ) return fsparse_eigen.valuePtr()[ic];
+    }
+    return this->gZero;
+  
    
 }
 
@@ -76,33 +90,61 @@ template<class TVar>
 int TPZSYsmpMatrixEigen<TVar>::PutVal(const int64_t r,const int64_t c,const TVar & val )
 {
    
-    hastriplets=1;
-    
-    if (!isNull(fsparse_eigen, r, c)) {
-      
-        Triplet3<REAL> triplet(r,c,val);
-        m_triplets.push_back(triplet);
-        if (r!=c  ) {
-            Triplet3<REAL> triplet(c,r,val);
-            m_triplets.push_back(triplet);
-        }
-        //    }
+    int64_t row(r),col(c);
+    if (r > c) {
+        int64_t temp = r;
+        row = col;
+        col = temp;
     }
-    
-   
 
-    else{
-        std::cout<<"Non existing position on sparse matrix: line =" << r << " column =" << c << std::endl;
+    for(int ic=fIA[row] ; ic < fIA[row+1]; ic++ ) {
+        if ( fJA[ic] == col )
+        {
+            fsparse_eigen.valuePtr()[ic] = val;
+            return 0;
+        }
     }
-    return 1;
+    if (val != (TVar(0.))) {
+        DebugStop();
+    }
+    return 0;
+ 
 }
 
+template<class TVar>
+int TPZSYsmpMatrixEigen<TVar>::PutVal(const int64_t r,const int64_t c,const TVar & val, int &posfa )
+{
+    
+    int64_t row(r),col(c);
+    if (r > c) {
+        int64_t temp = r;
+        row = col;
+        col = temp;
+    }
+    
+    for(int ic=fIA[row] ; ic < fIA[row+1]; ic++ ) {
+        if ( fJA[ic] == col )
+        {
+            fsparse_eigen.valuePtr()[ic] = val;
+            posfa = ic;
+            return 0;
+        }
+    }
+    if (val != (TVar(0.))) {
+        DebugStop();
+    }
+    return 0;
+    
+}
 
-// ****************************************************************************
-//
-// Print the matrix
-//
-// ****************************************************************************
+template<class TVar>
+int TPZSYsmpMatrixEigen<TVar>::PutVal(int posfa, const TVar & val )
+{
+    fsparse_eigen.valuePtr()[posfa] = val;
+    return 0;
+    
+    
+}
 
 template<class TVar>
 void TPZSYsmpMatrixEigen<TVar>::Print(const char *title, std::ostream &out ,const MatrixOutputFormat form) const {
@@ -244,6 +286,7 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
     if (this->IsDecomposed() != ENoDecompose) {
         DebugStop();
     }
+    
     fanalysis.factorize(fsparse_eigen);
     this->SetIsDecomposed(ELDLt);
     return 1;
@@ -257,11 +300,31 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
 template<class TVar>
 int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
 {
+    //    fanalysis.compute(fsparse_eigen);
+    
+    //    fanalysis.pardisoParameterArray()[59] = 1;
+    
     TPZFMatrix<TVar> x(*b);
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs;
+    
+    int nrows = fsparse_eigen.innerSize();
+    int ncols = nrows;
+    TPZFMatrix<TVar> pzmat(nrows,ncols);
+    
+    
+        pzmat.Zero();
+        //    eigenmat.resize(nrows, ncols);
+        for (int i=0; i< nrows; i++) {
+            for (int j=0; j< ncols; j++) {
+                pzmat(i, j)= fsparse_eigen.coeff(i, j) ;
+            };
+        }
+    pzmat.Print("EkRed1Eeigen=",std::cout, EMathematicaInput);
     FromPZtoEigen(x, rhs);
+    x.Print("RhsRed1Eeigen=",std::cout, EMathematicaInput);
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> ds = fanalysis.solve(rhs);
     FromEigentoPZ(x, ds);
+    x.Print("SolRed1Eeigen=",std::cout, EMathematicaInput);
     *b = x;
     return 1;
 }
@@ -278,19 +341,19 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LU()
     if (this->IsDecomposed() != ENoDecompose) {
         DebugStop();
     }
-//
+    //
     fanalysis.analyzePattern(fsparse_eigen);
     fanalysis.factorize(fsparse_eigen);
-//
+    //
     this->SetIsDecomposed(ELU);
     return 1;
 }
 template<class TVar>
 void TPZSYsmpMatrixEigen<TVar>::SetFromTriplets(){
     if(hastriplets==1){
-    fsparse_eigen.setZero();
-    fsparse_eigen.setFromTriplets(m_triplets.begin(), m_triplets.end());
-    m_triplets.clear();
+        fsparse_eigen.setZero();
+        fsparse_eigen.setFromTriplets(m_triplets.begin(), m_triplets.end());
+        m_triplets.clear();
     }
 }
 
@@ -309,16 +372,16 @@ int TPZSYsmpMatrixEigen<TVar>::Substitution( TPZFMatrix<TVar> *B ) const
 //
 template<class TVar>
 void TPZSYsmpMatrixEigen<TVar>::MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y,
-                                     TPZFMatrix<TVar> &z,
-                                     const TVar alpha,const TVar beta,const int opt) const {
-
+                                        TPZFMatrix<TVar> &z,
+                                        const TVar alpha,const TVar beta,const int opt) const {
+    
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> xeigen,yeigen,zeigen;
     this->FromPZtoEigen(x, xeigen);
     this->FromPZtoEigen(y, yeigen);
     zeigen = beta*yeigen + alpha*xeigen;
     this->FromEigentoPZ(z, zeigen);
-
-
+    
+    
 }
 /**
  * @brief Computes B = Y, where A*Y = B, A is upper triangular with A(i,i)=1.
@@ -348,7 +411,7 @@ template<class TVar>
 int TPZSYsmpMatrixEigen<TVar>::Subst_Forward( TPZFMatrix<TVar>* b ) const
 {
     TPZFMatrix<TVar> x(*b);
-//    fPardisoControl.Solve(*b,x);
+    //    fPardisoControl.Solve(*b,x);
     DebugStop();
     *b = x;
     return 1;
@@ -401,7 +464,7 @@ void TPZSYsmpMatrixEigen<TVar>::FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::M
         DebugStop();
     }
     pzmat.Zero();
-//    eigenmat.resize(nrows, ncols);
+    //    eigenmat.resize(nrows, ncols);
     for (int i=0; i< nrows; i++) {
         for (int j=0; j< ncols; j++) {
             pzmat(i, j)= eigenmat(i, j) ;

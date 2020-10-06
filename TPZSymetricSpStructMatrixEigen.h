@@ -20,7 +20,7 @@
 #include "pzfmatrix.h"
 #include "TPZSSpStructMatrix.h"
 #include "TPZSSpMatrixEigen.h"
-
+#include "TPZFastCondensedElement.h"
 /**
  * @brief Implements Sparse Structural Matrices. \ref structural "Structural Matrix"
  * @ingroup structural

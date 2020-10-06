@@ -16,10 +16,13 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
+#include <Eigen/Dense>
+#include <unsupported/Eigen/SparseExtra>
+#include<Eigen/SparseCholesky>
 //#include <Eigen/SparseLDLt>
 #include <Eigen/PardisoSupport>
 
-//#include <Eigen/SuperLUSupport>
+#include <Eigen/SuperLUSupport>
 
 //#include <Eigen/>
 #include "TPZAnalysisAuxEigen.h"
@@ -76,11 +79,14 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
     
     /** @brief Zeroes the matrix */
     virtual int Zero() override {
-        fsparse_eigen = 0.0*fsparse_eigen;
+        fsparse_eigen=0.0*fsparse_eigen;
+        for (int ival=0; ival<fA.size(); ival++) {
+           fsparse_eigen.valuePtr()[ival]=0;
+        }
+                TPZMatrix<TVar>::fDecomposed = ENoDecompose;
         
-        
-        fA.Fill(0.);
-        fDiag.Fill(0.);
+//        fA.Fill(0.);
+//        fDiag.Fill(0.);
 #ifndef USING_MKL
 //        TPZMatrix<TVar>::fDecomposed = ENoDecompose;
 #endif
@@ -112,8 +118,8 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
      *  This method is faster than "Put" if DEBUG is defined.
      */
     virtual int PutVal(const int64_t /*row*/,const int64_t /*col*/,const TVar & val ) override;
-    
-    
+    int PutVal(const int64_t /*row*/,const int64_t /*col*/,const TVar & val, int &posfa );
+    int PutVal(int posfa, const TVar & val );
     /** @brief Computes z = beta * y + alpha * opt(this)*x */
     /** @note z and x cannot overlap in memory */
     virtual void MultAdd(const TPZFMatrix<TVar> &x,const TPZFMatrix<TVar> &y, TPZFMatrix<TVar> &z,
@@ -224,7 +230,13 @@ public:
     
     mutable std::vector<Triplet3<REAL> > m_triplets;
     mutable Eigen::SparseMatrix<REAL> fsparse_eigen;
-    mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> fanalysis;
+    
+    
+    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>, Eigen::Lower> fanalysis;
+//    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>> fanalysisLU;
+//     mutable Eigen::SimplicialLDLT<Eigen::SparseMatrix<REAL>> fanalysis;
+//    mutable Eigen::LDLT<Eigen::SparseMatrix<REAL>> fanalysis;
+
     void SetFromTriplets();
     
 //    mutable Eigen::SuperLU<Eigen::SparseMatrix<REAL>> fanalysis;
@@ -237,7 +249,7 @@ public:
     virtual int Decompose_LU() override;
     virtual int Substitution( TPZFMatrix<TVar> * B ) const override;
    
-private:
+public:
     
     
     TPZVec<int64_t>  fIA;
@@ -255,35 +267,48 @@ template<class TVar>
 inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const TPZVec<int64_t> &JA, const TPZVec<TVar> &A )
 {
     //
+//    std::cout<<IA<<std::endl;
+//        std::cout<<"*************"<<std::endl;
+//    std::cout<<JA<<std::endl;
     fsparse_eigen.setZero();
-    
-    int nrows = IA.size()-1;
-    std::vector<Triplet3<REAL> > triplets(2*A.size() -nrows);
-    int count =0;
-    for (int irow = 0; irow < nrows; irow++) {
-        for(int k=IA[irow]; k<IA[irow+1]; k++){
-            int row= irow;
-            int col = JA[k];
-            REAL val = A[k];
-            Triplet3<REAL> trip(row, col, val);
-            if (row!=col) {
-                Triplet3<REAL> trip(col, row, val);
-                triplets[count] = trip;
-                count++;
-            }
-            triplets[count] = trip;
-            count++;
+    int nnoZeros =A.size();
+    int ncols = IA.size()-1;
+    fsparse_eigen.resize(ncols,ncols);
+    std::vector<Triplet3<REAL> > triplets(2*(A.size()-ncols)+ncols);
+    int count = 0;
+    for (int icol = 0; icol < ncols; icol++) {
+        
+        for(int ivalk = IA[icol];ivalk<IA[icol+1]; ivalk++){
+            REAL val = A[ivalk];
+            int  c = icol;
+            int i = JA[ivalk];
+            Triplet3<REAL> trip(i,c,val);
+            triplets[count]=trip;
+             count++;
+//            if(i!=c){
+//                Triplet3<REAL> trip(c,i,val);
+//                triplets[count]=trip;
+//                count++;
+//            }
+           
         }
     }
+
     fsparse_eigen.setFromTriplets(triplets.begin(), triplets.end());
     triplets.clear();
     fanalysis.analyzePattern(fsparse_eigen);
-//    std::cout<<fsparse_eigen<<std::endl;
     //
     // Pass the data to the class.
+//    std::cout<<fsparse_eigen<<std::endl;
+//    std::cout<<"*************"<<std::endl;
+//    std::cout<<"fjA:"<<std::endl;
+//    std::cout<<fsparse_eigen.innerIndexPtr()<<std::endl;
+//    std::cout<<"fIA:"<<std::endl;
+//    std::cout<<fsparse_eigen<<std::endl;
     fIA = IA;
     fJA = JA;
     fA  =  A;
+    
     ComputeDiagonal();
 }
 

@@ -316,10 +316,9 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffnes
 }
 void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
     
-    TPZMatRed<STATE, TPZFMatrix<STATE> > *matRed = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE> > *> (&stiffness);
-    TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
-    TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
     
+    TPZMatRed<STATE, TPZFMatrix<STATE> > *matRed = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE> > *> (&stiffness);
+//    matRed->Zero();
     int64_t iel;
     int64_t nelem = fMesh->NElements();
     TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
@@ -331,6 +330,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
     int64_t count = 0;
     for (iel = 0; iel < nelem; iel++) {
         TPZCompEl *el = elementvec[iel];
+        TPZFastCondensedElement *fastcondEl = dynamic_cast<TPZFastCondensedElement *>(el);
         if (!el) continue;
         int matid = 0;
         TPZGeoEl *gel = el->Reference();
@@ -364,51 +364,155 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
     
         
         assemble.start();
-        
+        int countpos =0;
+        bool hasIndex=false;
         if (!ek.HasDependency()) {
             ek.ComputeDestinationIndices();
             fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-            stiffness.AddKel(ek.fMat, ek.fSourceIndex, ek.fDestinationIndex);
+            int64_t nelems = ek.fSourceIndex.NElements();
+            int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
+            REAL prevval;
+            
+            for(icoef=0; icoef<nelems; icoef++) {
+                ieq = ek.fDestinationIndex[icoef];
+                ieqs = ek.fSourceIndex[icoef];
+                for(jcoef=icoef; jcoef<nelems; jcoef++) {
+                    jeq = ek.fDestinationIndex[jcoef];
+                    jeqs = ek.fSourceIndex[jcoef];
+                    prevval = matRed->GetVal(ieq,jeq);
+                    prevval += ek.fMat(ieqs,jeqs);
+                    int r = ieq;
+                    int c = jeq;
+                    REAL value =prevval;
+                    int64_t row(r),col(c);
+                    int fDim0 = matRed->fDim0;
+                    TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
+                    TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
+                    TPZFMatrix<REAL>* matk01Eigen = &matRed->K01();
+                    TPZFMatrix<REAL> *matk10Eigen = &matRed->K10();
+                    TPZFMatrix<STATE> *matpzmat11= &matRed->K11();
+                    
+                    if ( row > col ) matRed->Swap( &row, &col );
+                    if (row<fDim0 &&  col<fDim0)  {
+                        if (fastcondEl) {
+                            if (!fastcondEl->hasIndexes) {
+                                int posfa =0;
+                                matk00eigen->PutVal(row,col,value, posfa);
+                                if (fastcondEl) {
+                                    fastcondEl->faValK00.push_back(posfa);
+                                    hasIndex=true;
+                                }
+                            }
+                            else{
+                                int posfa =fastcondEl->faValK00[count];
+                                matk00eigen->PutVal(posfa,value);
+                                countpos++;
+                            }
+                        }
+                        else{
+                            matk00eigen->PutVal(row,col,value);
+                        }
+                    }
+                    if (row<fDim0 &&  col>=fDim0)  {
+                        matk01Eigen->PutVal(row,col-fDim0,value);
+                    }
+                    if (row>=fDim0 &&  col<fDim0)  {
+                        matk10Eigen->PutVal(row-fDim0,col,value);
+                    }
+                    if (row>=fDim0 &&  col>=fDim0) {
+                        matpzmat11->PutVal(row-fDim0,col-fDim0,value);
+                    }
+                }
+            }
+            
             rhs.AddFel(ef.fMat, ek.fSourceIndex, ek.fDestinationIndex);
         } else {
             // the element has dependent nodes
-            ek.ApplyConstraints();
             ef.ApplyConstraints();
+            ek.ApplyConstraints();
             ek.ComputeDestinationIndices();
             fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-            stiffness.AddKel(ek.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
-            rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
+//            matRed->AddKel(ek.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
+            int64_t nelem = ek.fSourceIndex.NElements();
+            int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
             
+            REAL prevval;
+                for(icoef=0; icoef<nelem; icoef++) {
+                    ieq = ek.fDestinationIndex[icoef];
+                    ieqs = ek.fSourceIndex[icoef];
+                    for(jcoef=icoef; jcoef<nelem; jcoef++) {
+                        jeq = ek.fDestinationIndex[jcoef];
+                        jeqs = ek.fSourceIndex[jcoef];
+                        prevval = matRed->GetVal(ieq,jeq);
+                        prevval += ek.fConstrMat(ieqs,jeqs);
+//                        matRed->PutVal(ieq,jeq,prevval);
+                        //
+                        int r = ieq;
+                        int c = jeq;
+                        REAL value =prevval;
+                        int64_t row(r),col(c);
+                        int fDim0 = matRed->fDim0;
+                        TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
+                        TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
+                        TPZFMatrix<REAL>* matk01Eigen = &matRed->K01();
+                        TPZFMatrix<REAL> *matk10Eigen = &matRed->K10();
+                        TPZFMatrix<STATE> *matpzmat11= &matRed->K11();
+                        
+                        if ( row > col ) matRed->Swap( &row, &col );
+                        if (row<fDim0 &&  col<fDim0)  {
+                            if (!fastcondEl->hasIndexes) {
+                                int posfa =0;
+                                matk00eigen->PutVal(row,col,value, posfa);
+                                if (fastcondEl) {
+                                    fastcondEl->faValK00.push_back(posfa);
+                                    hasIndex=true;
+                                }
+                            }
+                            else{
+                                int posfa =fastcondEl->faValK00[count];
+                                matk00eigen->PutVal(posfa,value);
+                                countpos++;
+                            }
+                        }
+                        if (row<fDim0 &&  col>=fDim0)  {
+                            matk01Eigen->PutVal(row,col-fDim0,value);
+                        }
+                        if (row>=fDim0 &&  col<fDim0)  {
+                            matk10Eigen->PutVal(row-fDim0,col,value);
+                        }
+                        if (row>=fDim0 &&  col>=fDim0) {
+                            matpzmat11->PutVal(row-fDim0,col-fDim0,value);
+                        }
+                    }
+                }
+            rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
+        }
+        if (hasIndex==true) {
+            fastcondEl->hasIndexes=true;
         }
         
         assemble.stop();
-        boost::posix_time::ptime endtimeAssem = boost::posix_time::microsec_clock::local_time();
-        timeTotalAssemble += (endtimeAssem - endtimeCalc);
-    
+//        boost::posix_time::ptime endtimeAssem = boost::posix_time::microsec_clock::local_time();
+//        timeTotalAssemble += (endtimeAssem - endtimeCalc);
     }//fim for iel
-    matk00eigen->SetFromTriplets();
 }
-void TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
+
+
+//
+void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
+
+    int64_t iel;
+    int64_t nelem = fMesh->NElements();
+    TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
+
+    TPZTimer calcstiff("Computing the stiffness matrices");
+    TPZTimer assemble("Assembling the stiffness matrices");
+    TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
+
+    int64_t count = 0;
+    TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
     
-        TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
-    
-        int64_t nelem = fMesh->NElements();
-    
-    #ifdef LOG4CXX
-        bool globalresult = true;
-        bool writereadresult = true;
-    #endif
-        TPZTimer calcstiff("Computing the stiffness matrices");
-        TPZTimer assemble("Assembling the stiffness matrices");
-        TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
-    
-        // scan all the mesh to compute nnzeros.
-        int64_t nnzeros = 0; // counter for nonzeros;
-        std::vector<int64_t> iel_to_l_index(nelem);
-    
-        TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
-    
-        for (int64_t iel = 0; iel < nelem; iel++) {
+        for (iel = 0; iel < nelem; iel++) {
             TPZCompEl *el = elementvec[iel];
             if (!el) continue;
             int matid = 0;
@@ -420,490 +524,70 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & stif
             if(matidsize){
                 if(!el->NeedsComputing(fMaterialIds)) continue;
             }
-    
+            
+            count++;
+            if (!(count % 1000)) {
+                std::cout << '*';
+                std::cout.flush();
+            }
+            if (!(count % 20000)) {
+                std::cout << "\n";
+            }
+            calcstiff.start();
             ek.Reset();
             ef.Reset();
             el->CalcStiff(ek, ef);
             if (guiInterface) if (guiInterface->AmIKilled()) {
                 return;
             }
-    
-            ek.ComputeDestinationIndices();
-            fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-            iel_to_l_index[iel] = (nnzeros);
-            nnzeros += ek.fSourceIndex.NElements() * ek.fSourceIndex.NElements();
-            // needs to separate rhs
-            rhs.AddFel(ef.fMat, ek.fSourceIndex, ek.fDestinationIndex);
-        }
-        m_triplets.resize(nnzeros);
-    
-        #ifdef USING_TBB
-            tbb::parallel_for(size_t(0), size_t(nelem), size_t(1),
-                              [this,&elementvec,&iel_to_l_index] (size_t & iel){
-    
-                TPZCompEl *el = elementvec[iel];
-                if (el) {
-                    TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
-    
-                    ek.Reset();
-                    ef.Reset();
-                    el->CalcStiff(ek, ef);
-    
-                    ek.ComputeDestinationIndices();
-                    fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-                    int64_t i,j = 0;
-                    REAL value=0.;
-                    int64_t ipos,jpos;
-    
-                    int64_t l=0;
-                    for(i=0;i<ek.fSourceIndex.NElements();i++){
-                        for(j=0;j<ek.fSourceIndex.NElements();j++){
-                            ipos=ek.fDestinationIndex[i];
-                            jpos=ek.fDestinationIndex[j];
-                            value=ek.fMat.GetVal(ek.fSourceIndex[i],ek.fSourceIndex[j]);
-                            Triplet3<REAL> trip(ipos, jpos, value);
-                            m_triplets[iel_to_l_index[iel] + l] = trip;
-                            l++;
-                        }
-                    }
-                }
-            }
-        );
-        #else
-            for (iel = 0; iel < nelem; iel++) {
-    
-                TPZCompEl *el = elementvec[iel];
-                if (!el) continue;
-                int matid = 0;
-                TPZGeoEl *gel = el->Reference();
-                if (gel) {
-                    matid = gel->MaterialId();
-                }
-                int matidsize = fMaterialIds.size();
-                if(matidsize){
-                    if(!el->NeedsComputing(fMaterialIds)) continue;
-                }
-    
-                ek.Reset();
-                ef.Reset();
-                el->CalcStiff(ek, ef);
-                if (guiInterface) if (guiInterface->AmIKilled()) {
-                    return;
-                }
-    
+            calcstiff.stop();
+            assemble.start();
+            if (!ek.HasDependency()) {
                 ek.ComputeDestinationIndices();
                 fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-                int64_t i,j = 0;
-                REAL value=0.;
-                int64_t ipos,jpos;
-    
-                int64_t l=0;
-                for(i=0;i<ek.fSourceIndex.NElements();i++){
-                    for(j=0;j<ek.fSourceIndex.NElements();j++){
-                        ipos=ek.fDestinationIndex[i];
-                        jpos=ek.fDestinationIndex[j];
-                        value=ek.fMat.GetVal(ek.fSourceIndex[i],ek.fSourceIndex[j]);
-                        Triplet3<REAL> trip(ipos, jpos, value);
-                        m_triplets[iel_to_l_index[iel] + l] = trip;
-                        l++;
-                    }
-                }
+                        int64_t nelem = ek.fSourceIndex.NElements();
+                        int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
+                        REAL prevval;
+                        for(icoef=0; icoef<nelem; icoef++) {
+                            ieq = ek.fDestinationIndex[icoef];
+                            ieqs = ek.fSourceIndex[icoef];
+                            for(jcoef=icoef; jcoef<nelem; jcoef++) {
+                                jeq = ek.fDestinationIndex[jcoef];
+                                jeqs = ek.fSourceIndex[jcoef];
+                                prevval = mat->GetVal(ieq,jeq);
+                                prevval += ek.fMat(ieqs,jeqs);
+                                mat->PutVal(ieq,jeq,prevval);
+                            }
+                        }
+                 rhs.AddFel(ef.fMat, ek.fSourceIndex, ek.fDestinationIndex);
+            assemble.stop();
+        }//fim for iel
+            else {
+                // the element has dependent nodes
+                ek.ApplyConstraints();
+                ef.ApplyConstraints();
+                ek.ComputeDestinationIndices();
+                fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
+                        int64_t nelem = ek.fSourceIndex.NElements();
+                        int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
+                        REAL prevval;
+                        for(icoef=0; icoef<nelem; icoef++) {
+                            ieq = ek.fDestinationIndex[icoef];
+                            ieqs = ek.fSourceIndex[icoef];
+                            for(jcoef=icoef; jcoef<nelem; jcoef++) {
+                                jeq = ek.fDestinationIndex[jcoef];
+                                jeqs = ek.fSourceIndex[jcoef];
+                                prevval = mat->GetVal(ieq,jeq);
+                                prevval += ek.fConstrMat(ieqs,jeqs);
+                                mat->PutVal(ieq,jeq,prevval);
+                            }
+                        }
+                rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
             }
-        #endif
+        if (count > 1000) std::cout << std::endl;
+    }
     
-        mat->fsparse_eigen.setFromTriplets(m_triplets.begin(), m_triplets.end());
-        m_triplets.clear();
 }
-//void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
-//
-//
-//    TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
-//
-//    int64_t nelem = fMesh->NElements();
-//
-//#ifdef LOG4CXX
-//    bool globalresult = true;
-//    bool writereadresult = true;
-//#endif
-//    TPZTimer calcstiff("Computing the stiffness matrices");
-//    TPZTimer assemble("Assembling the stiffness matrices");
-//    TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
-//
-//    // scan all the mesh to compute nnzeros.
-//    int64_t nnzeros = 0; // counter for nonzeros;
-//    std::vector<int64_t> iel_to_l_index(nelem);
-//
-//    TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
-//    if (mat) {
-//
-//    for (int64_t iel = 0; iel < nelem; iel++) {
-//        TPZCompEl *el = elementvec[iel];
-//        if (!el) continue;
-//        int matid = 0;
-//        TPZGeoEl *gel = el->Reference();
-//        if (gel) {
-//            matid = gel->MaterialId();
-//        }
-//        int matidsize = fMaterialIds.size();
-//        if(matidsize){
-//            if(!el->NeedsComputing(fMaterialIds)) continue;
-//        }
-//
-//        ek.Reset();
-//        ef.Reset();
-//        el->CalcStiff(ek, ef);
-//        if (guiInterface) if (guiInterface->AmIKilled()) {
-//            return;
-//        }
-//
-//        ek.ComputeDestinationIndices();
-//        fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//        iel_to_l_index[iel] = (nnzeros);
-//        nnzeros += ek.fSourceIndex.NElements() * ek.fSourceIndex.NElements();
-//        // needs to separate rhs
-//        rhs.AddFel(ef.fMat, ek.fSourceIndex, ek.fDestinationIndex);
-//    }
-//    m_triplets.resize(nnzeros);
-//
-//    #ifdef USING_TBB
-//        tbb::parallel_for(size_t(0), size_t(nelem), size_t(1),
-//                          [this,&elementvec,&iel_to_l_index] (size_t & iel){
-//
-//            TPZCompEl *el = elementvec[iel];
-//            if (el) {
-//                TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
-//
-//                ek.Reset();
-//                ef.Reset();
-//                el->CalcStiff(ek, ef);
-//
-//                ek.ComputeDestinationIndices();
-//                fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//                int64_t i,j = 0;
-//                REAL value=0.;
-//                int64_t ipos,jpos;
-//
-//                int64_t l=0;
-//                for(i=0;i<ek.fSourceIndex.NElements();i++){
-//                    for(j=0;j<ek.fSourceIndex.NElements();j++){
-//                        ipos=ek.fDestinationIndex[i];
-//                        jpos=ek.fDestinationIndex[j];
-//                        value=ek.fMat.GetVal(ek.fSourceIndex[i],ek.fSourceIndex[j]);
-//                        Triplet3<REAL> trip(ipos, jpos, value);
-//                        m_triplets[iel_to_l_index[iel] + l] = trip;
-//                        l++;
-//                    }
-//                }
-//            }
-//        }
-//    );
-//    #else
-//        for (iel = 0; iel < nelem; iel++) {
-//
-//            TPZCompEl *el = elementvec[iel];
-//            if (!el) continue;
-//            int matid = 0;
-//            TPZGeoEl *gel = el->Reference();
-//            if (gel) {
-//                matid = gel->MaterialId();
-//            }
-//            int matidsize = fMaterialIds.size();
-//            if(matidsize){
-//                if(!el->NeedsComputing(fMaterialIds)) continue;
-//            }
-//
-//            ek.Reset();
-//            ef.Reset();
-//            el->CalcStiff(ek, ef);
-//            if (guiInterface) if (guiInterface->AmIKilled()) {
-//                return;
-//            }
-//
-//            ek.ComputeDestinationIndices();
-//            fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//            int64_t i,j = 0;
-//            REAL value=0.;
-//            int64_t ipos,jpos;
-//
-//            int64_t l=0;
-//            for(i=0;i<ek.fSourceIndex.NElements();i++){
-//                for(j=0;j<ek.fSourceIndex.NElements();j++){
-//                    ipos=ek.fDestinationIndex[i];
-//                    jpos=ek.fDestinationIndex[j];
-//                    value=ek.fMat.GetVal(ek.fSourceIndex[i],ek.fSourceIndex[j]);
-//                    Triplet3<REAL> trip(ipos, jpos, value);
-//                    m_triplets[iel_to_l_index[iel] + l] = trip;
-//                    l++;
-//                }
-//            }
-//        }
-//    #endif
-//
-//    mat->fsparse_eigen.setFromTriplets(m_triplets.begin(), m_triplets.end());
-//    m_triplets.clear();
-//    }
-//    else{
-//            int64_t iel;
-//            int64_t nelem = fMesh->NElements();
-//            TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
-//
-//            TPZTimer calcstiff("Computing the stiffness matrices");
-//            TPZTimer assemble("Assembling the stiffness matrices");
-//            TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
-//
-//            int64_t count = 0;
-//            for (iel = 0; iel < nelem; iel++) {
-//                TPZCompEl *el = elementvec[iel];
-//                if (!el) continue;
-//                int matid = 0;
-//                TPZGeoEl *gel = el->Reference();
-//                if (gel) {
-//                    matid = gel->MaterialId();
-//                }
-//                int matidsize = fMaterialIds.size();
-//                if(matidsize){
-//                    if(!el->NeedsComputing(fMaterialIds)) continue;
-//                }
-//
-//                count++;
-//                if (!(count % 1000)) {
-//                    std::cout << '*';
-//                    std::cout.flush();
-//                }
-//                if (!(count % 20000)) {
-//                    std::cout << "\n";
-//                }
-//                calcstiff.start();
-//                ek.Reset();
-//                ef.Reset();
-//                el->CalcStiff(ek, ef);
-//                if (guiInterface) if (guiInterface->AmIKilled()) {
-//                    return;
-//                }
-//
-//
-//                calcstiff.stop();
-//                assemble.start();
-//
-//                if (!ek.HasDependency()) {
-//                    ek.ComputeDestinationIndices();
-//                    fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//                    stiffness.AddKel(ek.fMat, ek.fSourceIndex, ek.fDestinationIndex);
-//
-//                    rhs.AddFel(ef.fMat, ek.fSourceIndex, ek.fDestinationIndex);
-//                } else {
-//                    // the element has dependent nodes
-//                    ek.ApplyConstraints();
-//                    ef.ApplyConstraints();
-//                    ek.ComputeDestinationIndices();
-//                    fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//                    stiffness.AddKel(ek.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
-//                    rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
-//
-//                }
-//
-//                assemble.stop();
-//            }//fim for iel
-//            if (count > 1000) std::cout << std::endl;
-//                TPZMatRed<STATE, TPZFMatrix<STATE> > *mat = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE> > *> (&stiffness);
-//                if (mat) {
-//                    int val=1;
-//                    TPZMatrix<STATE> * matpzmat = mat->K00().operator->();
-//                    TPZSYsmpMatrixEigen<STATE> *matk00eigen = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
-//
-//                    TPZMatrix<STATE> * matpzmatk11 = &mat->K11();
-//                    TPZSYsmpMatrixEigen<STATE> *matk11eigen = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmatk11);
-//
-//                    TPZMatrix<STATE> * matpzmatk01 = &mat->K01();
-//                    TPZSYsmpMatrixEigen<STATE> *matk01eigen = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmatk01);
-//
-//                    TPZMatrix<STATE> * matpzmatk10 = &mat->K11();
-//                    TPZSYsmpMatrixEigen<STATE> *matk10eigen = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmatk10);
-//                    if(matk00eigen){
-//                       matk00eigen->SetFromTriplets();
-//                    }
-//                    if (matk11eigen) {
-//                        matk11eigen->SetFromTriplets();
-//                    }
-//                    if (matk01eigen) {
-//                        matk01eigen->SetFromTriplets();
-//                    }
-//                    if (matk10eigen) {
-//                        matk10eigen->SetFromTriplets();
-//                    }
-//                }
-//    }
-//    //
-//}
-//
-
-//
-//void  TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
-//
-//    int64_t iel;
-//    int64_t nelem = fMesh->NElements();
-//    TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
-//
-//    TPZTimer calcstiff("Computing the stiffness matrices");
-//    TPZTimer assemble("Assembling the stiffness matrices");
-//    TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
-//
-//    int64_t count = 0;
-//    TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
-//    TPZMatRed<STATE, TPZFMatrix<STATE> > *matRed = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE> > *> (&stiffness);
-//    TPZMatrix<STATE> * matpzmat=0;
-//    TPZSYsmpMatrixEigen<STATE> *matk00eigen =0;
-//    if (matRed) {
-//        matpzmat = matRed->K00().operator->();
-//        matk00eigen = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
-//    }
-//   
-//    
-//    if (mat) {
-//        for (iel = 0; iel < nelem; iel++) {
-//            TPZCompEl *el = elementvec[iel];
-//            if (!el) continue;
-//            int matid = 0;
-//            TPZGeoEl *gel = el->Reference();
-//            if (gel) {
-//                matid = gel->MaterialId();
-//            }
-//            int matidsize = fMaterialIds.size();
-//            if(matidsize){
-//                if(!el->NeedsComputing(fMaterialIds)) continue;
-//            }
-//            
-//            count++;
-//            if (!(count % 1000)) {
-//                std::cout << '*';
-//                std::cout.flush();
-//            }
-//            if (!(count % 20000)) {
-//                std::cout << "\n";
-//            }
-//            calcstiff.start();
-//            ek.Reset();
-//            ef.Reset();
-//            el->CalcStiff(ek, ef);
-//            if (guiInterface) if (guiInterface->AmIKilled()) {
-//                return;
-//            }
-//            
-//            
-//            calcstiff.stop();
-//            assemble.start();
-//            
-//            if (!ek.HasDependency()) {
-//                ek.ComputeDestinationIndices();
-//                fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//            
-//                int64_t i,j = 0;
-//                REAL value=0.;
-//                int64_t ipos,jpos;
-//                for(i=0;i<ek.fSourceIndex.NElements();i++){
-//                    for(j=0;j<ek.fSourceIndex.NElements();j++){
-//                        ipos=ek.fDestinationIndex[i];
-//                        jpos=ek.fDestinationIndex[j];
-//                        value=ek.fMat.GetVal(ek.fSourceIndex[i],ek.fSourceIndex[j]);
-//                        Triplet3<REAL> trip(ipos, jpos, value);
-//                        mat->m_triplets.push_back(trip);
-//                    }
-//                }
-//            } else {
-//                // the element has dependent nodes
-//                ek.ApplyConstraints();
-//                ef.ApplyConstraints();
-//                ek.ComputeDestinationIndices();
-//                fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//                int64_t i,j = 0;
-//                REAL value=0.;
-//                int64_t ipos,jpos;
-//                for(i=0;i<ek.fSourceIndex.NElements();i++){
-//                    for(j=0;j<ek.fSourceIndex.NElements();j++){
-//                        ipos=ek.fDestinationIndex[i];
-//                        jpos=ek.fDestinationIndex[j];
-//                        value=ek.fMat.GetVal(ek.fSourceIndex[i],ek.fSourceIndex[j]);
-//                        Triplet3<REAL> trip(ipos, jpos, value);
-//                        mat->m_triplets.push_back(trip);
-//                    }
-//                }
-//                
-//            }
-//            
-//            assemble.stop();
-//        }//fim for iel
-//        if (count > 1000) std::cout << std::endl;
-//        mat->hastriplets =1;
-//        mat->SetFromTriplets();
-//    }
-//    else{
-//                    int64_t iel;
-//                    int64_t nelem = fMesh->NElements();
-//                    TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
-//        
-//                    TPZTimer calcstiff("Computing the stiffness matrices");
-//                    TPZTimer assemble("Assembling the stiffness matrices");
-//                    TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
-//        
-//                    int64_t count = 0;
-//                    for (iel = 0; iel < nelem; iel++) {
-//                        TPZCompEl *el = elementvec[iel];
-//                        if (!el) continue;
-//                        int matid = 0;
-//                        TPZGeoEl *gel = el->Reference();
-//                        if (gel) {
-//                            matid = gel->MaterialId();
-//                        }
-//                        int matidsize = fMaterialIds.size();
-//                        if(matidsize){
-//                            if(!el->NeedsComputing(fMaterialIds)) continue;
-//                        }
-//        
-//                        count++;
-//                        if (!(count % 1000)) {
-//                            std::cout << '*';
-//                            std::cout.flush();
-//                        }
-//                        if (!(count % 20000)) {
-//                            std::cout << "\n";
-//                        }
-//                        calcstiff.start();
-//                        ek.Reset();
-//                        ef.Reset();
-//                        el->CalcStiff(ek, ef);
-//                        if (guiInterface) if (guiInterface->AmIKilled()) {
-//                            return;
-//                        }
-//        
-//        
-//                        calcstiff.stop();
-//                        assemble.start();
-//        
-//                        if (!ek.HasDependency()) {
-//                            ek.ComputeDestinationIndices();
-//                            fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//                            stiffness.AddKel(ek.fMat, ek.fSourceIndex, ek.fDestinationIndex);
-//        
-//                            rhs.AddFel(ef.fMat, ek.fSourceIndex, ek.fDestinationIndex);
-//                        } else {
-//                            // the element has dependent nodes
-//                            ek.ApplyConstraints();
-//                            ef.ApplyConstraints();
-//                            ek.ComputeDestinationIndices();
-//                            fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//                            stiffness.AddKel(ek.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
-//                            rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
-//        
-//                        }
-//        
-//                        assemble.stop();
-//                    }//fim for iel
-//                    matk00eigen->SetFromTriplets();
-//    }
-//    
-//}
-
-
 #ifndef STATE_COMPLEX
 #include "pzmat2dlin.h"
 

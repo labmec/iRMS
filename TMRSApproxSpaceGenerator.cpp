@@ -804,10 +804,8 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-                
-                
-
-                                TPZSymetricSpStructMatrixEigen matrix(sub);
+//                                TPZSymetricSpStructMatrixEigen matrix(sub);
+                                TPZSymetricSpStructMatrix matrix(sub);
                                 int numinternal = sub->NumInternalEquations();
                                 matrix.EquationFilter().SetMinMaxEq(0, numinternal);
                                 TPZAutoPointer<TPZMatrix<STATE> > mat = matrix.Create();

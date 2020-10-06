@@ -269,3 +269,4 @@ bool TPZSpMatrixEigen<TVar>::isNull( Eigen::SparseMatrix<REAL>& mat, int row, in
     }
     return true;
 }
+

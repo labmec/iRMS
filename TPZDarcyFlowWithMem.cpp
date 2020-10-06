@@ -381,6 +381,10 @@ void TPZDarcyFlowWithMem::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL we
             for (int iq = 0; iq < nphi_q; iq++)
             {
                 ef(iq + first_q) += weight * p_D * phi_qs(iq,0);
+                if (std::isnan(Norm(ef))) {
+                    
+                    DebugStop();
+                }
             }
         }
             break;
@@ -395,6 +399,10 @@ void TPZDarcyFlowWithMem::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL we
                 qn = q[0];
                 
                 ef(iq + first_q) += weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0);
+                if (std::isnan(Norm(ef))) {
+                    
+                    DebugStop();
+                }
                 for (int jq = 0; jq < nphi_q; jq++)
                 {
                     ek(iq + first_q,jq + first_q) += weight * gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
@@ -417,6 +425,7 @@ void TPZDarcyFlowWithMem::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL we
         DebugStop();
     }
     if (std::isnan(Norm(ef))) {
+        
         DebugStop();
     }
     
