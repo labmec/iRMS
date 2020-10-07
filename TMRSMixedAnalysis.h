@@ -21,18 +21,20 @@
 
 class TMRSMixedAnalysis : public TPZAnalysis {
     
-private:
+    
+
+    
+    
+public:
     
     /// Data transfer object
     TMRSDataTransfer * m_sim_data;
     TPZMFSolutionTransfer fsoltransfer;
-
+    
     /// Number of iterations
     int m_k_iteration;
     
     
-    
-public:
     bool  mIsFirstAssembleQ=true;
     
     

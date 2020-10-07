@@ -313,7 +313,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     // este observacao vale para todos as malhas atomicas
     
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
-    TPZMixedDarcyFlow * volume = nullptr;
+    TPZDarcyFlowWithMem * volume = nullptr;
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
@@ -322,8 +322,8 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
             int materia_id = chunk.second;
-            volume = new TPZMixedDarcyFlow(materia_id,d);
-            volume->SetPermeability(kappa);
+            volume = new TPZDarcyFlowWithMem(materia_id,d);
+//            volume->SetPermeability(kappa);
             cmesh->InsertMaterialObject(volume);
         }
     }
@@ -590,7 +590,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
 //    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-    TPZMixedDarcyWithFourSpaces *volume = nullptr;
+    TPZDarcyFlowWithMem *volume = nullptr;
     mMixedOperator->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
@@ -601,8 +601,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 //            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
 //            volume->SetDataTransfer(mSimData);
             
-                volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
-                volume->SetPermeability(1.0);
+                volume = new TPZDarcyFlowWithMem(material_id, d);
+//                volume->SetPermeability(1.0);
             mMixedOperator->InsertMaterialObject(volume);
         }
     }
@@ -660,8 +660,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     active_approx_spaces[3] = 1;
     active_approx_spaces[4] = 0;
     mMixedOperator->SetDimModel(dimension);
-//    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
-    mMixedOperator->BuildMultiphysicsSpace(active_approx_spaces,mesh_vec);
+    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
+//    mMixedOperator->BuildMultiphysicsSpace(active_approx_spaces,mesh_vec);
     
 #ifdef PZDEBUG
     std::stringstream file_name;
@@ -669,7 +669,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::ofstream sout(file_name.str().c_str());
     mMixedOperator->Print(sout);
 #endif
-    TPZReservoirTools::CreatedCondensedElements(mMixedOperator, false, true);
+//    TPZReservoirTools::CreatedCondensedElements(mMixedOperator, false, true);
     
 }
 
@@ -804,8 +804,8 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-//                                TPZSymetricSpStructMatrixEigen matrix(sub);
-                                TPZSymetricSpStructMatrix matrix(sub);
+                                TPZSymetricSpStructMatrixEigen matrix(sub);
+//                                TPZSymetricSpStructMatrix matrix(sub);
                                 int numinternal = sub->NumInternalEquations();
                                 matrix.EquationFilter().SetMinMaxEq(0, numinternal);
                                 TPZAutoPointer<TPZMatrix<STATE> > mat = matrix.Create();

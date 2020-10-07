@@ -310,8 +310,6 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     int nrows = fsparse_eigen.innerSize();
     int ncols = nrows;
     TPZFMatrix<TVar> pzmat(nrows,ncols);
-    
-    
         pzmat.Zero();
         //    eigenmat.resize(nrows, ncols);
         for (int i=0; i< nrows; i++) {
@@ -319,12 +317,13 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
                 pzmat(i, j)= fsparse_eigen.coeff(i, j) ;
             };
         }
-    pzmat.Print("EkRed1Eeigen=",std::cout, EMathematicaInput);
+    
+    pzmat.Print("EkEeigen=",std::cout, EMathematicaInput);
     FromPZtoEigen(x, rhs);
-    x.Print("RhsRed1Eeigen=",std::cout, EMathematicaInput);
+    x.Print("RhsEeigen=",std::cout, EMathematicaInput);
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> ds = fanalysis.solve(rhs);
     FromEigentoPZ(x, ds);
-    x.Print("SolRed1Eeigen=",std::cout, EMathematicaInput);
+    x.Print("SolEeigen=",std::cout, EMathematicaInput);
     *b = x;
     return 1;
 }

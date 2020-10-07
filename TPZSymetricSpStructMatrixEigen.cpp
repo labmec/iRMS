@@ -366,130 +366,130 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         assemble.start();
         int countpos =0;
         bool hasIndex=false;
-        if (!ek.HasDependency()) {
-            ek.ComputeDestinationIndices();
-            fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-            int64_t nelems = ek.fSourceIndex.NElements();
-            int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
-            REAL prevval;
-            
-            for(icoef=0; icoef<nelems; icoef++) {
-                ieq = ek.fDestinationIndex[icoef];
-                ieqs = ek.fSourceIndex[icoef];
-                for(jcoef=icoef; jcoef<nelems; jcoef++) {
-                    jeq = ek.fDestinationIndex[jcoef];
-                    jeqs = ek.fSourceIndex[jcoef];
-                    prevval = matRed->GetVal(ieq,jeq);
-                    prevval += ek.fMat(ieqs,jeqs);
-                    int r = ieq;
-                    int c = jeq;
-                    REAL value =prevval;
-                    int64_t row(r),col(c);
-                    int fDim0 = matRed->fDim0;
-                    TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
-                    TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
-                    TPZFMatrix<REAL>* matk01Eigen = &matRed->K01();
-                    TPZFMatrix<REAL> *matk10Eigen = &matRed->K10();
-                    TPZFMatrix<STATE> *matpzmat11= &matRed->K11();
-                    
-                    if ( row > col ) matRed->Swap( &row, &col );
-                    if (row<fDim0 &&  col<fDim0)  {
-                        if (fastcondEl) {
-                            if (!fastcondEl->hasIndexes) {
-                                int posfa =0;
-                                matk00eigen->PutVal(row,col,value, posfa);
-                                if (fastcondEl) {
-                                    fastcondEl->faValK00.push_back(posfa);
-                                    hasIndex=true;
-                                }
-                            }
-                            else{
-                                int posfa =fastcondEl->faValK00[count];
-                                matk00eigen->PutVal(posfa,value);
-                                countpos++;
-                            }
-                        }
-                        else{
-                            matk00eigen->PutVal(row,col,value);
-                        }
-                    }
-                    if (row<fDim0 &&  col>=fDim0)  {
-                        matk01Eigen->PutVal(row,col-fDim0,value);
-                    }
-                    if (row>=fDim0 &&  col<fDim0)  {
-                        matk10Eigen->PutVal(row-fDim0,col,value);
-                    }
-                    if (row>=fDim0 &&  col>=fDim0) {
-                        matpzmat11->PutVal(row-fDim0,col-fDim0,value);
-                    }
-                }
-            }
-            
-            rhs.AddFel(ef.fMat, ek.fSourceIndex, ek.fDestinationIndex);
-        } else {
-            // the element has dependent nodes
-            ef.ApplyConstraints();
-            ek.ApplyConstraints();
-            ek.ComputeDestinationIndices();
-            fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
-//            matRed->AddKel(ek.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
-            int64_t nelem = ek.fSourceIndex.NElements();
-            int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
-            
-            REAL prevval;
-                for(icoef=0; icoef<nelem; icoef++) {
-                    ieq = ek.fDestinationIndex[icoef];
-                    ieqs = ek.fSourceIndex[icoef];
-                    for(jcoef=icoef; jcoef<nelem; jcoef++) {
-                        jeq = ek.fDestinationIndex[jcoef];
-                        jeqs = ek.fSourceIndex[jcoef];
-                        prevval = matRed->GetVal(ieq,jeq);
-                        prevval += ek.fConstrMat(ieqs,jeqs);
-//                        matRed->PutVal(ieq,jeq,prevval);
-                        //
-                        int r = ieq;
-                        int c = jeq;
-                        REAL value =prevval;
-                        int64_t row(r),col(c);
-                        int fDim0 = matRed->fDim0;
-                        TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
-                        TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
-                        TPZFMatrix<REAL>* matk01Eigen = &matRed->K01();
-                        TPZFMatrix<REAL> *matk10Eigen = &matRed->K10();
-                        TPZFMatrix<STATE> *matpzmat11= &matRed->K11();
-                        
-                        if ( row > col ) matRed->Swap( &row, &col );
-                        if (row<fDim0 &&  col<fDim0)  {
-                            if (!fastcondEl->hasIndexes) {
-                                int posfa =0;
-                                matk00eigen->PutVal(row,col,value, posfa);
-                                if (fastcondEl) {
-                                    fastcondEl->faValK00.push_back(posfa);
-                                    hasIndex=true;
-                                }
-                            }
-                            else{
-                                int posfa =fastcondEl->faValK00[count];
-                                matk00eigen->PutVal(posfa,value);
-                                countpos++;
-                            }
-                        }
-                        if (row<fDim0 &&  col>=fDim0)  {
-                            matk01Eigen->PutVal(row,col-fDim0,value);
-                        }
-                        if (row>=fDim0 &&  col<fDim0)  {
-                            matk10Eigen->PutVal(row-fDim0,col,value);
-                        }
-                        if (row>=fDim0 &&  col>=fDim0) {
-                            matpzmat11->PutVal(row-fDim0,col-fDim0,value);
-                        }
-                    }
-                }
-            rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
-        }
-        if (hasIndex==true) {
-            fastcondEl->hasIndexes=true;
-        }
+//        if (!ek.HasDependency()) {
+//            ek.ComputeDestinationIndices();
+//            fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
+//            int64_t nelems = ek.fSourceIndex.NElements();
+//            int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
+//            REAL prevval;
+//            
+//            for(icoef=0; icoef<nelems; icoef++) {
+//                ieq = ek.fDestinationIndex[icoef];
+//                ieqs = ek.fSourceIndex[icoef];
+//                for(jcoef=icoef; jcoef<nelems; jcoef++) {
+//                    jeq = ek.fDestinationIndex[jcoef];
+//                    jeqs = ek.fSourceIndex[jcoef];
+//                    prevval = matRed->GetVal(ieq,jeq);
+//                    prevval += ek.fMat(ieqs,jeqs);
+//                    int r = ieq;
+//                    int c = jeq;
+//                    REAL value =prevval;
+//                    int64_t row(r),col(c);
+//                    int fDim0 = matRed->fDim0;
+//                    TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
+//                    TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
+//                    TPZFMatrix<REAL>* matk01Eigen = &matRed->K01();
+//                    TPZFMatrix<REAL> *matk10Eigen = &matRed->K10();
+//                    TPZFMatrix<STATE> *matpzmat11= &matRed->K11();
+//                    
+//                    if ( row > col ) matRed->Swap( &row, &col );
+//                    if (row<fDim0 &&  col<fDim0)  {
+//                        if (fastcondEl) {
+//                            if (!fastcondEl->hasIndexes) {
+//                                int posfa =0;
+//                                matk00eigen->PutVal(row,col,value, posfa);
+//                                if (fastcondEl) {
+//                                    fastcondEl->faValK00.push_back(posfa);
+//                                    hasIndex=true;
+//                                }
+//                            }
+//                            else{
+//                                int posfa =fastcondEl->faValK00[count];
+//                                matk00eigen->PutVal(posfa,value);
+//                                countpos++;
+//                            }
+//                        }
+//                        else{
+//                            matk00eigen->PutVal(row,col,value);
+//                        }
+//                    }
+//                    if (row<fDim0 &&  col>=fDim0)  {
+//                        matk01Eigen->PutVal(row,col-fDim0,value);
+//                    }
+//                    if (row>=fDim0 &&  col<fDim0)  {
+//                        matk10Eigen->PutVal(row-fDim0,col,value);
+//                    }
+//                    if (row>=fDim0 &&  col>=fDim0) {
+//                        matpzmat11->PutVal(row-fDim0,col-fDim0,value);
+//                    }
+//                }
+//            }
+//            
+//            rhs.AddFel(ef.fMat, ek.fSourceIndex, ek.fDestinationIndex);
+//        } else {
+//            // the element has dependent nodes
+//            ef.ApplyConstraints();
+//            ek.ApplyConstraints();
+//            ek.ComputeDestinationIndices();
+//            fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
+////            matRed->AddKel(ek.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
+//            int64_t nelem = ek.fSourceIndex.NElements();
+//            int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
+//            
+//            REAL prevval;
+//                for(icoef=0; icoef<nelem; icoef++) {
+//                    ieq = ek.fDestinationIndex[icoef];
+//                    ieqs = ek.fSourceIndex[icoef];
+//                    for(jcoef=icoef; jcoef<nelem; jcoef++) {
+//                        jeq = ek.fDestinationIndex[jcoef];
+//                        jeqs = ek.fSourceIndex[jcoef];
+//                        prevval = matRed->GetVal(ieq,jeq);
+//                        prevval += ek.fConstrMat(ieqs,jeqs);
+////                        matRed->PutVal(ieq,jeq,prevval);
+//                        //
+//                        int r = ieq;
+//                        int c = jeq;
+//                        REAL value =prevval;
+//                        int64_t row(r),col(c);
+//                        int fDim0 = matRed->fDim0;
+//                        TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
+//                        TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
+//                        TPZFMatrix<REAL>* matk01Eigen = &matRed->K01();
+//                        TPZFMatrix<REAL> *matk10Eigen = &matRed->K10();
+//                        TPZFMatrix<STATE> *matpzmat11= &matRed->K11();
+//                        
+//                        if ( row > col ) matRed->Swap( &row, &col );
+//                        if (row<fDim0 &&  col<fDim0)  {
+//                            if (!fastcondEl->hasIndexes) {
+//                                int posfa =0;
+//                                matk00eigen->PutVal(row,col,value, posfa);
+//                                if (fastcondEl) {
+//                                    fastcondEl->faValK00.push_back(posfa);
+//                                    hasIndex=true;
+//                                }
+//                            }
+//                            else{
+//                                int posfa =fastcondEl->faValK00[count];
+//                                matk00eigen->PutVal(posfa,value);
+//                                countpos++;
+//                            }
+//                        }
+//                        if (row<fDim0 &&  col>=fDim0)  {
+//                            matk01Eigen->PutVal(row,col-fDim0,value);
+//                        }
+//                        if (row>=fDim0 &&  col<fDim0)  {
+//                            matk10Eigen->PutVal(row-fDim0,col,value);
+//                        }
+//                        if (row>=fDim0 &&  col>=fDim0) {
+//                            matpzmat11->PutVal(row-fDim0,col-fDim0,value);
+//                        }
+//                    }
+//                }
+//            rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
+//        }
+//        if (hasIndex==true) {
+//            fastcondEl->hasIndexes=true;
+//        }
         
         assemble.stop();
 //        boost::posix_time::ptime endtimeAssem = boost::posix_time::microsec_clock::local_time();

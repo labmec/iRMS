@@ -32,7 +32,8 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
 }
 
 void TMRSSFIAnalysis::BuildAlgebraicDataStructure(){
-  fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+         fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+ 
 //    SetDataTransfer(m_mixed_module->GetDataTransfer());
     FillProperties();
     FillMaterialMemoryDarcy(1);
