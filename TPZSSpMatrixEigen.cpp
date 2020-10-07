@@ -21,6 +21,11 @@
 #include "pzsysmp.h"
 #include "pzfmatrix.h"
 #include "pzstack.h"
+#include "pzlog.h"
+
+#ifdef LOG4CXX
+static LoggerPtr logger(Logger::getLogger("pz.matrix.eigen"));
+#endif
 
 // ****************************************************************************
 //
@@ -286,8 +291,25 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
     if (this->IsDecomposed() != ENoDecompose) {
         DebugStop();
     }
-    
+#ifdef LOG4CXX
+    if(logger->isDebugEnabled())
+    {
+        std::stringstream sout;
+        sout << "Eigen control parameters\n";
+        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
+        LOGPZ_DEBUG(logger,sout.str())
+    }
+#endif
     fanalysis.factorize(fsparse_eigen);
+#ifdef LOG4CXX
+    if(logger->isDebugEnabled())
+    {
+        std::stringstream sout;
+        sout << "Eigen control parameters\n";
+        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
+        LOGPZ_DEBUG(logger,sout.str())
+    }
+#endif
     this->SetIsDecomposed(ELDLt);
     return 1;
     
@@ -321,7 +343,25 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     pzmat.Print("EkEeigen=",std::cout, EMathematicaInput);
     FromPZtoEigen(x, rhs);
     x.Print("RhsEeigen=",std::cout, EMathematicaInput);
+#ifdef LOG4CXX
+    if(logger->isDebugEnabled())
+    {
+        std::stringstream sout;
+        sout << "Eigen control parameters\n";
+        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
+        LOGPZ_DEBUG(logger,sout.str())
+    }
+#endif
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> ds = fanalysis.solve(rhs);
+#ifdef LOG4CXX
+    if(logger->isDebugEnabled())
+    {
+        std::stringstream sout;
+        sout << "Eigen control parameters\n";
+        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
+        LOGPZ_DEBUG(logger,sout.str())
+    }
+#endif
     FromEigentoPZ(x, ds);
     x.Print("SolEeigen=",std::cout, EMathematicaInput);
     *b = x;

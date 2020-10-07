@@ -27,6 +27,11 @@
 #include "pzlog.h"
 using namespace std;
 
+#ifdef LOG4CXX
+static LoggerPtr logger(Logger::getLogger("pz.strmatrix.TPZSpStructMatrixEigen"));
+#endif
+
+
 TPZStructMatrix * TPZSpStructMatrixEigen::Clone(){
     return new TPZSpStructMatrixEigen(*this);
 }

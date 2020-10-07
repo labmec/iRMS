@@ -22,7 +22,7 @@
 //#include <Eigen/SparseLDLt>
 #include <Eigen/PardisoSupport>
 
-#include <Eigen/SuperLUSupport>
+//#include <Eigen/SuperLUSupport>
 
 //#include <Eigen/>
 #include "TPZAnalysisAuxEigen.h"

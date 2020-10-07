@@ -265,7 +265,7 @@ void SimpleTest2DHDiv(){
     TMRSDataTransfer sim_data  = SettingSimple2DHdiv();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(5, 10, 2, 10);
+    aspace.CreateUniformMesh(5, 10, 4, 10);
     
 
     std::string name = "2D_geo";

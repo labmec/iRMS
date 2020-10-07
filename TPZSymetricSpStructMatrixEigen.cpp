@@ -39,6 +39,10 @@ static LoggerPtr logger(Logger::getLogger("pz.StrMatrix"));
 #include <tbb/parallel_for.h>
 #endif
 
+#ifdef USING_BOOST
+#include "boost/date_time/posix_time/posix_time.hpp"
+#endif
+
 using namespace std;
 
 TPZStructMatrix * TPZSymetricSpStructMatrixEigen::Clone(){
@@ -360,7 +364,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         }
         calcstiff.stop();
         boost::posix_time::ptime endtimeCalc = boost::posix_time::microsec_clock::local_time();
-        timeTotalCalcStiff += (endtimeCalc-initimeCalc);
+//        timeTotalCalcStiff += (endtimeCalc-initimeCalc);
     
         
         assemble.start();
