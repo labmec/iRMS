@@ -126,8 +126,10 @@ void TMRSSFIAnalysis::FillMaterialMemoryDarcy(int material_id){
             }
             TPZCompEl *celcomp = fastCond->ReferenceCompEl();
             
-            TPZVec<int64_t> indices;
+            
+            TPZManVector<int64_t> indices;
             celcomp->GetMemoryIndices(indices);
+            indices.Print();
             for (int index = 0; index<indices.size(); index++) {
                 int valIndex = indices[index];
                 TPZDarcyMemory &mem = memory_vector.get()->operator [](valIndex);

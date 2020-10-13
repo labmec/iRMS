@@ -52,6 +52,13 @@ public:
     private :
     
     TPZSymetricSpStructMatrixEigen();
+ 
+    void Swap(int64_t *a, int64_t *b)
+    {
+        int64_t aux = *a;
+        *a = *b;
+        *b = aux;
+    }
     
     friend TPZPersistenceManager;
 };

@@ -115,8 +115,8 @@ int main(){
 //    PaperTest3D();
 //    SimpleTest3D();
 
-      SimpleTest2DHDiv();
-//      SimpleTest2D();
+//      SimpleTest2DHDiv();
+      SimpleTest2D();
 //    UNISIMTest();
     return 0;
 }
@@ -265,12 +265,12 @@ void SimpleTest2DHDiv(){
     TMRSDataTransfer sim_data  = SettingSimple2DHdiv();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(5, 10, 4, 10);
+    aspace.CreateUniformMesh(20, 10, 20, 10);
     
 
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
-    aspace.ApplyUniformRefinement(0);
+    aspace.ApplyUniformRefinement(2);
     std::cout<<"Num Eq Transport: "<<aspace.mGeometry->NElements()<<std::endl;
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);

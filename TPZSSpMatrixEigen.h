@@ -296,6 +296,7 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
 
     fsparse_eigen.setFromTriplets(triplets.begin(), triplets.end());
     triplets.clear();
+    fanalysis.pardisoParameterArray()[4]=1;
     fanalysis.analyzePattern(fsparse_eigen);
     //
     // Pass the data to the class.
