@@ -230,7 +230,7 @@ public:
     
     mutable std::vector<Triplet3<REAL> > m_triplets;
     mutable Eigen::SparseMatrix<REAL> fsparse_eigen;
-    
+
     
     mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>, Eigen::Lower> fanalysis;
 //    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>> fanalysisLU;
@@ -298,6 +298,7 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
     triplets.clear();
     fanalysis.pardisoParameterArray()[4]=1;
     fanalysis.analyzePattern(fsparse_eigen);
+    fanalysis.m_perm;
     //
     // Pass the data to the class.
 //    std::cout<<fsparse_eigen<<std::endl;

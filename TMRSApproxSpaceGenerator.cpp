@@ -1727,13 +1727,13 @@ void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
 //    TPZCompMesh &cmesh = control.CMesh();
 //    TPZCompMesh *MixedFluxPressureCmesh = &cmesh;
 //    int order = 1;
-////    const int typeFlux = 1, typePressure = 0;
+//    const int typeFlux = 1, typePressure = 0;
 //    int dimension =mGeometry->Dimension();
-////    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
+//    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
 //    TPZMixedDarcyFlow * volume = nullptr;
 //
 //    MixedFluxPressureCmesh->SetDefaultOrder(order);
-//    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+//    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag =   mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
 //    for (int d = 0; d <= dimension; d++) {
 //        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
 //            std::string material_name = chunk.first;

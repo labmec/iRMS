@@ -115,65 +115,12 @@ int main(){
 //    PaperTest3D();
 //    SimpleTest3D();
 
-//      SimpleTest2DHDiv();
-      SimpleTest2D();
+      SimpleTest2DHDiv();
+//      SimpleTest2D();
 //    UNISIMTest();
     return 0;
 }
 void SimpleTest2D(){
-    
-    std::vector<Triplet3<REAL> > m_triplets;
-    Triplet3<REAL> trip1(0,0,10);
-    m_triplets.push_back(trip1);
-    Triplet3<REAL> trip2(0,2,30);
-    m_triplets.push_back(trip2);
-    Triplet3<REAL> trip3(0,3,5);
-    m_triplets.push_back(trip3);
-    Triplet3<REAL> trip4(1,1,45);
-    m_triplets.push_back(trip4);
-    Triplet3<REAL> trip5(1,2,80);
-    m_triplets.push_back(trip5);
-    
-//    Triplet3<REAL> trip6(2,0,30);
-//    m_triplets.push_back(trip6);
-//    Triplet3<REAL> trip7(2,1,80);
-//    m_triplets.push_back(trip7);
-    
-    Triplet3<REAL> trip8(2,2,171);
-    m_triplets.push_back(trip8);
-    Triplet3<REAL> trip9(2,3,1);
-    m_triplets.push_back(trip9);
-    
-//    Triplet3<REAL> trip10(3,0,5);
-//    m_triplets.push_back(trip10);
-//    Triplet3<REAL> trip11(3,2,1);
-//    m_triplets.push_back(trip11);
-    
-    Triplet3<REAL> trip12(3,3,50);
-    m_triplets.push_back(trip12);
-
-    Eigen::SparseMatrix<REAL> fsparse_eigen(4,4);
-    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs;
-    rhs.resize(4,1);
-    rhs(0,0)=5;
-    rhs(1,0)=4;
-    rhs(2,0)=10;
-    rhs(3,0)=6;
-    fsparse_eigen.setFromTriplets(m_triplets.begin(), m_triplets.end());
-    Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>, Eigen::Upper> fanalysis;
-   
-//    fanalysis.pardisoParameterArray()[56] = 1;
-
-    fanalysis.compute(fsparse_eigen);
-    auto sol = fanalysis.solve(rhs);
-    std::cout<<sol<<std::endl;
-    fsparse_eigen.valuePtr()[3]=98;
-    fanalysis.compute(fsparse_eigen);
-    auto sol2 = fanalysis.solve(rhs);
-    std::cout<<sol2<<std::endl;
-    int ok=0;
-
-    
 
     TMRSDataTransfer sim_data  = SettingSimple2D();
    
@@ -183,7 +130,7 @@ void SimpleTest2D(){
 //    aspace.CreateUniformMesh(5, 10,5, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
-    aspace.ApplyUniformRefinement(1);
+    aspace.ApplyUniformRefinement(0);
     std::cout<<"Num Eq Transport: "<<aspace.mGeometry->NElements()<<std::endl;
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
@@ -270,7 +217,7 @@ void SimpleTest2DHDiv(){
 
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
-    aspace.ApplyUniformRefinement(2);
+    aspace.ApplyUniformRefinement(1);
     std::cout<<"Num Eq Transport: "<<aspace.mGeometry->NElements()<<std::endl;
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
