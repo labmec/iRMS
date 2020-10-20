@@ -184,6 +184,6 @@ set(common_dir ${CMAKE_CURRENT_SOURCE_DIR} )
 add_subdirectory(MHMTest)
 add_subdirectory(GeoMeshAndPropsGenerator)
 #add_subdirectory(CGP)
-
+add_subdirectory(HdivCollapsed)
 
 
