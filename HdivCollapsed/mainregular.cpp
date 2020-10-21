@@ -382,7 +382,7 @@ TPZMultiphysicsCompMesh *  multiphysics(TPZAutoPointer<TPZGeoMesh> gmesh, int PO
     cmesh->SetDefaultOrder(POrder);
     cmesh->SetDimModel(dim);
     
-    TPZMixedPoisson *mat = new TPZMixedPoisson(fmat, dim);
+    TPZMixedPoisson *mat = new TPZMixedPoisson(fmat, dim+1);
     
     mat->SetForcingFunction(LaplaceExact.ForcingFunction());
     mat->SetForcingFunctionExact(LaplaceExact.Exact());
