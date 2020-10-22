@@ -330,9 +330,14 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
 
     FromPZtoEigen(x, rhs);
 
-   Eigen::LDLT<Eigen::MatrixXd,Eigen::Lower> solver;
-   solver.compute(fsparse_eigen);
-   Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsolS= solver.solve(rhs);
+//   Eigen::LDLT<Eigen::MatrixXd,Eigen::Lower> solver;
+//   solver.compute(fsparse_eigen);
+//   Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsolS= solver.solve(rhs);
+    
+    
+   Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>,Eigen::Lower> solverpar;
+   solverpar.compute(fsparse_eigen);
+   Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsolS= solverpar.solve(rhs);
 
     this->FromEigentoPZ(x, dsolS);
     
@@ -357,7 +362,7 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     }
 #endif
 //    FromEigentoPZ(x, ds);
-//    x.Print("SolEeigen=",std::cout, EMathematicaInput);
+    x.Print("SolEeigen=",std::cout, EMathematicaInput);
     *b = x;
     return 1;
 }

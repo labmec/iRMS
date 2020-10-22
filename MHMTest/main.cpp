@@ -214,8 +214,8 @@ void SimpleTest2DHDiv(){
     TMRSDataTransfer sim_data  = SettingSimple2DHdiv();
     
     TMRSApproxSpaceGenerator aspace;
-    int nx=10;
-    int ny=10;
+    int nx=50;
+    int ny=50;
     aspace.CreateUniformMesh(nx, 10, ny, 10);
     
 
