@@ -76,6 +76,12 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
 
+#include<Eigen/src/Core/Map.h>
+#include <Eigen/src/SparseCore/SparseMatrixBase.h>
+#include <Eigen/Dense>
+#include <unsupported/Eigen/SparseExtra>
+#include<Eigen/SparseCholesky>
+#include<Eigen/src/Cholesky/LDLT.h>
 #include "TPZFileStream.h"
 #include "TPZBFileStream.h"
 TMRSDataTransfer SettingGravity2D();
@@ -109,16 +115,13 @@ TMRSDataTransfer SettingSimple2D();
 void SimpleTest2D();
 //
 int main(){
-    InitializePZLOG();
-//    Gravity2D();
-//    PaperTest2D();
-//    PaperTest3D();
-//    SimpleTest3D();
-
+    
+    
+    
       SimpleTest2DHDiv();
 //      SimpleTest2D();
 //    UNISIMTest();
-    return 0;
+//    return 0;
 }
 void SimpleTest2D(){
 
@@ -131,7 +134,6 @@ void SimpleTest2D(){
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
     aspace.ApplyUniformRefinement(0);
-    std::cout<<"Num Eq Transport: "<<aspace.mGeometry->NElements()<<std::endl;
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -212,12 +214,14 @@ void SimpleTest2DHDiv(){
     TMRSDataTransfer sim_data  = SettingSimple2DHdiv();
     
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(20, 10, 20, 10);
+    int nx=10;
+    int ny=10;
+    aspace.CreateUniformMesh(nx, 10, ny, 10);
     
 
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
-    aspace.ApplyUniformRefinement(1);
+    aspace.ApplyUniformRefinement(0);
     std::cout<<"Num Eq Transport: "<<aspace.mGeometry->NElements()<<std::endl;
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
@@ -238,13 +242,7 @@ void SimpleTest2DHDiv(){
     mixed_operator->UpdatePreviousState(-1);
     mixedAnal->fsoltransfer.TransferFromMultiphysics();
     mixedAnal->PostProcessTimeStep();
-    
-    
-    
-    int ok=0;
-    
-    
-    
+  
 }
 
 void Gravity2D(){

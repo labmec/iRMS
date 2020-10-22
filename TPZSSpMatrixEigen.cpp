@@ -300,7 +300,8 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
         LOGPZ_DEBUG(logger,sout.str())
     }
 #endif
-    fanalysis.factorize(fsparse_eigen);
+//    fanalysis.factorize(fsparse_eigen);
+//    fanalysis.compute(fsparse_eigen);
 #ifdef LOG4CXX
     if(logger->isDebugEnabled())
     {
@@ -322,27 +323,19 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
 template<class TVar>
 int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
 {
-    //    fanalysis.compute(fsparse_eigen);
     
-    //    fanalysis.pardisoParameterArray()[59] = 1;
     
     TPZFMatrix<TVar> x(*b);
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs;
-    
-    int nrows = fsparse_eigen.innerSize();
-    int ncols = nrows;
-    TPZFMatrix<TVar> pzmat(nrows,ncols);
-        pzmat.Zero();
-        //    eigenmat.resize(nrows, ncols);
-//        for (int i=0; i< nrows; i++) {
-//            for (int j=0; j< ncols; j++) {
-//                pzmat(i, j)= fsparse_eigen.coeff(i, j) ;
-//            };
-//        }
-//
-//    pzmat.Print("EkEeigen=",std::cout, EMathematicaInput);
+
     FromPZtoEigen(x, rhs);
-//    x.Print("RhsEeigen=",std::cout, EMathematicaInput);
+
+   Eigen::LDLT<Eigen::MatrixXd,Eigen::Lower> solver;
+   solver.compute(fsparse_eigen);
+   Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsolS= solver.solve(rhs);
+
+    this->FromEigentoPZ(x, dsolS);
+    
 #ifdef LOG4CXX
     if(logger->isDebugEnabled())
     {
@@ -352,7 +345,8 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
         LOGPZ_DEBUG(logger,sout.str())
     }
 #endif
-    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> ds = fanalysis.solve(rhs);
+
+    
 #ifdef LOG4CXX
     if(logger->isDebugEnabled())
     {
@@ -362,7 +356,7 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
         LOGPZ_DEBUG(logger,sout.str())
     }
 #endif
-    FromEigentoPZ(x, ds);
+//    FromEigentoPZ(x, ds);
 //    x.Print("SolEeigen=",std::cout, EMathematicaInput);
     *b = x;
     return 1;
@@ -381,8 +375,8 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LU()
         DebugStop();
     }
     //
-    fanalysis.analyzePattern(fsparse_eigen);
-    fanalysis.factorize(fsparse_eigen);
+    fanalysis.compute(fsparse_eigen);
+//    fanalysis.factorize(fsparse_eigen);
     //
     this->SetIsDecomposed(ELU);
     return 1;
@@ -404,6 +398,8 @@ int TPZSYsmpMatrixEigen<TVar>::Substitution( TPZFMatrix<TVar> *B ) const
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs(nrows,1);
     this->FromPZtoEigen(x, rhs);
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsol = fanalysis.solve(rhs);
+
+    
     this->FromEigentoPZ(x, dsol);
     *B = x;
     return 1;

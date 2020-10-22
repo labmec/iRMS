@@ -232,9 +232,9 @@ public:
     mutable Eigen::SparseMatrix<REAL> fsparse_eigen;
 
     
-    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>, Eigen::Lower> fanalysis;
-//    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>> fanalysisLU;
-//     mutable Eigen::SimplicialLDLT<Eigen::SparseMatrix<REAL>> fanalysis;
+//    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>, Eigen::Lower> fanalysis;
+    mutable Eigen::LDLT<Eigen::MatrixXd,Eigen::Upper> fanalysis;
+    //     mutable Eigen::SimplicialLDLT<Eigen::SparseMatrix<REAL>> fanalysis;
 //    mutable Eigen::LDLT<Eigen::SparseMatrix<REAL>> fanalysis;
 
     void SetFromTriplets();
@@ -296,9 +296,10 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
 
     fsparse_eigen.setFromTriplets(triplets.begin(), triplets.end());
     triplets.clear();
-    fanalysis.pardisoParameterArray()[4]=1;
-    fanalysis.analyzePattern(fsparse_eigen);
-    fanalysis.m_perm;
+//    fanalysis.compute(fsparse_eigen);
+//    fanalysis.pardisoParameterArray()[4]=1;
+//    fanalysis.analyzePattern(fsparse_eigen);
+//    fanalysis.m_perm;
     //
     // Pass the data to the class.
 //    std::cout<<fsparse_eigen<<std::endl;
