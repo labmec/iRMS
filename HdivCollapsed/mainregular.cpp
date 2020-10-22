@@ -292,9 +292,12 @@ TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 {
     auto dim = 1;
     TPZCompMesh * cmeshcollapsed = new TPZCompMesh(gmesh);
+    // Faltou essa chamada!
+    cmeshcollapsed->SetDefaultOrder(POrder);
     cmeshcollapsed->CleanUp();
     cmeshcollapsed->SetDimModel(dim);
 
+    // Karol - nas malhas atomicas costumamos colocar materiais do tipo NullMaterial
     TPZMixedPoisson *mat = new TPZMixedPoisson(ESkeleton,dim);
     mat->SetForcingFunction(LaplaceExact.ForcingFunction());
     mat->SetForcingFunctionExact(LaplaceExact.Exact());
