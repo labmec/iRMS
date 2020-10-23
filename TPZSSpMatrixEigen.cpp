@@ -336,9 +336,9 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     #ifdef USING_BOOST
         boost::posix_time::ptime tmat1 = boost::posix_time::microsec_clock::local_time();
     #endif
-    Eigen::SparseMatrix<REAL> mat = fsparse_eigen+Eigen::SparseMatrix<REAL>(fsparse_eigen.transpose());
+    Eigen::SparseMatrix<REAL> sparse_eigen_c = fsparse_eigen + Eigen::SparseMatrix<REAL>(fsparse_eigen.transpose());
      for(int i=0; i<fsparse_eigen.innerSize(); i++){
-         mat.coeffRef(i, i) *=0.5;
+         sparse_eigen_c.coeffRef(i, i) *= 0.5;
     }
     #ifdef USING_BOOST
         boost::posix_time::ptime tmat2 = boost::posix_time::microsec_clock::local_time();
@@ -346,15 +346,12 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
         std::cout << "Composing global mat time " << deltamatt << std::endl;
     #endif
 
-
-
-//   Eigen::SparseLU<Eigen::SparseMatrix<REAL>> solver;
-   Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> solverpar;
+   Eigen::SparseLU<Eigen::SparseMatrix<REAL>> solverpar;
     
     #ifdef USING_BOOST
         boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
     #endif
-    solverpar.compute(mat);
+    solverpar.compute(sparse_eigen_c);
     #ifdef USING_BOOST
         boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
         auto deltat = tsim2-tsim1;
