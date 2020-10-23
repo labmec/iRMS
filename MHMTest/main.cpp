@@ -214,17 +214,17 @@ void SimpleTest2DHDiv(){
     TMRSDataTransfer sim_data  = SettingSimple2DHdiv();
     
     TMRSApproxSpaceGenerator aspace;
-    int nx=50;
-    int ny=50;
+    int nx=100;
+    int ny=100;
     aspace.CreateUniformMesh(nx, 10, ny, 10);
     
 
     std::string name = "2D_geo";
-    aspace.PrintGeometry(name);
+//    aspace.PrintGeometry(name);
     aspace.ApplyUniformRefinement(0);
     std::cout<<"Num Eq Transport: "<<aspace.mGeometry->NElements()<<std::endl;
     std::string name_ref = "2D_ref_geo";
-    aspace.PrintGeometry(name_ref);
+//    aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
     
     int order = 1;
@@ -235,13 +235,24 @@ void SimpleTest2DHDiv(){
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     TMRSMixedAnalysis *mixedAnal = new TMRSMixedAnalysis(mixed_operator,must_opt_band_width_Q);
-    mixedAnal->Configure(n_threads, UsePardiso_Q);
+    mixedAnal->Configure(n_threads, UsePardiso_Q, false);
     mixedAnal->SetDataTransfer(&sim_data);
     mixedAnal->Assemble();
+    size_t n_dof = mixedAnal->Solver().Matrix()->Rows();
+
+    #ifdef USING_BOOST
+        boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+    #endif
     mixedAnal->Solve();
-    mixed_operator->UpdatePreviousState(-1);
-    mixedAnal->fsoltransfer.TransferFromMultiphysics();
-    mixedAnal->PostProcessTimeStep();
+    #ifdef USING_BOOST
+        boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+        auto deltat = tsim2-tsim1;
+        std::cout << "Overal solve calling times " << deltat << std::endl;
+    #endif
+    std::cout << "Number of dof = " << n_dof << std::endl;
+//    mixed_operator->UpdatePreviousState(-1);
+//    mixedAnal->fsoltransfer.TransferFromMultiphysics();
+//    mixedAnal->PostProcessTimeStep();
   
 }
 
@@ -1349,8 +1360,8 @@ TMRSDataTransfer SettingSimple2DHdiv(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressurein = 25.0;
-    REAL pressureout = 10.0;
+    REAL pressurein = 1;
+    REAL pressureout = 1;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);

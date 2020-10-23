@@ -8,7 +8,9 @@
 #include "TPZSSpMatrixEigen.h"
 #include <Eigen/Dense>
 #include <unsupported/Eigen/SparseExtra>
-#include<Eigen/SparseCholesky>
+#include <Eigen/SparseCholesky>
+#include <Eigen/Sparse>
+//#include <Eigen/SuperLUSupport>
 
 
 /**
@@ -154,10 +156,8 @@ int TPZSYsmpMatrixEigen<TVar>::PutVal(int posfa, const TVar & val )
 template<class TVar>
 void TPZSYsmpMatrixEigen<TVar>::Print(const char *title, std::ostream &out ,const MatrixOutputFormat form) const {
     // Print the matrix along with a identification title
-    // Print the matrix along with a identification title
     if(form != EInputFormat) {
-        out << "\nSparse Eigen Matrix Print: " << title << '\n';
-        out<<fsparse_eigen<<'\n';
+        out << std::setprecision(16) << fsparse_eigen.toDense() << std::endl;
     }
 }
 
@@ -329,14 +329,20 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs;
 
     FromPZtoEigen(x, rhs);
+    
+    Eigen::SparseMatrix<REAL> mat = fsparse_eigen+Eigen::SparseMatrix<REAL>(fsparse_eigen.transpose());
+     for(int i=0; i<fsparse_eigen.innerSize(); i++){
+         mat.coeffRef(i, i) *=0.5;
+    }
 
-//   Eigen::LDLT<Eigen::MatrixXd,Eigen::Lower> solver;
-//   solver.compute(fsparse_eigen);
+
+//   Eigen::SparseLU<Eigen::SparseMatrix<REAL>> solver;
+//   solver.compute(mat);
 //   Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsolS= solver.solve(rhs);
     
     
-   Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>,Eigen::Lower> solverpar;
-   solverpar.compute(fsparse_eigen);
+   Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> solverpar;
+   solverpar.compute(mat);
    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsolS= solverpar.solve(rhs);
 
     this->FromEigentoPZ(x, dsolS);
@@ -362,7 +368,8 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     }
 #endif
 //    FromEigentoPZ(x, ds);
-    x.Print("SolEeigen=",std::cout, EMathematicaInput);
+    for(int i=0; i<100; i++) std::cout << x(i) << ' ';
+//    x.Print("SolEeigen=",std::cout, EMathematicaInput);
     *b = x;
     return 1;
 }

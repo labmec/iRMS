@@ -35,23 +35,26 @@ int TMRSMixedAnalysis::GetNumberOfIterations(){
     return m_k_iteration;
 }
 
-void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
+void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q, bool use_pz_Q){
     
     if (UsePardiso_Q) {
         
-//        TPZSymetricSpStructMatrix matrix(Mesh());
-//        matrix.SetNumThreads(n_threads);
-//        SetStructuralMatrix(matrix);
-//        TPZStepSolver<STATE> step;
-//        step.SetDirect(ELDLt);
-//        SetSolver(step);
-
-        TPZSymetricSpStructMatrixEigen matrix(Mesh());
-        matrix.SetNumThreads(n_threads);
-        SetStructuralMatrix(matrix);
-        TPZStepSolver<STATE> step;
-        step.SetDirect(ELDLt);
-        SetSolver(step);
+        if (use_pz_Q) {
+            TPZSymetricSpStructMatrix matrix(Mesh());
+            matrix.SetNumThreads(n_threads);
+            SetStructuralMatrix(matrix);
+            TPZStepSolver<STATE> step;
+            step.SetDirect(ELDLt);
+            SetSolver(step);
+        }
+        else{
+            TPZSymetricSpStructMatrixEigen matrix(Mesh());
+            matrix.SetNumThreads(n_threads);
+            SetStructuralMatrix(matrix);
+            TPZStepSolver<STATE> step;
+            step.SetDirect(ELDLt);
+            SetSolver(step);
+        }
 
     }else{
         TPZSkylineStructMatrix matrix(Mesh());

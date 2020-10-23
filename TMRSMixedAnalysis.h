@@ -49,7 +49,7 @@ public:
     TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q);
     
     /// Configurates iternal members
-    void Configure(int n_threads, bool UsePardiso_Q);
+    void Configure(int n_threads, bool UsePardiso_Q, bool use_pz_Q = false);
     
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer * sim_data);
