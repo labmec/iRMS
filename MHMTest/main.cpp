@@ -247,7 +247,7 @@ void SimpleTest2DHDiv(){
     #ifdef USING_BOOST
         boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
         auto deltat = tsim2-tsim1;
-        std::cout << "Overal solve calling times " << deltat << std::endl;
+        std::cout << "Overal solve calling time " << deltat << std::endl;
     #endif
     std::cout << "Number of dof = " << n_dof << std::endl;
 //    mixed_operator->UpdatePreviousState(-1);
