@@ -82,8 +82,8 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     FillProperties(fileprops, &m_transport_module->fAlgebraicTransport);
 }
 
-void TMRSSFIAnalysis::Configure(int n_threads, bool UsePardiso_Q){
-    m_mixed_module->Configure(n_threads, UsePardiso_Q);
+void TMRSSFIAnalysis::Configure(int n_threads, bool UsePardiso_Q, bool usepz){
+    m_mixed_module->Configure(n_threads, UsePardiso_Q, usepz);
     m_transport_module->Configure(n_threads, UsePardiso_Q);
     
 }

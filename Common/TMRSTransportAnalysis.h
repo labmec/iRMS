@@ -21,7 +21,7 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
-#include <Eigen/PardisoSupport>
+//#include <Eigen/PardisoSupport>
 #include "TPZAnalysisAuxEigen.h"
 
 template<typename StorageIndex = typename Eigen::SparseMatrix<REAL>::StorageIndex >
@@ -72,8 +72,8 @@ private:
     std::vector< Triplet<REAL> >           m_trans_triplets;
     std::vector< Triplet<REAL> >           m_rhs_triplets;
     std::vector< Triplet<REAL> >           m_mass_triplets;
-    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
-    
+//    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
+    Eigen::SparseLU<Eigen::SparseMatrix<REAL>>  m_analysis;
 public:
     
     TPZAlgebraicTransport fAlgebraicTransport;

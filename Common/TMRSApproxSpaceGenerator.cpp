@@ -804,17 +804,17 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-                                TPZSymetricSpStructMatrixEigen matrix(sub);
-//                                TPZSymetricSpStructMatrix matrix(sub);
-                                int numinternal = sub->NumInternalEquations();
-                                matrix.EquationFilter().SetMinMaxEq(0, numinternal);
-                                TPZAutoPointer<TPZMatrix<STATE> > mat = matrix.Create();
-                                matrix.EquationFilter().Reset();
-                                matrix.SetNumThreads(0);
-                                sub->Analysis()->SetStructuralMatrix(matrix);
-                                TPZStepSolver<STATE> step;
-                                step.SetDirect(ELDLt);
-                                sub->Analysis()->SetSolver(step);
+//                                TPZSymetricSpStructMatrixEigen matrix(sub);
+////                                TPZSymetricSpStructMatrix matrix(sub);
+//                                int numinternal = sub->NumInternalEquations();
+//                                matrix.EquationFilter().SetMinMaxEq(0, numinternal);
+//                                TPZAutoPointer<TPZMatrix<STATE> > mat = matrix.Create();
+//                                matrix.EquationFilter().Reset();
+//                                matrix.SetNumThreads(0);
+//                                sub->Analysis()->SetStructuralMatrix(matrix);
+//                                TPZStepSolver<STATE> step;
+//                                step.SetDirect(ELDLt);
+//                                sub->Analysis()->SetSolver(step);
             }
         }
     }

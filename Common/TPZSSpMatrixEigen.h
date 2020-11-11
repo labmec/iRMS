@@ -20,9 +20,9 @@
 #include <unsupported/Eigen/SparseExtra>
 #include<Eigen/SparseCholesky>
 //#include <Eigen/SparseLDLt>
-#include <Eigen/PardisoSupport>
+//#include <Eigen/PardisoSupport>
 
-//#include <Eigen/SuperLUSupport>
+#include <Eigen/SuperLUSupport>
 
 //#include <Eigen/>
 #include "TPZAnalysisAuxEigen.h"
@@ -232,10 +232,11 @@ public:
     mutable Eigen::SparseMatrix<REAL> fsparse_eigen;
 
     
-    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>, Eigen::Lower> fanalysis;
-//    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>> fanalysisLU;
-//     mutable Eigen::SimplicialLDLT<Eigen::SparseMatrix<REAL>> fanalysis;
-//    mutable Eigen::LDLT<Eigen::SparseMatrix<REAL>> fanalysis;
+
+//    mutable Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>, Eigen::Lower> fanalysis;
+    mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> fanalysis;
+    //     mutable Eigen::SimplicialLDLT<Eigen::SparseMatrix<REAL>> fanalysis;
+
 
     void SetFromTriplets();
     
@@ -284,29 +285,14 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
             int i = JA[ivalk];
             Triplet3<REAL> trip(i,c,val);
             triplets[count]=trip;
-             count++;
-//            if(i!=c){
-//                Triplet3<REAL> trip(c,i,val);
-//                triplets[count]=trip;
-//                count++;
-//            }
-           
+             count++;           
         }
     }
 
     fsparse_eigen.setFromTriplets(triplets.begin(), triplets.end());
     triplets.clear();
-    fanalysis.pardisoParameterArray()[4]=1;
     fanalysis.analyzePattern(fsparse_eigen);
-    fanalysis.m_perm;
-    //
-    // Pass the data to the class.
-//    std::cout<<fsparse_eigen<<std::endl;
-//    std::cout<<"*************"<<std::endl;
-//    std::cout<<"fjA:"<<std::endl;
-//    std::cout<<fsparse_eigen.innerIndexPtr()<<std::endl;
-//    std::cout<<"fIA:"<<std::endl;
-//    std::cout<<fsparse_eigen<<std::endl;
+
     fIA = IA;
     fJA = JA;
     fA  =  A;

@@ -23,6 +23,7 @@
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
 #include <Eigen/PardisoSupport>
+#include <Eigen/SuperLUSupport>
 #include "TPZAnalysisAuxEigen.h"
 #include "TPZSpMatrixEigen.h"
 #include <Eigen/Sparse>
@@ -136,8 +137,9 @@ protected:
         int ClassId() const override;
         Eigen::SparseMatrix<REAL> fsparse_eigen;
         mutable std::vector<Triplet3<REAL> > ftriplets;
-        mutable Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> m_analysis;
-        
+//        mutable Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> m_analysis;
+//        mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> m_analysis;
+        mutable Eigen::SuperLU<Eigen::SparseMatrix<REAL>> m_analysis;
         protected:
         int   fSymmetric;
     

@@ -158,7 +158,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int 
     }
     
     if (mSimData.mTNumerics.m_four_approx_spaces_Q) {
-        
+    
         int g_avgb = 2;
         int p_avgb = 3;
         
@@ -174,7 +174,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int 
         }
     }
     
-    DebugStop();
+//    DebugStop();
     
 }
 
@@ -355,7 +355,9 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
     
-    REAL gBigNumber = TPZMaterial::gBigNumber;
+
+    REAL gBigNumber = 1.0e12; //TPZMaterial::gBigNumber;
+
     int qb = 0;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     

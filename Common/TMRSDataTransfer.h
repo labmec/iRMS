@@ -208,7 +208,7 @@ public:
         TFluidProperties(){
             mOilViscosity= 1.0;
             mWaterViscosity=1.0;
-            mOilDensityRef = 800;
+            mOilDensityRef = 1000;
             mWaterDensityRef = 1000;
             mWaterCompressibility = 1.0e-8;
             mOilCompressibility = 1.0e-7;

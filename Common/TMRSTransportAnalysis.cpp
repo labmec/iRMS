@@ -197,10 +197,10 @@ void TMRSTransportAnalysis::RunTimeStep(){
     correction.Zero();
     
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-//    bool QN_converge_Q = QuasiNewtonSteps(x,20); // assuming linear operator (tangent)
-//    if(QN_converge_Q){
-//        return;
-//    }
+    bool QN_converge_Q = QuasiNewtonSteps(x,20); // assuming linear operator (tangent)
+    if(QN_converge_Q){
+        return;
+    }
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
@@ -252,6 +252,7 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     cmesh->LoadSolutionFromMultiPhysics();
     
     NewtonIteration();
+    
     x += Solution();
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
@@ -351,9 +352,9 @@ void TMRSTransportAnalysis::NewtonIteration(){
 
 void TMRSTransportAnalysis::NewtonIteration_serial(){
     
-    Assemble();
-    Rhs() *= -1.0;
-    Solve();
+    fTransportSpMatrix->Assemble();
+    fTransportSpMatrix->Rhs() *= -1.0;
+    fTransportSpMatrix->Solve();
 
 }
 

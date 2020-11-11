@@ -64,7 +64,7 @@ public:
     
     static  void ReadProperties(std::string name, bool print_table_Q, std::vector<REAL> &Kx, std::vector<REAL> &Ky, std::vector<REAL> &Kz, std::vector<REAL> &Phi);
     /// Configurates iternal members
-    void Configure(int n_threads, bool UsePardiso_Q);
+    void Configure(int n_threads, bool UsePardiso_Q, bool UsePZ=false);
     
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer * sim_data);

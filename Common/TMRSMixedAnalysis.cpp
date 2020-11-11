@@ -35,23 +35,26 @@ int TMRSMixedAnalysis::GetNumberOfIterations(){
     return m_k_iteration;
 }
 
-void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q){
+void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q,bool UsePZ){
     
     if (UsePardiso_Q) {
-        
-//        TPZSymetricSpStructMatrix matrix(Mesh());
-//        matrix.SetNumThreads(n_threads);
-//        SetStructuralMatrix(matrix);
-//        TPZStepSolver<STATE> step;
-//        step.SetDirect(ELDLt);
-//        SetSolver(step);
+        if(UsePZ){
+            TPZSymetricSpStructMatrix matrix(Mesh());
+            matrix.SetNumThreads(n_threads);
+            SetStructuralMatrix(matrix);
+            TPZStepSolver<STATE> step;
+            step.SetDirect(ELDLt);
+            SetSolver(step);
+        }
+        else{
+            TPZSymetricSpStructMatrixEigen matrix(Mesh());
+            matrix.SetNumThreads(n_threads);
+            SetStructuralMatrix(matrix);
+            TPZStepSolver<STATE> step;
+            step.SetDirect(ELDLt);
+            SetSolver(step);
+        }
 
-        TPZSymetricSpStructMatrixEigen matrix(Mesh());
-        matrix.SetNumThreads(n_threads);
-        SetStructuralMatrix(matrix);
-        TPZStepSolver<STATE> step;
-        step.SetDirect(ELDLt);
-        SetSolver(step);
 
     }else{
         TPZSkylineStructMatrix matrix(Mesh());
@@ -90,8 +93,21 @@ void TMRSMixedAnalysis::RunTimeStep(){
         x +=dx;
         cmesh->UpdatePreviousState(-1);
         fsoltransfer.TransferFromMultiphysics();
-        PostProcessTimeStep();
+
+        
+#ifdef USING_BOOST
+        boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+#endif
+        
         Assemble();
+        
+#ifdef USING_BOOST
+        boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+        boost::posix_time::time_duration deltat = tsim2-tsim1;
+        std::cout << "Mixed:: Assembly 2 time Global " << deltat << std::endl;
+#endif
+      
+//        DebugStop();
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
         
@@ -136,7 +152,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-            sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+//            sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
 //                TPZSymetricSpStructMatrixEigen matrix(sub);
 //                //matrix.SetNumThreads(n_threads);
 //                sub->Analysis()->SetStructuralMatrix(matrix);
@@ -154,23 +170,17 @@ void TMRSMixedAnalysis::NewtonIteration(){
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::time_duration deltat = tsim2-tsim1;
-    std::cout << "Mixed:: Assembly time " << deltat << std::endl;
+    std::cout << "Mixed:: Assembly time Global " << deltat << std::endl;
 #endif
+
     
-    TPZMatrix<STATE> *mat = 0;
-    mat = fSolver->Matrix().operator->();
- 
-    
-  
        
     Solve();
-    
-
     
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
     auto deltat2 = tsim3-tsim2;
-    std::cout << "Mixed:: Solve time " << deltat2 << std::endl;
+    std::cout << "Mixed:: Solve time global " << deltat2 << std::endl;
 #endif
 //    TPZMatrix<STATE>*mat = Solver().Matrix().operator->();
 //    

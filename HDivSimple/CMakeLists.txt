@@ -7,10 +7,11 @@ file(GLOB SOURCE *.cpp)
 
 
 
-add_executable(MHM_Test main.cpp ${SOURCE} ${HEADERS} ${common_files})
-target_include_directories(MHM_Test PUBLIC ${common_dir})
+add_executable(HDivSimple main.cpp ${SOURCE} ${HEADERS} ${common_files})
+target_include_directories(HDivSimple PUBLIC ${common_dir})
 find_package(libInterpolate REQUIRED)
 find_package (Eigen3 3.3 REQUIRED)
+
 if (SUPERLU_INCLUDES AND SUPERLU_LIBRARIES)
   set(SUPERLU_FIND_QUIETLY TRUE)
 endif (SUPERLU_INCLUDES AND SUPERLU_LIBRARIES)
@@ -90,4 +91,4 @@ find_package_handle_standard_args(SUPERLU
                                   VERSION_VAR SUPERLU_VERSION_VAR)
 mark_as_advanced(SUPERLU_INCLUDES SUPERLU_LIBRARIES)
 
-target_link_libraries(MHM_Test pz libInterpolate::Interpolate blas ${SUPERLU_LIBRARIES})
+target_link_libraries(HDivSimple pz libInterpolate::Interpolate blas ${SUPERLU_LIBRARIES})

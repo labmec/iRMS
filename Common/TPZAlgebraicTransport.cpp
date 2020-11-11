@@ -7,6 +7,8 @@
 
 #include "TPZAlgebraicTransport.h"
 #include "pzelmat.h"
+#include <Eigen/PardisoSupport>
+
 /// Default constructor
 TPZAlgebraicTransport::TPZAlgebraicTransport(){
     
@@ -421,6 +423,9 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
     if (!isLinearQ) {
         fsim_data->mTPetroPhysics.CreateQuadraticKrModel();
     }
+    else{
+        fsim_data->mTPetroPhysics.CreateLinearKrModel();
+    }
     
     auto labdaWf = fsim_data->mTPetroPhysics.mLambdaW;
     auto labdaOf = fsim_data->mTPetroPhysics.mLambdaO;
@@ -460,7 +465,7 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton
         auto fwf = fsim_data->mTPetroPhysics.mFw;
         auto fof = fsim_data->mTPetroPhysics.mFo;
     
-        fsim_data->mTPetroPhysics.CreateLinearKrModel();
+        fsim_data->mTPetroPhysics.CreateQuadraticKrModel();
         auto fwLinearf =fsim_data->mTPetroPhysics.mFo;
     
         for (int ivol =0 ; ivol< nvols; ivol++) {

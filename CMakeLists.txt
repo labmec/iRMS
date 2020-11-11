@@ -168,22 +168,40 @@ file(COPY Reservoir DESTINATION ./GeoMeshAndPropsGenerator/Release)
 file (COPY PreProcess  DESTINATION ./GeoMeshAndPropsGenerator/Debug)
 file (COPY PreProcess  DESTINATION ./GeoMeshAndPropsGenerator/Release)
 
-file(GLOB headers_files *.h)
 
-file(GLOB sources_files *.cpp)
+file(COPY Reservoir DESTINATION ./Paper2d/Debug)
+file(COPY Reservoir DESTINATION ./Paper2d/Release)
 
-set(common_files ${headers_files} ${sources_files} )
+file(COPY ${mesh} DESTINATION ./Paper2d/Debug/gmsh)
+file(COPY ${mesh} DESTINATION ./Paper2d/Release/gmsh)
 
-set(common_dir ${CMAKE_CURRENT_SOURCE_DIR} )
+file(COPY ${mapsdata} DESTINATION ./Paper2d/Debug/maps)
+file(COPY ${mapsdata} DESTINATION ./Paper2d/Release/maps)
+
+file (COPY PetroPhysics  DESTINATION ./Paper2d/Debug)
+file (COPY PetroPhysics  DESTINATION ./Paper2d/Release)
+
+file(COPY Reservoir DESTINATION ./Paper2d/Debug)
+file(COPY Reservoir DESTINATION ./Paper2d/Release)
+
+file (COPY PreProcess  DESTINATION ./Paper2d/Debug)
+file (COPY PreProcess  DESTINATION ./Paper2d/Release)
 
 
+
+
+add_subdirectory(Common)
 
 #add_subdirectory(LinearTracer)
 #add_subdirectory(FourSpacesTest)
 #add_subdirectory(Buckley_Levertt)
-add_subdirectory(MHMTest)
-add_subdirectory(GeoMeshAndPropsGenerator)
+#add_subdirectory(MHMTest)
+add_subdirectory(HDivSimple)
+add_subdirectory(MHMSimple)
+#add_subdirectory(GeoMeshAndPropsGenerator)
 #add_subdirectory(CGP)
 add_subdirectory(HdivCollapsed)
+add_subdirectory(Paper2d)
+
 
 

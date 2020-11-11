@@ -33,7 +33,7 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
-#include <Eigen/PardisoSupport>
+//#include <Eigen/PardisoSupport>
 template<typename StorageIndex = typename Eigen::SparseMatrix<REAL>::StorageIndex >
 class Triplet2
 {
@@ -68,7 +68,9 @@ private:
     std::vector<Triplet2<REAL> >           m_trans_triplets;
     std::vector<Triplet2<REAL> >           m_rhs_triplets;
     std::vector<Triplet2<REAL> >           m_mass_triplets;
-    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
+//    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
+    Eigen::SparseLU<Eigen::SparseMatrix<REAL>>  m_analysis;
+
     
 public:
     TPZAnalysisAuxEigen(){

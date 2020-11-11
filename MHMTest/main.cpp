@@ -109,13 +109,7 @@ TMRSDataTransfer SettingSimple2D();
 void SimpleTest2D();
 //
 int main(){
-    InitializePZLOG();
-//    Gravity2D();
-//    PaperTest2D();
-//    PaperTest3D();
-//    SimpleTest3D();
 
-      SimpleTest2DHDiv();
 //      SimpleTest2D();
 //    UNISIMTest();
     return 0;
@@ -125,17 +119,17 @@ void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
    
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(2, 10, 2, 10);
+    aspace.CreateUniformMesh(15, 10, 15, 10);
     
 //    aspace.CreateUniformMesh(5, 10,5, 10);
     std::string name = "2D_geo";
     aspace.PrintGeometry(name);
+
     aspace.ApplyUniformRefinement(0);
-    std::cout<<"Num Eq Transport: "<<aspace.mGeometry->NElements()<<std::endl;
+  
     std::string name_ref = "2D_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
-    
     int order = 1;
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
@@ -150,12 +144,13 @@ void SimpleTest2D(){
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
 
-    sfi_analysis->Configure(n_threads, UsePardiso_Q);
+    bool usingpzSparse = false;
+    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
     
-    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
+//    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
     
     // Render a graphical map
-    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+//    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
     
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
@@ -244,7 +239,7 @@ void SimpleTest2DHDiv(){
     int ok=0;
     
     
-    
+   
 }
 
 void Gravity2D(){
@@ -368,7 +363,7 @@ void PaperTest2D(){
     std::string name = "paper_2d_test_geo";
     aspace.PrintGeometry(name);
     
-    aspace.ApplyUniformRefinement(2);
+    aspace.ApplyUniformRefinement(1);
     std::string name_ref = "paper_2d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -403,12 +398,13 @@ void PaperTest2D(){
 //    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
 TMRSSFIAnalysis *sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
-    sfi_analysis->Configure(n_threads, UsePardiso_Q);
+    bool usingpzSparse = false;
+    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
     
-    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
+//    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
 
     // Render a graphical map
-        PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+//        PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
     std::cout << "Spatial properties are transferred." << std::endl;
     std::cout << "Memory used by SpatialPropertiesMap is released. " << std::endl;
     properties_map.Clear();
@@ -474,7 +470,7 @@ TMRSSFIAnalysis *sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_ope
           sfi_analysis->m_mixed_module->LoadSolution();
           TPZMultiphysicsCompMesh *mphys = dynamic_cast<TPZMultiphysicsCompMesh *>(sfi_analysis->m_mixed_module->Mesh());
           if(!mphys) DebugStop();
-          mphys->LoadSolutionFromMultiPhysics();
+//          mphys->LoadSolutionFromMultiPhysics();
           sfi_analysis->PostProcessTimeStep();
           pos++;
           current_report_time = reporting_times[pos];
@@ -533,12 +529,12 @@ void PaperTest3D(){
 
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingPaper3D();
-    sim_data.mTGeometry.mSkeletonDiv =1;
+    sim_data.mTGeometry.mSkeletonDiv =0;
 
     aspace.SetGeometry(gmesh);
     std::string name = "paper_3d_test_geo";
     aspace.PrintGeometry(name);
-    aspace.ApplyUniformRefinement(2);
+    aspace.ApplyUniformRefinement(0);
     std::string name_ref = "paper_3d_test_ref_geo";
     aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
@@ -562,9 +558,10 @@ void PaperTest3D(){
     auto kappa_phi = reservoir_properties.Create_Kappa_Phi();
     auto s0 = reservoir_properties.Create_s0();
 
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q,kappa_phi,s0);
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->SetDataTransfer(&sim_data);
-    sfi_analysis->Configure(n_threads, UsePardiso_Q);
+    bool usingpzSparse = true;
+    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
 
     // Render a graphical map
     TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
@@ -593,8 +590,8 @@ void PaperTest3D(){
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     sfi_analysis->m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
-    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
-    sfi_analysis->PostProcessTimeStep();
+//    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
+//    sfi_analysis->PostProcessTimeStep();
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
 
     sfi_analysis->m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(sim_data.mTNumerics.m_ISLinearKrModelQ);
@@ -1296,11 +1293,11 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_max_iter_transport = 10;
     sim_data.mTNumerics.m_max_iter_sfi = 20;
     sim_data.mTNumerics.m_sfi_tol = 0.001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.00001;
-    sim_data.mTNumerics.m_n_steps = 1;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_n_steps = 5;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 0.03 ;//*day;
+    sim_data.mTNumerics.m_dt      = 0.01 ;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -1643,30 +1640,28 @@ TMRSDataTransfer SettingPaper2D(){
 
 
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 3;
-    sim_data.mTNumerics.m_max_iter_transport = 50;
-    sim_data.mTNumerics.m_max_iter_sfi = 50;
-
-    sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_max_iter_mixed = 2;
+    sim_data.mTNumerics.m_max_iter_transport = 10;
+    sim_data.mTNumerics.m_max_iter_sfi = 20;
+    sim_data.mTNumerics.m_sfi_tol = 0.001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_n_steps = 120;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 0.5;//*day;
+    sim_data.mTNumerics.m_dt      = 10.0 ;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -9.8;//*(1.0e-6); // hor
+    grav[1] = 0.000045;//-9.81;
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
     TPZStack<std::string,10> scalnames, vecnames;
-    vecnames.Push("q");
+    vecnames.Push("Flux");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
@@ -1736,14 +1731,14 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
     sim_data.mTNumerics.m_n_steps = 10;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0*day;
+    sim_data.mTNumerics.m_dt      = 0.01;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
-    grav[1] = -9.8*(1.0e-6); // hor
+    grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 10;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     
     // PostProcess controls

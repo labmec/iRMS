@@ -55,7 +55,7 @@
 #include "TPZVTKGeoMesh.h"
 #include "TPZExtendGridDimension.h"
 
-#include "../TRSLinearInterpolator.h"
+#include "TRSLinearInterpolator.h"
 #include "TPZMatLaplacian.h"
 #include "pzpoisson3d.h"
 #include "mixedpoisson.h"
@@ -94,5 +94,5 @@
 #include "TPZSSpStructMatrix.h"
 #include "TPZSpStructMatrix.h"
 #include "pzl2projection.h"
-#include "../TPZTracerFlow.h"
+#include "TPZTracerFlow.h"
 #endif /* includes_h */

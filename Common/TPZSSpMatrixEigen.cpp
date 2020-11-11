@@ -328,41 +328,41 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
     
     TPZFMatrix<TVar> x(*b);
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> rhs;
-    
-    int nrows = fsparse_eigen.innerSize();
-    int ncols = nrows;
-    TPZFMatrix<TVar> pzmat(nrows,ncols);
-        pzmat.Zero();
-        //    eigenmat.resize(nrows, ncols);
-//        for (int i=0; i< nrows; i++) {
-//            for (int j=0; j< ncols; j++) {
-//                pzmat(i, j)= fsparse_eigen.coeff(i, j) ;
-//            };
-//        }
-//
-//    pzmat.Print("EkEeigen=",std::cout, EMathematicaInput);
+
     FromPZtoEigen(x, rhs);
-//    x.Print("RhsEeigen=",std::cout, EMathematicaInput);
-#ifdef LOG4CXX
-    if(logger->isDebugEnabled())
-    {
-        std::stringstream sout;
-        sout << "Eigen control parameters\n";
-        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
-        LOGPZ_DEBUG(logger,sout.str())
+    
+    #ifdef USING_BOOST
+//        boost::posix_time::ptime tmat1 = boost::posix_time::microsec_clock::local_time();
+    #endif
+    Eigen::SparseMatrix<REAL> sparse_eigen_c = fsparse_eigen + Eigen::SparseMatrix<REAL>(fsparse_eigen.transpose());
+     for(int i=0; i<fsparse_eigen.innerSize(); i++){
+         sparse_eigen_c.coeffRef(i, i) *= 0.5;
     }
-#endif
-    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> ds = fanalysis.solve(rhs);
-#ifdef LOG4CXX
-    if(logger->isDebugEnabled())
-    {
-        std::stringstream sout;
-        sout << "Eigen control parameters\n";
-        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
-        LOGPZ_DEBUG(logger,sout.str())
-    }
-#endif
-    FromEigentoPZ(x, ds);
+    #ifdef USING_BOOST
+//        boost::posix_time::ptime tmat2 = boost::posix_time::microsec_clock::local_time();
+//        auto deltamatt = tmat2-tmat1;
+//        std::cout << "Composing global mat time " << deltamatt << std::endl;
+    #endif
+
+//    Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>> solverpar;
+//    Eigen::SparseLU<Eigen::SparseMatrix<REAL>> solverpar;
+//    std::cout<<"NEQSUB= "<<fsparse_eigen.innerSize()<<std::endl;
+//    std::cout<<"******"<<std::endl;
+//    std::cout<<fsparse_eigen.toDense()<<std::endl;
+//    std::cout<<"******"<<std::endl;
+    #ifdef USING_BOOST
+        boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+    #endif
+    fanalysis.compute(sparse_eigen_c);
+//    std::cout<< sparse_eigen_c.toDense()<< std::endl;
+    Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsolS= fanalysis.solve(rhs);
+    #ifdef USING_BOOST
+//        boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+//        auto deltat = tsim2-tsim1;
+//        std::cout << "Eigen solve time " << deltat << std::endl;
+    #endif
+    
+    this->FromEigentoPZ(x, dsolS);
 //    x.Print("SolEeigen=",std::cout, EMathematicaInput);
     *b = x;
     return 1;

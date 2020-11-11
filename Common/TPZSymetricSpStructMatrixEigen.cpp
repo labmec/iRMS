@@ -302,6 +302,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffnes
     }
     if (matRed) {
          Serial_AssembleSub(stiffness,rhs, guiInterface);
+        
 //        boost::posix_time::ptime timeactual=boost::posix_time::microsec_clock::local_time();
 //        std::cout<<"TotalSolveSub: "<<timetotalSolve<<std::endl;
 //        std::cout<<"TotalSubMeshes: "<<timetotal<<std::endl;
@@ -320,6 +321,9 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffnes
 }
 void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
     
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+#endif
     
     TPZMatRed<STATE, TPZFMatrix<STATE> > *matRed = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE> > *> (&stiffness);
 //    matRed->Zero();
@@ -330,7 +334,10 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
     TPZTimer calcstiff("Computing the stiffness matrices");
     TPZTimer assemble("Assembling the stiffness matrices");
     TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
-    
+    TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh*>(fMesh);
+    boost::posix_time::ptime acttime = boost::posix_time::microsec_clock::local_time();
+    subcmesh->fTimeTotalCalcStiff = acttime -acttime;
+    subcmesh->fTimeTotalAddKels = acttime - acttime;
     int64_t count = 0;
     for (iel = 0; iel < nelem; iel++) {
         TPZCompEl *el = elementvec[iel];
@@ -364,8 +371,21 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         }
         calcstiff.stop();
         boost::posix_time::ptime endtimeCalc = boost::posix_time::microsec_clock::local_time();
-//        timeTotalCalcStiff += (endtimeCalc-initimeCalc);
-    
+        subcmesh->fTimeTotalCalcStiff += endtimeCalc-initimeCalc;
+
+        
+        
+        TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
+        TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
+        TPZFMatrix<REAL>* matk01Eigen = &matRed->K01();
+        TPZFMatrix<REAL> *matk10Eigen = &matRed->K10();
+        TPZFMatrix<STATE> *matpzmat11= &matRed->K11();
+//        matk00eigen->Zero();
+//        matk01Eigen->Zero();
+//        matk10Eigen->Zero();
+//        matk10Eigen->Zero();
+//        matpzmat11->Zero();
+        
         
         assemble.start();
         int countpos =0;
@@ -390,32 +410,29 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
                     REAL value =prevval;
                     int64_t row(r),col(c);
                     int fDim0 = matRed->Dim0();
-                    TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
-                    TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
-                    TPZFMatrix<REAL>* matk01Eigen = &matRed->K01();
-                    TPZFMatrix<REAL> *matk10Eigen = &matRed->K10();
-                    TPZFMatrix<STATE> *matpzmat11= &matRed->K11();
+                   
                     
                     if ( row > col ) Swap( &row, &col );
                     if (row<fDim0 &&  col<fDim0)  {
-                        if (fastcondEl) {
-                            if (!fastcondEl->hasIndexes) {
-                                int posfa =0;
-                                matk00eigen->PutVal(row,col,value, posfa);
-                                if (fastcondEl) {
-                                    fastcondEl->faValK00.push_back(posfa);
-                                    hasIndex=true;
-                                }
-                            }
-                            else{
-                                int posfa =fastcondEl->faValK00[count];
-                                matk00eigen->PutVal(posfa,value);
-                                countpos++;
-                            }
-                        }
-                        else{
-                            matk00eigen->PutVal(row,col,value);
-                        }
+//                        if (fastcondEl) {
+//                            if (!fastcondEl->hasIndexes) {
+//                                int posfa =0;
+//                                matk00eigen->PutVal(row,col,value, posfa);
+//                                if (fastcondEl) {
+//                                    fastcondEl->faValK00.push_back(posfa);
+//                                    hasIndex=true;
+//                                }
+//                            }
+//                            else{
+//                                int posfa =fastcondEl->faValK00[count];
+//                                matk00eigen->PutVal(posfa,value);
+//                                countpos++;
+//                            }
+//                        }
+//                        else{
+//                            matk00eigen->PutVal(row,col,value);
+//                        }
+                        matk00eigen->PutVal(row,col,value);
                     }
                     if (row<fDim0 &&  col>=fDim0)  {
                         matk01Eigen->PutVal(row,col-fDim0,value);
@@ -464,19 +481,20 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
                         
                         if ( row > col ) Swap( &row, &col );
                         if (row<fDim0 &&  col<fDim0)  {
-                            if (!fastcondEl->hasIndexes) {
-                                int posfa =0;
-                                matk00eigen->PutVal(row,col,value, posfa);
-                                if (fastcondEl) {
-                                    fastcondEl->faValK00.push_back(posfa);
-                                    hasIndex=true;
-                                }
-                            }
-                            else{
-                                int posfa =fastcondEl->faValK00[count];
-                                matk00eigen->PutVal(posfa,value);
-                                countpos++;
-                            }
+//                            if (!fastcondEl->hasIndexes) {
+//                                int posfa =0;
+//                                matk00eigen->PutVal(row,col,value, posfa);
+//                                if (fastcondEl) {
+//                                    fastcondEl->faValK00.push_back(posfa);
+//                                    hasIndex=true;
+//                                }
+//                            }
+//                            else{
+//                                int posfa =fastcondEl->faValK00[count];
+//                                matk00eigen->PutVal(posfa,value);
+//                                countpos++;
+//                            }
+                            matk00eigen->PutVal(row,col,value);
                         }
                         if (row<fDim0 &&  col>=fDim0)  {
                             matk01Eigen->PutVal(row,col-fDim0,value);
@@ -496,28 +514,35 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         }
         
         assemble.stop();
-//        boost::posix_time::ptime endtimeAssem = boost::posix_time::microsec_clock::local_time();
-//        timeTotalAssemble += (endtimeAssem - endtimeCalc);
+        
+        boost::posix_time::ptime endtimeAssem = boost::posix_time::microsec_clock::local_time();
+        subcmesh->fTimeTotalAddKels += (endtimeAssem - endtimeCalc);
     }//fim for iel
 }
 
 
 //
 void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
+    
 
     int64_t iel;
     int64_t nelem = fMesh->NElements();
     TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
-
+    boost::posix_time::ptime actime = boost::posix_time::microsec_clock::local_time();
+    fAsTotalAdkelsSub =actime-actime;
+    fAsTotalCalcStifSub =actime-actime;
+    fAsTotaCondensedSub =actime-actime;;
+    fAsTotaAssembleSub =actime-actime;
     TPZTimer calcstiff("Computing the stiffness matrices");
     TPZTimer assemble("Assembling the stiffness matrices");
     TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
 
     int64_t count = 0;
     TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
-    
+    mat->Zero();
         for (iel = 0; iel < nelem; iel++) {
             TPZCompEl *el = elementvec[iel];
+            TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(el);
             if (!el) continue;
             int matid = 0;
             TPZGeoEl *gel = el->Reference();
@@ -589,8 +614,17 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
                 rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
             }
         if (count > 1000) std::cout << std::endl;
+            if (subcmesh) {
+                fAsTotalAdkelsSub +=subcmesh->fTimeTotalAddKels;
+                fAsTotalCalcStifSub += subcmesh->fTimeTotalCalcStiff;
+                fAsTotaAssembleSub += subcmesh->fTimeAssemble;
+                fAsTotaCondensedSub += subcmesh->fTimeCondensed;
+            }
     }
-    
+//    std::cout<<"SubAssembleTime: "<<fAsTotaAssembleSub<<std::endl;
+//    std::cout<<"SubCondensedTime: "<<fAsTotaCondensedSub<<std::endl;
+//    std::cout<<"SubCalcStiffTime: "<<fAsTotalCalcStifSub<<std::endl;
+//    std::cout<<"SubAddKelTime: "<<fAsTotalAdkelsSub<<std::endl;
 }
 #ifndef STATE_COMPLEX
 #include "pzmat2dlin.h"
