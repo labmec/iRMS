@@ -19,19 +19,18 @@
  */
 template<class TSHAPE>
 class TPZCompElHDivSBFem : public TPZCompElHDivCollapsed<TSHAPE> {
-	
-    /// index of the skeleton element
-    int64_t fSkeleton = -1;
 
     /// geometric element representing the collapsed volume
-    TPZGeoEl * fGeoElVolume;
+    TPZGeoElSide fGelVolSide;
 
     /// vector which defines whether the normal is outward or not
     TPZManVector<int, TSHAPE::NFacets> fSideOrient;
     
 public:
 	    
-	TPZCompElHDivSBFem(TPZCompMesh &mesh, TPZGeoEl *gel, int64_t &skeleton, int64_t &index);
+	TPZCompElHDivSBFem(TPZCompMesh &mesh, TPZGeoEl *gel, TPZGeoElSide &gelside, int64_t &index);
+
+	TPZCompElHDivSBFem(TPZCompMesh &mesh, TPZGeoEl *gel, int64_t &index);
 	
 	TPZCompElHDivSBFem(TPZCompMesh &mesh, const TPZCompElHDivSBFem<TSHAPE> &copy);
 	
@@ -43,15 +42,20 @@ public:
 		return new TPZCompElHDivSBFem<TSHAPE> (mesh, *this);
 	}
 
-    public:
-        /** @brief Returns the unique identifier for reading/writing objects to streams */
-        int ClassId() const override;
+    /** @brief Returns the unique identifier for reading/writing objects to streams */
+    int ClassId() const override;
+
+    void SetGelVolumeSide(TPZGeoElSide &gelside);
+
+    TPZGeoElSide & GetGelVolumeSide();
 
     virtual void ComputeRequiredData(TPZMaterialData &data, TPZVec<REAL> &qsi) override;
 
     void ComputeDeformedDirections(TPZMaterialData &data);
 
     void HDivCollapsedDirections(TPZMaterialData &data);
+
+    void AdjustAxes3D(const TPZFMatrix<REAL> &axes2D, TPZFMatrix<REAL> &axes3D, TPZFMatrix<REAL> &jac3D, TPZFMatrix<REAL> &jacinv3D, REAL detjac);
 };
 
 template<class TSHAPE>
