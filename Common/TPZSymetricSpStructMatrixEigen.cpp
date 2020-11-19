@@ -336,8 +336,8 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
     TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
     TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh*>(fMesh);
     boost::posix_time::ptime acttime = boost::posix_time::microsec_clock::local_time();
-    subcmesh->fTimeTotalCalcStiff = acttime -acttime;
-    subcmesh->fTimeTotalAddKels = acttime - acttime;
+//    subcmesh->fTimeTotalCalcStiff = acttime -acttime;
+//    subcmesh->fTimeTotalAddKels = acttime - acttime;
     int64_t count = 0;
     for (iel = 0; iel < nelem; iel++) {
         TPZCompEl *el = elementvec[iel];
@@ -371,7 +371,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         }
         calcstiff.stop();
         boost::posix_time::ptime endtimeCalc = boost::posix_time::microsec_clock::local_time();
-        subcmesh->fTimeTotalCalcStiff += endtimeCalc-initimeCalc;
+//        subcmesh->fTimeTotalCalcStiff += endtimeCalc-initimeCalc;
 
         
         
@@ -516,7 +516,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         assemble.stop();
         
         boost::posix_time::ptime endtimeAssem = boost::posix_time::microsec_clock::local_time();
-        subcmesh->fTimeTotalAddKels += (endtimeAssem - endtimeCalc);
+//        subcmesh->fTimeTotalAddKels += (endtimeAssem - endtimeCalc);
     }//fim for iel
 }
 
@@ -615,10 +615,10 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
             }
         if (count > 1000) std::cout << std::endl;
             if (subcmesh) {
-                fAsTotalAdkelsSub +=subcmesh->fTimeTotalAddKels;
-                fAsTotalCalcStifSub += subcmesh->fTimeTotalCalcStiff;
-                fAsTotaAssembleSub += subcmesh->fTimeAssemble;
-                fAsTotaCondensedSub += subcmesh->fTimeCondensed;
+//                fAsTotalAdkelsSub +=subcmesh->fTimeTotalAddKels;
+//                fAsTotalCalcStifSub += subcmesh->fTimeTotalCalcStiff;
+//                fAsTotaAssembleSub += subcmesh->fTimeAssemble;
+//                fAsTotaCondensedSub += subcmesh->fTimeCondensed;
             }
     }
 //    std::cout<<"SubAssembleTime: "<<fAsTotaAssembleSub<<std::endl;

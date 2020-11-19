@@ -21,6 +21,9 @@
 #include "TPZSSpStructMatrix.h"
 #include "TPZSSpMatrixEigen.h"
 #include "TPZFastCondensedElement.h"
+
+#include "boost/date_time/posix_time/posix_time.hpp"
+
 /**
  * @brief Implements Sparse Structural Matrices. \ref structural "Structural Matrix"
  * @ingroup structural

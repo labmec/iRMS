@@ -10,7 +10,7 @@
 #include <unsupported/Eigen/SparseExtra>
 #include<Eigen/SparseCholesky>
 
-
+#include "boost/date_time/posix_time/posix_time.hpp"
 /**
  * @file
  * @brief Contains the implementation of the TPZSYsmpMatrixEigen methods.
@@ -291,25 +291,25 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
     if (this->IsDecomposed() != ENoDecompose) {
         DebugStop();
     }
-#ifdef LOG4CXX
-    if(logger->isDebugEnabled())
-    {
-        std::stringstream sout;
-        sout << "Eigen control parameters\n";
-        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
-        LOGPZ_DEBUG(logger,sout.str())
-    }
-#endif
+//#ifdef LOG4CXX
+//    if(logger->isDebugEnabled())
+//    {
+//        std::stringstream sout;
+//        sout << "Eigen control parameters\n";
+//        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
+//        LOGPZ_DEBUG(logger,sout.str())
+//    }
+//#endif
     fanalysis.factorize(fsparse_eigen);
-#ifdef LOG4CXX
-    if(logger->isDebugEnabled())
-    {
-        std::stringstream sout;
-        sout << "Eigen control parameters\n";
-        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
-        LOGPZ_DEBUG(logger,sout.str())
-    }
-#endif
+//#ifdef LOG4CXX
+//    if(logger->isDebugEnabled())
+//    {
+//        std::stringstream sout;
+//        sout << "Eigen control parameters\n";
+//        for(int i=0; i<64; i++) sout << fanalysis.pardisoParameterArray()[i] << ' ';
+//        LOGPZ_DEBUG(logger,sout.str())
+//    }
+//#endif
     this->SetIsDecomposed(ELDLt);
     return 1;
     

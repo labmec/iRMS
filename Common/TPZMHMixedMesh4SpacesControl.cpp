@@ -78,7 +78,7 @@ void TPZMHMixedMesh4SpacesControl::CreateHDivPressureMHMMesh()
     cmeshes[1] = fPressureFineMesh.operator->();
     cmeshes[2] = fcmeshFluxAverg.operator->();
     cmeshes[3] = fcmeshPressureAverg.operator->();
-    if (0){
+    if (1){
         std::ofstream out("PressureMesh_MultiPhis.txt");
         cmeshes[1] ->Print(out);
         
@@ -127,10 +127,10 @@ void TPZMHMixedMesh4SpacesControl::CreateHDivPressureMHMMesh()
             if(!cel) DebugStop();
             TPZGeoEl *gel = cel->Reference();
             if(!gel) DebugStop();
-//            if(gel->Dimension() == dim)
-//            {
+            if(gel->Dimension() == dim)
+            {
                 cel->PrepareIntPtIndices();
-//            }
+            }
         }
     }
     
