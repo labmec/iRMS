@@ -23,7 +23,7 @@
 #include "TPZCompElHDivCollapsed.h"
 #include "TPZVTKGeoMesh.h"
 #include "pzcheckgeom.h"
-#include "hybridpoissoncollapsed.h"
+//#include "hybridpoissoncollapsed.h"
 #include "TPZCompElHDivSBFem.h"
 
 #ifdef LOG4CXX
@@ -456,8 +456,6 @@ TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 
     TPZVecL2 *mat = new TPZVecL2(ESkeleton);
     mat->SetDimension(dim);
-    mat->SetForcingFunction(LaplaceExact.ForcingFunction());
-    mat->SetForcingFunctionExact(LaplaceExact.Exact());
     
     cmeshcollapsed->InsertMaterialObject(mat); //Insere material na malha
     for (auto gel : gmesh->ElementVec())
@@ -471,13 +469,15 @@ TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
         // and instead of generate the connectivity based on the TPZCompElHDiv (internal connects),
         // it tries to use the TPZCompElHDivBound2 (external connects).
         auto celhdivc = new TPZCompElHDivCollapsed<pzshape::TPZShapeLinear>(*cmeshcollapsed, gel, index);
-        if (0)
+        if (1)
         {
             celhdivc->Print(std::cout);
         }
     }
-    cmeshcollapsed->AutoBuild();
 
+    cmeshcollapsed->SetDimModel(2);
+    cmeshcollapsed->SetAllCreateFunctionsHDiv();
+    
     int nstate = 1;
     TPZFMatrix<STATE> val1(2, 2, 0.), val2(2, 1, 0.);
     {
@@ -496,10 +496,13 @@ TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
         auto bcond = mat->CreateBC(mat, Ebc4, 0, val1, val2);
         cmeshcollapsed->InsertMaterialObject(bcond);
     }
-    cmeshcollapsed->AutoBuild();
+    std::set<int> matids = {Ebc1, Ebc2, Ebc3, Ebc4};
+    cmeshcollapsed->Reference()->ResetReference();
+    cmeshcollapsed->AutoBuild(matids);
     cmeshcollapsed->AdjustBoundaryElements();
     cmeshcollapsed->CleanUpUnconnectedNodes();
     
+    cmeshcollapsed->ExpandSolution();
     return cmeshcollapsed;
 }
 
