@@ -74,10 +74,10 @@ int main(int argc, char *argv[])
 #endif
     // If hdivcollapsed is true, the multiphysics simulation will be performed using the TPZCompElHDivCollapsed with 1D elements,
     // if not, it will use 2D elements, and traditional Hdiv elements too.
-    bool hdivcollapsed = true;
+    bool hdivcollapsed = false;
 
     // If sbfemhdiv is true, the class TPZCompElHDivSBFem will be used.
-    bool sbfemhdiv = false;
+    bool sbfemhdiv = true;
     
     int numthreads = 8;
 
@@ -112,16 +112,13 @@ int main(int argc, char *argv[])
         std::cout << "Building computational mesh...\n";
         TPZCompMesh * cmeshf;
         auto cmeshp = pressure(gmesh, POrder, hdivcollapsed, sbfemhdiv);
-        if (hdivcollapsed)
+        if (sbfemhdiv)
         {
-            if (sbfemhdiv)
-            {
-                cmeshf = fluxhdivsbfem(gmesh, POrder);
-            }
-            else
-            {
-                cmeshf = fluxhdivcollapsed(gmesh, POrder);
-            }
+            cmeshf = fluxhdivsbfem(gmesh, POrder);
+        }
+        else if(hdivcollapsed)
+        {
+            cmeshf = fluxhdivcollapsed(gmesh, POrder);
         }
         else
         {
@@ -149,7 +146,6 @@ int main(int argc, char *argv[])
         {
             cmeshm = multiphysics(gmesh, POrder);
         }
-        
         
         TPZManVector<int> active(2,1);
         cmeshm->BuildMultiphysicsSpace(active, meshvector);
@@ -191,7 +187,7 @@ int main(int argc, char *argv[])
         }
         an.Solve();
         
-        if (!hdivcollapsed)
+        if (!hdivcollapsed && !sbfemhdiv)
         {
             std::cout << "Post Processing...\n";
             std::string plotfile("DarcyP.vtk");
@@ -456,7 +452,6 @@ TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 
     TPZVecL2 *mat = new TPZVecL2(ESkeleton);
     mat->SetDimension(dim);
-    
     cmeshcollapsed->InsertMaterialObject(mat); //Insere material na malha
     for (auto gel : gmesh->ElementVec())
     {
@@ -464,10 +459,6 @@ TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
         if (gel->Dimension() != 1) continue;
         if (gel->MaterialId() != ESkeleton) continue;
         int64_t index;
-        // the code breaks in the second element
-        // I guess because in this case 3 compels are generated
-        // and instead of generate the connectivity based on the TPZCompElHDiv (internal connects),
-        // it tries to use the TPZCompElHDivBound2 (external connects).
         auto celhdivc = new TPZCompElHDivCollapsed<pzshape::TPZShapeLinear>(*cmeshcollapsed, gel, index);
         if (1)
         {
@@ -505,6 +496,63 @@ TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
     cmeshcollapsed->ExpandSolution();
     return cmeshcollapsed;
 }
+
+TPZCompMesh * fluxhdivsbfem(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
+{
+    auto dim = 1;
+    TPZCompMesh * cmeshcollapsed = new TPZCompMesh(gmesh);
+    cmeshcollapsed->SetDefaultOrder(POrder);
+    cmeshcollapsed->SetDimModel(dim);
+    cmeshcollapsed->CleanUp();
+
+    TPZVecL2 *mat = new TPZVecL2(ESkeleton);
+    mat->SetDimension(dim);
+    mat->SetForcingFunction(LaplaceExact.ForcingFunction());
+    mat->SetForcingFunctionExact(LaplaceExact.Exact());
+    
+    cmeshcollapsed->InsertMaterialObject(mat); //Insere material na malha
+    for (auto gel : gmesh->ElementVec())
+    {
+        if (!gel) continue;
+        if (gel->MaterialId() != Emat0) continue;
+        int64_t index;
+        TPZGeoElSide gelside(gel,4);
+        TPZGeoEl * gel1d = gelside.Neighbour().Element();
+        auto celhdivc = new TPZCompElHDivSBFem<pzshape::TPZShapeLinear>(*cmeshcollapsed, gel1d, gelside, index);
+    }
+    cmeshcollapsed->SetDimModel(2);
+    cmeshcollapsed->SetAllCreateFunctionsHDiv();
+    cmeshcollapsed->AutoBuild();
+
+    int nstate = 1;
+    TPZFMatrix<STATE> val1(2, 2, 0.), val2(2, 1, 0.);
+    {
+        auto bcond = mat->CreateBC(mat, Ebc1, 0, val1, val2);
+        cmeshcollapsed->InsertMaterialObject(bcond);
+    }
+    {
+        auto bcond = mat->CreateBC(mat, Ebc2, 0, val1, val2);
+        cmeshcollapsed->InsertMaterialObject(bcond);
+    }
+    {
+        auto bcond = mat->CreateBC(mat, Ebc3, 0, val1, val2);
+        cmeshcollapsed->InsertMaterialObject(bcond);
+    }
+    {
+        auto bcond = mat->CreateBC(mat, Ebc4, 0, val1, val2);
+        cmeshcollapsed->InsertMaterialObject(bcond);
+    }
+    std::set<int> matids = {Ebc1, Ebc2, Ebc3, Ebc4};
+    cmeshcollapsed->Reference()->ResetReference();
+    cmeshcollapsed->AutoBuild(matids);
+    cmeshcollapsed->AdjustBoundaryElements();
+    cmeshcollapsed->CleanUpUnconnectedNodes();
+    
+    cmeshcollapsed->ExpandSolution();
+    
+    return cmeshcollapsed;
+}
+
 
 TPZCompMesh * pressure(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder, bool hdivcollapsed, bool sbfemhdiv)
 {        
@@ -625,60 +673,4 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
     cmesh->CleanUpUnconnectedNodes();
     
     return cmesh;
-}
-
-TPZCompMesh * fluxhdivsbfem(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
-{
-    auto dim = 1;
-    TPZCompMesh * cmeshcollapsed = new TPZCompMesh(gmesh);
-    cmeshcollapsed->SetDefaultOrder(POrder);
-    cmeshcollapsed->CleanUp();
-    cmeshcollapsed->SetDimModel(dim);
-
-    // Karol - nas malhas atomicas costumamos colocar materiais do tipo NullMaterial
-    TPZVecL2 *mat = new TPZVecL2(ESkeleton);
-    mat->SetDimension(dim);
-    mat->SetForcingFunction(LaplaceExact.ForcingFunction());
-    mat->SetForcingFunctionExact(LaplaceExact.Exact());
-    
-    cmeshcollapsed->InsertMaterialObject(mat); //Insere material na malha
-    for (auto gel : gmesh->ElementVec())
-    {
-        if (!gel) continue;
-        if (gel->MaterialId() != Emat0) continue;
-        // if (gel->Dimension() != 2) continue;
-
-        // if (gel->MaterialId() != ESkeleton) continue;
-        // int64_t index;
-        // auto celhdivc = new TPZCompElHDivCollapsed<pzshape::TPZShapeLinear>(*cmeshcollapsed, gel, index);
-        int64_t index;
-        TPZGeoElSide gelside = gel->Neighbour(4);
-        TPZGeoEl * gel1d = gelside.Element();
-        auto celhdivc = new TPZCompElHDivSBFem<pzshape::TPZShapeLinear>(*cmeshcollapsed, gel1d, gelside, index);
-    }
-    cmeshcollapsed->AutoBuild();
-
-    int nstate = 1;
-    TPZFMatrix<STATE> val1(2, 2, 0.), val2(2, 1, 0.);
-    {
-        auto bcond = mat->CreateBC(mat, Ebc1, 0, val1, val2);
-        cmeshcollapsed->InsertMaterialObject(bcond);
-    }
-    {
-        auto bcond = mat->CreateBC(mat, Ebc2, 0, val1, val2);
-        cmeshcollapsed->InsertMaterialObject(bcond);
-    }
-    {
-        auto bcond = mat->CreateBC(mat, Ebc3, 0, val1, val2);
-        cmeshcollapsed->InsertMaterialObject(bcond);
-    }
-    {
-        auto bcond = mat->CreateBC(mat, Ebc4, 0, val1, val2);
-        cmeshcollapsed->InsertMaterialObject(bcond);
-    }
-    cmeshcollapsed->AutoBuild();
-    cmeshcollapsed->AdjustBoundaryElements();
-    cmeshcollapsed->CleanUpUnconnectedNodes();
-    
-    return cmeshcollapsed;
 }

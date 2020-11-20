@@ -75,7 +75,26 @@ void TPZCompElHDivSBFem<TSHAPE>::ComputeRequiredData(TPZMaterialData &data, TPZV
     HDivCollapsedDirections(data);
 
     data.ComputeFunctionDivergence();
-    // AJUSTAR VALORES
+
+    auto nshape2d = data.phi.Rows();
+    auto nshape1d = 0;
+    for (int i = 0; i < 3; i++)
+    {
+        nshape1d += this->NConnectShapeF(i, this->fPreferredOrder);
+    }
+    
+    int64_t nshape = (nshape2d - nshape1d) / 2;
+    // Adjusting divergence values
+    for (int64_t i = 0; i < nshape1d; i++)
+    {
+        data.divphi(i) = data.dphi(0,i);
+    }
+    for (int64_t i = 0; i < nshape; i++)
+    {
+        data.divphi(i+nshape1d) = 0;
+        data.divphi(i+nshape1d+nshape) = data.phi(i);
+    }
+    
 
     if (data.fNeedsSol)
     {
@@ -99,16 +118,6 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data)
     // Before that, the material data must be computed (It will call ComputeRequiredData from TPZCompElHDivSBFem)
     TPZGeoEl * gelvolume = fGelVolSide.Element();
     int dim2 = gelvolume->Dimension();
-
-    // // Find the first face side of the volumetric element
-    // int nsides = fGeoElVolume->NSides();
-    // int faceside;
-    // for (faceside = 0; faceside < nsides; faceside++) {
-    //     if (fGeoElVolume->SideDimension(faceside) == dim1) {
-    //         break;
-    //     }
-    // }
-    // TPZGeoElSide thisside(fGeoElVolume, faceside);
 
     // Find the higher side of the skeleton element
     TPZGeoElSide SkeletonSide(Ref1D, Ref1D->NSides() - 1);
@@ -134,17 +143,18 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data)
         AdjustAxes3D(axes, data.axes, data.jacobian, data.jacinv, data.detjac);
     }
     gelvolume->X(xivol, data.x);
-    gelvolume->GradX(xivol, data.dphix);
+
+    // Adjusting derivatives
+    ExtendShapeFunctions(data);
 
     auto ndir = data.fDeformedDirections.Cols()-1;
     TPZFNMatrix<100,REAL> directions(3, ndir,0);
 
-    gelvolume->HDivDirections(xivol, directions); // this function computes gradx/detjac
-    for (auto i = 0; i < 3; i++)
+    for (auto i = 0; i < dim2; i++)
     {
         for (auto j = 0; j < ndir; j++)
         {
-            data.fDeformedDirections(i,j+1) = data.fMasterDirections(i,j+1)*directions(i,j);
+            data.fDeformedDirections(i,j+1) = data.fMasterDirections(i,j+1)*data.dphix(i,j)/data.detjac;
         }   
     }
 }
@@ -197,6 +207,32 @@ void TPZCompElHDivSBFem<TSHAPE>::AdjustAxes3D(const TPZFMatrix<REAL> &axes2D, TP
         }
     }
 #endif
+}
+
+template <class TSHAPE>
+void TPZCompElHDivSBFem<TSHAPE>::ExtendShapeFunctions(TPZMaterialData &data2d)
+{
+    int dim = fGelVolSide.Element()->Dimension();
+
+    auto nshape2d = data2d.phi.Rows();
+    auto nshape1d = 0;
+    for (int i = 0; i < 3; i++)
+    {
+        nshape1d += this->NConnectShapeF(i, this->fPreferredOrder);
+    }
+    
+    int64_t nshape = (nshape2d - nshape1d) / 2;
+    for (int ish = 0; ish < nshape; ish++)
+    {
+        for (int d = 0; d < dim - 1; d++)
+        {
+            data2d.dphi(d, ish + nshape1d) = data2d.dphi(d, ish);
+            data2d.dphi(d, ish + nshape1d+nshape) = -data2d.phi(ish)/2;
+        }
+        data2d.dphi(dim-1, ish+nshape1d) = 0.;
+        data2d.dphi(dim-1, ish+nshape1d+nshape) = -data2d.phi(ish) / 2.;
+    }
+    TPZInterpolationSpace::Convert2Axes(data2d.dphi, data2d.jacinv, data2d.dphix);
 }
 
 #include "pzshapetriang.h"

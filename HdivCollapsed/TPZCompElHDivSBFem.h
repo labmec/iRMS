@@ -56,6 +56,8 @@ public:
     void HDivCollapsedDirections(TPZMaterialData &data);
 
     void AdjustAxes3D(const TPZFMatrix<REAL> &axes2D, TPZFMatrix<REAL> &axes3D, TPZFMatrix<REAL> &jac3D, TPZFMatrix<REAL> &jacinv3D, REAL detjac);
+
+    void ExtendShapeFunctions(TPZMaterialData &data2d);
 };
 
 template<class TSHAPE>
