@@ -72,16 +72,16 @@ void TPZCompElHDivSBFem<TSHAPE>::ComputeRequiredData(TPZMaterialData &data, TPZV
     TPZCompElHDivCollapsed<TSHAPE>::ComputeRequiredData(data, qsi);
     data.fNeedsSol = needssol;
 
-    HDivCollapsedDirections(data);
-
-    data.ComputeFunctionDivergence();
-
     auto nshape2d = data.phi.Rows();
     auto nshape1d = 0;
     for (int i = 0; i < 3; i++)
     {
         nshape1d += this->NConnectShapeF(i, this->fPreferredOrder);
     }
+
+    HDivCollapsedDirections(data, nshape1d);
+
+    data.ComputeFunctionDivergence();
     
     int64_t nshape = (nshape2d - nshape1d) / 2;
     // Adjusting divergence values
@@ -92,9 +92,8 @@ void TPZCompElHDivSBFem<TSHAPE>::ComputeRequiredData(TPZMaterialData &data, TPZV
     for (int64_t i = 0; i < nshape; i++)
     {
         data.divphi(i+nshape1d) = 0;
-        data.divphi(i+nshape1d+nshape) = data.phi(i);
+        data.divphi(i+nshape1d+nshape) = -data.phi(i+nshape1d+nshape);
     }
-    
 
     if (data.fNeedsSol)
     {
@@ -104,7 +103,7 @@ void TPZCompElHDivSBFem<TSHAPE>::ComputeRequiredData(TPZMaterialData &data, TPZV
 
 // This function will compute the directions for the HDiv collapsed based on the information of neighbourhood
 template<class TSHAPE>
-void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data)
+void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data, int64_t nshape1d)
 {
     // Computing the deformed directions for the 2d functions using the information of the neighbourhood
     // Inspired in TPZSBFemVolume::ComputeKMatrices
@@ -149,12 +148,13 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data)
 
     auto ndir = data.fDeformedDirections.Cols()-1;
     TPZFNMatrix<100,REAL> directions(3, ndir,0);
+    data.fMasterDirections.Print(std::cout);
 
     for (auto i = 0; i < dim2; i++)
     {
-        for (auto j = 0; j < ndir; j++)
+        for (auto j = nshape1d; j < data.fDeformedDirections.Cols(); j++)
         {
-            data.fDeformedDirections(i,j+1) = data.fMasterDirections(i,j+1)*data.dphix(i,j)/data.detjac;
+            data.fDeformedDirections(i,j) = -data.fMasterDirections(i,j)*data.dphix(i,j)/data.detjac;
         }   
     }
 }

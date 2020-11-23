@@ -23,7 +23,7 @@
 #include "TPZCompElHDivCollapsed.h"
 #include "TPZVTKGeoMesh.h"
 #include "pzcheckgeom.h"
-//#include "hybridpoissoncollapsed.h"
+#include "hybridpoissoncollapsed.h"
 #include "TPZCompElHDivSBFem.h"
 
 #ifdef LOG4CXX
@@ -568,8 +568,8 @@ TPZCompMesh * pressure(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder, bool hdivco
     cmesh->SetDefaultOrder(POrder);
     cmesh->SetDimModel(dim);
     
-    // TPZHybridPoissonCollapsed *mat = new TPZHybridPoissonCollapsed(ESkeleton,dim);
-    TPZMixedPoisson *mat = new TPZMixedPoisson(fmat, dim);
+    TPZHybridPoissonCollapsed *mat = new TPZHybridPoissonCollapsed(ESkeleton,dim);
+    // TPZMixedPoisson *mat = new TPZMixedPoisson(fmat, dim);
     cmesh->InsertMaterialObject(mat); //Insere material na malha
 
     cmesh->SetAllCreateFunctionsContinuous();
@@ -641,7 +641,8 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
     cmesh->SetDefaultOrder(POrder);
     cmesh->SetDimModel(dim);
     
-    TPZMixedPoisson *mat = new TPZMixedPoisson(fmat, dim+1);
+    // TPZMixedPoisson *mat = new TPZMixedPoisson(fmat, dim+1);
+    TPZHybridPoissonCollapsed *mat = new TPZHybridPoissonCollapsed(ESkeleton,dim);
     
     mat->SetForcingFunction(LaplaceExact.ForcingFunction());
     mat->SetForcingFunctionExact(LaplaceExact.Exact());

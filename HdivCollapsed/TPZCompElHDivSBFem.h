@@ -53,7 +53,7 @@ public:
 
     void ComputeDeformedDirections(TPZMaterialData &data);
 
-    void HDivCollapsedDirections(TPZMaterialData &data);
+    void HDivCollapsedDirections(TPZMaterialData &data, int64_t nshape1d);
 
     void AdjustAxes3D(const TPZFMatrix<REAL> &axes2D, TPZFMatrix<REAL> &axes3D, TPZFMatrix<REAL> &jac3D, TPZFMatrix<REAL> &jacinv3D, REAL detjac);
 
