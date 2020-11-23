@@ -25,6 +25,7 @@
 #include "pzcheckgeom.h"
 #include "hybridpoissoncollapsed.h"
 #include "TPZCompElHDivSBFem.h"
+#include "TPZMultiphysicsInterfaceEl.h"
 
 #ifdef LOG4CXX
 static LoggerPtr logger(Logger::getLogger("pz.sbfem"));
@@ -39,19 +40,35 @@ inline void Laplace_exact(const TPZVec<REAL> &xv, TPZVec<STATE> &val, TPZFMatrix
     LaplaceExact.Solution(xv, val, deriv);
 }
 
-TPZGeoMesh * SetupSquareMesh(int nelx, bool hdivcollapsed);
+TPZGeoMesh * SetupSquareMesh(int nelx);
 TPZGeoMesh * SetupCollapsedMesh(int nelx);
 
 TPZCompMesh * flux(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder);
 TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder);
 TPZCompMesh * fluxhdivsbfem(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder);
 
-TPZCompMesh * pressure(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder, bool hdivcollapsed, bool sbfemhdiv);
+TPZCompMesh * pressure(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder);
 
-TPZMultiphysicsCompMesh * multiphysics(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder);
-TPZMultiphysicsCompMesh * multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder);
+TPZMultiphysicsCompMesh * multiphysics(TPZAutoPointer<TPZGeoMesh> gmesh, TPZCompMesh * cmeshp, TPZCompMesh * cmeshf, int POrder);
+TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, TPZCompMesh * cmeshp, TPZCompMesh * cmeshf, int POrder);
 
-enum MMATID {Emat0, Emat1, Ebc1, Ebc2, Ebc3, Ebc4, Eintmat1, Eintbc1, Eintbc2, Eintbc3, Eintbc4, ESkeleton};
+void AddInterfaceElements(TPZCompMesh * cmesh);
+
+enum MMATID {Emat0, Emat1, Ebc1, Ebc2, Ebc3, Ebc4, Eint, Eintleft, Eintright, ESkeleton};
+
+//-----------------------------------------
+// CONFIGURATIONS:
+
+// If hdivcollapsed is true, the multiphysics simulation will be performed using the TPZCompElHDivCollapsed with 1D elements,
+// if not, it will use 2D elements, and traditional Hdiv elements too.
+bool gHdivcollapsed = false;
+
+// If sbfemhdiv is true, the class TPZCompElHDivSBFem will be used.
+bool gSbfemhdiv = true;
+
+// If hybrid is true, the SBFem-Hdiv mesh will create interface elements
+bool gHybrid = false;
+//-----------------------------------------
 
 int main(int argc, char *argv[])
 {
@@ -72,30 +89,24 @@ int main(int argc, char *argv[])
 #ifdef _AUTODIFF
     LaplaceExact.fExact = TLaplaceExample1::EHarmonic;
 #endif
-    // If hdivcollapsed is true, the multiphysics simulation will be performed using the TPZCompElHDivCollapsed with 1D elements,
-    // if not, it will use 2D elements, and traditional Hdiv elements too.
-    bool hdivcollapsed = false;
-
-    // If sbfemhdiv is true, the class TPZCompElHDivSBFem will be used.
-    bool sbfemhdiv = true;
     
     int numthreads = 8;
 
     bool printgeomesh = true;
-    bool printcmesh = true;
+    bool printcmesh = false;
     bool printstifmatrix = true;
 
     for (int POrder = 1; POrder <= maxporder; POrder ++)
     {
         int nelx = 1;
         auto gmesh = new TPZGeoMesh;
-        if (sbfemhdiv)
+        if (gSbfemhdiv)
         {
             gmesh = SetupCollapsedMesh(nelx);
         }
         else
         {
-            gmesh = SetupSquareMesh(nelx, hdivcollapsed);
+            gmesh = SetupSquareMesh(nelx);
         }
         
         TPZCheckGeom gcheck(gmesh);
@@ -111,12 +122,12 @@ int main(int argc, char *argv[])
 
         std::cout << "Building computational mesh...\n";
         TPZCompMesh * cmeshf;
-        auto cmeshp = pressure(gmesh, POrder, hdivcollapsed, sbfemhdiv);
-        if (sbfemhdiv)
+        auto cmeshp = pressure(gmesh, POrder);
+        if (gSbfemhdiv)
         {
             cmeshf = fluxhdivsbfem(gmesh, POrder);
         }
-        else if(hdivcollapsed)
+        else if(gHdivcollapsed)
         {
             cmeshf = fluxhdivcollapsed(gmesh, POrder);
         }
@@ -133,23 +144,20 @@ int main(int argc, char *argv[])
             std::ofstream outp("CMeshPressure.vtk");
             vtk.PrintCMeshVTK(cmeshp, outp, true);
         }
-        std::cout << "Creating multiphysics mesh\n";
-        TPZManVector< TPZCompMesh *, 2> meshvector(2);
-        meshvector[0] = cmeshf;
-        meshvector[1] = cmeshp;
         auto cmeshm = new TPZMultiphysicsCompMesh;
-        if (hdivcollapsed || sbfemhdiv)
+        if (gHdivcollapsed || gSbfemhdiv)
         {
-            cmeshm = multiphysicscollapsed(gmesh, POrder);
+            cmeshm = multiphysicscollapsed(gmesh, cmeshp, cmeshf, POrder);
+            if (gHybrid)
+            {
+                AddInterfaceElements(cmeshm);
+            }            
         }
         else
         {
-            cmeshm = multiphysics(gmesh, POrder);
+            cmeshm = multiphysics(gmesh, cmeshp, cmeshf, POrder);
         }
         
-        TPZManVector<int> active(2,1);
-        cmeshm->BuildMultiphysicsSpace(active, meshvector);
-        cmeshm->LoadReferences();
 
         if(printcmesh)
         {
@@ -163,8 +171,6 @@ int main(int argc, char *argv[])
         std::cout << "Analysis...\n";
         std::cout << "neq = " << cmeshm->NEquations() << std::endl;
         
-        // I'm running without optimizing bandwidth to help to find where is the bug
-        // If it is false, the code breaks in the ComputeRequiredData of the TPZCompElHDivCollapsed - I believe the problem is there.
         bool optimizeBandwidth = false;
         TPZAnalysis an(cmeshm, optimizeBandwidth);
         an.SetStep(POrder);
@@ -187,7 +193,7 @@ int main(int argc, char *argv[])
         }
         an.Solve();
         
-        if (!hdivcollapsed && !sbfemhdiv)
+        if (!gHdivcollapsed && !gSbfemhdiv)
         {
             std::cout << "Post Processing...\n";
             std::string plotfile("DarcyP.vtk");
@@ -211,7 +217,7 @@ int main(int argc, char *argv[])
     return EXIT_SUCCESS;
 }
 
-TPZGeoMesh * SetupSquareMesh(int nelx, bool hdivcollapsed)
+TPZGeoMesh * SetupSquareMesh(int nelx)
 {
     TPZManVector<REAL, 4> x0(3, -1.), x1(3, 1.);
     x0[0] = -1, x0[1] = -1, x0[2] = 0.;
@@ -231,7 +237,7 @@ TPZGeoMesh * SetupSquareMesh(int nelx, bool hdivcollapsed)
 
     gmesh->BuildConnectivity();
 
-    if (hdivcollapsed)
+    if (gHdivcollapsed)
     {
         TPZGeoMesh *gmeshcollapsed = new TPZGeoMesh();
         gmeshcollapsed->SetDimension(1);
@@ -319,7 +325,7 @@ TPZGeoMesh * SetupCollapsedMesh(int nelx)
     gmesh->BuildConnectivity();
 
     TPZGeoMesh *gmeshcollapsed = new TPZGeoMesh();
-    gmeshcollapsed->SetDimension(1);
+    gmeshcollapsed->SetDimension(2);
     auto nnodes = gmesh->NNodes();
     for (auto node : gmesh->NodeVec())
     {
@@ -376,6 +382,7 @@ TPZGeoMesh * SetupCollapsedMesh(int nelx)
     {
         if(!gel) continue;
         if (gel->MaterialId() != ESkeleton) continue;
+        TPZGeoElBC(gel,2,Ebc1);
         
         TPZManVector<REAL,3> xco1(3), xco2(3);
         gel->Node(0).GetCoordinates(xco1);
@@ -397,6 +404,36 @@ TPZGeoMesh * SetupCollapsedMesh(int nelx)
             TPZGeoElBC(gel,2,Ebc4);
         }
     }
+
+    gmeshcollapsed->BuildConnectivity();
+
+    // Not working yet
+    if (gHybrid)
+    {
+        for (auto gel : gmeshcollapsed->ElementVec())
+        {
+            if (!gel || gel->MaterialId() != Emat0)
+            {
+                continue;
+            }
+            TPZGeoElSide gelside(gel, 4);
+            TPZGeoElSide neighbour = gelside.Neighbour();
+            if (gelside == neighbour)
+            {
+                continue;
+            }
+            if (neighbour.Element()->MaterialId() == Ebc1)
+            {
+                TPZGeoElBC(gelside, Eintright);
+            }
+            else if (neighbour.Element()->MaterialId() == ESkeleton)
+            {
+                TPZGeoElBC(gelside, Eintleft);
+            }
+            
+        }
+    }
+    
     std::ofstream out("gmesh.txt");
     gmeshcollapsed->Print(out);
     return gmeshcollapsed;
@@ -542,6 +579,7 @@ TPZCompMesh * fluxhdivsbfem(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
         auto bcond = mat->CreateBC(mat, Ebc4, 0, val1, val2);
         cmeshcollapsed->InsertMaterialObject(bcond);
     }
+
     std::set<int> matids = {Ebc1, Ebc2, Ebc3, Ebc4};
     cmeshcollapsed->Reference()->ResetReference();
     cmeshcollapsed->AutoBuild(matids);
@@ -554,11 +592,11 @@ TPZCompMesh * fluxhdivsbfem(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 }
 
 
-TPZCompMesh * pressure(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder, bool hdivcollapsed, bool sbfemhdiv)
+TPZCompMesh * pressure(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 {        
     auto fmat = Emat1;
     auto dim = 2;
-    if (hdivcollapsed || sbfemhdiv)
+    if (gHdivcollapsed || gSbfemhdiv)
     {
         fmat = ESkeleton;
         dim = 1;
@@ -587,7 +625,7 @@ TPZCompMesh * pressure(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder, bool hdivco
     return cmesh;
 }
 
-TPZMultiphysicsCompMesh *  multiphysics(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
+TPZMultiphysicsCompMesh *  multiphysics(TPZAutoPointer<TPZGeoMesh> gmesh, TPZCompMesh * cmeshp, TPZCompMesh * cmeshf, int POrder)
 {
     // gmesh->ResetReference();
     auto dim = gmesh->Dimension();
@@ -596,6 +634,7 @@ TPZMultiphysicsCompMesh *  multiphysics(TPZAutoPointer<TPZGeoMesh> gmesh, int PO
     TPZMultiphysicsCompMesh * cmesh = new TPZMultiphysicsCompMesh(gmesh);
     cmesh->SetDefaultOrder(POrder);
     cmesh->SetDimModel(dim);
+    cmesh->SetAllCreateFunctionsMultiphysicElem();
     
     TPZMixedPoisson *mat = new TPZMixedPoisson(fmat, dim);
     
@@ -624,14 +663,19 @@ TPZMultiphysicsCompMesh *  multiphysics(TPZAutoPointer<TPZGeoMesh> gmesh, int PO
         bcond->SetForcingFunction(LaplaceExact.TensorFunction());
         cmesh->InsertMaterialObject(bcond);
     }
-    cmesh->SetAllCreateFunctionsMultiphysicElem();
-    cmesh->AdjustBoundaryElements();
-    cmesh->CleanUpUnconnectedNodes();
+    std::cout << "Creating multiphysics mesh\n";
+    TPZManVector< TPZCompMesh *, 2> meshvector(2);
+    meshvector[0] = cmeshf;
+    meshvector[1] = cmeshp;
+
+    TPZManVector<int> active(2,1);
+    cmesh->BuildMultiphysicsSpace(active, meshvector);
+    cmesh->LoadReferences();
     
     return cmesh;
 }
 
-TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
+TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, TPZCompMesh * cmeshp, TPZCompMesh * cmeshf, int POrder)
 {
     // gmesh->ResetReference();
     auto fmat = ESkeleton;
@@ -640,13 +684,22 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
     TPZMultiphysicsCompMesh * cmesh = new TPZMultiphysicsCompMesh(gmesh);
     cmesh->SetDefaultOrder(POrder);
     cmesh->SetDimModel(dim);
-    
+    cmesh->SetAllCreateFunctionsMultiphysicElem();
+
     // TPZMixedPoisson *mat = new TPZMixedPoisson(fmat, dim+1);
     TPZHybridPoissonCollapsed *mat = new TPZHybridPoissonCollapsed(ESkeleton,dim);
-    
     mat->SetForcingFunction(LaplaceExact.ForcingFunction());
     mat->SetForcingFunctionExact(LaplaceExact.Exact());
     cmesh->InsertMaterialObject(mat);
+
+    // Material for interfaces (Interior)
+    TPZHybridPoissonCollapsed *matInterfaceLeft = new TPZHybridPoissonCollapsed(Eintleft,dim);
+    matInterfaceLeft->SetMultiplier(1.);
+    cmesh->InsertMaterialObject(matInterfaceLeft);
+    
+    TPZHybridPoissonCollapsed *matInterfaceRight = new TPZHybridPoissonCollapsed(Eintright,dim);
+    matInterfaceRight->SetMultiplier(-1.);
+    cmesh->InsertMaterialObject(matInterfaceRight);
     
     TPZFMatrix<STATE> val1(2,2,0.), val2(3,1,0.);
     {
@@ -669,9 +722,53 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
         bcond->SetForcingFunction(LaplaceExact.TensorFunction());
         cmesh->InsertMaterialObject(bcond);
     }
-    cmesh->SetAllCreateFunctionsMultiphysicElem();
+
+    std::cout << "Creating multiphysics mesh\n";
+    TPZManVector< TPZCompMesh *, 2> meshvector(2);
+    meshvector[0] = cmeshf;
+    meshvector[1] = cmeshp;
+
+    TPZManVector<int> active(2,1);
+    cmesh->BuildMultiphysicsSpace(active, meshvector);
     cmesh->AdjustBoundaryElements();
     cmesh->CleanUpUnconnectedNodes();
     
     return cmesh;
+}
+
+// Not working yet
+void AddInterfaceElements(TPZCompMesh * cmesh)
+{
+    auto gmesh = cmesh->Reference();
+    for (auto gel : gmesh->ElementVec())
+    {
+        if (!gel || gel->MaterialId() != ESkeleton)
+        {
+            continue;
+        }
+        auto nsides = gel->NSides();
+
+        TPZGeoElSide gelside(gel,nsides-1);
+        TPZGeoElSide neighbour = gelside.Neighbour();
+
+        while (neighbour != gelside)
+        {
+            TPZManVector<int64_t,3> LeftElIndices(1,0.),RightElIndices(1,0.);
+            LeftElIndices[0]=0;
+            RightElIndices[0]=0;
+
+            TPZCompElSide celside = gelside.Reference();
+            TPZCompElSide celneigh = neighbour.Reference();
+            if (!celside || !celneigh) {
+                DebugStop();
+            }
+            TPZGeoElBC gelbc(gelside, Emat1);
+            int64_t index;
+            TPZMultiphysicsInterfaceElement *intf = new TPZMultiphysicsInterfaceElement(*cmesh,gelbc.CreatedElement(),index,celneigh,celside);
+            intf->SetLeftRightElementIndices(LeftElIndices,RightElIndices);
+            
+            neighbour = neighbour.Neighbour();
+
+        }
+    }
 }

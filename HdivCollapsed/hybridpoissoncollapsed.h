@@ -34,11 +34,14 @@ protected:
 	/** @brief Forcing function value */
 	REAL ff;
     
-    /** @brief fluid viscosity*/
+    /** @brief Fluid viscosity*/
 	REAL fvisc;
     
     /** @brief Pointer to forcing function, it is the Permeability and its inverse */
     TPZAutoPointer<TPZFunction<STATE> > fPermeabilityFunction;
+
+    /** @brief Lagrange multiplier */
+    REAL fMultiplier;
     
 public:
     TPZHybridPoissonCollapsed();
@@ -89,8 +92,11 @@ public:
     virtual void Errors(TPZVec<TPZMaterialData> &data, TPZVec<STATE> &u_exact, TPZFMatrix<STATE> &du_exact, TPZVec<REAL> &errors) override;
     
     virtual void ErrorsBC(TPZVec<TPZMaterialData> &data, TPZVec<STATE> &u_exact, TPZFMatrix<STATE> &du_exact, TPZVec<REAL> &errors,TPZBndCond &bc) override;
-    
-    void ExtendHdivShapeFunctions(TPZMaterialData &data1d, int phiqre);
+
+    virtual void SetMultiplier(STATE mult)
+    {
+        fMultiplier = mult;
+    }
 
     public:
     virtual int ClassId() const  override;

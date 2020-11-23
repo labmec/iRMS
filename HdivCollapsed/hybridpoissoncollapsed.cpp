@@ -348,34 +348,3 @@ void TPZHybridPoissonCollapsed::ErrorsBC(TPZVec<TPZMaterialData> &data, TPZVec<S
 int TPZHybridPoissonCollapsed::ClassId() const{
     return Hash("TPZHybridPoissonCollapsed") ^ TPZMatPoisson3d::ClassId() << 1;
 }
-
-/// extend the border shape functions for the 2D Hdiv collapsed functions
-void TPZHybridPoissonCollapsed::ExtendHdivShapeFunctions(TPZMaterialData &data, int phrqe)
-{
-    int dim = data.dphi.Cols()+1;
-    int phrq = data.phi.Rows();
-    int phrqi = phrq - phrqe;
-    int64_t nshape = phrqe / 2;
-
-    TPZFMatrix<REAL> phi(nshape * 2, 1), dphi(dim, 2 * nshape), dphidx(dim, 2 * nshape);
-    for (int ish = 0; ish < nshape; ish++) {
-        phi(ish + nshape, 0) = data.phi(ish, 0);
-        for (int d = 0; d < dim - 1; d++) {
-            dphi(d, ish + nshape) = data.dphi(d, ish);
-            dphi(d, ish) = 0.;
-        }
-        dphi(dim - 1, ish) = -data.phi(ish) / 2.;
-        dphi(dim - 1, ish + nshape) = 0.;
-    }
-    TPZInterpolationSpace::Convert2Axes(dphi, data.jacinv, dphidx);
-
-    for (int i = 0; i < phrqe; i++)
-    {
-        data.phi(i + phrqi) = phi(i);
-        for (int d = 0; d < dim - 1; d++) {
-            data.dphi(d, phrqi + i) = dphi(d, i);
-            data.dphix(d, phrqi + i) = dphidx(d, i);
-        }
-    }
-    
-}
