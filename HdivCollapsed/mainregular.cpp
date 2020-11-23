@@ -26,6 +26,7 @@
 #include "hybridpoissoncollapsed.h"
 #include "TPZCompElHDivSBFem.h"
 #include "TPZMultiphysicsInterfaceEl.h"
+#include "TPZNullMaterial.h"
 
 #ifdef LOG4CXX
 static LoggerPtr logger(Logger::getLogger("pz.sbfem"));
@@ -67,7 +68,7 @@ bool gHdivcollapsed = false;
 bool gSbfemhdiv = true;
 
 // If hybrid is true, the SBFem-Hdiv mesh will create interface elements
-bool gHybrid = false;
+bool gHybrid = true;
 //-----------------------------------------
 
 int main(int argc, char *argv[])
@@ -407,30 +408,41 @@ TPZGeoMesh * SetupCollapsedMesh(int nelx)
 
     gmeshcollapsed->BuildConnectivity();
 
-    // Not working yet
     if (gHybrid)
     {
         for (auto gel : gmeshcollapsed->ElementVec())
         {
-            if (!gel || gel->MaterialId() != Emat0)
+            if (!gel || gel->MaterialId() != ESkeleton)
             {
                 continue;
             }
-            TPZGeoElSide gelside(gel, 4);
+            TPZGeoElSide gelside(gel, 2);
             TPZGeoElSide neighbour = gelside.Neighbour();
-            if (gelside == neighbour)
+            while (gelside != neighbour)
             {
-                continue;
+                switch (neighbour.Element()->MaterialId())
+                {
+                case Emat0:
+                    TPZGeoElBC(gelside, Eintleft);
+                    break;
+                case Ebc1:
+                    TPZGeoElBC(gelside, Eintright);
+                    break;
+                case Ebc2:
+                    TPZGeoElBC(gelside, Eintright);
+                    break;
+                case Ebc3:
+                    TPZGeoElBC(gelside, Eintright);
+                    break;
+                case Ebc4:
+                    TPZGeoElBC(gelside, Eintright);
+                    break;
+                }
+                neighbour = neighbour.Neighbour();
             }
-            if (neighbour.Element()->MaterialId() == Ebc1)
-            {
-                TPZGeoElBC(gelside, Eintright);
+            if (neighbour == gelside) {
+                TPZGeoElBC(gelside, Eint);
             }
-            else if (neighbour.Element()->MaterialId() == ESkeleton)
-            {
-                TPZGeoElBC(gelside, Eintleft);
-            }
-            
         }
     }
     
@@ -679,7 +691,7 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
 {
     // gmesh->ResetReference();
     auto fmat = ESkeleton;
-    int dim = 1;
+    int dim = 2;
 
     TPZMultiphysicsCompMesh * cmesh = new TPZMultiphysicsCompMesh(gmesh);
     cmesh->SetDefaultOrder(POrder);
@@ -691,15 +703,6 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
     mat->SetForcingFunction(LaplaceExact.ForcingFunction());
     mat->SetForcingFunctionExact(LaplaceExact.Exact());
     cmesh->InsertMaterialObject(mat);
-
-    // Material for interfaces (Interior)
-    TPZHybridPoissonCollapsed *matInterfaceLeft = new TPZHybridPoissonCollapsed(Eintleft,dim);
-    matInterfaceLeft->SetMultiplier(1.);
-    cmesh->InsertMaterialObject(matInterfaceLeft);
-    
-    TPZHybridPoissonCollapsed *matInterfaceRight = new TPZHybridPoissonCollapsed(Eintright,dim);
-    matInterfaceRight->SetMultiplier(-1.);
-    cmesh->InsertMaterialObject(matInterfaceRight);
     
     TPZFMatrix<STATE> val1(2,2,0.), val2(3,1,0.);
     {
@@ -723,6 +726,20 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
         cmesh->InsertMaterialObject(bcond);
     }
 
+    TPZNullMaterial *matLambda = new TPZNullMaterial(Eint);
+    matLambda->SetDimension(dim-1);
+    matLambda->SetNStateVariables(1);
+    cmesh->InsertMaterialObject(matLambda);
+    
+    // Material for interfaces (Interior)
+    TPZHybridPoissonCollapsed *matInterfaceLeft = new TPZHybridPoissonCollapsed(Eintleft,2);
+    matInterfaceLeft->SetMultiplier(1.);
+    cmesh->InsertMaterialObject(matInterfaceLeft);
+    
+    TPZHybridPoissonCollapsed *matInterfaceRight = new TPZHybridPoissonCollapsed(Eintright,2);
+    matInterfaceRight->SetMultiplier(-1.);
+    cmesh->InsertMaterialObject(matInterfaceRight);
+
     std::cout << "Creating multiphysics mesh\n";
     TPZManVector< TPZCompMesh *, 2> meshvector(2);
     meshvector[0] = cmeshf;
@@ -732,6 +749,7 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
     cmesh->BuildMultiphysicsSpace(active, meshvector);
     cmesh->AdjustBoundaryElements();
     cmesh->CleanUpUnconnectedNodes();
+    cmesh->LoadReferences();
     
     return cmesh;
 }
@@ -740,9 +758,10 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
 void AddInterfaceElements(TPZCompMesh * cmesh)
 {
     auto gmesh = cmesh->Reference();
+
     for (auto gel : gmesh->ElementVec())
     {
-        if (!gel || gel->MaterialId() != ESkeleton)
+        if (!gel || gel->MaterialId() != Eint)
         {
             continue;
         }
@@ -755,14 +774,14 @@ void AddInterfaceElements(TPZCompMesh * cmesh)
         {
             TPZManVector<int64_t,3> LeftElIndices(1,0.),RightElIndices(1,0.);
             LeftElIndices[0]=0;
-            RightElIndices[0]=0;
+            RightElIndices[0]=1;
 
             TPZCompElSide celside = gelside.Reference();
             TPZCompElSide celneigh = neighbour.Reference();
             if (!celside || !celneigh) {
                 DebugStop();
             }
-            TPZGeoElBC gelbc(gelside, Emat1);
+            TPZGeoElBC gelbc(gelside, Eint);
             int64_t index;
             TPZMultiphysicsInterfaceElement *intf = new TPZMultiphysicsInterfaceElement(*cmesh,gelbc.CreatedElement(),index,celneigh,celside);
             intf->SetLeftRightElementIndices(LeftElIndices,RightElIndices);
