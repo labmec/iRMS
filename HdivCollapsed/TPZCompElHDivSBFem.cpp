@@ -130,7 +130,7 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data, 
     // Applying the transformation
     TPZManVector<REAL, 3> xi(dim1), xiquad(dim2), xivol(dim2);
     xi = data.xParametric;
-    tr.Apply(xi, xiquad); // @todo: Check the transformation
+    tr.Apply(xi, xiquad);
     xivol = xiquad;
     xivol[dim2 - 1] = -0.5;
 
