@@ -148,7 +148,6 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data, 
 
     auto ndir = data.fDeformedDirections.Cols()-1;
     TPZFNMatrix<100,REAL> directions(3, ndir,0);
-    data.fMasterDirections.Print(std::cout);
 
     for (auto i = 0; i < dim2; i++)
     {

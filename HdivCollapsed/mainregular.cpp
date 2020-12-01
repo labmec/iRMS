@@ -83,6 +83,8 @@ int main(int argc, char *argv[])
             {
                 std::ofstream out("cmeshsbfemhdiv.txt");
                 cmeshf->Print(out);
+                std::ofstream outp("cmeshpressure.txt");
+                cmeshp->Print(outp);
             }
 #endif
         }
@@ -110,6 +112,10 @@ int main(int argc, char *argv[])
         if (gHdivcollapsed || gSbfemhdiv)
         {
             cmeshm = multiphysicscollapsed(gmesh, cmeshp, cmeshf, POrder);
+            if (gHybrid)
+            {
+                AddInterfaceElements(cmeshm);
+            }   
         }
         else
         {
@@ -126,18 +132,8 @@ int main(int argc, char *argv[])
             cmeshm->Print(outcmesh);
         }
 #endif
+        GroupandCondense(cmeshm);
 
-        if (gHybrid)
-        {
-            TPZHybridizeHDiv hybrid;
-            auto hybridsbfem = hybrid.Hybridize(cmeshm,false);
-            // hybrid.HybridizeGivenMesh(*cmeshm, false);
-            hybridsbfem->CleanUpUnconnectedNodes();
-            hybridsbfem->AdjustBoundaryElements();
-            cmeshm->CleanUp();
-            cmeshm = hybridsbfem;
-        }
-        
         std::cout << "Analysis...\n";
         std::cout << "neq = " << cmeshm->NEquations() << std::endl;
         
@@ -161,10 +157,10 @@ int main(int argc, char *argv[])
             std::ofstream output("stiffness.txt");
             an.Solver().Matrix()->Print("K = ", output, EMathematicaInput);
         }
-        an.Solve();
         
         if (!gHdivcollapsed && !gSbfemhdiv)
         {
+            an.Solve();
             std::cout << "Post Processing...\n";
             std::string plotfile("DarcyP.vtk");
             TPZStack<std::string> scalnames, vecnames;

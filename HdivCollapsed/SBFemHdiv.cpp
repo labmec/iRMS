@@ -3,6 +3,9 @@
 #endif
 
 #include "SBFemHdiv.h"
+#include "TPZLagrangeMultiplier.h"
+#include "pzelementgroup.h"
+#include "pzcondensedcompel.h"
 #include <stack> 
 
 #ifdef _AUTODIFF
@@ -172,36 +175,39 @@ TPZGeoMesh * SetupCollapsedMesh(int nelx)
     gmeshcollapsed->BuildConnectivity();
     
     // Boundary conditions
-    for (auto gel : gmeshcollapsed->ElementVec())
+    if (!gHybrid)
     {
-        if(!gel) continue;
-        if (gel->MaterialId() != ESkeleton) continue;
-        TPZGeoElBC(gel,2,Ebc1);
-        
-        TPZManVector<REAL,3> xco1(3), xco2(3);
-        gel->Node(0).GetCoordinates(xco1);
-        gel->Node(1).GetCoordinates(xco2);
-        if (IsZero(xco1[1] + 1) && IsZero(xco2[1] + 1))
+        for (auto gel : gmeshcollapsed->ElementVec())
         {
+            if(!gel) continue;
+            if (gel->MaterialId() != ESkeleton) continue;
             TPZGeoElBC(gel,2,Ebc1);
-        }
-        else if(IsZero(xco1[0] - 1) && IsZero(xco2[0] - 1))
-        {
-            TPZGeoElBC(gel,2,Ebc2);
-        }
-        else if(IsZero(xco1[1] - 1) && IsZero(xco2[1] - 1))
-        {
-            TPZGeoElBC(gel,2,Ebc3);
-        }
-        else if(IsZero(xco1[0] + 1) && IsZero(xco2[0] + 1))
-        {
-            TPZGeoElBC(gel,2,Ebc4);
+            
+            TPZManVector<REAL,3> xco1(3), xco2(3);
+            gel->Node(0).GetCoordinates(xco1);
+            gel->Node(1).GetCoordinates(xco2);
+            if (IsZero(xco1[1] + 1) && IsZero(xco2[1] + 1))
+            {
+                TPZGeoElBC(gel,2,Ebc1);
+            }
+            else if(IsZero(xco1[0] - 1) && IsZero(xco2[0] - 1))
+            {
+                TPZGeoElBC(gel,2,Ebc2);
+            }
+            else if(IsZero(xco1[1] - 1) && IsZero(xco2[1] - 1))
+            {
+                TPZGeoElBC(gel,2,Ebc3);
+            }
+            else if(IsZero(xco1[0] + 1) && IsZero(xco2[0] + 1))
+            {
+                TPZGeoElBC(gel,2,Ebc4);
+            }
         }
     }
-
+    
     gmeshcollapsed->BuildConnectivity();
 
-    if (0)
+    if (gHybrid)
     {
         for (auto gel : gmeshcollapsed->ElementVec())
         {
@@ -209,33 +215,10 @@ TPZGeoMesh * SetupCollapsedMesh(int nelx)
             {
                 continue;
             }
-            TPZGeoElSide gelside(gel, 2);
-            TPZGeoElSide neighbour = gelside.Neighbour();
-            while (gelside != neighbour)
-            {
-                switch (neighbour.Element()->MaterialId())
-                {
-                case Emat0:
-                    TPZGeoElBC(gelside, Eintleft);
-                    break;
-                case Ebc1:
-                    TPZGeoElBC(gelside, Eintright);
-                    break;
-                case Ebc2:
-                    TPZGeoElBC(gelside, Eintright);
-                    break;
-                case Ebc3:
-                    TPZGeoElBC(gelside, Eintright);
-                    break;
-                case Ebc4:
-                    TPZGeoElBC(gelside, Eintright);
-                    break;
-                }
-                neighbour = neighbour.Neighbour();
-            }
-            if (neighbour == gelside) {
-                TPZGeoElBC(gelside, Eint);
-            }
+            TPZGeoElBC(gel,2,Eleftpressure);
+            TPZGeoElBC(gel,2,Erightpressure);
+            TPZGeoElBC(gel,2,Eleftflux);
+            TPZGeoElBC(gel,2,Erightflux);
         }
     }
     
@@ -286,15 +269,13 @@ TPZCompMesh * flux(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 
 TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 {
-    auto dim = 2;
+    auto dim = 2; auto nstate = 1;
     TPZCompMesh * cmeshcollapsed = new TPZCompMesh(gmesh);
     cmeshcollapsed->SetDefaultOrder(POrder);
     cmeshcollapsed->CleanUp();
     cmeshcollapsed->SetDimModel(dim);
 
-    auto mat = new TPZNullMaterial(ESkeleton);
-    mat->SetNStateVariables(1);
-    mat->SetDimension(dim);
+    auto mat = new TPZNullMaterial(ESkeleton, dim, nstate);
     cmeshcollapsed->InsertMaterialObject(mat); //Insere material na malha
     for (auto gel : gmesh->ElementVec())
     {
@@ -303,16 +284,11 @@ TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
         if (gel->MaterialId() != ESkeleton) continue;
         int64_t index;
         auto celhdivc = new TPZCompElHDivCollapsed<pzshape::TPZShapeLinear>(*cmeshcollapsed, gel, index);
-        if (1)
-        {
-            celhdivc->Print(std::cout);
-        }
     }
 
     cmeshcollapsed->SetDimModel(2);
     cmeshcollapsed->SetAllCreateFunctionsHDiv();
     
-    int nstate = 1;
     TPZFMatrix<STATE> val1(2, 2, 0.), val2(2, 1, 0.);
     {
         auto bcond = mat->CreateBC(mat, Ebc1, 0, val1, val2);
@@ -343,120 +319,106 @@ TPZCompMesh * fluxhdivcollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 using namespace std;
 TPZCompMesh * fluxhdivsbfem(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 {
-    auto dim = 1;
+    auto dim = 1; auto nstate = 1;
     auto cmeshcollapsed = new TPZCompMesh(gmesh);
     cmeshcollapsed->SetDefaultOrder(POrder);
     cmeshcollapsed->SetDimModel(dim);
     cmeshcollapsed->CleanUp();
 
-    auto mat = new TPZNullMaterial(ESkeleton);
-    mat->SetNStateVariables(1);
-    mat->SetDimension(dim);
-    // mat->SetForcingFunction(LaplaceExact.ForcingFunction());
-    // mat->SetForcingFunctionExact(LaplaceExact.Exact());
+    auto mat = new TPZNullMaterial(ESkeleton, dim, nstate);
+    if (gHybrid)
+    {
+        auto matleft = new TPZNullMaterial(Eleftflux, dim, nstate);
+        cmeshcollapsed->InsertMaterialObject(matleft);
+
+        auto matright = new TPZNullMaterial(Erightflux, dim, nstate);
+        cmeshcollapsed->InsertMaterialObject(matright);
+    }
     
     cmeshcollapsed->InsertMaterialObject(mat); //Insere material na malha
+
+    map<int64_t,TPZCompEl *> geltocel;
     for (auto gel : gmesh->ElementVec())
     {
         if (!gel) continue;
         if (gel->MaterialId() != Emat0) continue;
         int64_t index;
         TPZGeoElSide gelside(gel,4);
-        TPZGeoEl * gel1d = gelside.Neighbour().Element();
-        auto celhdivc = new TPZCompElHDivSBFem<pzshape::TPZShapeLinear>(*cmeshcollapsed, gel1d, gelside, index);
-    }
-    cmeshcollapsed->SetDimModel(dim);
-    cmeshcollapsed->ApproxSpace().SetAllCreateFunctionsHDiv(dim);
-    cmeshcollapsed->AutoBuild();
-
-    // Creating HdivBound elements for the external fluxes
-    // TPZManVector<int64_t,4> indexleft(cmeshcollapsed->NElements(),-1);
-    // TPZManVector<int64_t,4> indexright(cmeshcollapsed->NElements(),-1);
-    // int count = 0;
-    for (auto cel : cmeshcollapsed->ElementVec())
-    {
-        if (!cel) continue;
-
-        TPZCompElHDivSBFem<pzshape::TPZShapeLinear> * celhdiv = dynamic_cast<TPZCompElHDivSBFem<pzshape::TPZShapeLinear> * >(cel);
-        if (!celhdiv) continue;
-
-        auto gel = cel->Reference();
-        if (!gel)
+        auto gel1dside = gelside.HasNeighbour(ESkeleton);
+        if (!gelside)
         {
             DebugStop();
         }
-        
-        if (1)
+        auto gel1d = gel1dside.Element();
+        auto celhdivc = new TPZCompElHDivSBFem<pzshape::TPZShapeLinear>(*cmeshcollapsed, gel1d, gelside, index);
+        geltocel[gel1d->Index()] = celhdivc;
+    }
+    cmeshcollapsed->SetDimModel(dim);
+    cmeshcollapsed->ApproxSpace().SetAllCreateFunctionsHDiv(dim);
+    cmeshcollapsed->ExpandSolution();
+    gmesh->ResetReference();
+
+    if (gHybrid)
+    {
+        for (auto gel : gmesh->ElementVec())
         {
+            if (!gel) continue;
+            if (gel->MaterialId() != Eleftflux) continue;
+
+            TPZGeoElSide gelside(gel,2);
+            auto intfluxside = gelside.HasNeighbour(ESkeleton);
+            auto cel  = geltocel[intfluxside.Element()->Index()];
+            TPZCompElHDivSBFem<pzshape::TPZShapeLinear> * celhdivc = dynamic_cast<TPZCompElHDivSBFem<pzshape::TPZShapeLinear> * >(cel);
+            if (!celhdivc)
+            {
+                DebugStop();
+            }
+
             int64_t index;
             auto hdivboundleft = new TPZCompElHDivBound2<pzshape::TPZShapeLinear>(*cmeshcollapsed,gel,index);
-            hdivboundleft->SetConnectIndex(0,celhdiv->ConnectIndex(3));
-            // indexleft[count] = index;
+            hdivboundleft->SetConnectIndex(0,celhdivc->ConnectIndex(3));
+            gel->ResetReference();
 
-            auto hdivboundright = new TPZCompElHDivBound2<pzshape::TPZShapeLinear>(*cmeshcollapsed,gel,index);
-            hdivboundright->SetConnectIndex(0,celhdiv->ConnectIndex(4));
-            // indexright[count] = index;
+            auto rightfluxside = gelside.HasNeighbour(Erightflux);
+            auto gel1dright = rightfluxside.Element();
+            auto hdivboundright = new TPZCompElHDivBound2<pzshape::TPZShapeLinear>(*cmeshcollapsed,gel1dright,index);
+            hdivboundright->SetConnectIndex(0,celhdivc->ConnectIndex(4));
+            gel1dright->ResetReference();
         }
-        // count++;
-    }
-    cmeshcollapsed->ApproxSpace().SetAllCreateFunctionsHDiv(dim);
-    // cmeshcollapsed->AutoBuild();
-
-    // for (auto cel : cmeshcollapsed->ElementVec())
-    // {
-    //     if (!cel) continue;
-
-    //     TPZCompElHDivSBFem<pzshape::TPZShapeLinear> * celhdiv = dynamic_cast<TPZCompElHDivSBFem<pzshape::TPZShapeLinear> * >(cel);
-    //     if (!celhdiv) continue;
-
-    //     auto gel = celhdiv->Reference();
-    //     if (!gel)
-    //     {
-    //         DebugStop();
-    //     }
-    //     {
-    //         auto index = indexleft[cont];
-    //         auto celbound = cmeshcollapsed->ElementVec()[index];
-    //         auto celboundhdiv = dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeLinear> * >(celbound);
-    //         celhdiv->SetConnectIndex(3,celboundhdiv->ConnectIndex(0));
-    //     }
-    //     {
-    //         auto index = indexright[cont];
-    //         auto celbound = cmeshcollapsed->ElementVec()[index];
-    //         auto celboundhdiv = dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeLinear> * >(celbound);
-    //         celhdiv->SetConnectIndex(4,celboundhdiv->ConnectIndex(0));
-    //     }
-    // }
-    cmeshcollapsed->LoadReferences();
-    // cmeshcollapsed->AdjustBoundaryElements();
-    cmeshcollapsed->CleanUpUnconnectedNodes();
-    // cmeshcollapsed->ExpandSolution();
-
-    int nstate = 1;
-    TPZFMatrix<STATE> val1(2, 2, 0.), val2(2, 1, 0.);
-    {
-        auto bcond = mat->CreateBC(mat, Ebc1, 0, val1, val2);
-        cmeshcollapsed->InsertMaterialObject(bcond);
-    }
-    {
-        auto bcond = mat->CreateBC(mat, Ebc2, 0, val1, val2);
-        cmeshcollapsed->InsertMaterialObject(bcond);
-    }
-    {
-        auto bcond = mat->CreateBC(mat, Ebc3, 0, val1, val2);
-        cmeshcollapsed->InsertMaterialObject(bcond);
-    }
-    {
-        auto bcond = mat->CreateBC(mat, Ebc4, 0, val1, val2);
-        cmeshcollapsed->InsertMaterialObject(bcond);
     }
 
-    std::set<int> matids = {Ebc1, Ebc2, Ebc3, Ebc4};
-    cmeshcollapsed->Reference()->ResetReference();
-    cmeshcollapsed->AutoBuild(matids);
-    cmeshcollapsed->AdjustBoundaryElements();
-    cmeshcollapsed->CleanUpUnconnectedNodes();
     
+    if (!gHybrid)
+    {
+        int nstate = 1;
+        TPZFMatrix<STATE> val1(2, 2, 0.), val2(2, 1, 0.);
+        {
+            auto bcond = mat->CreateBC(mat, Ebc1, 0, val1, val2);
+            cmeshcollapsed->InsertMaterialObject(bcond);
+        }
+        {
+            auto bcond = mat->CreateBC(mat, Ebc2, 0, val1, val2);
+            cmeshcollapsed->InsertMaterialObject(bcond);
+        }
+        {
+            auto bcond = mat->CreateBC(mat, Ebc3, 0, val1, val2);
+            cmeshcollapsed->InsertMaterialObject(bcond);
+        }
+        {
+            auto bcond = mat->CreateBC(mat, Ebc4, 0, val1, val2);
+            cmeshcollapsed->InsertMaterialObject(bcond);
+        }
+
+        std::set<int> matids = {Ebc1, Ebc2, Ebc3, Ebc4};
+        cmeshcollapsed->AutoBuild(matids);
+        cmeshcollapsed->Reference()->ResetReference();
+        cmeshcollapsed->AdjustBoundaryElements();
+        cmeshcollapsed->CleanUpUnconnectedNodes();
+    }
+    
+    cmeshcollapsed->LoadReferences();
+    cmeshcollapsed->Reference()->ResetReference();
+    cmeshcollapsed->CleanUpUnconnectedNodes();
     cmeshcollapsed->ExpandSolution();
     
     return cmeshcollapsed;
@@ -466,7 +428,7 @@ TPZCompMesh * fluxhdivsbfem(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 TPZCompMesh * pressure(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
 {        
     auto fmat = Emat1;
-    auto dim = 2;
+    auto dim = 2; auto nstate = 1;
     if (gHdivcollapsed || gSbfemhdiv)
     {
         fmat = ESkeleton;
@@ -476,22 +438,32 @@ TPZCompMesh * pressure(TPZAutoPointer<TPZGeoMesh> gmesh, int POrder)
     auto cmesh = new TPZCompMesh(gmesh);
     cmesh->SetDefaultOrder(POrder);
     cmesh->SetDimModel(dim);
-    TPZMaterial *mat;
     
     if (gHdivcollapsed || gSbfemhdiv)
     {
-        mat = new TPZHybridPoissonCollapsed(ESkeleton,dim);
+        auto mat = new TPZNullMaterial(ESkeleton, dim, nstate);
+        cmesh->InsertMaterialObject(mat); //Insere material na malha
+        if (gHybrid)
+        {
+            auto matleft = new TPZNullMaterial(Eleftpressure, dim, nstate);
+            cmesh->InsertMaterialObject(matleft);
+
+            auto matright = new TPZNullMaterial(Erightpressure, dim, nstate);
+            cmesh->InsertMaterialObject(matright);
+        }
+        
     }
     else
     {
-        mat = new TPZMixedPoisson(fmat, dim);
+        auto mat = new TPZMixedPoisson(fmat, dim);
+        cmesh->InsertMaterialObject(mat); //Insere material na malha
     }
-    cmesh->InsertMaterialObject(mat); //Insere material na malha
 
+    std::set<int> matid = {ESkeleton, Eleftpressure, Erightpressure};
     cmesh->SetAllCreateFunctionsContinuous();
     cmesh->ApproxSpace().CreateDisconnectedElements(true);
     cmesh->SetDimModel(dim);
-    cmesh->AutoBuild();
+    cmesh->AutoBuild(matid);
 
     for(auto newnod : cmesh->ConnectVec())
     {
@@ -556,37 +528,36 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
     // gmesh->ResetReference();
     auto fmat = ESkeleton;
     int dim = 2;
+    int nstate = 1;
 
     auto cmesh = new TPZMultiphysicsCompMesh(gmesh);
     cmesh->SetDefaultOrder(POrder);
     cmesh->SetDimModel(dim);
     cmesh->ApproxSpace().SetAllCreateFunctionsMultiphysicElem();
 
-    auto mat = new TPZHybridPoissonCollapsed(ESkeleton,dim);
-    mat->SetForcingFunction(LaplaceExact.ForcingFunction());
-    mat->SetForcingFunctionExact(LaplaceExact.Exact());
-    cmesh->InsertMaterialObject(mat);
-    
-    TPZFMatrix<STATE> val1(2,2,0.), val2(3,1,0.);
     {
-        TPZMaterial * bcond = mat->CreateBC(mat, Ebc1, 0, val1, val2); 
-        bcond->SetForcingFunction(LaplaceExact.TensorFunction());
-        cmesh->InsertMaterialObject(bcond);
+        auto mat = new TPZHybridPoissonCollapsed(ESkeleton,dim);
+        cmesh->InsertMaterialObject(mat);
     }
     {
-        TPZMaterial * bcond = mat->CreateBC(mat, Ebc2, 0, val1, val2); 
-        bcond->SetForcingFunction(LaplaceExact.TensorFunction());
-        cmesh->InsertMaterialObject(bcond);
+        auto mat = new TPZNullMaterial(Eleftpressure, dim, nstate);
+        cmesh->InsertMaterialObject(mat);
     }
     {
-        TPZMaterial * bcond = mat->CreateBC(mat, Ebc3, 0, val1, val2); 
-        bcond->SetForcingFunction(LaplaceExact.TensorFunction());
-        cmesh->InsertMaterialObject(bcond);
+        auto mat = new TPZNullMaterial(Erightpressure, dim, nstate);
+        cmesh->InsertMaterialObject(mat);
     }
     {
-        TPZMaterial * bcond = mat->CreateBC(mat, Ebc4, 0, val1, val2); 
-        bcond->SetForcingFunction(LaplaceExact.TensorFunction());
-        cmesh->InsertMaterialObject(bcond);
+        auto mat = new TPZNullMaterial(Eleftflux, dim, nstate);
+        cmesh->InsertMaterialObject(mat);
+    }
+    {
+        auto mat = new TPZNullMaterial(Erightflux, dim, nstate);
+        cmesh->InsertMaterialObject(mat);
+    }
+    {
+        auto mat = new TPZLagrangeMultiplier(Eint, dim, nstate);
+        cmesh->InsertMaterialObject(mat);
     }
 
     std::cout << "Creating multiphysics mesh\n";
@@ -599,4 +570,163 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
     cmesh->LoadReferences();
     
     return cmesh;
+}
+
+void AddInterfaceElements(TPZCompMesh * cmesh)
+{
+    auto gmesh = cmesh->Reference();
+    for (auto gel : gmesh->ElementVec())
+    {
+        if (!gel || gel->MaterialId() != Eleftflux)
+        {
+            continue;
+        }
+        auto nsides = gel->NSides();
+        TPZGeoElSide gelside(gel,nsides-1);
+        auto gelsidepr = gelside.HasNeighbour(Eleftpressure);
+        if (!gelsidepr)
+        {
+            DebugStop();
+        }
+
+        TPZCompElSide celside = gelside.Reference();
+        TPZCompElSide celneigh = gelsidepr.Reference();
+        if (!celside || !celneigh) {
+            DebugStop();
+        }
+        TPZGeoElBC gelbc(gelside, Eint);
+        int64_t index;
+        TPZMultiphysicsInterfaceElement *intf = new TPZMultiphysicsInterfaceElement(*cmesh,gelbc.CreatedElement(),index,celneigh,celside);
+    }
+
+    for (auto gel : gmesh->ElementVec())
+    {
+        if (!gel || gel->MaterialId() != Erightflux)
+        {
+            continue;
+        }
+        auto nsides = gel->NSides();
+        TPZGeoElSide gelside(gel,nsides-1);
+        auto gelsidepr = gelside.HasNeighbour(Erightpressure);
+        if (!gelsidepr)
+        {
+            DebugStop();
+        }
+
+        TPZCompElSide celside = gelside.Reference();
+        TPZCompElSide celneigh = gelsidepr.Reference();
+        if (!celside || !celneigh) {
+            DebugStop();
+        }
+        TPZGeoElBC gelbc(gelside, Eint);
+        int64_t index;
+        TPZMultiphysicsInterfaceElement *intf = new TPZMultiphysicsInterfaceElement(*cmesh,gelbc.CreatedElement(),index,celneigh,celside);
+    }
+}
+
+// not tested yet
+void AssociateElements(TPZCompMesh *cmesh, TPZManVector<int64_t> &elementgroup)
+{
+    auto nel = cmesh->NElements();
+    elementgroup.Resize(nel, -1);
+    elementgroup.Fill(-1);
+
+    auto nconnects = cmesh->NConnects();
+    TPZManVector<int64_t,10> groupindex(nconnects, -1);
+
+    auto dim = cmesh->Dimension();
+
+    for (auto cel : cmesh->ElementVec())
+    {
+        if (!cel || !(cel->Reference()) || cel->Reference()->MaterialId() == ESkeleton)
+        {
+            continue;
+        }
+        
+        auto index = cel->Index();
+        elementgroup[index] = index;
+
+        set<int64_t> connectlist;
+        cel->BuildConnectList(connectlist);
+        
+        for (auto conindex : connectlist)
+        {
+            groupindex[conindex] = cel->Index();
+        }
+        
+    }
+
+    for (auto cel : cmesh->ElementVec())
+    {
+        if (!cel || !(cel->Reference()) || cel->Reference()->MaterialId() == ESkeleton)
+        {
+            continue;
+        }
+        auto index = cel->Index();
+
+        set<int64_t> connectlist;
+        cel->BuildConnectList(connectlist);
+
+        for (auto conindex : connectlist)
+        {
+            if (groupindex[conindex] != -1)
+            {
+                elementgroup[index] = groupindex[conindex];
+                if (groupindex[conindex] == -1) DebugStop();
+            }
+        }
+    }
+    
+}
+
+//not tested yet
+void GroupandCondense(TPZCompMesh * cmesh)
+{
+    auto nel = cmesh->NElements();
+    TPZManVector<int64_t> groupnumber(nel, -1);
+    AssociateElements(cmesh, groupnumber);
+
+    std::map<int64_t, TPZElementGroup *> groupmap;
+
+    for (auto cel : cmesh->ElementVec())
+    {
+        if (!cel)
+        {
+            continue;
+        }
+        auto index = cel->Index();
+        auto groupid = groupnumber[index];
+        if (groupid == -1)
+        {
+            continue;
+        }
+
+        auto iter = groupmap.find(groupid);
+        if (iter == groupmap.end())
+        {
+            int64_t index;
+            TPZElementGroup * elgr = new TPZElementGroup(*cmesh, index);
+            groupmap[groupid] = elgr;
+            elgr->AddElement(cel);
+        }
+        else
+        {
+            auto elgr = iter->second;
+            elgr->AddElement(cel);
+        }
+    }
+    cmesh->ComputeNodElCon();
+    for (auto cel : cmesh->ElementVec())
+    {
+        if (!cel)
+        {
+            continue;
+        }
+        TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *> (cel);
+        if (elgr) {
+            TPZCondensedCompEl *cond = new TPZCondensedCompEl(elgr);
+            cond->SetKeepMatrix(false);
+        }
+    }    
+    
 }

@@ -41,7 +41,7 @@ extern TLaplaceExample1 LaplaceExact;
 
 extern bool gHybrid, gSbfemhdiv, gHdivcollapsed;
 
-enum MMATID {Emat0, Emat1, Ebc1, Ebc2, Ebc3, Ebc4, Eint, Eintleft, Eintright, ESkeleton};
+enum MMATID {Enull, Emat0, Emat1, Ebc1, Ebc2, Ebc3, Ebc4, Eint, Eintleft, Eintright, ESkeleton, Eleftpressure, Erightpressure, Eintflux, Eleftflux, Erightflux};
 
 inline void Laplace_exact(const TPZVec<REAL> &xv, TPZVec<STATE> &val, TPZFMatrix<STATE> &deriv)
 {
@@ -61,3 +61,6 @@ TPZMultiphysicsCompMesh * multiphysics(TPZAutoPointer<TPZGeoMesh> gmesh, TPZComp
 TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmesh, TPZCompMesh * cmeshp, TPZCompMesh * cmeshf, int POrder);
 
 void AddInterfaceElements(TPZCompMesh * cmesh);
+
+void AssociateElements(TPZCompMesh *cmesh, TPZManVector<int64_t> &elementgroup);
+void GroupandCondense(TPZCompMesh * cmesh);

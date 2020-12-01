@@ -65,7 +65,7 @@ void TPZHybridPoissonCollapsed::Print(std::ostream &out) {
 
 void TPZHybridPoissonCollapsed::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef)
 {
-        STATE force = ff;
+    STATE force = ff;
     if(fForcingFunction) {
 		TPZManVector<STATE> res(1);
 		fForcingFunction->Execute(datavec[1].x,res);
