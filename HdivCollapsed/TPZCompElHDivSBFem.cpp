@@ -147,14 +147,20 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data, 
     ExtendShapeFunctions(data);
 
     auto ndir = data.fDeformedDirections.Cols()-1;
-    TPZFNMatrix<100,REAL> directions(3, ndir,0);
 
-    for (auto i = 0; i < dim2; i++)
+    if (dim2 == 3)
     {
-        for (auto j = nshape1d; j < data.fDeformedDirections.Cols(); j++)
+        std::cout << "Function not verified for 3D cases yet\n";
+        DebugStop();
+    }
+    
+    for (auto j = nshape1d; j < data.fDeformedDirections.Cols(); j++)
+    {
+        for (auto i = 0; i < dim2; i++)
         {
-            data.fDeformedDirections(i,j) = -data.fMasterDirections(i,j)*data.dphix(i,j)/data.detjac;
-        }   
+            data.fDeformedDirections(i,j) = data.fMasterDirections(1,j)*data.jacobian(i,1)/data.detjac;
+        }
+        data.fDeformedDirections(2,j) = 0.;
     }
 }
 

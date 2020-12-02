@@ -638,7 +638,11 @@ void AssociateElements(TPZCompMesh *cmesh, TPZManVector<int64_t> &elementgroup)
 
     for (auto cel : cmesh->ElementVec())
     {
-        if (!cel || !(cel->Reference()) || cel->Reference()->MaterialId() == ESkeleton)
+        if (!cel)
+        {
+            continue;
+        }
+        if (cel->Reference()->MaterialId() == ESkeleton)
         {
             continue;
         }
@@ -646,7 +650,7 @@ void AssociateElements(TPZCompMesh *cmesh, TPZManVector<int64_t> &elementgroup)
         auto index = cel->Index();
         elementgroup[index] = index;
 
-        set<int64_t> connectlist;
+        TPZStack<int64_t> connectlist;
         cel->BuildConnectList(connectlist);
         
         for (auto conindex : connectlist)
@@ -658,7 +662,7 @@ void AssociateElements(TPZCompMesh *cmesh, TPZManVector<int64_t> &elementgroup)
 
     for (auto cel : cmesh->ElementVec())
     {
-        if (!cel || !(cel->Reference()) || cel->Reference()->MaterialId() == ESkeleton)
+        if (!cel)
         {
             continue;
         }
@@ -667,12 +671,13 @@ void AssociateElements(TPZCompMesh *cmesh, TPZManVector<int64_t> &elementgroup)
         set<int64_t> connectlist;
         cel->BuildConnectList(connectlist);
 
+        int64_t groupfound = -1;
         for (auto conindex : connectlist)
         {
             if (groupindex[conindex] != -1)
             {
                 elementgroup[index] = groupindex[conindex];
-                if (groupindex[conindex] == -1) DebugStop();
+                groupfound = groupindex[conindex];
             }
         }
     }
@@ -685,6 +690,7 @@ void GroupandCondense(TPZCompMesh * cmesh)
     auto nel = cmesh->NElements();
     TPZManVector<int64_t> groupnumber(nel, -1);
     AssociateElements(cmesh, groupnumber);
+    cout << groupnumber << "\n";
 
     std::map<int64_t, TPZElementGroup *> groupmap;
 
@@ -700,7 +706,6 @@ void GroupandCondense(TPZCompMesh * cmesh)
         {
             continue;
         }
-
         auto iter = groupmap.find(groupid);
         if (iter == groupmap.end())
         {
@@ -713,6 +718,7 @@ void GroupandCondense(TPZCompMesh * cmesh)
         {
             auto elgr = iter->second;
             elgr->AddElement(cel);
+            elgr->Print(std::cout);
         }
     }
     cmesh->ComputeNodElCon();
@@ -724,9 +730,11 @@ void GroupandCondense(TPZCompMesh * cmesh)
         }
         TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *> (cel);
         if (elgr) {
-            TPZCondensedCompEl *cond = new TPZCondensedCompEl(elgr);
+            TPZCondensedCompEl *cond = new TPZCondensedCompEl(cel);
             cond->SetKeepMatrix(false);
         }
-    }    
+    }
+    cmesh->CleanUpUnconnectedNodes();
+    cmesh->ExpandSolution();
     
 }
