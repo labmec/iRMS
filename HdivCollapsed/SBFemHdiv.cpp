@@ -568,6 +568,7 @@ TPZMultiphysicsCompMesh *  multiphysicscollapsed(TPZAutoPointer<TPZGeoMesh> gmes
     TPZManVector<int> active(2,1);
     cmesh->BuildMultiphysicsSpace(active, meshvector);
     cmesh->LoadReferences();
+    cmesh->CleanUpUnconnectedNodes();
     
     return cmesh;
 }
@@ -624,75 +625,13 @@ void AddInterfaceElements(TPZCompMesh * cmesh)
     }
 }
 
-// not tested yet
-void AssociateElements(TPZCompMesh *cmesh, TPZManVector<int64_t> &elementgroup)
-{
-    auto nel = cmesh->NElements();
-    elementgroup.Resize(nel, -1);
-    elementgroup.Fill(-1);
-
-    auto nconnects = cmesh->NConnects();
-    TPZManVector<int64_t,10> groupindex(nconnects, -1);
-
-    auto dim = cmesh->Dimension();
-
-    for (auto cel : cmesh->ElementVec())
-    {
-        if (!cel)
-        {
-            continue;
-        }
-        if (cel->Reference()->MaterialId() == ESkeleton)
-        {
-            continue;
-        }
-        
-        auto index = cel->Index();
-        elementgroup[index] = index;
-
-        TPZStack<int64_t> connectlist;
-        cel->BuildConnectList(connectlist);
-        
-        for (auto conindex : connectlist)
-        {
-            groupindex[conindex] = cel->Index();
-        }
-        
-    }
-
-    for (auto cel : cmesh->ElementVec())
-    {
-        if (!cel)
-        {
-            continue;
-        }
-        auto index = cel->Index();
-
-        set<int64_t> connectlist;
-        cel->BuildConnectList(connectlist);
-
-        int64_t groupfound = -1;
-        for (auto conindex : connectlist)
-        {
-            if (groupindex[conindex] != -1)
-            {
-                elementgroup[index] = groupindex[conindex];
-                groupfound = groupindex[conindex];
-            }
-        }
-    }
-    
-}
-
 //not tested yet
 void GroupandCondense(TPZCompMesh * cmesh)
 {
     auto nel = cmesh->NElements();
-    TPZManVector<int64_t> groupnumber(nel, -1);
-    AssociateElements(cmesh, groupnumber);
-    cout << groupnumber << "\n";
 
-    std::map<int64_t, TPZElementGroup *> groupmap;
+    int64_t index;
+    TPZElementGroup * elgr = new TPZElementGroup(*cmesh, index);
 
     for (auto cel : cmesh->ElementVec())
     {
@@ -700,41 +639,22 @@ void GroupandCondense(TPZCompMesh * cmesh)
         {
             continue;
         }
-        auto index = cel->Index();
-        auto groupid = groupnumber[index];
-        if (groupid == -1)
+        if (cel->Reference())
         {
-            continue;
+            if (cel->Reference()->MaterialId() == Eleftpressure || cel->Reference()->MaterialId() == Erightpressure || cel->Reference()->MaterialId() == Eint)
+            {
+                continue;
+            }
         }
-        auto iter = groupmap.find(groupid);
-        if (iter == groupmap.end())
-        {
-            int64_t index;
-            TPZElementGroup * elgr = new TPZElementGroup(*cmesh, index);
-            groupmap[groupid] = elgr;
-            elgr->AddElement(cel);
-        }
-        else
-        {
-            auto elgr = iter->second;
-            elgr->AddElement(cel);
-            elgr->Print(std::cout);
-        }
+        
+        elgr->AddElement(cel);
+
     }
     cmesh->ComputeNodElCon();
-    for (auto cel : cmesh->ElementVec())
-    {
-        if (!cel)
-        {
-            continue;
-        }
-        TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *> (cel);
-        if (elgr) {
-            TPZCondensedCompEl *cond = new TPZCondensedCompEl(cel);
-            cond->SetKeepMatrix(false);
-        }
-    }
-    cmesh->CleanUpUnconnectedNodes();
+    elgr->Print(std::cout);
+    
+    bool keepmatrix = false;
+    auto cond = new TPZCondensedCompEl(elgr, keepmatrix);
     cmesh->ExpandSolution();
     
 }

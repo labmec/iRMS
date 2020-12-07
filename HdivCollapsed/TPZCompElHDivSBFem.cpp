@@ -87,12 +87,14 @@ void TPZCompElHDivSBFem<TSHAPE>::ComputeRequiredData(TPZMaterialData &data, TPZV
     // Adjusting divergence values
     for (int64_t i = 0; i < nshape1d; i++)
     {
-        data.divphi(i) = data.dphi(0,i);
+        data.divphi(i) = 2*data.dphi(0,i);
+        data.phi(i) *= 2;
     }
     for (int64_t i = 0; i < nshape; i++)
     {
         data.divphi(i+nshape1d) = 0;
-        data.divphi(i+nshape1d+nshape) = -data.phi(i+nshape1d+nshape);
+        data.divphi(i+nshape1d+nshape) = 2*data.phi(i+nshape1d+nshape);
+        data.phi(i+nshape1d+nshape) = 0;
     }
 
     if (data.fNeedsSol)

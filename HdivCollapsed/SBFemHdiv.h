@@ -41,7 +41,7 @@ extern TLaplaceExample1 LaplaceExact;
 
 extern bool gHybrid, gSbfemhdiv, gHdivcollapsed;
 
-enum MMATID {Enull, Emat0, Emat1, Ebc1, Ebc2, Ebc3, Ebc4, Eint, Eintleft, Eintright, ESkeleton, Eleftpressure, Erightpressure, Eintflux, Eleftflux, Erightflux};
+enum MMATID {Enull, Emat0, Emat1, Ebc1, Ebc2, Ebc3, Ebc4, ESkeleton, Eleftflux, Erightflux, Eleftpressure, Erightpressure, Eint};
 
 inline void Laplace_exact(const TPZVec<REAL> &xv, TPZVec<STATE> &val, TPZFMatrix<STATE> &deriv)
 {

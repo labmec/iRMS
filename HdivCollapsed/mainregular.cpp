@@ -137,7 +137,7 @@ int main(int argc, char *argv[])
         std::cout << "Analysis...\n";
         std::cout << "neq = " << cmeshm->NEquations() << std::endl;
         
-        bool optimizeBandwidth = false;
+        bool optimizeBandwidth = true;
         TPZAnalysis an(cmeshm, optimizeBandwidth);
         an.SetStep(POrder);
         an.SetExact(Laplace_exact);
@@ -151,9 +151,9 @@ int main(int argc, char *argv[])
 
         if(printstifmatrix)
         {
-            TPZElementMatrix ek, ef;
-            cmeshm->Element(0)->CalcStiff(ek,ef);
-            ek.fMat.Print("ek = ", std::cout, EMathematicaInput);
+            // TPZElementMatrix ek, ef;
+            // cmeshm->Element(0)->CalcStiff(ek,ef);
+            // ek.fMat.Print("ek = ", std::cout, EMathematicaInput);
             std::ofstream output("stiffness.txt");
             an.Solver().Matrix()->Print("K = ", output, EMathematicaInput);
         }
