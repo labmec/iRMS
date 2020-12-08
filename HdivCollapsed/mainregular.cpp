@@ -134,6 +134,15 @@ int main(int argc, char *argv[])
 #endif
         GroupandCondense(cmeshm);
 
+        cmeshm->ComputeNodElCon();
+        cmeshm->CleanUpUnconnectedNodes();
+#ifdef PZDEBUG
+        if(printcmesh)
+        {
+            std::ofstream outcmesh("CMeshMultiphysicsCondense.txt");
+            cmeshm->Print(outcmesh);
+        }
+#endif
         std::cout << "Analysis...\n";
         std::cout << "neq = " << cmeshm->NEquations() << std::endl;
         

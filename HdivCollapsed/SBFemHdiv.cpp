@@ -8,6 +8,11 @@
 #include "pzcondensedcompel.h"
 #include <stack> 
 
+#ifdef LOG4CXX
+static LoggerPtr logger(Logger::getLogger("pz.sbfem"));
+#endif
+
+
 #ifdef _AUTODIFF
 TLaplaceExample1 LaplaceExact;
 #endif
@@ -633,26 +638,41 @@ void GroupandCondense(TPZCompMesh * cmesh)
     int64_t index;
     TPZElementGroup * elgr = new TPZElementGroup(*cmesh, index);
 
+    TPZCompEl *celgr = cmesh->Element(index);
+    if(!celgr) DebugStop();
+    
     for (auto cel : cmesh->ElementVec())
     {
         if (!cel)
         {
             continue;
         }
+        std::cout << "Element index " << cel->Index() << " ";
         if (cel->Reference())
         {
-            if (cel->Reference()->MaterialId() == Eleftpressure || cel->Reference()->MaterialId() == Erightpressure || cel->Reference()->MaterialId() == Eint)
+            std::cout << "matid " << cel->Reference()->MaterialId();
+            if (cel->Reference()->MaterialId() == Eleftpressure || cel->Reference()->MaterialId() == Erightpressure)
             {
+                std::cout << " not added\n";
                 continue;
             }
         }
-        
+        if(cel == elgr)
+        {
+            std::cout << " group not added\n";
+            continue;
+        }
+        std::cout << std::endl;
         elgr->AddElement(cel);
 
     }
     cmesh->ComputeNodElCon();
     elgr->Print(std::cout);
     
+    {
+        std::ofstream out("cmesh.txt");
+        cmesh->Print(out);
+    }
     bool keepmatrix = false;
     auto cond = new TPZCondensedCompEl(elgr, keepmatrix);
     cmesh->ExpandSolution();

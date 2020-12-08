@@ -31,10 +31,6 @@
 #include "TPZNullMaterial.h"
 #include "pzelchdivbound2.h"
 
-#ifdef LOG4CXX
-static LoggerPtr logger(Logger::getLogger("pz.sbfem"));
-#endif
-
 #ifdef _AUTODIFF
 extern TLaplaceExample1 LaplaceExact;
 #endif
