@@ -196,12 +196,12 @@ add_subdirectory(Common)
 #add_subdirectory(FourSpacesTest)
 #add_subdirectory(Buckley_Levertt)
 #add_subdirectory(MHMTest)
-#add_subdirectory(HDivSimple)
-#add_subdirectory(MHMSimple)
+add_subdirectory(HDivSimple)
+add_subdirectory(MHMSimple)
 #add_subdirectory(GeoMeshAndPropsGenerator)
 #add_subdirectory(CGP)
 add_subdirectory(HdivCollapsed)
-#add_subdirectory(Paper2d)
+add_subdirectory(Paper2d)
 
 
 
