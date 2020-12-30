@@ -80,10 +80,23 @@ public:
     TMRSDataTransfer & GetDataTransfer();
     
  
-    
+    /// create the HDiv computational mesh
     TPZCompMesh * HdivFluxCmesh(int order);
     
-    TPZCompMesh * DiscontinuousCmesh(int order = 0);
+    /// create a discontinuous mesh
+    TPZCompMesh * DiscontinuousCmesh(int order, char lagrange);
+    
+    /// create a discontinuous mesh
+    TPZCompMesh * TransportCmesh();
+    
+    /// create an HDiv mesh for mortar approximation
+    TPZCompMesh *HDivMortarFluxCmesh(char mortarlagrange);
+    
+    /// create a pressure with mortar elements
+    TPZCompMesh *PressureMortarCmesh(char lagrangepressure, char lagrangemortar);
+    
+    /// insert the necessary interface elements
+    void InsertInterfaceElements();
     
     // build a discontinuous mesh with the order of the elements according to the
     // algebraic transport mesh. The order is always 0
@@ -94,6 +107,12 @@ public:
     void BuildMixed2SpacesMultiPhysicsCompMesh(int order);
     
     void BuildMixed4SpacesMultiPhysicsCompMesh(int order);
+    
+    /// build a multiphysics mesh corresponding to a zero order mortar approximation
+    void BuildMixed4SpacesMortarMesh();
+    
+    /// insert wrapper elements necessary for creating the (hybridized) mortar spaces
+    void InsertGeoWrappersForMortar();
     
     void BuildMHMMixed2SpacesMultiPhysicsCompMesh();
     
@@ -108,7 +127,12 @@ public:
     void BuildTransport2SpacesMultiPhysicsCompMesh();
     
     void BuildTransport4SpacesMultiPhysicsCompMesh();
+    
+    /// return the material ids and boundary condition material ids
+    void GetMaterialIds(int dim, std::set<int> &matids, std::set<int> &bcmatids);
+    
     void InsertMaterialObjects(TPZMHMixedMeshControl &control);
+
     TPZMultiphysicsCompMesh * GetMixedOperator();
     
     TPZMultiphysicsCompMesh * GetTransportOperator();

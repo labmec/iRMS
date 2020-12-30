@@ -15,6 +15,7 @@
 #include "TPZPostProcessResProp.h"
 #include "TPZDarcyMemory.h"
 #include "TPZDarcyFlowWithMem.h"
+#include "TPZLagrangeMultiplier.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -359,14 +360,133 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     return cmesh;
 }
 
-TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
+/// create an HDiv mesh for mortar approximation
+TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagrange)
+{
+    std::set<int> matids, bcmatids;
+    int dimension = mGeometry->Dimension();
+    int nstate = 1;
+    GetMaterialIds(dimension, matids, bcmatids);
+    TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
+    cmesh->SetName("FluxMortarMesh");
+    cmesh->SetAllCreateFunctionsHDiv();
+    cmesh->SetDefaultOrder(1);
+    cmesh->ApproxSpace().CreateDisconnectedElements(true);
+    for (auto it:matids) {
+        TPZNullMaterial *nullmat = new TPZNullMaterial(it,dimension,nstate);
+        cmesh->InsertMaterialObject(nullmat);
+    }
+    for (auto it:bcmatids) {
+        TPZNullMaterial *nullmat = new TPZNullMaterial(it,dimension-1,nstate);
+        cmesh->InsertMaterialObject(nullmat);
+    }
+    {
+        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dimension-1,nstate);
+        cmesh->InsertMaterialObject(nullmat);
+    }
+    // create all flux elements as discontinuous elements
+    cmesh->AutoBuild();
+    // set the lagrange level
+    {
+        int64_t nel = cmesh->NElements();
+        for (int64_t el = 0; el<nel; el++) {
+            TPZCompEl *cel = cmesh->Element(el);
+            TPZGeoEl *gel = cel->Reference();
+            if(gel->Dimension() < dimension)
+            {
+                cel->Connect(0).SetLagrangeMultiplier(fluxmortarlagrange);
+            }
+        }
+    }
+    mGeometry->ResetReference();
+    {
+        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_HdivWrapMatId,dimension-1,nstate);
+        cmesh->InsertMaterialObject(nullmat);
+    }
+
+    // add the Hdiv wrapper elements as boundary of the volumetric elements
+    int64_t nelflux = cmesh->NElements();
+    for (int64_t el = 0; el<nelflux; el++)
+    {
+        TPZCompEl *cel = cmesh->Element(el);
+        TPZGeoEl *gel = cel->Reference();
+        if(gel->Dimension() != dimension) continue;
+        int firstside = 0;
+        for(int dim = 0; dim < dimension-1; dim++) firstside+=gel->NSides(dim);
+        for (int side=firstside; side < gel->NSides()-1; side++) {
+            TPZGeoElSide gelside(gel,side);
+            TPZGeoElSide neighbour = gelside.Neighbour();
+            if(neighbour.Element()->MaterialId() != mSimData.mTGeometry.m_HdivWrapMatId) DebugStop();
+            //int hdiv_orient = gel->NormalOrientation(side);
+            gel->SetReference(cel);
+            int64_t index;
+            TPZCompEl *celwrap = cmesh->CreateCompEl(neighbour.Element(), index);
+            gel->ResetReference();
+            neighbour.Element()->ResetReference();
+        }
+    }
+#ifdef PZDEBUG
+    {
+        std::ofstream out("FluxMortarMesh.txt");
+        cmesh->Print(out);
+    }
+#endif
+    return cmesh;
+}
+
+/// create a pressure with mortar elements
+TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char lagrangepressure, char lagrangemortar)
+{
+    std::set<int> matids, bcmatids;
+    int dimension = mGeometry->Dimension();
+    int nstate = 1;
+    GetMaterialIds(dimension, matids, bcmatids);
+    TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
+    cmesh->SetName("PressureWithMortar.txt");
+    cmesh->SetDefaultOrder(1);
+    cmesh->ApproxSpace().SetAllCreateFunctionsContinuous();
+    cmesh->ApproxSpace().CreateDisconnectedElements(true);
+    for (auto it:matids) {
+        TPZNullMaterial *nullmat = new TPZNullMaterial(it,dimension,nstate);
+        cmesh->InsertMaterialObject(nullmat);
+    }
+    cmesh->AutoBuild(matids);
+    int64_t nconnects = cmesh->NConnects();
+    for(int64_t ic = 0; ic<nconnects; ic++)
+    {
+        cmesh->ConnectVec()[ic].SetLagrangeMultiplier(lagrangepressure);
+    }
+    {
+        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_MortarMatId,dimension,nstate);
+        cmesh->InsertMaterialObject(nullmat);
+    }
+    // create discontinous elements of dimension-1
+    cmesh->SetDimModel(dimension-1);
+    std::set<int> mortarids = {mSimData.mTGeometry.m_MortarMatId};
+    cmesh->AutoBuild(mortarids);
+    int64_t ncon_new = cmesh->NConnects();
+    for (int64_t ic = nconnects; ic<ncon_new; ic++) {
+        cmesh->ConnectVec()[ic].SetLagrangeMultiplier(lagrangemortar);
+    }
+    cmesh->SetDimModel(dimension);
+#ifdef PZDEBUG
+    {
+        std::ofstream out("PressureMortarCMesh.txt");
+        cmesh->Print(out);
+    }
+#endif
+    return cmesh;
+}
+
+
+TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagrange){
  
     if (!mGeometry) {
         DebugStop();
     }
     
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
-    TPZL2Projection * volume = nullptr;
+    TPZNullMaterial * volume = nullptr;
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
     
@@ -378,7 +498,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
-            volume = new TPZL2Projection(materia_id,d,nstate, sol);
+            volume = new TPZNullMaterial(materia_id,d,nstate);
             cmesh->InsertMaterialObject(volume);
         }
     }
@@ -389,44 +509,73 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order){
     
     // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
     
-    if (order == 0) {
-        TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
-        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
-        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-            int bc_id   = get<0>(chunk);
-            int bc_type = get<1>(chunk);
-            val2(0,0)   = get<2>(chunk);
-            TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-            cmesh->InsertMaterialObject(face);
-        }
-        cmesh->SetAllCreateFunctionsDiscontinuous();
-    }else{
-        cmesh->SetAllCreateFunctionsContinuous();
-        cmesh->ApproxSpace().CreateDisconnectedElements(true);
-    }
+    cmesh->SetAllCreateFunctionsDiscontinuous();
     
 
     cmesh->AutoBuild();
     cmesh->InitializeBlock();
     
-    if (!mSimData.mTNumerics.m_four_approx_spaces_Q) {
-        int ncon = cmesh->NConnects();
+    if(lagrange > 0)
+    {
+        int64_t ncon = cmesh->NConnects();
         //Set Lagrange multiplier
-        for(int i=0; i<ncon; i++){
+        for(int64_t i=0; i<ncon; i++){
             TPZConnect &newnod = cmesh->ConnectVec()[i];
-            newnod.SetLagrangeMultiplier(1);
+            newnod.SetLagrangeMultiplier(lagrange);
         }
     }
-
     
+    return cmesh;
+}
+
+TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
+ 
+    if (!mGeometry) {
+        DebugStop();
+    }
+    
+    TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
+    TPZNullMaterial * volume = nullptr;
+    int dimension = mGeometry->Dimension();
+    cmesh->SetDefaultOrder(0);
+    
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+    int nstate = 1;
+    TPZVec<STATE> sol;
+    for (int d = 0; d <= dimension; d++) {
+        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
+            std::string material_name = chunk.first;
+            std::cout << "physical name = " << material_name << std::endl;
+            int materia_id = chunk.second;
+            volume = new TPZNullMaterial(materia_id,d,nstate);
+            cmesh->InsertMaterialObject(volume);
+        }
+    }
+    
+    if (!volume) {
+        DebugStop();
+    }
+    
+    // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
+    
+    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
+    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+        int bc_id   = get<0>(chunk);
+        int bc_type = get<1>(chunk);
+        val2(0,0)   = get<2>(chunk);
+        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        cmesh->InsertMaterialObject(face);
+    }
+    cmesh->SetAllCreateFunctionsDiscontinuous();
+    
+
+    cmesh->AutoBuild();
+    cmesh->InitializeBlock();
+        
 #ifdef PZDEBUG
     std::stringstream file_name;
-    if (order == 0) {
-        file_name << "s_cmesh" << ".txt";
-    }
-    else{
-        file_name << "p_cmesh" << ".txt";
-    }
+    file_name << "s_cmesh" << ".txt";
     std::ofstream sout(file_name.str().c_str());
     cmesh->Print(sout);
 #endif
@@ -508,17 +657,35 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     bool cond1 = mSimData.mTNumerics.m_four_approx_spaces_Q;
     bool cond2 = mSimData.mTNumerics.m_mhm_mixed_Q;
     
-    if (cond1 && !cond2) {
-        BuildMixed4SpacesMultiPhysicsCompMesh(order);
-    }
-    if (cond1 && cond2) {
-        BuildMHMMixed4SpacesMultiPhysicsCompMesh();
-    }
-    if (!cond1 && cond2) {
-        BuildMHMMixed2SpacesMultiPhysicsCompMesh();
-    }
-    if (!cond1 && !cond2) {
-        BuildMixed2SpacesMultiPhysicsCompMesh(order);
+    switch(mSimData.mTNumerics.m_SpaceType)
+    {
+        case TMRSDataTransfer::TNumerics::E2Space:
+            if(cond1) DebugStop();
+            if(cond2) DebugStop();
+            BuildMixed2SpacesMultiPhysicsCompMesh(order);
+            break;
+        case TMRSDataTransfer::TNumerics::E4Space:
+            if(!cond1) DebugStop();
+            if(cond2) DebugStop();
+            BuildMixed4SpacesMultiPhysicsCompMesh(order);
+            break;
+        case TMRSDataTransfer::TNumerics::E2SpaceMHM:
+            if(!cond2) DebugStop();
+            if(cond1) DebugStop();
+            BuildMHMMixed2SpacesMultiPhysicsCompMesh();
+            break;
+        case TMRSDataTransfer::TNumerics::E4SpaceMHM:
+            if(!cond1) DebugStop();
+            if(!cond2) DebugStop();
+            BuildMHMMixed4SpacesMultiPhysicsCompMesh();
+            break;
+        case TMRSDataTransfer::TNumerics::E4SpaceMortar:
+            if(!cond1) DebugStop();
+            if(cond2) DebugStop();
+            BuildMixed4SpacesMortarMesh();
+            break;
+        default:
+            DebugStop();
     }
     
 //    std::string name_ref = "mhm_geo";
@@ -564,8 +731,8 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
     
     TPZManVector<TPZCompMesh *, 3> mesh_vec(3);
     mesh_vec[0] = HdivFluxCmesh(order);
-    mesh_vec[1] = DiscontinuousCmesh(order);
-    mesh_vec[2] = DiscontinuousCmesh();
+    mesh_vec[1] = DiscontinuousCmesh(order,1);
+    mesh_vec[2] = TransportCmesh();
     TPZManVector<int,5> active_approx_spaces(3);
     active_approx_spaces[0] = 1;
     active_approx_spaces[1] = 1;
@@ -583,6 +750,260 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
 #endif
     
 }
+
+void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
+    int dimension = mGeometry->Dimension();
+    mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
+    std::set<int> matids, bcmatids;
+    GetMaterialIds(dimension, matids, bcmatids);
+    InsertGeoWrappersForMortar();
+    TPZManVector<TPZCompMesh *> meshvec(5,0);
+    // hdiv mesh
+    char fluxmortar = 5;
+    meshvec[0] = HDivMortarFluxCmesh(fluxmortar);
+    // pressure mesh
+    char pressurelagrange = 1;
+    char pressuremortar = 4;
+    meshvec[1] = PressureMortarCmesh(pressurelagrange,pressuremortar);
+    // distributed flux mesh
+    int porder = 0;
+    char distfluxlagrange = 2;
+    meshvec[2] = DiscontinuousCmesh(porder,distfluxlagrange);
+    // constant pressure mesh
+    char avpressurelagrange = 6;
+    meshvec[3] = DiscontinuousCmesh(porder,avpressurelagrange);
+    // transport mesh
+    meshvec[4] = TransportCmesh();
+    
+    // create the multiphysics mesh
+    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
+    //    TPZMixedDarcyFlow *volume = nullptr;
+    mMixedOperator->SetDefaultOrder(1);
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+    for (int d = 0; d <= dimension; d++) {
+        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
+            std::string material_name = chunk.first;
+            std::cout << "physical name = " << material_name << std::endl;
+            int materia_id = chunk.second;
+            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
+//            volume = new TPZMixedDarcyFlow(materia_id, d);
+//             volume->SetPermeability(1.0);
+            volume->SetDataTransfer(mSimData);
+            mMixedOperator->InsertMaterialObject(volume);
+        }
+    }
+        
+    if (!volume) {
+        DebugStop();
+    }
+    
+    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+        int bc_id   = get<0>(chunk);
+        int bc_type = get<1>(chunk);
+        val2(0,0)   = get<2>(chunk);
+        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        mMixedOperator->InsertMaterialObject(face);
+    }
+    {
+        int dim = 1;
+        int nstate = 1;
+        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_HdivWrapMatId,dim,nstate);
+        mMixedOperator->InsertMaterialObject(nullmat);
+    }
+    {
+        int dim = 1;
+        int nstate = 1;
+        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_MortarMatId,dim,nstate);
+        mMixedOperator->InsertMaterialObject(nullmat);
+    }
+    {
+        int dim = 1;
+        int nstate = 1;
+        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dim,nstate);
+        mMixedOperator->InsertMaterialObject(nullmat);
+    }
+    TPZManVector<int> active_approx_spaces(5,1);
+    active_approx_spaces[4] = 0;
+    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
+
+    // insert the interface elements
+    InsertInterfaceElements();
+#ifdef PZDEBUG
+    {
+        std::stringstream file_name;
+        file_name  << "mixed_cmesh_four_space_mortar" << ".txt";
+        std::ofstream sout(file_name.str().c_str());
+        mMixedOperator->Print(sout);
+    }
+#endif
+    mMixedOperator->ComputeNodElCon();
+    // group and condense the H(div) space
+    std::set<int64_t> seed, groups;
+    int64_t nel = mMixedOperator->NElements();
+    int dim = mMixedOperator->Dimension();
+    for (int64_t el = 0; el<nel; el++) {
+        TPZCompEl *cel = mMixedOperator->Element(el);
+        TPZGeoEl *gel = cel->Reference();
+        if(gel->Dimension() == dim) seed.insert(el);
+    }
+    TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
+    mMixedOperator->ComputeNodElCon();
+    {
+        std::ofstream out("FluxGrouped.txt");
+        mMixedOperator->Print(out);
+    }
+    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
+#ifdef PZDEBUG
+    {
+        std::stringstream file_name;
+        file_name  << "mixed_cmesh_four_space_mortar_one_condense" << ".txt";
+        std::ofstream sout(file_name.str().c_str());
+        mMixedOperator->Print(sout);
+    }
+#endif
+    std::set<int64_t> groups2;
+
+    TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
+    mMixedOperator->ComputeNodElCon();
+    TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
+#ifdef PZDEBUG
+    {
+        std::stringstream file_name;
+        file_name  << "mixed_cmesh_four_space_mortar_two_condense" << ".txt";
+        std::ofstream sout(file_name.str().c_str());
+        mMixedOperator->Print(sout);
+    }
+#endif
+        
+
+    
+}
+
+/// insert the necessary interface elements
+void TMRSApproxSpaceGenerator::InsertInterfaceElements()
+{
+    int dim = mGeometry->Dimension();
+    std::set<int> matids, bcmatids;
+    GetMaterialIds(dim, matids, bcmatids);
+    bcmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+    TPZLagrangeMultiplier *mat1 = new TPZLagrangeMultiplier(mSimData.mTGeometry.m_posLagrangeMatId,dim,1);
+    mMixedOperator->InsertMaterialObject(mat1);
+    TPZLagrangeMultiplier *mat2 = new TPZLagrangeMultiplier(mSimData.mTGeometry.m_negLagrangeMatId,dim,1);
+    mat2->SetMultiplier(-1.);
+    mMixedOperator->InsertMaterialObject(mat2);
+    mGeometry->ResetReference();
+    mMixedOperator->LoadReferences();
+    int64_t nel = mMixedOperator->NElements();
+    for (int64_t el = 0; el<nel; el++) {
+        TPZCompEl *cel = mMixedOperator->Element(el);
+        TPZGeoEl *gel = cel->Reference();
+        int matid = gel->MaterialId();
+        if(matid != mSimData.mTGeometry.m_HdivWrapMatId && matid != mSimData.mTGeometry.m_MortarMatId)
+            continue;
+        TPZGeoElSide gelside(gel);
+        TPZGeoElSide neighbour = gelside.Neighbour();
+        int neighmatid = neighbour.Element()->MaterialId();
+        if(neighmatid != mSimData.mTGeometry.m_posLagrangeMatId && neighmatid != mSimData.mTGeometry.m_negLagrangeMatId) DebugStop();
+        TPZGeoElSide rightgel = neighbour.Neighbour();
+        if(matid == mSimData.mTGeometry.m_MortarMatId)
+        {
+            rightgel = gelside.HasNeighbour(bcmatids);
+            if(!rightgel) DebugStop();
+        }
+        int rightmatid = rightgel.Element()->MaterialId();
+        if(matid == mSimData.mTGeometry.m_HdivWrapMatId && rightmatid != mSimData.mTGeometry.m_MortarMatId) DebugStop();
+        if(matid == mSimData.mTGeometry.m_MortarMatId && bcmatids.find(rightmatid) == bcmatids.end()) DebugStop();
+        TPZCompElSide leftcel = gelside.Reference();
+        TPZCompElSide rightcel = rightgel.Reference();
+        int64_t index;
+        TPZMultiphysicsInterfaceElement *intface =
+        new TPZMultiphysicsInterfaceElement(*mMixedOperator,neighbour.Element(),index,leftcel,rightcel);
+    }
+}
+
+/// insert wrapper elements necessary for creating the (hybridized) mortar spaces
+void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
+{
+    int dimension = mGeometry->Dimension();
+    std::set<int> matids, bcmatids;
+    GetMaterialIds(dimension, matids, bcmatids);
+    bcmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+    // around each volumetric element create an
+    // - hdiv wrap element
+    // - interface geo element
+    // - pressure element
+    // - second interface element
+    // - a flux hdiv boundary element
+    int64_t nel = mGeometry->NElements();
+    for(int64_t el = 0; el<nel; el++)
+    {
+        TPZGeoEl *gel = mGeometry->Element(el);
+        if(!gel || gel->Dimension()!= dimension || gel->HasSubElement()) continue;
+        int firstside = 0;
+        for(int dim = 0; dim < dimension-1; dim++)
+        {
+            firstside+=gel->NSides(dim);
+        }
+        for (int side=firstside; side < gel->NSides()-1; side++) {
+            TPZGeoElSide gelside(gel,side);
+            int hdiv_orient = gel->NormalOrientation(side);
+            int first_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
+            int second_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
+            if(hdiv_orient < 0)
+            {
+                first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
+                second_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
+            }
+            TPZGeoElBC gbc1(gelside,mSimData.mTGeometry.m_HdivWrapMatId);
+            TPZGeoElSide gelwrapside(gbc1.CreatedElement());
+            TPZGeoElBC gbc2(gelwrapside,first_lagrange);
+            TPZGeoElSide gelintface1(gbc2.CreatedElement());
+            TPZGeoElBC gbc3(gelintface1,mSimData.mTGeometry.m_MortarMatId);
+            TPZGeoElSide gelintface2(gbc3.CreatedElement());
+            TPZGeoElBC gbc4(gelintface2,second_lagrange);
+            TPZGeoElSide gelmortar(gbc4.CreatedElement());
+            // this method has to be adjusted if we create MHM meshes
+            if(!gelmortar.HasNeighbour(bcmatids))
+            {
+                TPZGeoElBC gbc5(gelmortar,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+            }
+        }
+    }
+#ifdef PZDEBUG
+    {
+        std::ofstream out("gmesh_withwrap.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out);
+    }
+#endif
+}
+
+
+/// return the material ids and boundary condition material ids
+void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, std::set<int> &bcmatids)
+{
+#ifdef PZDEBUG
+    std::cout << "Inserting material objects for dimension " << dim << std::endl;
+#endif
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+    for (auto chunk : DomainDimNameAndPhysicalTag[dim]) {
+#ifdef PZDEBUG
+        std::string material_name = chunk.first;
+        std::cout << "physical name = " << material_name << " matid " << chunk.second<< std::endl;
+#endif
+        matids.insert(chunk.second);
+    }
+    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+        int bc_id   = get<0>(chunk);
+#ifdef PZDEBUG
+        std::cout << "boundary condition matid " << bc_id << std::endl;
+#endif
+        bcmatids.insert(bc_id);
+    }
+}
+
 
 void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     
@@ -627,10 +1048,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     
     TPZManVector<TPZCompMesh *, 5> mesh_vec(5);
     mesh_vec[0] = HdivFluxCmesh(order);
-    mesh_vec[1] = DiscontinuousCmesh(order);
-    mesh_vec[2] = DiscontinuousCmesh();
-    mesh_vec[3] = DiscontinuousCmesh();
-    mesh_vec[4] = DiscontinuousCmesh();
+    mesh_vec[1] = DiscontinuousCmesh(order,0);
+    mesh_vec[2] = DiscontinuousCmesh(0,0);
+    mesh_vec[3] = DiscontinuousCmesh(0,0);
+    mesh_vec[4] = TransportCmesh();
     
     int ncon = mesh_vec[1]->NConnects();
     //Set Lagrange multiplier
@@ -745,6 +1166,8 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
     TPZMultiphysicsCompMesh *cmeshtest = dynamic_cast<TPZMultiphysicsCompMesh*>(MixedMesh);
     
     mMixedOperator = cmeshtest;
+    
+    std::cout << "WHAT WILL HAPPEN WITH THE mhm VARIABLE????\n";
 
 }
 
@@ -871,7 +1294,7 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     
     transport_meshvec[0] = mixed_meshvec[0];
     transport_meshvec[1] = mixed_meshvec[1];
-    transport_meshvec[2] = DiscontinuousCmesh();
+    transport_meshvec[2] = TransportCmesh();
     
     
     int dimension = mGeometry->Dimension();
@@ -1048,7 +1471,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     transport_meshvec[1] = mixed_meshvec[1];
     transport_meshvec[2] = mixed_meshvec[2];
     transport_meshvec[3] = mixed_meshvec[3];
-    transport_meshvec[4] = DiscontinuousCmesh();
+    transport_meshvec[4] = TransportCmesh();
     
     
     int dimension = mGeometry->Dimension();

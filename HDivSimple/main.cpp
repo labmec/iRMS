@@ -18,7 +18,8 @@ TMRSDataTransfer SettingSimple2DHdiv();
 void  ForcingFunction (const TPZVec<REAL> &pt, TPZVec<STATE> &disp);
 
 int main(){
-     SimpleTest2DHDiv();
+    InitializePZLOG();
+    SimpleTest2DHDiv();
 }
 
 void SimpleTest2DHDiv(){
@@ -28,8 +29,8 @@ void SimpleTest2DHDiv(){
     TMRSApproxSpaceGenerator aspace;
     
     //The problem geometry is a rectangle with LxY dimentions and elements number in x y and nxXny
-    int nx=25;
-    int ny=25;
+    int nx=2;
+    int ny=2;
     REAL L =10.0;
     REAL Y =10.0;
     aspace.CreateUniformMesh(nx, L, ny, Y);
@@ -39,7 +40,7 @@ void SimpleTest2DHDiv(){
 //    aspace.PrintGeometry(name);
     aspace.ApplyUniformRefinement(0);
     std::string name_ref = "2D_ref_geo";
-//    aspace.PrintGeometry(name_ref);
+    aspace.PrintGeometry(name_ref);
     aspace.SetDataTransfer(sim_data);
     
     int order = 1;
@@ -52,6 +53,11 @@ void SimpleTest2DHDiv(){
     //Multiphysic mesh creation of the mixed problem
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
+    
+    {
+        std::ofstream mout("mphysics.txt");
+        mixed_operator->Print(mout);
+    }
     TMRSMixedAnalysis *mixedAnal = new TMRSMixedAnalysis(mixed_operator,must_opt_band_width_Q);
     
     //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
@@ -76,7 +82,11 @@ void SimpleTest2DHDiv(){
     mixed_operator->UpdatePreviousState(-1);
     mixedAnal->fsoltransfer.TransferFromMultiphysics();
     mixedAnal->PostProcessTimeStep();
-  
+  {
+      std::ofstream mout("mphysics.txt");
+      mixed_operator->Print(mout);
+  }
+
 }
 
 TMRSDataTransfer SettingSimple2DHdiv(){
@@ -129,8 +139,9 @@ TMRSDataTransfer SettingSimple2DHdiv(){
     sim_data.mTNumerics.m_n_steps = 1;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 0.03 ;//*day;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = false;
+    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = false;
+    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
     std::vector<REAL> grav(3,0.0);
     grav[1] = -0.0;//-9.81; //Needs to be multiplied by a constant
     sim_data.mTNumerics.m_gravity = grav;
