@@ -13,21 +13,22 @@
 #include "pzcondensedcompel.h"
 #include "pzelementgroup.h"
 
-
+/// auxiliary class that permits to transfer information from a substructured multi physics mesh to and from the atomic meshes
 class TPZMFSolutionTransfer
 {
    
     /**
-     * @brief Structure that relates the origin blocks indexes and target indexes to transfer the solution.
+     * @brief Structure that relates the origin blocks indexes in the substructured multiphysics mesh and target indexes in the atomic
+     * meshes. Is used to transfer the solution.
      */
     struct Match{
         
         /**
-         * @brief Origin block index.
+         * @brief Block index in the substructured multiphysics mesh.
          */
         int64_t fblocknumber;
         /**
-         * @brief Pair that relates the origin block with the target block index.
+         * @brief Block pointer and block index in the target atomic mesh
          */
         std::pair<TPZBlock<STATE> *, int64_t> fblockTarget;// block target
         
@@ -61,6 +62,10 @@ class TPZMFSolutionTransfer
         ~Match(){
         }
         
+        bool operator<(const Match &other) const {
+            return fblocknumber < other.fblocknumber;
+        }
+        
         /**
          * @brief Transfer the solution from the multiphysic mesh to the atomic meshes.
          * @param mfmesh target mesh.
@@ -77,17 +82,17 @@ class TPZMFSolutionTransfer
     };
     
     /**
-     * @brief Structure that stock the matchs.
+     * @brief Structure that stores the match objects relating the meshes in the substructured multi physics mesh and the atomic meshes.
      */
     struct MeshTransferData{
         /**
-         * @brief Origin mesh.
+         * @brief Original mesh (either multiphysics of TPZSubCompMesh).
          */
         TPZCompMesh * fcmesh_ori;
         /**
-         * @brief Matchs Vector.
+         * @brief Match objects relating the blocks of fcmesh_ori to the atomic meshes
          */
-        TPZStack<Match> fconnecttransfer;
+        std::set<Match> fconnecttransfer;
         
         /**
          * @brief Empty constructor
@@ -123,13 +128,26 @@ class TPZMFSolutionTransfer
          */
         void BuildTransferData(TPZCompMesh* cmesh);
         
+        /// Insert the connect matches of an arbirtary computational element
+        // this method will cast the element to either a condensed element, element group or multiphysics element
+        void InsertMatches(TPZCompEl *cel);
+        
+        /// Insert the connect matches from the multiphysics element
+        void InsertMatches(TPZMultiphysicsElement *cel);
+        
+        /// Insert the connect matches for an element group
+        void InsertMatches(TPZElementGroup *celgr);
+        
+        /// Insert the connect matches for a condensed computational element
+        void InsertMatches(TPZCondensedCompEl *cond);
+        
         /**
-         * @brief Transfer the solution from the multiphysic mesh to the atomic meshes for every match stored in fconnecttransfer
+         * @brief Transfer the solution from the mesh (either multiphysics or subcmesh) to the atomic meshes for every match stored in fconnecttransfer
          */
         void TransferFromMultiphysics();
         
         /**
-         * @brief Transfer the solution from the atomic meshes to the multiphysic mesh for every match stored in fconnecttransfer
+         * @brief Transfer the solution from the atomic meshes to the mesh (either multiphysics or subcmesh) for every match stored in fconnecttransfer
          */
         void TransferToMultiphysics();
        
