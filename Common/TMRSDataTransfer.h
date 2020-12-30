@@ -65,9 +65,25 @@ public:
           MaterialID of the interface element that will be inserted in the transport mesh
          */
         int mInterface_material_id = 100;
+        /// number of times the skeleton elements should be refined
         int mSkeletonDiv =0;
+        /// unused variable in this project space
         int mnLayers = 1;
+        /// number of times the global mesh should be divided
         int mnref =0;
+        /// material id for the Macro fluxes
+        int m_skeletonMatId = 10;
+        /// material id for H(div) wrap materials
+        int m_HdivWrapMatId = 15;
+        /// material id for the mortar pressure space
+        int m_MortarMatId = 20;
+        /// material id for a positive lagrange multiplier interface
+        int m_posLagrangeMatId = 30;
+        /// material id for a negative lagrange multiplier interface
+        int m_negLagrangeMatId = 35;
+        /// material id for a zero order H(div) boundary flux
+        int m_zeroOrderHdivFluxMatId = 40;
+        
         std::string mGmeshFileName="";
         
         
@@ -91,6 +107,20 @@ public:
             mSkeletonDiv = other.mSkeletonDiv;
             mnLayers = other.mnLayers;
             mnref = other.mnref;
+            /// material id for the Macro fluxes
+            m_skeletonMatId = other.m_skeletonMatId;
+            /// material id for H(div) wrap materials
+            m_HdivWrapMatId = other.m_HdivWrapMatId;
+            /// material id for the mortar pressure space
+            m_MortarMatId = other.m_MortarMatId;
+            /// material id for a positive lagrange multiplier interface
+            m_posLagrangeMatId = other.m_posLagrangeMatId;
+            /// material id for a negative lagrange multiplier interface
+            m_negLagrangeMatId = other.m_negLagrangeMatId;
+            /// material id for a zero order H(div) boundary flux
+            m_zeroOrderHdivFluxMatId = other.m_zeroOrderHdivFluxMatId;
+
+
             mGmeshFileName = other.mGmeshFileName;
             
         }
@@ -104,6 +134,19 @@ public:
                 mSkeletonDiv = other.mSkeletonDiv;
                 mnLayers = other.mnLayers;
                 mnref = other.mnref;
+                /// material id for the Macro fluxes
+                m_skeletonMatId = other.m_skeletonMatId;
+                /// material id for H(div) wrap materials
+                m_HdivWrapMatId = other.m_HdivWrapMatId;
+                /// material id for the mortar pressure space
+                m_MortarMatId = other.m_MortarMatId;
+                /// material id for a positive lagrange multiplier interface
+                m_posLagrangeMatId = other.m_posLagrangeMatId;
+                /// material id for a negative lagrange multiplier interface
+                m_negLagrangeMatId = other.m_negLagrangeMatId;
+                /// material id for a zero order H(div) boundary flux
+                m_zeroOrderHdivFluxMatId = other.m_zeroOrderHdivFluxMatId;
+
                 mGmeshFileName = other.mGmeshFileName;
                
             }
@@ -487,6 +530,13 @@ public:
          */
         bool m_mhm_mixed_Q;
         
+        /**
+         * @brief Approximation space "type"
+         */
+        enum MSpaceType {ENone, E2Space, E4Space, E2SpaceMHM, E4SpaceMHM, E4SpaceMortar};
+        
+        MSpaceType m_SpaceType = ENone;
+        
         std::vector<REAL> m_gravity;
         
         bool m_ISLinearKrModelQ;
@@ -507,6 +557,7 @@ public:
             m_n_steps               = 0;
             m_four_approx_spaces_Q  = false;
             m_mhm_mixed_Q           = false;
+            m_SpaceType = ENone;
             m_gravity.resize(3,0.0);
             m_gravity[2] = -10.0;
             m_ISLinearKrModelQ = true;
@@ -533,6 +584,7 @@ public:
             m_n_steps               = other.m_n_steps;
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
+            m_SpaceType             = other.m_SpaceType;
             m_gravity               = other.m_gravity;
             m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
@@ -558,6 +610,7 @@ public:
             m_n_steps               = other.m_n_steps;
             m_four_approx_spaces_Q  = other.m_four_approx_spaces_Q;
             m_mhm_mixed_Q           = other.m_mhm_mixed_Q;
+            m_SpaceType             = other.m_SpaceType;
             m_gravity               = other.m_gravity;
             m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
@@ -584,6 +637,7 @@ public:
             m_n_steps               == other.m_n_steps &&
             m_four_approx_spaces_Q  == other.m_four_approx_spaces_Q &&
             m_mhm_mixed_Q           == other.m_mhm_mixed_Q&&
+            m_SpaceType             == other.m_SpaceType&&
             m_gravity               == other.m_gravity&&
             m_ISLinearKrModelQ      == other.m_ISLinearKrModelQ&&
             m_nThreadsMixedProblem  == other.m_nThreadsMixedProblem;
@@ -602,6 +656,8 @@ public:
             int temp = m_four_approx_spaces_Q;
             buf.Write(&temp);
             temp = m_mhm_mixed_Q;
+            buf.Write(&temp);
+            temp = m_SpaceType;
             buf.Write(&temp);
             buf.Write(m_gravity);
             buf.Write(m_ISLinearKrModelQ);
@@ -624,6 +680,8 @@ public:
             m_four_approx_spaces_Q = temp;
             buf.Read(&temp);
             m_mhm_mixed_Q = temp;
+            buf.Read(&temp);
+            m_SpaceType = (MSpaceType) temp;
             buf.Read(m_ISLinearKrModelQ);
             buf.Read(&m_nThreadsMixedProblem);
            
@@ -645,6 +703,7 @@ public:
             std::cout << m_n_steps << std::endl;
             std::cout << m_four_approx_spaces_Q << std::endl;
             std::cout << m_mhm_mixed_Q << std::endl;
+            std::cout << m_SpaceType << std::endl;
             std::cout << m_ISLinearKrModelQ << std::endl;
             std::cout << m_nThreadsMixedProblem << std::endl;
         }
