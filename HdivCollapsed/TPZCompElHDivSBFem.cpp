@@ -87,18 +87,20 @@ void TPZCompElHDivSBFem<TSHAPE>::ComputeRequiredData(TPZMaterialData &data, TPZV
     // Adjusting divergence values
     for (int64_t i = 0; i < nshape1d; i++)
     {
-        data.divphi(i) = 2*data.dphi(0,i);
+        data.divphi(i) = data.fMasterDirections(0,i)*2*data.dphi(0,i);
         data.phi(i) *= 2;
     }
     for (int64_t i = 0; i < nshape; i++)
     {
         data.divphi(i+nshape1d) = 0;
-        data.divphi(i+nshape1d+nshape) = 2*data.phi(i+nshape1d+nshape);
+        data.divphi(i+nshape1d+nshape) = 2*data.phi(i+nshape1d);
         data.phi(i+nshape1d+nshape) = 0;
     }
 
     if (data.fNeedsSol)
     {
+        std::cout << "Compute Solution not implemented yet \n";
+        DebugStop();
         // ComputeSolution(qsi, data);
     }
 }
@@ -137,13 +139,13 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data, 
     xivol[dim2 - 1] = -0.5;
 
     // Computing the data for the volumetric element
+    gelvolume->X(xivol, data.x);
     gelvolume->Jacobian(xiquad, data.jacobian, data.axes, data.detjac, data.jacinv);
 
     auto axes = data.axes;
     if (dim2 == 3) {
         AdjustAxes3D(axes, data.axes, data.jacobian, data.jacinv, data.detjac);
     }
-    gelvolume->X(xivol, data.x);
 
     // Adjusting derivatives
     ExtendShapeFunctions(data);
@@ -156,11 +158,17 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data, 
         DebugStop();
     }
     
+    TPZFNMatrix<9,REAL> grad(dim2,dim2,0);
+    gelvolume->GradX(xivol,grad);
+    auto nshape2d = data.phi.Rows() - nshape1d;
     for (auto j = nshape1d; j < data.fDeformedDirections.Cols(); j++)
     {
         for (auto i = 0; i < dim2; i++)
         {
-            data.fDeformedDirections(i,j) = data.fMasterDirections(1,j)*data.jacobian(i,1)/data.detjac;
+            for (auto k = 0; k < dim2; k++)
+            {
+                data.fDeformedDirections(i,j) = grad(i,k)/data.detjac;
+            }
         }
         data.fDeformedDirections(2,j) = 0.;
     }
@@ -217,29 +225,30 @@ void TPZCompElHDivSBFem<TSHAPE>::AdjustAxes3D(const TPZFMatrix<REAL> &axes2D, TP
 }
 
 template <class TSHAPE>
-void TPZCompElHDivSBFem<TSHAPE>::ExtendShapeFunctions(TPZMaterialData &data2d)
+void TPZCompElHDivSBFem<TSHAPE>::ExtendShapeFunctions(TPZMaterialData &data)
 {
     int dim = fGelVolSide.Element()->Dimension();
 
-    auto nshape2d = data2d.phi.Rows();
+    auto nshape = data.phi.Rows();
     auto nshape1d = 0;
     for (int i = 0; i < 3; i++)
     {
         nshape1d += this->NConnectShapeF(i, this->fPreferredOrder);
     }
     
-    int64_t nshape = (nshape2d - nshape1d) / 2;
-    for (int ish = 0; ish < nshape; ish++)
+    int64_t nshape2d = (nshape - nshape1d) / 2;
+    for (int ish = 0; ish < nshape2d; ish++)
     {
+        data.phi(ish + nshape1d, 0) = data.phi(ish, 0);
         for (int d = 0; d < dim - 1; d++)
         {
-            data2d.dphi(d, ish + nshape1d) = data2d.dphi(d, ish);
-            data2d.dphi(d, ish + nshape1d+nshape) = -data2d.phi(ish)/2;
+            data.dphi(d, ish + nshape1d+nshape2d) = data.phi(ish);
+            data.dphi(d, ish + nshape1d) = 0.;
         }
-        data2d.dphi(dim-1, ish+nshape1d) = 0.;
-        data2d.dphi(dim-1, ish+nshape1d+nshape) = -data2d.phi(ish) / 2.;
+        data.dphi(dim-1, ish+nshape1d) = - data.phi(ish) / 2.;
+        data.dphi(dim-1, ish+nshape1d+nshape2d) = 0.;
     }
-    TPZInterpolationSpace::Convert2Axes(data2d.dphi, data2d.jacinv, data2d.dphix);
+    TPZInterpolationSpace::Convert2Axes(data.dphi, data.jacinv, data.dphix);
 }
 
 #include "pzshapetriang.h"

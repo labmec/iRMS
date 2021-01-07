@@ -9,6 +9,8 @@
 static LoggerPtr logger(Logger::getLogger("pz.sbfem"));
 #endif
 
+using namespace std;
+
 int main(int argc, char *argv[])
 {
 #ifdef LOG4CXX
@@ -25,7 +27,7 @@ int main(int argc, char *argv[])
     // If sbfemhdiv is true, the class TPZCompElHDivSBFem will be used.
     gSbfemhdiv = true;
 
-    // If hybrid is true, the SBFem-Hdiv mesh will create interface elements
+    // If hybrid is true, the SBFem-Hdiv mesh will create interface elements and condense DOF
     gHybrid = true;
 
     // Initial data
@@ -85,6 +87,8 @@ int main(int argc, char *argv[])
                 cmeshf->Print(out);
                 std::ofstream outp("cmeshpressure.txt");
                 cmeshp->Print(outp);
+                std::ofstream outf("cmeshflux.txt");
+                cmeshp->Print(outf);
             }
 #endif
         }
@@ -115,6 +119,9 @@ int main(int argc, char *argv[])
             if (gHybrid)
             {
                 AddInterfaceElements(cmeshm);
+                TPZManVector<int64_t> perm(cmeshm->NConnects(),-1);
+                AdjustExtPressureConnectivity(cmeshm, cmeshf, perm);
+                cmeshm->Permute(perm);
             }   
         }
         else
@@ -132,10 +139,14 @@ int main(int argc, char *argv[])
             cmeshm->Print(outcmesh);
         }
 #endif
-        GroupandCondense(cmeshm);
+        if (gHybrid)
+        {
+            GroupandCondense(cmeshm);
+        }
 
         cmeshm->ComputeNodElCon();
         cmeshm->CleanUpUnconnectedNodes();
+
 #ifdef PZDEBUG
         if(printcmesh)
         {
@@ -146,23 +157,24 @@ int main(int argc, char *argv[])
         std::cout << "Analysis...\n";
         std::cout << "neq = " << cmeshm->NEquations() << std::endl;
         
-        bool optimizeBandwidth = true;
+        bool optimizeBandwidth = false;
         TPZAnalysis an(cmeshm, optimizeBandwidth);
-        an.SetStep(POrder);
-        an.SetExact(Laplace_exact);
-
-        TPZSymetricSpStructMatrix matskl(cmeshm);
-        an.SetStructuralMatrix(matskl);
-        TPZStepSolver<STATE> step;
-        step.SetDirect(ELDLt);
-        an.SetSolver(step);
         an.Assemble();
 
         if(printstifmatrix)
         {
-            // TPZElementMatrix ek, ef;
-            // cmeshm->Element(0)->CalcStiff(ek,ef);
-            // ek.fMat.Print("ek = ", std::cout, EMathematicaInput);
+            if(0)
+            {
+                TPZElementMatrix ek, ef;
+                cmeshm->Element(0)->CalcStiff(ek,ef);
+                ek.fMat.Print("ek = ", std::cout, EMathematicaInput);
+                cmeshm->Element(1)->CalcStiff(ek,ef);
+                ek.fMat.Print("ek1 = ", std::cout, EMathematicaInput);
+                cmeshm->Element(2)->CalcStiff(ek,ef);
+                ek.fMat.Print("ek2 = ", std::cout, EMathematicaInput);
+                cmeshm->Element(3)->CalcStiff(ek,ef);
+                ek.fMat.Print("ek3 = ", std::cout, EMathematicaInput);
+            }
             std::ofstream output("stiffness.txt");
             an.Solver().Matrix()->Print("K = ", output, EMathematicaInput);
         }

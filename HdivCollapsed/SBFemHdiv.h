@@ -60,3 +60,5 @@ void AddInterfaceElements(TPZCompMesh * cmesh);
 
 void AssociateElements(TPZCompMesh *cmesh, TPZManVector<int64_t> &elementgroup);
 void GroupandCondense(TPZCompMesh * cmesh);
+
+void AdjustExtPressureConnectivity(TPZCompMesh * cmeshm, TPZCompMesh * cmeshf, TPZManVector<int64_t> &perm);

@@ -630,7 +630,6 @@ void AddInterfaceElements(TPZCompMesh * cmesh)
     }
 }
 
-//not tested yet
 void GroupandCondense(TPZCompMesh * cmesh)
 {
     auto nel = cmesh->NElements();
@@ -676,5 +675,111 @@ void GroupandCondense(TPZCompMesh * cmesh)
     bool keepmatrix = false;
     auto cond = new TPZCondensedCompEl(elgr, keepmatrix);
     cmesh->ExpandSolution();
+    
+}
+
+void AdjustExtPressureConnectivity(TPZCompMesh * cmeshm, TPZCompMesh * cmeshf, TPZManVector<int64_t> &perm)
+{ 
+    auto newid = -1;
+    auto nsides = 4;
+    auto dim = cmeshm->Reference()->Dimension();
+
+    TPZStack<int64_t> internalprcon;
+
+    auto ncon = cmeshm->NConnects() - nsides * dim;
+    perm.resize(ncon);
+
+    for (auto con : cmeshm->ConnectVec())
+    {
+        if (con.SequenceNumber() == -1)
+        {
+            continue;
+        }
+        
+        perm[con.SequenceNumber()] = con.SequenceNumber();
+    }
+
+    int64_t nf = cmeshf->NConnects() - 2*nsides;
+    auto id = nf+3*nsides;
+    
+    // for (int is = 0; is < nsides; is++)
+    // {
+    //     for (int ic = 0; ic < 3; ic++)
+    //     {
+    //         auto pos = nf + ic + 9*is;
+    //         perm[pos] = id;
+    //         id++;
+    //     }
+    // }
+    for (int is = 0; is < nsides; is++)
+    {
+        for (int ic = 0; ic < 3; ic++)
+        {
+            auto pos = nf + 3*nsides + is*6 + ic;
+            perm[pos] = id;
+            id++;
+        }
+    }
+    for (int is = 0; is < nsides; is++)
+    {
+        for (int ic = 0; ic < 3; ic++)
+        {
+            auto pos = nf + 3*nsides + is*6 + ic + 3;
+            perm[pos] = id;
+            id++;
+        }
+    }
+    
+    
+    cout << perm << endl;
+    
+
+    // for (auto cel : cmeshm->ElementVec())
+    // {
+    //     if (!cel || !(cel->Reference()) || cel->Reference()->MaterialId() != ESkeleton)
+    //     {
+    //         continue;
+    //     }
+
+    //     auto ncon = cel->NConnects();
+    //     auto oldid = cel->ConnectIndex(ncon-2);
+
+    //     internalprcon.push_back(cel->ConnectIndex(ncon-3));
+    //     auto it = find (internalprcon.begin(), internalprcon.end(), newid);
+
+    //     if (newid == -1)
+    //     {
+    //         newid = oldid;
+    //     }
+    //     else if (it != internalprcon.end())
+    //     {
+    //         newid++;
+    //     }
+        
+    //     perm[oldid] = newid;
+
+    //     newid++;
+    // }
+    // for (auto cel : cmeshm->ElementVec())
+    // {
+    //     if (!cel || !(cel->Reference()) || cel->Reference()->MaterialId() != ESkeleton)
+    //     {
+    //         continue;
+    //     }
+
+    //     auto ncon = cel->NConnects();
+    //     auto oldid = cel->ConnectIndex(ncon-1);
+
+    //     auto it = find (internalprcon.begin(), internalprcon.end(), newid);
+
+    //     if (it != internalprcon.end())
+    //     {
+    //         newid++;
+    //     }
+        
+    //     perm[oldid] = newid; 
+        
+    //     newid++;
+    // }
     
 }
