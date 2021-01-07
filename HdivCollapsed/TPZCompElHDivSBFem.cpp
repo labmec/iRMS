@@ -87,7 +87,7 @@ void TPZCompElHDivSBFem<TSHAPE>::ComputeRequiredData(TPZMaterialData &data, TPZV
     // Adjusting divergence values
     for (int64_t i = 0; i < nshape1d; i++)
     {
-        data.divphi(i) = data.fMasterDirections(0,i)*2*data.dphi(0,i);
+        data.divphi(i) = 2*data.dphi(0,i);
         data.phi(i) *= 2;
     }
     for (int64_t i = 0; i < nshape; i++)
@@ -160,8 +160,7 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data, 
     
     TPZFNMatrix<9,REAL> grad(dim2,dim2,0);
     gelvolume->GradX(xivol,grad);
-    auto nshape2d = data.phi.Rows() - nshape1d;
-    for (auto j = nshape1d; j < data.fDeformedDirections.Cols(); j++)
+    for (auto j = 3; j < data.fDeformedDirections.Cols(); j++)
     {
         for (auto i = 0; i < dim2; i++)
         {
@@ -240,10 +239,11 @@ void TPZCompElHDivSBFem<TSHAPE>::ExtendShapeFunctions(TPZMaterialData &data)
     for (int ish = 0; ish < nshape2d; ish++)
     {
         data.phi(ish + nshape1d, 0) = data.phi(ish, 0);
+        data.phi(ish + nshape1d+nshape2d, 0) = data.phi(ish, 0);
         for (int d = 0; d < dim - 1; d++)
         {
-            data.dphi(d, ish + nshape1d+nshape2d) = data.phi(ish);
             data.dphi(d, ish + nshape1d) = 0.;
+            data.dphi(d, ish + nshape1d+nshape2d) = data.phi(ish);
         }
         data.dphi(dim-1, ish+nshape1d) = - data.phi(ish) / 2.;
         data.dphi(dim-1, ish+nshape1d+nshape2d) = 0.;

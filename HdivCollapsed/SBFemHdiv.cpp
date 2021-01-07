@@ -695,22 +695,12 @@ void AdjustExtPressureConnectivity(TPZCompMesh * cmeshm, TPZCompMesh * cmeshf, T
         {
             continue;
         }
-        
         perm[con.SequenceNumber()] = con.SequenceNumber();
     }
 
     int64_t nf = cmeshf->NConnects() - 2*nsides;
     auto id = nf+3*nsides;
-    
-    // for (int is = 0; is < nsides; is++)
-    // {
-    //     for (int ic = 0; ic < 3; ic++)
-    //     {
-    //         auto pos = nf + ic + 9*is;
-    //         perm[pos] = id;
-    //         id++;
-    //     }
-    // }
+
     for (int is = 0; is < nsides; is++)
     {
         for (int ic = 0; ic < 3; ic++)
@@ -729,57 +719,9 @@ void AdjustExtPressureConnectivity(TPZCompMesh * cmeshm, TPZCompMesh * cmeshf, T
             id++;
         }
     }
-    
-    
-    cout << perm << endl;
-    
+    if (1)
+    {
+        cout << perm << endl;
+    }
 
-    // for (auto cel : cmeshm->ElementVec())
-    // {
-    //     if (!cel || !(cel->Reference()) || cel->Reference()->MaterialId() != ESkeleton)
-    //     {
-    //         continue;
-    //     }
-
-    //     auto ncon = cel->NConnects();
-    //     auto oldid = cel->ConnectIndex(ncon-2);
-
-    //     internalprcon.push_back(cel->ConnectIndex(ncon-3));
-    //     auto it = find (internalprcon.begin(), internalprcon.end(), newid);
-
-    //     if (newid == -1)
-    //     {
-    //         newid = oldid;
-    //     }
-    //     else if (it != internalprcon.end())
-    //     {
-    //         newid++;
-    //     }
-        
-    //     perm[oldid] = newid;
-
-    //     newid++;
-    // }
-    // for (auto cel : cmeshm->ElementVec())
-    // {
-    //     if (!cel || !(cel->Reference()) || cel->Reference()->MaterialId() != ESkeleton)
-    //     {
-    //         continue;
-    //     }
-
-    //     auto ncon = cel->NConnects();
-    //     auto oldid = cel->ConnectIndex(ncon-1);
-
-    //     auto it = find (internalprcon.begin(), internalprcon.end(), newid);
-
-    //     if (it != internalprcon.end())
-    //     {
-    //         newid++;
-    //     }
-        
-    //     perm[oldid] = newid; 
-        
-    //     newid++;
-    // }
-    
 }
