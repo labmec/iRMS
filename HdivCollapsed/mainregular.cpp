@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     LaplaceExact.fExact = TLaplaceExample1::EHarmonic;
 #endif
     
-    for (int POrder = 2; POrder <= maxporder; POrder ++)
+    for (int POrder = 3; POrder <= maxporder; POrder ++)
     {
         std::cout << "POrder = " << POrder << "\n";
 
@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
 #endif
         if (gHybrid)
         {
-            // GroupandCondense(cmeshm);
+            GroupandCondense(cmeshm);
         }
 
         cmeshm->ComputeNodElCon();
@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
 
         if(printstifmatrix)
         {
-            if(1)
+            if(0)
             {
                 TPZElementMatrix ek, ef;
                 cmeshm->Element(0)->CalcStiff(ek,ef);

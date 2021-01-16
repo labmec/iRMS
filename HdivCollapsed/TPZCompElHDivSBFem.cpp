@@ -96,7 +96,7 @@ void TPZCompElHDivSBFem<TSHAPE>::ComputeRequiredData(TPZMaterialData &data, TPZV
         data.divphi(i+nshape1d+nshape) = 2*data.phi(i+nshape1d);
         data.phi(i+nshape1d+nshape) = 0;
     }
-
+    
     if (data.fNeedsSol)
     {
         std::cout << "Compute Solution not implemented yet \n";
@@ -160,6 +160,14 @@ void TPZCompElHDivSBFem<TSHAPE>::HDivCollapsedDirections(TPZMaterialData &data, 
     
     TPZFNMatrix<9,REAL> grad(dim2,dim2,0);
     gelvolume->GradX(xivol,grad);
+    
+    for (auto j = 0; j < 3; j++)
+    {
+        for (auto i = 0; i < dim2; i++)
+        {
+            data.fDeformedDirections(i,j) = fabs(data.fDeformedDirections(i,j));
+        }
+    }
     for (auto j = 3; j < data.fDeformedDirections.Cols(); j++)
     {
         for (auto i = 0; i < dim2; i++)
