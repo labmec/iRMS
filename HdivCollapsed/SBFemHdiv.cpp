@@ -22,8 +22,8 @@ bool gHybrid, gSbfemhdiv, gHdivcollapsed;
 TPZGeoMesh * SetupSquareMesh(int nelx)
 {
     TPZManVector<REAL, 4> x0(3, -1.), x1(3, 1.);
-    x0[0] = -1, x0[1] = -1, x0[2] = 0.;
-    x1[0] = 1, x1[1] = 1, x1[2] = 0.;
+    x0[0] = -1, x0[1] = -5, x0[2] = 0.;
+    x1[0] = 2, x1[1] = 1, x1[2] = 0.;
 
     TPZManVector<int, 4> nx(2, nelx);
     TPZGenGrid2D gengrid(nx, x0, x1);
@@ -661,12 +661,10 @@ void GroupandCondense(TPZCompMesh * cmesh)
             std::cout << " group not added\n";
             continue;
         }
-        std::cout << std::endl;
         elgr->AddElement(cel);
 
     }
     cmesh->ComputeNodElCon();
-    elgr->Print(std::cout);
     
     {
         std::ofstream out("cmesh.txt");
@@ -719,9 +717,112 @@ void AdjustExtPressureConnectivity(TPZCompMesh * cmeshm, TPZCompMesh * cmeshf, T
             id++;
         }
     }
-    if (1)
-    {
-        cout << perm << endl;
-    }
 
 }
+
+void ComputeMatrices(TPZFMatrix<STATE> &E0fMat, TPZFMatrix<STATE> &E1fMat, TPZFMatrix<STATE> &E2fMat, TPZMatrix<REAL> &KCond)
+{
+    auto n = KCond.Rows()/2;
+    E0fMat.Resize(n,n);
+    E1fMat.Resize(n,n);
+    E2fMat.Resize(n,n);
+
+    for (auto i = 0; i < n; i++)
+    {
+        for (auto j = 0; j < n; j++)
+        {
+            E0fMat(i,j) = KCond(i,j)*1/4;
+            E1fMat(i,j) = KCond(i+n,j)*1/2;
+            E2fMat(i,j) = KCond(i+n,j+n);
+        }
+    }
+    
+}
+
+void ComputeEigenvalues(TPZFMatrix<STATE> &E0fMat, TPZFMatrix<STATE> &E1fMat, TPZFMatrix<STATE> &E2fMat)
+{
+    int n = E0fMat.Rows();
+    auto dim = 2;
+    // int dim = Mesh()->Dimension();
+    
+    TPZFMatrix<STATE> E0Inv(E0fMat);
+
+    TPZVec<int> pivot(E0Inv.Rows(),0);
+    int nwork = 4*n*n + 2*n;
+    TPZVec<STATE> work(2*nwork,0.);
+    int info=0;
+#ifdef STATEdouble
+    dgetrf_(&n, &n, &E0Inv(0,0), &n, &pivot[0], &info);
+#endif
+#ifdef STATEfloat
+    sgetrf_(&n, &n, &E0Inv(0,0), &n, &pivot[0], &info);
+#endif
+    if (info != 0) {
+        DebugStop();
+    }
+#ifdef STATEdouble
+    dgetri_(&n, &E0Inv(0,0), &n, &pivot[0], &work[0], &nwork, &info);
+#endif
+#ifdef STATEfloat
+    sgetri_(&n, &E0Inv(0,0), &n, &pivot[0], &work[0], &nwork, &info);
+#endif
+    if (info != 0) {
+        DebugStop();
+    }
+    
+    TPZFMatrix<STATE> globmat(2*n,2*n,0.);
+    
+#ifdef STATEdouble
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasTrans, n, n, n, 1., &E0Inv(0,0), n, &E1fMat(0,0), n, 0., &globmat(0,0), 2*n);
+#elif defined STATEfloat
+    cblas_sgemm(CblasColMajor, CblasNoTrans, CblasTrans, n, n, n, 1., &E0Inv(0,0), n, &E1fMat(0,0), n, 0., &globmat(0,0), 2*n);
+#else
+    std::cout << "SBFem does not execute for this configuration\n";
+    DebugStop();
+#endif
+    
+    for (int i=0; i<n; i++) {
+        for (int j=0; j<n; j++) {
+            globmat(i,j+n) = -E0Inv(i,j);
+        }
+    }
+#ifdef STATEdouble
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n, 1., &E1fMat(0,0), n, &globmat(0,0), 2*n, 0., &globmat(n,0), 2*n);
+#elif defined STATEfloat
+    cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n, 1., &E1fMat(0,0), n, &globmat(0,0), 2*n, 0., &globmat(n,0), 2*n);
+#else
+    std::cout << "SBFem does not execute for this configuration\n";
+    DebugStop();
+#endif
+    for (int i=0; i<n; i++) {
+        for (int j=0; j<n; j++) {
+            globmat(i+n,j) -= E2fMat(i,j);
+        }
+    }
+
+#ifdef STATEdouble
+    cblas_dgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n, -1., &E1fMat(0,0), n, &E0Inv(0,0), n, 0., &globmat(n,n), 2*n);
+#elif defined STATEfloat
+    cblas_sgemm(CblasColMajor, CblasNoTrans, CblasNoTrans, n, n, n, -1., &E1fMat(0,0), n, &E0Inv(0,0), n, 0., &globmat(n,n), 2*n);
+#else
+    std::cout << "SBFem does not execute for this configuration\n";
+    DebugStop();
+#endif
+
+    for (int i=0; i<n; i++) {
+        globmat(i,i) -= (dim-2)*0.5;
+        globmat(i+n,i+n) += (dim-2)*0.5;
+    }
+    
+    TPZFMatrix<STATE> globmatkeep(globmat);
+    TPZFMatrix< std::complex<double> > eigenVectors;
+    TPZManVector<std::complex<double> > eigenvalues;
+    globmatkeep.SolveEigenProblem(eigenvalues, eigenVectors);
+
+    std::cout << eigenvalues << std::endl;
+
+}
+
+// Criar um novo ElementGroup?
+// O SBFemElementGroup vai conter a implementação do main? 
+// Como que eu incorporo meu projeto externo no RefactorGeom?

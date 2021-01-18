@@ -30,6 +30,7 @@
 #include "TPZMultiphysicsInterfaceEl.h"
 #include "TPZNullMaterial.h"
 #include "pzelchdivbound2.h"
+#include "pzelmat.h"
 
 #ifdef _AUTODIFF
 extern TLaplaceExample1 LaplaceExact;
@@ -62,3 +63,7 @@ void AssociateElements(TPZCompMesh *cmesh, TPZManVector<int64_t> &elementgroup);
 void GroupandCondense(TPZCompMesh * cmesh);
 
 void AdjustExtPressureConnectivity(TPZCompMesh * cmeshm, TPZCompMesh * cmeshf, TPZManVector<int64_t> &perm);
+
+void ComputeMatrices(TPZFMatrix<REAL> &E0fMat, TPZFMatrix<REAL> &E1fMat, TPZFMatrix<REAL> &E2fMat, TPZMatrix<REAL> &KCond);
+
+void ComputeEigenvalues(TPZFMatrix<STATE> &E0fMat, TPZFMatrix<STATE> &E1fMat, TPZFMatrix<STATE> &E2fMat);

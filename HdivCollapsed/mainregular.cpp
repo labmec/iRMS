@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
     LaplaceExact.fExact = TLaplaceExample1::EHarmonic;
 #endif
     
-    for (int POrder = 3; POrder <= maxporder; POrder ++)
+    for (int POrder = 1; POrder <= maxporder; POrder ++)
     {
         std::cout << "POrder = " << POrder << "\n";
 
@@ -163,6 +163,8 @@ int main(int argc, char *argv[])
         TPZAnalysis an(cmeshm, optimizeBandwidth);
         an.Assemble();
 
+        TPZAutoPointer<TPZMatrix<REAL>> K = an.Solver().Matrix();
+
         if(printstifmatrix)
         {
             if(0)
@@ -178,8 +180,11 @@ int main(int argc, char *argv[])
                 ek.fMat.Print("ek3 = ", std::cout, EMathematicaInput);
             }
             std::ofstream output("stiffness.txt");
-            an.Solver().Matrix()->Print("K = ", output, EMathematicaInput);
+            K->Print("K = ", output, EMathematicaInput);
         }
+        TPZFMatrix<STATE> E0, E1, E2;
+        ComputeMatrices(E0, E1, E2, K);
+        ComputeEigenvalues(E0, E1, E2);
         
         if (!gHdivcollapsed && !gSbfemhdiv)
         {
