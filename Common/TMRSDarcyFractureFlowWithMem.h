@@ -5,49 +5,36 @@
 //  Created by Omar Durán on 10/10/19.
 //
 
-#ifndef TMRSDarcyFlowWithMem_h
-#define TMRSDarcyFlowWithMem_h
+#ifndef TMRSDarcyFractureFlowWithMem_h
+#define TMRSDarcyFractureFlowWithMem_h
 
 #include <stdio.h>
 #include "TPZMatWithMem.h"
 #include "pzbndcond.h"
 #include "pzaxestools.h"
 #include "TMRSDataTransfer.h"
+#include "TMRSDarcyFlowWithMem.h"
 
 template <class TMEM>
-class TMRSDarcyFlowWithMem : public TPZMatWithMem<TMEM> {
+class TMRSDarcyFractureFlowWithMem : public TMRSDarcyFlowWithMem<TMEM> {
     
-protected:
-    /// Dimension
-    int m_dimension;
-    
-    /// Scale factor for pressure
-    STATE m_scale_pressure = 1.0;//1.e-6;
-
-    /// Scale factor for flux variable
-    STATE m_scale_flux = 1.0;
-    
-    /// Directive that stands for the use of four approximations spaces (iterative method)
-    bool m_is_four_spaces_Q;
-    
-    TMRSDataTransfer mSimData;
     
 public:
     
     /// Default constructor
-    TMRSDarcyFlowWithMem();
+    TMRSDarcyFractureFlowWithMem();
     
     /// Constructor based on a material id
-    TMRSDarcyFlowWithMem(int mat_id, int dimension);
+    TMRSDarcyFractureFlowWithMem(int mat_id, int dimension);
     
     /// Constructor based on a TPBrMatMixedDarcy object
-    TMRSDarcyFlowWithMem(const TMRSDarcyFlowWithMem & other);
+    TMRSDarcyFractureFlowWithMem(const TMRSDarcyFractureFlowWithMem & other);
     
     /// Constructor based on a TPBrMatMixedDarcy object
-    TMRSDarcyFlowWithMem &operator=(const TMRSDarcyFlowWithMem & other);
+    TMRSDarcyFractureFlowWithMem &operator=(const TMRSDarcyFractureFlowWithMem & other);
     
     /// Default destructor
-    ~TMRSDarcyFlowWithMem();
+    ~TMRSDarcyFractureFlowWithMem();
     
     /// Set the required data at each integration point
     void FillDataRequirements(TPZVec<TPZMaterialData> &datavec) override;
@@ -61,14 +48,14 @@ public:
     }
     
     /// Returns the integrable dimension of the material */
-    int Dimension() const override {return m_dimension;}
+    int Dimension() const override {return this->m_dimension;}
     
     /// Returns the number of state variables associated with the material
     int NStateVariables() const override {return 1;}
     
     virtual TPZMaterial *NewMaterial() override
     {
-        return new TMRSDarcyFlowWithMem(*this);
+        return new TMRSDarcyFractureFlowWithMem<TMEM>(*this);
     }
     
     /// Set data transfer object

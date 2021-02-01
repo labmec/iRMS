@@ -15,22 +15,26 @@
 #include "TPZPostProcessResProp.h"
 #include "TPZDarcyMemory.h"
 #include "TPZDarcyFlowWithMem.h"
+#include "TMRSDarcyFractureFlowWithMem.h"
 #include "TPZLagrangeMultiplier.h"
+#include "TPZCompElHDivCollapsed.h"
+
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
 
 using namespace std;
-void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices);
-//void InsertMaterialObjects(TPZMHMixedMeshControl &control);
 
-TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator(){
+void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices);
+
+TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator()
+{
     mGeometry = nullptr;
     mMixedOperator = nullptr;
     mTransportOperator = nullptr;
 }
 
-TMRSApproxSpaceGenerator & TMRSApproxSpaceGenerator::operator=(const TMRSApproxSpaceGenerator &other){
+TMRSApproxSpaceGenerator &TMRSApproxSpaceGenerator::operator=(const TMRSApproxSpaceGenerator &other){
     DebugStop();
 }
 
@@ -360,6 +364,8 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     return cmesh;
 }
 
+#include "pzshapequad.h"
+
 /// create an HDiv mesh for mortar approximation
 TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagrange)
 {
@@ -384,27 +390,23 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
         TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dimension-1,nstate);
         cmesh->InsertMaterialObject(nullmat);
     }
+    std::set<int> buildmatids(matids);
     // create all flux elements as discontinuous elements
-    cmesh->AutoBuild();
-    // set the lagrange level
-    {
-        int64_t nel = cmesh->NElements();
-        for (int64_t el = 0; el<nel; el++) {
-            TPZCompEl *cel = cmesh->Element(el);
-            TPZGeoEl *gel = cel->Reference();
-            if(gel->Dimension() < dimension)
-            {
-                cel->Connect(0).SetLagrangeMultiplier(fluxmortarlagrange);
-            }
-        }
-    }
+    cmesh->AutoBuild(buildmatids);
+    // add the Hdiv wrapper elements as boundary of the volumetric elements
     mGeometry->ResetReference();
     {
         TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_HdivWrapMatId,dimension-1,nstate);
         cmesh->InsertMaterialObject(nullmat);
     }
-
-    // add the Hdiv wrapper elements as boundary of the volumetric elements
+#ifdef PZDEBUG
+    {
+        {
+            std::ofstream out("FluxMortarMesh.txt");
+            cmesh->Print(out);
+        }
+    }
+#endif
     int64_t nelflux = cmesh->NElements();
     for (int64_t el = 0; el<nelflux; el++)
     {
@@ -417,30 +419,293 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
             TPZGeoElSide gelside(gel,side);
             TPZGeoElSide neighbour = gelside.Neighbour();
             if(neighbour.Element()->MaterialId() != mSimData.mTGeometry.m_HdivWrapMatId) DebugStop();
-            //int hdiv_orient = gel->NormalOrientation(side);
+//            int hdiv_orient = gel->NormalOrientation(side);
             gel->SetReference(cel);
             int64_t index;
+            int neighside = neighbour.Side();
             TPZCompEl *celwrap = cmesh->CreateCompEl(neighbour.Element(), index);
+//            TPZInterpolationSpace *space = dynamic_cast<TPZInterpolationSpace *>(celwrap);
+//            space->SetSideOrient(neighside,hdiv_orient);
             gel->ResetReference();
             neighbour.Element()->ResetReference();
         }
     }
+
+    buildmatids.clear();
+    buildmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+    buildmatids.insert(bcmatids.begin(),bcmatids.end());
+    cmesh->SetDefaultOrder(0);
+    cmesh->ApproxSpace().CreateDisconnectedElements(true);
+
+    // create all flux elements as discontinuous elements
+    cmesh->AutoBuild(buildmatids);
+
+    // vector with computational element pointers for creating fracture elements
+    TPZVec<TPZCompEl *> fracsupport(mGeometry->NElements(),0);
+    
+    // set the lagrange level
+    {
+        int64_t nel = cmesh->NElements();
+        for (int64_t el = 0; el<nel; el++) {
+            TPZCompEl *cel = cmesh->Element(el);
+            TPZGeoEl *gel = cel->Reference();
+            if(gel->Dimension() < dimension && gel->MaterialId() == mSimData.mTGeometry.m_zeroOrderHdivFluxMatId)
+            {
+                fracsupport[gel->Index()] = cel;
+                cel->Connect(0).SetLagrangeMultiplier(fluxmortarlagrange);
+            }
+        }
+    }
+    
+    cmesh->SetDimModel(dimension-1);
+    matids.clear();
+    bcmatids.clear();
+    GetMaterialIds(dimension-1, matids, bcmatids);
+    for(auto matid : matids)
+    {
+        cmesh->InsertMaterialObject(new TPZNullMaterial(matid,dimension-1,1));
+    }
+    for(auto matid : bcmatids)
+    {
+        cmesh->InsertMaterialObject(new TPZNullMaterial(matid,dimension-2,1));
+    }
+    bool complicated = false;
+    if(complicated)
+    {
+        // data structure that stores for each geometric fracture element the two element/side volumetric elements
+        // it is facing
+        typedef std::pair<TPZGeoElSide,TPZGeoElSide> sidepair;
+        // first geometric fracture element
+        // second : left/right geoelsides of volumetric elements
+        typedef std::pair<TPZGeoEl*,sidepair> gelsideandpair;
+        std::list<gelsideandpair> fracElements;
+        {
+            int64_t nel = mGeometry->NElements();
+            for(int64_t el = 0; el<nel; el++)
+            {
+                TPZGeoEl *gel = mGeometry->Element(el);
+                if(!gel || gel->Dimension() != dimension-1) continue;
+                int matid = gel->MaterialId();
+                // we are looking for fracture elements
+                if(matids.find(matid) == matids.end()) continue;
+                TPZGeoElSide gelside(gel);
+                TPZGeoElSide neighbour = gelside.Neighbour();
+                sidepair leftright;
+                int nfound = 0;
+                // look for volumetric neighbours of the fracture element
+                while(neighbour != gelside)
+                {
+                    if(neighbour.Element()->Dimension() == dimension)
+                    {
+                        if(neighbour.Element()->NormalOrientation(neighbour.Side()) == 1)
+                        {
+                            leftright.first = neighbour;
+                            nfound++;
+                        }
+                        else
+                        {
+                            leftright.second = neighbour;
+                            nfound++;
+                        }
+                    }
+                    neighbour=neighbour.Neighbour();
+                }
+                if(nfound != 2) DebugStop();
+                gelsideandpair gs;
+                gs.first = gel;
+                gs.second = leftright;
+                fracElements.push_back(gs);
+            }
+            // now, we have the elements and the H(div) elements connected
+            // we will now create the HDiv collapsed elements, link the connects and correct the interface matid
+            for(auto it : fracElements)
+            {
+                TPZGeoEl *fracgel = it.first;
+                TPZGeoElSide fracgelside(fracgel);
+                TPZGeoElSide leftgelside = it.second.first;
+                TPZGeoElSide rightgelside = it.second.second;
+                // find the element with material id m_zeroOrderHdivFluxMatId
+                TPZGeoElSide zeroflux = fracgelside.HasNeighbour(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+                TPZCompElSide zerofluxcomp = zeroflux.Reference();
+                zerofluxcomp.SetElement(fracsupport[zeroflux.Element()->Index()]);
+                if(!zerofluxcomp) DebugStop();
+                int zerofluxorder = zerofluxcomp.Element()->Connect(0).Order();
+                if(!zeroflux) DebugStop();
+                if(!zerofluxcomp) DebugStop();
+                TPZGeoElSide intfaceleft;
+                TPZGeoElSide intfaceright;
+                // based on the order of creation of the geometric wrap elements we reach the interface elements
+                {
+                    TPZGeoElSide hdivwrap = leftgelside.Neighbour();
+                    TPZGeoElSide intface1 = hdivwrap.Neighbour();
+                    TPZGeoElSide pressmortar = intface1.Neighbour();
+                    intfaceleft = pressmortar.Neighbour();
+                }
+                {
+                    TPZGeoElSide hdivwrap = rightgelside.Neighbour();
+                    TPZGeoElSide intface1 = hdivwrap.Neighbour();
+                    TPZGeoElSide pressmortar = intface1.Neighbour();
+                    intfaceright = pressmortar.Neighbour();
+                }
+                if(intfaceleft.Element()->MaterialId() != mSimData.mTGeometry.m_negLagrangeMatId) DebugStop();
+                if(intfaceright.Element()->MaterialId() != mSimData.mTGeometry.m_posLagrangeMatId) DebugStop();
+                // create a second zero flux element and second connect (hybridizing the mesh
+                TPZGeoElBC gbc(zeroflux,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+                TPZGeoElSide zeroflux2 = gbc.CreatedElement();
+                zeroflux.Element()->ResetReference();
+                int64_t index;
+                cmesh->SetDefaultOrder(zerofluxorder);
+                TPZCompEl *celflux2 = cmesh->CreateCompEl(zeroflux2.Element(), index);
+                TPZCompElSide zerofluxcomp2 = zeroflux2.Reference();
+                
+                zeroflux2.Element()->ResetReference();
+                cmesh->SetDefaultOrder(1);
+                TPZInterpolationSpace *HDivCollapsed = 0;
+                if(zeroflux.Element()->Type() == ETriangle)
+                {
+                    int64_t index;
+                    HDivCollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>(*cmesh,fracgel,index);
+                }
+                else if(zeroflux.Element()->Type() == EQuadrilateral)
+                {
+                    int64_t index;
+                    HDivCollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>(*cmesh,fracgel,index);
+                }
+                int nconnects = HDivCollapsed->NConnects();
+                // bottom connect index
+                int64_t cindex1 = HDivCollapsed->ConnectIndex(nconnects-2);
+                // top connect index
+                int64_t cindex2 = HDivCollapsed->ConnectIndex(nconnects-1);
+                int nsides = fracgel->NSides();
+                // changing orientation of top
+                HDivCollapsed->SetSideOrient(nsides, -1);
+                // linking bottom to first zero flux element - interface left - zeroflux - frac pressure
+                HDivCollapsed->SetConnectIndex(nconnects-2, zerofluxcomp.Element()->ConnectIndex(0));
+                // linking top to second zero flux element - interface right - zeroflux - frac pressure
+                HDivCollapsed->SetConnectIndex(nconnects-1, zerofluxcomp2.Element()->ConnectIndex(0));
+                cmesh->ConnectVec()[cindex1].DecrementElConnected();
+                cmesh->ConnectVec()[cindex2].DecrementElConnected();
+                cmesh->ConnectVec()[cindex1].SetSequenceNumber(-1);
+                cmesh->ConnectVec()[cindex2].SetSequenceNumber(-1);
+                cmesh->ConnectVec().SetFree(cindex1);
+                cmesh->ConnectVec().SetFree(cindex2);
+            }
+        }
+    }
+    else // not so complicated
+    {
+        int64_t nel = mGeometry->NElements();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            TPZGeoEl *gel = mGeometry->Element(el);
+            if(!gel || gel->Dimension() != dimension-1) continue;
+            int matid = gel->MaterialId();
+            // we are looking for fracture elements
+            if(matids.find(matid) == matids.end()) continue;
+            // now we have a fracture element
+            TPZGeoElSide gelside(gel);
+            // find the element with material id m_zeroOrderHdivFluxMatId
+            TPZGeoElSide zeroflux = gelside.HasNeighbour(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+            if(!zeroflux) DebugStop();
+            TPZCompElSide zerofluxcomp = zeroflux.Reference();
+            zerofluxcomp.SetElement(fracsupport[zeroflux.Element()->Index()]);
+            if(!zerofluxcomp) DebugStop();
+            int zerofluxorder = zerofluxcomp.Element()->Connect(0).Order();
+            // create a second zero flux element and second connect (hybridizing the mesh
+             TPZGeoElBC gbc(zeroflux,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+             TPZGeoElSide zeroflux2 = gbc.CreatedElement();
+             zeroflux.Element()->ResetReference();
+             int64_t index;
+             cmesh->SetDefaultOrder(zerofluxorder);
+             TPZCompEl *celflux2 = cmesh->CreateCompEl(zeroflux2.Element(), index);
+             TPZCompElSide zerofluxcomp2 = zeroflux2.Reference();
+             
+             zeroflux2.Element()->ResetReference();
+             cmesh->SetDefaultOrder(1);
+             TPZInterpolationSpace *HDivCollapsed = 0;
+             if(zeroflux.Element()->Type() == ETriangle)
+             {
+                 int64_t index;
+                 HDivCollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>(*cmesh,gel,index);
+             }
+             else if(zeroflux.Element()->Type() == EQuadrilateral)
+             {
+                 int64_t index;
+                 HDivCollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>(*cmesh,gel,index);
+             }
+             int nconnects = HDivCollapsed->NConnects();
+             // bottom connect index (which will be substituted)
+             int64_t cindex1 = HDivCollapsed->ConnectIndex(nconnects-2);
+             // top connect index (which will be substituted)
+             int64_t cindex2 = HDivCollapsed->ConnectIndex(nconnects-1);
+             int nsides = gel->NSides();
+             // changing orientation of top
+             HDivCollapsed->SetSideOrient(nsides, -1);
+             // linking bottom to first zero flux element - interface left - zeroflux - frac pressure
+             HDivCollapsed->SetConnectIndex(nconnects-2, zerofluxcomp.Element()->ConnectIndex(0));
+             // linking top to second zero flux element - interface right - zeroflux - frac pressure
+             HDivCollapsed->SetConnectIndex(nconnects-1, zerofluxcomp2.Element()->ConnectIndex(0));
+             cmesh->ConnectVec()[cindex1].DecrementElConnected();
+             cmesh->ConnectVec()[cindex2].DecrementElConnected();
+             cmesh->ConnectVec()[cindex1].SetSequenceNumber(-1);
+             cmesh->ConnectVec()[cindex2].SetSequenceNumber(-1);
+             cmesh->ConnectVec().SetFree(cindex1);
+             cmesh->ConnectVec().SetFree(cindex2);
+        }
+    }
+    cmesh->CleanUpUnconnectedNodes();
+    // insert the fracture hdiv elements
+    cmesh->SetDefaultOrder(1);
+    cmesh->SetDimModel(dimension-1);
+    cmesh->SetAllCreateFunctionsHDiv();
+    // add the boundary HDiv elements
+    cmesh->ApproxSpace().CreateDisconnectedElements(false);
+    cmesh->AutoBuild(bcmatids);
+    cmesh->SetDimModel(dimension);
+    cmesh->ExpandSolution();
 #ifdef PZDEBUG
     {
-        std::ofstream out("FluxMortarMesh.txt");
-        cmesh->Print(out);
+        {
+            std::ofstream out("FluxMortarMesh.txt");
+            cmesh->Print(out);
+        }
+        {
+            std::ofstream out("FluxMortar.vtk");
+            TPZVTKGeoMesh::PrintCMeshVTK(cmesh, out);
+        }
+        {
+            std::ofstream out("GMeshAfterFluxMortar.vtk");
+            TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out);
+        }
+
+        cmesh->LoadReferences();
+        int64_t nelgeo = mGeometry->NElements();
+        std::set<int> matidsloc(matids);
+        matidsloc.insert(bcmatids.begin(),bcmatids.end());
+        for(int64_t el = 0; el<nelgeo; el++)
+        {
+            TPZGeoEl *gel = mGeometry->Element(el);
+            int matid = gel->MaterialId();
+            if(matidsloc.find(matid) != matidsloc.end())
+            {
+                TPZCompEl *cel = gel->Reference();
+                if(!cel) DebugStop();
+            }
+        }
     }
 #endif
     return cmesh;
 }
 
 /// create a pressure with mortar elements
-TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char lagrangepressure, char lagrangemortar)
+TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepressure,char lagrangepressure, char lagrangemortar)
 {
     std::set<int> matids, bcmatids;
     int dimension = mGeometry->Dimension();
     int nstate = 1;
     GetMaterialIds(dimension, matids, bcmatids);
+    // GetMaterialIds will accumulate in the matids set!
+    GetMaterialIds(dimension-1,matids,bcmatids);
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
     cmesh->SetName("PressureWithMortar.txt");
     cmesh->SetDefaultOrder(1);
@@ -456,6 +721,14 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char lagrangepressure
     {
         cmesh->ConnectVec()[ic].SetLagrangeMultiplier(lagrangepressure);
     }
+    // one connect for each element should be set at lower level
+    {
+        int64_t nel = cmesh->NElements();
+        for (int64_t el = 0; el<nel; el++) {
+            TPZCompEl *cel = cmesh->Element(el);
+            cel->Connect(0).SetLagrangeMultiplier(firstlagrangepressure);
+        }
+    }
     {
         TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_MortarMatId,dimension,nstate);
         cmesh->InsertMaterialObject(nullmat);
@@ -463,17 +736,34 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char lagrangepressure
     // create discontinous elements of dimension-1
     cmesh->SetDimModel(dimension-1);
     std::set<int> mortarids = {mSimData.mTGeometry.m_MortarMatId};
+    cmesh->SetDefaultOrder(0);
+    cmesh->ApproxSpace().SetAllCreateFunctionsDiscontinuous();
     cmesh->AutoBuild(mortarids);
     int64_t ncon_new = cmesh->NConnects();
     for (int64_t ic = nconnects; ic<ncon_new; ic++) {
         cmesh->ConnectVec()[ic].SetLagrangeMultiplier(lagrangemortar);
     }
     cmesh->SetDimModel(dimension);
+    
+    // insert the fracture hdiv elements
+    cmesh->SetDimModel(dimension-1);
+    GetMaterialIds(dimension-1, matids, bcmatids);
+    cmesh->SetDefaultOrder(1);
+    cmesh->ApproxSpace().SetAllCreateFunctionsContinuous();
+    cmesh->ApproxSpace().CreateDisconnectedElements(true);
+    cmesh->AutoBuild(matids);
+    cmesh->SetDimModel(dimension);
+
 #ifdef PZDEBUG
     {
         std::ofstream out("PressureMortarCMesh.txt");
         cmesh->Print(out);
     }
+    {
+        std::ofstream out("PressureMortarCMesh.vtk");
+        TPZVTKGeoMesh::PrintCMeshVTK(cmesh, out);
+    }
+
 #endif
     return cmesh;
 }
@@ -489,32 +779,23 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagra
     TPZNullMaterial * volume = nullptr;
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
-    
-    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
-    int nstate = 1;
-    TPZVec<STATE> sol;
-    for (int d = 0; d <= dimension; d++) {
-        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
-            std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << std::endl;
-            int materia_id = chunk.second;
-            volume = new TPZNullMaterial(materia_id,d,nstate);
+    for(int dim = 0; dim <= dimension; dim++)
+    {
+        std::set<int> matids, bcmatids;
+        GetMaterialIds(dim, matids, bcmatids);
+        if(matids.size() == 0) continue;
+        int nstate = 1;
+        for (auto material_id : matids) {
+            volume = new TPZNullMaterial(material_id,dim,nstate);
             cmesh->InsertMaterialObject(volume);
         }
+    
+        // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
+        cmesh->SetDimModel(dim);
+        cmesh->SetAllCreateFunctionsDiscontinuous();
+        cmesh->AutoBuild(matids);
+        cmesh->InitializeBlock();
     }
-    
-    if (!volume) {
-        DebugStop();
-    }
-    
-    // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
-    
-    cmesh->SetAllCreateFunctionsDiscontinuous();
-    
-
-    cmesh->AutoBuild();
-    cmesh->InitializeBlock();
-    
     if(lagrange > 0)
     {
         int64_t ncon = cmesh->NConnects();
@@ -524,7 +805,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagra
             newnod.SetLagrangeMultiplier(lagrange);
         }
     }
-    
+    cmesh->SetDimModel(mGeometry->Dimension());
     return cmesh;
 }
 
@@ -539,38 +820,29 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(0);
     
-    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
-    int nstate = 1;
-    TPZVec<STATE> sol;
-    for (int d = 0; d <= dimension; d++) {
-        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
-            std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << std::endl;
-            int materia_id = chunk.second;
-            volume = new TPZNullMaterial(materia_id,d,nstate);
+    for(int dim = 0; dim < dimension; dim++)
+    {
+        std::set<int> matids, bcmatids;
+        GetMaterialIds(dim, matids, bcmatids);
+        int nstate = 1;
+        for(auto material_id : matids)
+        {
+            volume = new TPZNullMaterial(material_id,dim,nstate);
             cmesh->InsertMaterialObject(volume);
         }
+        for(auto material_id : bcmatids)
+        {
+            volume = new TPZNullMaterial(material_id,dim-1,nstate);
+            cmesh->InsertMaterialObject(volume);
+        }
+        std::set<int> allmat(matids);
+        allmat.insert(bcmatids.begin(),bcmatids.end());
+        if(allmat.size() == 0) continue;
+        cmesh->SetDimModel(dim);
+        cmesh->SetAllCreateFunctionsDiscontinuous();
+        cmesh->AutoBuild(allmat);
     }
     
-    if (!volume) {
-        DebugStop();
-    }
-    
-    // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
-    
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        cmesh->InsertMaterialObject(face);
-    }
-    cmesh->SetAllCreateFunctionsDiscontinuous();
-    
-
-    cmesh->AutoBuild();
     cmesh->InitializeBlock();
         
 #ifdef PZDEBUG
@@ -753,18 +1025,22 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
 
 void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     int dimension = mGeometry->Dimension();
+    std::cout << __PRETTY_FUNCTION__ << " on input nel geom " << mGeometry->NElements() << std::endl;
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     std::set<int> matids, bcmatids;
     GetMaterialIds(dimension, matids, bcmatids);
+    
     InsertGeoWrappersForMortar();
     TPZManVector<TPZCompMesh *> meshvec(5,0);
     // hdiv mesh
     char fluxmortar = 5;
     meshvec[0] = HDivMortarFluxCmesh(fluxmortar);
+    
     // pressure mesh
-    char pressurelagrange = 1;
+    char firstpressurelagrange = 1;
+    char pressurelagrange = 3;
     char pressuremortar = 4;
-    meshvec[1] = PressureMortarCmesh(pressurelagrange,pressuremortar);
+    meshvec[1] = PressureMortarCmesh(firstpressurelagrange,pressurelagrange,pressuremortar);
     // distributed flux mesh
     int porder = 0;
     char distfluxlagrange = 2;
@@ -773,6 +1049,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     char avpressurelagrange = 6;
     meshvec[3] = DiscontinuousCmesh(porder,avpressurelagrange);
     // transport mesh
+    // @TODO I believe we don't need a transport mesh anymore
     meshvec[4] = TransportCmesh();
     
     // create the multiphysics mesh
@@ -780,32 +1057,69 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     //    TPZMixedDarcyFlow *volume = nullptr;
     mMixedOperator->SetDefaultOrder(1);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+    std::cout << "Creating material objects\n";
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << std::endl;
+            std::cout << "physical name = " << material_name <<
+            " material id " << chunk.second << " dimension " << d << std::endl;
             int materia_id = chunk.second;
             volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
+            TMRSMemory defaultmem;
+            // neste ponto podemos inserir as propriedades de permeabilidade absoluta
+            volume->SetDefaultMem(defaultmem);
 //            volume = new TPZMixedDarcyFlow(materia_id, d);
 //             volume->SetPermeability(1.0);
             volume->SetDataTransfer(mSimData);
             mMixedOperator->InsertMaterialObject(volume);
         }
     }
+    TMRSDarcyFractureFlowWithMem<TMRSMemory> * fracmat = nullptr;
+    for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1])
+    {
+        std::string material_name = chunk.first;
+        std::cout << "physical name = " << material_name <<
+        " material id " << chunk.second << " dimension " << dimension-1 << std::endl;
+        int materia_id = chunk.second;
+        fracmat = new TMRSDarcyFractureFlowWithMem<TMRSMemory>(materia_id,dimension-1);
+        TMRSMemory defaultmem;
+        // neste ponto podemos inserir as propriedades de permeabilidade absoluta
+        fracmat->SetDefaultMem(defaultmem);
+//            volume = new TPZMixedDarcyFlow(materia_id, d);
+//             volume->SetPermeability(1.0);
+        fracmat->SetDataTransfer(mSimData);
+        mMixedOperator->InsertMaterialObject(fracmat);
+
+    }
         
     if (!volume) {
         DebugStop();
     }
     
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        mMixedOperator->InsertMaterialObject(face);
+    {
+        TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+            int bc_id   = get<0>(chunk);
+            int bc_type = get<1>(chunk);
+            val2(0,0)   = get<2>(chunk);
+            TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+            mMixedOperator->InsertMaterialObject(face);
+        }
     }
+    {
+        TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+        TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue;
+        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+            if(!fracmat) DebugStop();
+            int bc_id   = get<0>(chunk);
+            int bc_type = get<1>(chunk);
+            val2(0,0)   = get<2>(chunk);
+            TPZMaterial * face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
+            mMixedOperator->InsertMaterialObject(face);
+        }
+    }
+
     {
         int dim = 1;
         int nstate = 1;
@@ -839,7 +1153,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     }
 #endif
     mMixedOperator->ComputeNodElCon();
-    // group and condense the H(div) space
+    // group and condense the H(div) space (only dimension of the mesh)
     std::set<int64_t> seed, groups;
     int64_t nel = mMixedOperator->NElements();
     int dim = mMixedOperator->Dimension();
@@ -848,12 +1162,16 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         TPZGeoEl *gel = cel->Reference();
         if(gel->Dimension() == dim) seed.insert(el);
     }
+    // this will only group volumetric elements
     TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
     mMixedOperator->ComputeNodElCon();
     {
         std::ofstream out("FluxGrouped.txt");
         mMixedOperator->Print(out);
     }
+    // this will group the volumetric AND fracture elements
+    // fracture elements should be condensed in FASTCondense elements
+    // Maybe we should increment nelconnected of the fracture connects at this point?
     TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
 #ifdef PZDEBUG
     {
@@ -867,6 +1185,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 
     TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
     mMixedOperator->ComputeNodElCon();
+    // this shouldn't affect the fracture elements as they won't have condensable connects
+    // we should create fast condensed elements at this point...
     TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
 #ifdef PZDEBUG
     {
@@ -885,9 +1205,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 void TMRSApproxSpaceGenerator::InsertInterfaceElements()
 {
     int dim = mGeometry->Dimension();
-    std::set<int> matids, bcmatids;
+    std::set<int> matids, bcmatids, fracmatids, fracbcmatids;
     GetMaterialIds(dim, matids, bcmatids);
-    bcmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+    GetMaterialIds(dim-1, fracmatids, fracbcmatids);
+//    bcmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
     TPZLagrangeMultiplier *mat1 = new TPZLagrangeMultiplier(mSimData.mTGeometry.m_posLagrangeMatId,dim,1);
     mMixedOperator->InsertMaterialObject(mat1);
     TPZLagrangeMultiplier *mat2 = new TPZLagrangeMultiplier(mSimData.mTGeometry.m_negLagrangeMatId,dim,1);
@@ -900,26 +1221,55 @@ void TMRSApproxSpaceGenerator::InsertInterfaceElements()
         TPZCompEl *cel = mMixedOperator->Element(el);
         TPZGeoEl *gel = cel->Reference();
         int matid = gel->MaterialId();
+        // the interface will be generated between HDiv wrapper and the mortar pressure
         if(matid != mSimData.mTGeometry.m_HdivWrapMatId && matid != mSimData.mTGeometry.m_MortarMatId)
             continue;
         TPZGeoElSide gelside(gel);
-        TPZGeoElSide neighbour = gelside.Neighbour();
-        int neighmatid = neighbour.Element()->MaterialId();
-        if(neighmatid != mSimData.mTGeometry.m_posLagrangeMatId && neighmatid != mSimData.mTGeometry.m_negLagrangeMatId) DebugStop();
-        TPZGeoElSide rightgel = neighbour.Neighbour();
-        if(matid == mSimData.mTGeometry.m_MortarMatId)
+        TPZGeoElSide leftgel(gelside), rightgel;
+        TPZGeoElSide IntfaceSide = leftgel.Neighbour();
+        if(matid == mSimData.mTGeometry.m_HdivWrapMatId)
         {
-            rightgel = gelside.HasNeighbour(bcmatids);
-            if(!rightgel) DebugStop();
+            rightgel = IntfaceSide.Neighbour();
         }
-        int rightmatid = rightgel.Element()->MaterialId();
-        if(matid == mSimData.mTGeometry.m_HdivWrapMatId && rightmatid != mSimData.mTGeometry.m_MortarMatId) DebugStop();
-        if(matid == mSimData.mTGeometry.m_MortarMatId && bcmatids.find(rightmatid) == bcmatids.end()) DebugStop();
-        TPZCompElSide leftcel = gelside.Reference();
+        else if(matid == mSimData.mTGeometry.m_MortarMatId)
+        {
+            // from a mortar element we need to add an interface to either a boundary flux
+            // or a zero order flux
+            // if the mortar element has a fracture neighbour, then there are two neighbouring
+            // zero order flux elements. Depending on the interface matid we need to connect to either
+            //  zero order flux element
+            TPZGeoElSide BCGelside = gelside.HasNeighbour(bcmatids);
+            TPZGeoElSide FracGelside = gelside.HasNeighbour(fracmatids);
+            TPZGeoElSide Zerofluxside = gelside.HasNeighbour(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+            int intfacematid = IntfaceSide.Element()->MaterialId();
+            if(BCGelside)
+            {
+                rightgel = BCGelside;
+            }
+            else if(Zerofluxside)
+            {
+                // if the lagrange multiplier is positive, the this is the top lagrange multiplier
+                // the top flux element is the second zero flux element
+                if(FracGelside && intfacematid == mSimData.mTGeometry.m_posLagrangeMatId)
+                {
+                    Zerofluxside = Zerofluxside.Neighbour();
+                    if(Zerofluxside.Element()->MaterialId() != mSimData.mTGeometry.m_zeroOrderHdivFluxMatId)
+                    {
+                        DebugStop();
+                    }
+                }
+                rightgel = Zerofluxside;
+            }
+            else
+            {
+                DebugStop();
+            }
+        }
+        TPZCompElSide leftcel = leftgel.Reference();
         TPZCompElSide rightcel = rightgel.Reference();
         int64_t index;
         TPZMultiphysicsInterfaceElement *intface =
-        new TPZMultiphysicsInterfaceElement(*mMixedOperator,neighbour.Element(),index,leftcel,rightcel);
+        new TPZMultiphysicsInterfaceElement(*mMixedOperator,IntfaceSide.Element(),index,leftcel,rightcel);
     }
 }
 
@@ -935,7 +1285,7 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
     // - interface geo element
     // - pressure element
     // - second interface element
-    // - a flux hdiv boundary element
+    // - a flux hdiv boundary element (conditionally)
     int64_t nel = mGeometry->NElements();
     for(int64_t el = 0; el<nel; el++)
     {
@@ -961,13 +1311,13 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
             TPZGeoElBC gbc2(gelwrapside,first_lagrange);
             TPZGeoElSide gelintface1(gbc2.CreatedElement());
             TPZGeoElBC gbc3(gelintface1,mSimData.mTGeometry.m_MortarMatId);
-            TPZGeoElSide gelintface2(gbc3.CreatedElement());
-            TPZGeoElBC gbc4(gelintface2,second_lagrange);
-            TPZGeoElSide gelmortar(gbc4.CreatedElement());
+            TPZGeoElSide gelmortar(gbc3.CreatedElement());
+            TPZGeoElBC gbc4(gelmortar,second_lagrange);
+            TPZGeoElSide gelinterface2(gbc4.CreatedElement());
             // this method has to be adjusted if we create MHM meshes
-            if(!gelmortar.HasNeighbour(bcmatids))
+            if(!gelinterface2.HasNeighbour(bcmatids))
             {
-                TPZGeoElBC gbc5(gelmortar,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+                TPZGeoElBC gbc5(gelinterface2,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
             }
         }
     }
@@ -986,21 +1336,47 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
 #ifdef PZDEBUG
     std::cout << "Inserting material objects for dimension " << dim << std::endl;
 #endif
-    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
-    for (auto chunk : DomainDimNameAndPhysicalTag[dim]) {
+    if(dim == mGeometry->Dimension())
+    {
+        std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+        for (auto chunk : DomainDimNameAndPhysicalTag[dim]) {
 #ifdef PZDEBUG
-        std::string material_name = chunk.first;
-        std::cout << "physical name = " << material_name << " matid " << chunk.second<< std::endl;
+            std::string material_name = chunk.first;
+            std::cout << "physical name = " << material_name << " matid " << chunk.second<< std::endl;
 #endif
-        matids.insert(chunk.second);
-    }
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
+            matids.insert(chunk.second);
+        }
+        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+            int bc_id   = get<0>(chunk);
 #ifdef PZDEBUG
-        std::cout << "boundary condition matid " << bc_id << std::endl;
+            std::cout << "boundary condition matid " << bc_id << std::endl;
 #endif
-        bcmatids.insert(bc_id);
+            bcmatids.insert(bc_id);
+        }
+    } else
+    {
+        std::vector<std::map<std::string,int>> &DomainDimNameAndPhysicalTag =
+        mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag;
+        for (auto chunk : DomainDimNameAndPhysicalTag[dim]) {
+#ifdef PZDEBUG
+            std::string material_name = chunk.first;
+            std::cout << "physical name = " << material_name << " matid " << chunk.second<< std::endl;
+#endif
+            matids.insert(chunk.second);
+        }
+        if(dim == mGeometry->Dimension()-1)
+        {
+            TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue;
+            for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+                int bc_id   = get<0>(chunk);
+#ifdef PZDEBUG
+                std::cout << "boundary condition matid " << bc_id << std::endl;
+#endif
+                bcmatids.insert(bc_id);
+            }
+        }
+
     }
 }
 

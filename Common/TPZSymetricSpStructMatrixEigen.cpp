@@ -613,7 +613,7 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
                         }
                 rhs.AddFel(ef.fConstrMat, ek.fSourceIndex, ek.fDestinationIndex);
             }
-        if (count > 1000) std::cout << std::endl;
+//        if (count > 1000) std::cout << std::endl;
             if (subcmesh) {
 //                fAsTotalAdkelsSub +=subcmesh->fTimeTotalAddKels;
 //                fAsTotalCalcStifSub += subcmesh->fTimeTotalCalcStiff;

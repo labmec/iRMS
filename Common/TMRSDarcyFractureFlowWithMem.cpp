@@ -4,8 +4,7 @@
 //
 //  Created by Omar Durán on 10/10/19.
 
-#include "TMRSDarcyFlowWithMem_impl.h"
-
+#include "TMRSDarcyFractureFlowWithMem_impl.h"
 #include "TMRSMemory.h"
 
-template class TMRSDarcyFlowWithMem<TMRSMemory>;
+template class TMRSDarcyFractureFlowWithMem<TMRSMemory>;

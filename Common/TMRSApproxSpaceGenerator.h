@@ -35,6 +35,9 @@ public:
     
     TPZGeoMesh * mGeometry;
     
+    /// subdomain index of each geometric element
+    TPZVec<int64_t> mGelSubdomain;
+    
     TMRSDataTransfer mSimData;
     
     TPZMultiphysicsCompMesh * mMixedOperator;
@@ -48,6 +51,12 @@ public:
     
     // Copy assignment operator
     TMRSApproxSpaceGenerator &operator=(const TMRSApproxSpaceGenerator &other);
+    
+    // Copy constructor
+    TMRSApproxSpaceGenerator(const TMRSApproxSpaceGenerator &copy)
+    {
+        DebugStop();
+    }
     
     /// Destructor
     ~TMRSApproxSpaceGenerator();
@@ -93,7 +102,7 @@ public:
     TPZCompMesh *HDivMortarFluxCmesh(char mortarlagrange);
     
     /// create a pressure with mortar elements
-    TPZCompMesh *PressureMortarCmesh(char lagrangepressure, char lagrangemortar);
+    TPZCompMesh *PressureMortarCmesh(char firstlagrangepressure, char lagrangepressure, char lagrangemortar);
     
     /// insert the necessary interface elements
     void InsertInterfaceElements();
