@@ -13,6 +13,11 @@
 #include "TPZMixedDarcyWithFourSpaces.h"
 #include "TPZDarcyFlowWithMem.h"
 #include "TPZSSpMatrixEigen.h"
+#include "TMRSDarcyFractureFlowWithMem_impl.h"
+#include "TMRSDarcyMemory.h"
+#include "TMRSMemory.h"
+#include "TMRSTransportMemory.h"
+
 bool TPZFastCondensedElement::fSkipLoadSolution = true;
 
 /**
@@ -26,9 +31,11 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     if(this->fMatrixComputed == false)
     {
      
+        
         TPZDarcyFlowWithMem *matDarcy = dynamic_cast<TPZDarcyFlowWithMem *>(Material());
-        if (!matDarcy) {
-            DebugStop();
+        TMRSDarcyFractureFlowWithMem<TMRSMemory> *matfrac = dynamic_cast<TMRSDarcyFractureFlowWithMem<TMRSMemory> *>(Material());
+        if (! (matDarcy || matfrac) ) {
+            std::cout<<"Element Group¿?"<<std::endl;
         }
         
         TPZCondensedCompEl::CalcStiff(ek, ef);

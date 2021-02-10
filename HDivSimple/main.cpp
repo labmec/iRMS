@@ -45,7 +45,6 @@ void SimpleTest2DHDiv(){
     REAL Y =10.0;
     aspace.CreateUniformMesh(nx, L, ny, Y);
     
-    
     std::string name = "2D_geo";
     //    aspace.PrintGeometry(name);
     aspace.ApplyUniformRefinement(0);
@@ -627,8 +626,8 @@ TMRSDataTransfer SettingPaper3D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 15.0;
-    REAL pressure_out = 15.0;
+    REAL pressure_in = 4.0;
+    REAL pressure_out = 1.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
@@ -673,6 +672,9 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
+    
+    //FracProperties
+    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
     
     
     // PostProcess controls
@@ -733,6 +735,8 @@ void LearningReadFracMesh()
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
+    std::string name("fractureTest.vtk");
+    aspace.PrintGeometry(name);
     
     aspace.SetDataTransfer(sim_data);
     

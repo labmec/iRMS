@@ -26,7 +26,7 @@ class TPZReservoirTools
 {
 public:
     static void CreatedCondensedElements(TPZCompMesh *cmesh, bool KeepOneLagrangian, bool keepmatrix);
-    
+    static void CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix);
 };
 
 

@@ -18,6 +18,8 @@
 #include "TMRSDarcyFractureFlowWithMem.h"
 #include "TPZLagrangeMultiplier.h"
 #include "TPZCompElHDivCollapsed.h"
+#include "TMRSDarcyMemory.h"
+#include "TMRSTransportMemory.h"
 
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
@@ -1084,14 +1086,19 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         fracmat = new TMRSDarcyFractureFlowWithMem<TMRSMemory>(materia_id,dimension-1);
         TMRSMemory defaultmem;
         // neste ponto podemos inserir as propriedades de permeabilidade absoluta
-        fracmat->SetDefaultMem(defaultmem);
+//        defaultmem.m_kappa = 0.00000001;
+//        defaultmem.m_kappa_inv = 1.0/0.00000001;
+//        defaultmem.SetPermeability(0.00000001);
+//        defaultmem.m_p=100000000.0;
+//        fracmat->SetDefaultMem(defaultmem);
 //            volume = new TPZMixedDarcyFlow(materia_id, d);
 //             volume->SetPermeability(1.0);
         fracmat->SetDataTransfer(mSimData);
         mMixedOperator->InsertMaterialObject(fracmat);
 
     }
-        
+    
+   
     if (!volume) {
         DebugStop();
     }
@@ -1142,6 +1149,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     active_approx_spaces[4] = 0;
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
 
+    //Insert fractures properties
+    InitializeFracProperties(mMixedOperator);
     // insert the interface elements
     InsertInterfaceElements();
 #ifdef PZDEBUG
@@ -1172,7 +1181,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     // this will group the volumetric AND fracture elements
     // fracture elements should be condensed in FASTCondense elements
     // Maybe we should increment nelconnected of the fracture connects at this point?
-    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
+//    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
+    TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false);
 #ifdef PZDEBUG
     {
         std::stringstream file_name;
@@ -1187,7 +1197,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     mMixedOperator->ComputeNodElCon();
     // this shouldn't affect the fracture elements as they won't have condensable connects
     // we should create fast condensed elements at this point...
-    TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
+//    TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
+    TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
 #ifdef PZDEBUG
     {
         std::stringstream file_name;
@@ -2606,6 +2617,110 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
         std::cout<<"val: "<<val2(0,0)<<std::endl;
         TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         MixedFluxPressureCmesh->InsertMaterialObject(face);
+    }
+    
+}
+void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh * MixedOperator)
+{
+    
+    if (!MixedOperator) {
+        DebugStop();
+    }
+    
+    TPZCompMesh * cmesh = MixedOperator;
+    TPZMaterial * material = cmesh->FindMaterial(10); //matIdFractures;
+    if (!material) {
+        DebugStop();
+    }
+    
+    TPZMatWithMem<TMRSMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material);
+    if (!mat_with_memory) {
+        DebugStop();
+    }
+    
+    // Set initial porosity, permeability, saturations, etc ...
+    {
+        std::shared_ptr<TPZAdmChunkVector<TMRSMemory>> & memory_vector = mat_with_memory->GetMemory();
+        int ndata = memory_vector->NElements();
+        
+        for (int i = 0; i < ndata; i++) {
+            TMRSMemory &mem = memory_vector.get()->operator [](i);
+            mem.m_sw = 0.0;
+            mem.m_phi = 0.1;
+            REAL kappa = mSimData.mTFracProperties.m_Permeability;
+            mem.m_kappa.Resize(3, 3);
+            mem.m_kappa.Zero();
+            mem.m_kappa_inv.Resize(3, 3);
+            mem.m_kappa_inv.Zero();
+            for (int j = 0; j < 3; j++) {
+                mem.m_kappa(j,j) = kappa;
+                mem.m_kappa_inv(j,j) = 1.0/kappa;
+            }
+        }
+    }
+    
+    //Por agora colocarei as permeabilidades aqui, o certo é por no FastCondensed ou na celula de transporte
+    TPZMaterial * material1 = cmesh->FindMaterial(1); //matIdFractures;
+    if (!material) {
+        DebugStop();
+    }
+    
+    TPZMatWithMem<TMRSMemory> * mat_with_memory1 = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material1);
+    if (!mat_with_memory) {
+        DebugStop();
+    }
+    
+    // Set initial porosity, permeability, saturations, etc ...
+    {
+        std::shared_ptr<TPZAdmChunkVector<TMRSMemory>> & memory_vector1 = mat_with_memory1->GetMemory();
+        int ndata1 = memory_vector1->NElements();
+        
+        for (int i = 0; i < ndata1; i++) {
+            TMRSMemory &mem = memory_vector1.get()->operator [](i);
+            mem.m_sw = 0.0;
+            mem.m_phi = 0.1;
+            REAL kappa = 1.0e-5;
+            mem.m_kappa.Resize(3, 3);
+            mem.m_kappa.Zero();
+            mem.m_kappa_inv.Resize(3, 3);
+            mem.m_kappa_inv.Zero();
+            for (int j = 0; j < 3; j++) {
+                mem.m_kappa(j,j) = kappa;
+                mem.m_kappa_inv(j,j) = 1.0/kappa;
+            }
+        }
+    }
+    
+    
+    TPZMaterial * material2 = cmesh->FindMaterial(2); //K22;
+    if (!material) {
+        DebugStop();
+    }
+    
+    TPZMatWithMem<TMRSMemory> * mat_with_memory2 = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material2);
+    if (!mat_with_memory) {
+        DebugStop();
+    }
+    
+    // Set initial porosity, permeability, saturations, etc ...
+    {
+        std::shared_ptr<TPZAdmChunkVector<TMRSMemory>> & memory_vector2 = mat_with_memory2->GetMemory();
+        int ndata1 = memory_vector2->NElements();
+        
+        for (int i = 0; i < ndata1; i++) {
+            TMRSMemory &mem = memory_vector2.get()->operator [](i);
+            mem.m_sw = 0.0;
+            mem.m_phi = 0.1;
+            REAL kappa = 1.0e-6;
+            mem.m_kappa.Resize(3, 3);
+            mem.m_kappa.Zero();
+            mem.m_kappa_inv.Resize(3, 3);
+            mem.m_kappa_inv.Zero();
+            for (int j = 0; j < 3; j++) {
+                mem.m_kappa(j,j) = kappa;
+                mem.m_kappa_inv(j,j) = 1.0/kappa;
+            }
+        }
     }
     
 }

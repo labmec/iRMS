@@ -850,6 +850,85 @@ public:
         
     };
     
+    class TFracProperties : public TMRSSavable {
+        
+    public:
+        
+        REAL m_Permeability;
+        
+        /**
+         * @brief Default constructor
+         */
+        TFracProperties(){
+            
+            m_Permeability=1.0;
+            
+        }
+        /**
+         * @brief Destructor
+         */
+        ~TFracProperties(){
+            
+        }
+        
+        /**
+         * @brief Copy constructor
+         */
+        TFracProperties(const TFracProperties & other){
+            m_Permeability=other.m_Permeability;
+            
+        }
+        /**
+         * @brief Copy assignment operator
+         */
+        TFracProperties & operator=(const TFracProperties &other){
+            
+            // check for self-assignment
+            if(&other == this){
+                return *this;
+            }
+            
+           m_Permeability=other.m_Permeability;
+            
+            return *this;
+        }
+        
+        bool operator==(const TFracProperties &other){
+            
+            // check for self-assignment
+            if(&other == this){
+                return true;
+            }
+            
+            return
+             m_Permeability==other.m_Permeability;
+            
+        }
+        
+        
+        void Write(TPZStream &buf, int withclassid) const{ //ok
+            buf.Write(&m_Permeability);
+
+        }
+        
+        void Read(TPZStream &buf, void *context){ //ok
+            buf.Read(&m_Permeability);
+           
+        }
+        
+        virtual int ClassId() const {
+            return Hash("TMRSDataTransfer::TFracProperties");
+        }
+        
+        
+        
+        void Print() const {
+            std::cout << "m_Permeability: " <<m_Permeability <<std::endl;
+          
+        }
+        
+    };
+    
     TGeometry mTGeometry;
     TPetroPhysics mTPetroPhysics;
     TFluidProperties mTFluidProperties;
@@ -858,6 +937,7 @@ public:
     TBoundaryConditions mTBoundaryConditions;
     TNumerics mTNumerics;
     TPostProcess mTPostProcess;
+    TFracProperties mTFracProperties;
     
 };
 

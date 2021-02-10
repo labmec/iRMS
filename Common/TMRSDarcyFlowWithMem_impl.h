@@ -207,6 +207,8 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
     long gp_index = datavec[qb].intGlobPtIndex;
     TMEM & memory = this->GetMemory().get()->operator[](gp_index);
     
+//    std::cout<<"Kapa inv= "<<memory.m_kappa_inv<<std::endl;
+//    std::cout<<"Kapa= "<<memory.m_kappa<<std::endl;
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
     
 //    TRSLinearInterpolator & Krw = mSimData.mTPetroPhysics.mLayer_Krw_RelPerModel[0];
