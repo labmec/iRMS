@@ -17,6 +17,11 @@
 #include "TMRSDarcyMemory.h"
 #include "TMRSMemory.h"
 #include "TMRSTransportMemory.h"
+#include "pzlog.h"
+
+#ifdef LOG4CXX
+static LoggerPtr logger(Logger::getLogger("pz.mesh.tpzcondensedcompel"));
+#endif
 
 bool TPZFastCondensedElement::fSkipLoadSolution = true;
 
@@ -31,16 +36,41 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     if(this->fMatrixComputed == false)
     {
      
-        
-        TPZDarcyFlowWithMem *matDarcy = dynamic_cast<TPZDarcyFlowWithMem *>(Material());
-        TMRSDarcyFractureFlowWithMem<TMRSMemory> *matfrac = dynamic_cast<TMRSDarcyFractureFlowWithMem<TMRSMemory> *>(Material());
+        TPZMaterial *mat = Material();
+        TPZDarcyFlowWithMem *matDarcy = dynamic_cast<TPZDarcyFlowWithMem *>(mat);
+        TMRSDarcyFractureFlowWithMem<TMRSMemory> *matfrac = dynamic_cast<TMRSDarcyFractureFlowWithMem<TMRSMemory> *>(mat);
         if (! (matDarcy || matfrac) ) {
-            std::cout<<"Element Group¿?"<<std::endl;
+            static bool passed = false;
+            if(!passed)
+            {
+                std::cout<<"I dont recognize the material type Element Group¿?"<<std::endl;
+                passed = true;
+            }
         }
         
-        TPZCondensedCompEl::CalcStiff(ek, ef);
-        ShrinkElementMatrix(ek, fEK);
-        ShrinkElementMatrix(ef, fEF);
+        TPZCondensedCompEl::CalcStiff(fEK, fEF);
+//#ifdef LOG4CXX
+//        if(logger->isDebugEnabled())
+//        {
+//            std::stringstream sout;
+//            sout << "eklog " << Norm(ek.fMat);
+//            LOGPZ_DEBUG(logger,sout.str())
+//        }
+//#endif
+//        TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *>(fReferenceCompEl);
+//        if(!elgr)
+//        {
+//            ShrinkElementMatrix(ek, fEK);
+//            ShrinkElementMatrix(ef, fEF);
+//        }
+//    #ifdef LOG4CXX
+//            if(logger->isDebugEnabled())
+//            {
+//                std::stringstream sout;
+//                sout << "ekshrink_log " << Norm(fEK.fMat);
+//                LOGPZ_DEBUG(logger,sout.str())
+//            }
+//    #endif
         this->fMatrixComputed = true;
     }
     

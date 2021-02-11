@@ -1181,7 +1181,9 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     // this will group the volumetric AND fracture elements
     // fracture elements should be condensed in FASTCondense elements
     // Maybe we should increment nelconnected of the fracture connects at this point?
-//    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
+    // only volumetric elements
+    //TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
+    // only fracture elements
     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false);
 #ifdef PZDEBUG
     {
@@ -1193,6 +1195,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 #endif
     std::set<int64_t> groups2;
 
+    // this will act only on volumetric elements
     TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
     mMixedOperator->ComputeNodElCon();
     // this shouldn't affect the fracture elements as they won't have condensable connects
