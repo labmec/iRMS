@@ -28,8 +28,8 @@ void  ForcingFunction (const TPZVec<REAL> &pt, TPZVec<STATE> &disp);
 
 int main(){
     InitializePZLOG();
-    LearningReadFracMesh();
-//    SimpleTest2DHDiv();
+//    LearningReadFracMesh();
+    SimpleTest2DHDiv();
 //    SimpleTest2DHDiv();
 }
 
@@ -95,6 +95,8 @@ void SimpleTest2DHDiv(){
     {
         std::ofstream mout("mphysics.txt");
         mixed_operator->Print(mout);
+        std::ofstream fout("fluxmesh.txt");
+        mixed_operator->MeshVector()[0]->Print(fout);
     }
     
 }
