@@ -980,6 +980,7 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
             volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
+            
 //            volume = new TPZMixedDarcyFlow(materia_id, d);
 //             volume->SetPermeability(1.0);
             volume->SetDataTransfer(mSimData);
@@ -1182,9 +1183,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     // fracture elements should be condensed in FASTCondense elements
     // Maybe we should increment nelconnected of the fracture connects at this point?
     // only volumetric elements
-    //TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
+    
+//    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
     // only fracture elements
-    TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false);
+     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false);
 #ifdef PZDEBUG
     {
         std::stringstream file_name;
@@ -1400,8 +1402,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     int dimension = mGeometry->Dimension();
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-//    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-    TPZDarcyFlowWithMem *volume = nullptr;
+    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
+//    TPZDarcyFlowWithMem *volume = nullptr;
     mMixedOperator->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
@@ -1409,10 +1411,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int material_id = chunk.second;
-//            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
-//            volume->SetDataTransfer(mSimData);
+            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(material_id,d);
+            volume->SetDataTransfer(mSimData);
             
-                volume = new TPZDarcyFlowWithMem(material_id, d);
+//                volume = new TPZDarcyFlowWithMem(material_id, d);
 //                volume->SetPermeability(1.0);
             mMixedOperator->InsertMaterialObject(volume);
         }
@@ -2650,7 +2652,8 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             TMRSMemory &mem = memory_vector.get()->operator [](i);
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
-            REAL kappa = mSimData.mTFracProperties.m_Permeability;
+//            REAL kappa = mSimData.mTFracProperties.m_Permeability;
+            REAL kappa = 1; // Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
@@ -2682,7 +2685,8 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             TMRSMemory &mem = memory_vector1.get()->operator [](i);
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
-            REAL kappa = 1.0e-5;
+//            REAL kappa = 1.0e-5;
+            REAL kappa = 2.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
@@ -2714,7 +2718,8 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             TMRSMemory &mem = memory_vector2.get()->operator [](i);
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
-            REAL kappa = 1.0e-6;
+//            REAL kappa = 1.0e-6;
+            REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);

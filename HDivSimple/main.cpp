@@ -30,6 +30,7 @@ int main(){
     InitializePZLOG();
     LearningReadFracMesh();
 //    SimpleTest2DHDiv();
+//    SimpleTest2DHDiv();
 }
 
 void SimpleTest2DHDiv(){
@@ -40,7 +41,7 @@ void SimpleTest2DHDiv(){
     
     //The problem geometry is a rectangle with LxY dimentions and elements number in x y and nxXny
     int nx=2;
-    int ny=2;
+    int ny=1;
     REAL L =10.0;
     REAL Y =10.0;
     aspace.CreateUniformMesh(nx, L, ny, Y);
@@ -150,7 +151,8 @@ TMRSDataTransfer SettingSimple2DHdiv(){
     sim_data.mTNumerics.m_dt      = 0.03 ;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = false;
-    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
+//    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
+    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     std::vector<REAL> grav(3,0.0);
     grav[1] = -0.0;//-9.81; //Needs to be multiplied by a constant
     sim_data.mTNumerics.m_gravity = grav;
@@ -772,6 +774,7 @@ void LearningReadFracMesh()
     std::cout << "Number of dof = " << n_dof << std::endl;
     mixed_operator->UpdatePreviousState(-1);
     mixedAnal->fsoltransfer.TransferFromMultiphysics();
+    
     mixedAnal->PostProcessTimeStep();
     {
         std::ofstream mout("mphysics.txt");
