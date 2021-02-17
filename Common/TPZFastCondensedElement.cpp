@@ -271,7 +271,7 @@ void TPZFastCondensedElement::PressureEquations(TPZVec<int64_t> &eqs)
     TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(fReferenceCompEl);
     if(!mphys) DebugStop();
     int nel = mphys->NMeshes();
-    if(nel != 4 && nel != 6) DebugStop();
+//    if(nel != 4 && nel != 6) DebugStop();
     int firstpressure_connect = mphys->Element(0)->NConnects();
     int numpressure_connects = mphys->Element(1)->NConnects();
     int numpressure_equations = 0;
@@ -322,7 +322,7 @@ void TPZFastCondensedElement::BoundaryFluxEquations(TPZVec<int64_t> &eqs)
     TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(fReferenceCompEl);
     if(!mphys) DebugStop();
     int nel = mphys->NMeshes();
-    if(nel != 4 && nel != 6) DebugStop();
+//    if(nel != 4 && nel != 6) DebugStop();
     int firstflux_connect = 0;
     int numflux_connects = mphys->Element(0)->NConnects();
     int numflux_equations = 0;

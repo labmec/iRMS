@@ -68,36 +68,102 @@ void SimpleTest2DHDiv(){
     
     //This parameter should be always "true"
     bool UsePardiso_Q = true;
-    TMRSMixedAnalysis *mixedAnal = new TMRSMixedAnalysis(mixed_operator,must_opt_band_width_Q);
+    //Jose
     
     //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
     bool UsingPzSparse = false;
+    aspace.BuildTransportMultiPhysicsCompMesh();
+    TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
+    
+    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+    sfi_analysis->SetDataTransfer(&sim_data);
+    
+    bool usingpzSparse = false;
+    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
+    
+    //    TPZMultiphysicsCompMesh *AuxPosProcessProps = aspace.BuildAuxPosProcessCmesh(sfi_analysis->fAlgebraicDataTransfer);
+    
+    // Render a graphical map
+    //    PostProcessResProps(AuxPosProcessProps, &sfi_analysis->m_transport_module->fAlgebraicTransport);
+    
+    int n_steps = sim_data.mTNumerics.m_n_steps;
+    REAL dt = sim_data.mTNumerics.m_dt;
+    
+    
+    TPZStack<REAL,100> reporting_times;
+    reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
+    
+    REAL sim_time = 0.0;
+    int pos =0;
+    REAL current_report_time = reporting_times[pos];
+    
+    // Print initial condition
+    sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
+    //    sfi_analysis->SetMixedMeshElementSolution(sfi_analysis->m_mixed_module->Mesh());
+    //    sfi_analysis->PostProcessTimeStep();
+    REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+    std::cout << "Mass report at time : " << 0.0 << std::endl;
+    std::cout << "Mass integral :  " << initial_mass << std::endl;
+    
+    TPZFastCondensedElement::fSkipLoadSolution = true;
+    for (int it = 1; it <= n_steps; it++) {
+        sim_time = it*dt;
+        if (sim_time >=  current_report_time) {
+            TPZFastCondensedElement::fSkipLoadSolution = false;
+        }
+        sfi_analysis->m_transport_module->SetCurrentTime(dt);
+        sfi_analysis->RunTimeStep();
+        
+        
+        if (sim_time >=  current_report_time) {
+            std::cout << "Time step number:  " << it << std::endl;
+            std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
+            sfi_analysis->PostProcessTimeStep();
+            pos++;
+            current_report_time =reporting_times[pos];
+            
+            REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+            std::cout << "Mass report at time : " << sim_time << std::endl;
+            std::cout << "Mass integral :  " << mass << std::endl;
+            TPZFastCondensedElement::fSkipLoadSolution = true;
+            
+            
+            
+            
+        }
+    }
+    
+    
+    return;
+    
+    //
+    return;
     
     //The parallelism is just implemented for the "UsingPzSparse=True" case, with eigen for now is running in serial (the next task to do)
-    mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-    mixedAnal->SetDataTransfer(&sim_data);
-    mixedAnal->Assemble();
-    size_t n_dof = mixedAnal->Solver().Matrix()->Rows();
-    
-#ifdef USING_BOOST
-    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
-#endif
-    mixedAnal->Solve();
-#ifdef USING_BOOST
-    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
-    auto deltat = tsim2-tsim1;
-    std::cout << "Overal solve calling time " << deltat << std::endl;
-#endif
-    std::cout << "Number of dof = " << n_dof << std::endl;
-    mixed_operator->UpdatePreviousState(-1);
-    mixedAnal->fsoltransfer.TransferFromMultiphysics();
-    mixedAnal->PostProcessTimeStep();
-    {
-        std::ofstream mout("mphysics.txt");
-        mixed_operator->Print(mout);
-        std::ofstream fout("fluxmesh.txt");
-        mixed_operator->MeshVector()[0]->Print(fout);
-    }
+//    mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+//    mixedAnal->SetDataTransfer(&sim_data);
+//    mixedAnal->Assemble();
+//    size_t n_dof = mixedAnal->Solver().Matrix()->Rows();
+//
+//#ifdef USING_BOOST
+//    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+//#endif
+//    mixedAnal->Solve();
+//#ifdef USING_BOOST
+//    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+//    auto deltat = tsim2-tsim1;
+//    std::cout << "Overal solve calling time " << deltat << std::endl;
+//#endif
+//    std::cout << "Number of dof = " << n_dof << std::endl;
+//    mixed_operator->UpdatePreviousState(-1);
+//    mixedAnal->fsoltransfer.TransferFromMultiphysics();
+//    mixedAnal->PostProcessTimeStep();
+//    {
+//        std::ofstream mout("mphysics.txt");
+//        mixed_operator->Print(mout);
+//        std::ofstream fout("fluxmesh.txt");
+//        mixed_operator->MeshVector()[0]->Print(fout);
+//    }
     
 }
 
@@ -754,6 +820,10 @@ void LearningReadFracMesh()
     //This parameter should be always "true"
     bool UsePardiso_Q = true;
     TMRSMixedAnalysis *mixedAnal = new TMRSMixedAnalysis(mixed_operator,must_opt_band_width_Q);
+   
+    
+    
+   
     
     //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
     bool UsingPzSparse = false;

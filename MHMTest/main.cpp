@@ -110,7 +110,7 @@ void SimpleTest2D();
 //
 int main(){
 
-//      SimpleTest2D();
+      SimpleTest2D();
 //    UNISIMTest();
     return 0;
 }
@@ -119,7 +119,7 @@ void SimpleTest2D(){
     TMRSDataTransfer sim_data  = SettingSimple2D();
    
     TMRSApproxSpaceGenerator aspace;
-    aspace.CreateUniformMesh(15, 10, 15, 10);
+    aspace.CreateUniformMesh(20, 10, 1, 10);
     
 //    aspace.CreateUniformMesh(5, 10,5, 10);
     std::string name = "2D_geo";
@@ -175,7 +175,7 @@ void SimpleTest2D(){
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
         if (sim_time >=  current_report_time) {
-            TPZFastCondensedElement::fSkipLoadSolution = false;
+            TPZFastCondensedElement::fSkipLoadSolution = true;
         }
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
@@ -1295,11 +1295,12 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_sfi_tol = 0.001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 5;
+    sim_data.mTNumerics.m_n_steps = 50;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 0.01 ;//*day;
+    sim_data.mTNumerics.m_dt      = 0.009 ;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
+    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     std::vector<REAL> grav(3,0.0);
     grav[1] = -0.0;//-9.81;
     sim_data.mTNumerics.m_gravity = grav;

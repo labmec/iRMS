@@ -160,6 +160,7 @@ TMRSDataTransfer SettingSimple2D(){
     sim_data.mTNumerics.m_dt      = 0.01 ;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
+     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     std::vector<REAL> grav(3,0.0);
     grav[1] = 0.0;//-0.0005;//-9.81;//Needs to be multiplied by a constant
     sim_data.mTNumerics.m_gravity = grav;

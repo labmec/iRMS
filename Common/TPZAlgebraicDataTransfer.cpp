@@ -11,6 +11,7 @@
 #include "pzelementgroup.h"
 #include "pzmultiphysicselement.h"
 #include "TPZFastCondensedElement.h"
+#include "TPZVTKGeoMesh.h"
 
 /// Default constructor
 TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer() : fFluxMesh(0), fTransportMesh(0)
@@ -184,6 +185,7 @@ int SideOriginalIndex(TPZGeoEl *gel, int side)
 void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
 {
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
+    
     int64_t nel = gmesh->NElements();
     fInterfaceByGeom.Redim(nel,6);
     for(int64_t el = 0; el<nel; el++)
@@ -206,6 +208,9 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             int64_t gelindex = facevec[iface].fInterface_gelindex;
             int64_t celindex = facevec[iface].fInterface_celindex;
             TPZCompEl *cel = fTransportMesh->Element(celindex);
+            if(cel->Reference()->MaterialId()==100){
+                int ok=1;
+            }
             TPZMultiphysicsInterfaceElement *intface = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
             TPZCompElSide leftside = intface->Left();
             TPZCompEl *left = leftside.Element();
@@ -259,6 +264,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
         }
     }
     
+//    fInterfaceByGeom.Print(std::cout);
     fVolumeElements.Resize(volumecount);
     
     int64_t nelcomp = fTransportMesh->NElements();
@@ -420,6 +426,9 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
         {
             TPZCompEl *cel = *it;
             TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(cel);
+            if(!mphys){
+                DebugStop();
+            }
             TPZGeoEl *gel = cel->Reference();
             int64_t gelindex = gel->Index();
             TPZCompEl *hdiv = mphys->ReferredElement(0);

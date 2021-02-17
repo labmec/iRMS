@@ -364,7 +364,7 @@ void TMRSTransportAnalysis::AnalyzePattern(){
 //    m_transmissibility += m_mass;
 //    m_analysis.analyzePattern(m_transmissibility);
     fTransportSpMatrix = new TPZAnalysisAuxEigen(&fAlgebraicTransport);
-//    fTransportSpMatrix->SetAlgebraicTransport(&fAlgebraicTransport);
+    fTransportSpMatrix->SetAlgebraicTransport(&fAlgebraicTransport);
     fTransportSpMatrix->AnalyzePattern();
     // Because in some parts this objects are needed.
     Solution().Resize(fTransportSpMatrix->NRhsRows(), 1);
