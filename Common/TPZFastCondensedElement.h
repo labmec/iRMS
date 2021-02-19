@@ -34,6 +34,21 @@ protected:
     // reference stifness matrix and rhs
     TPZElementMatrix fEK, fEF;
     
+    // vector of pressure connects
+    TPZManVector<int64_t> fPressureConnects;
+    // vector of flux connects
+    TPZManVector<int64_t> fFluxConnects;
+    // connect index of the average pressure
+    int64_t fAveragePressureConnect;
+
+    // value of pressure values for unit body force
+    TPZManVector<STATE,100> fBodyForcePressureRef;
+    // value of flux values for unit body force
+    TPZManVector<STATE,100> fBodyForceFluxRef;
+    
+    // value of pressures for constant unit pressure
+    TPZManVector<STATE,100> fConstantUnitPressure;
+
 public:
     static bool fSkipLoadSolution;
     
@@ -49,13 +64,14 @@ public:
     
 protected:
     
-    void ShrinkElementMatrix(TPZElementMatrix &ekinput, TPZElementMatrix &output);
-    
     // extract the solution vector of the condensed element
     void GetSolutionVector(TPZFMatrix<STATE> &solvec);
     
     // global indices of the pressure equations
     void PressureEquations(TPZVec<int64_t> &eqs);
+    
+    // global indices of the pressure equations
+    void InternalFluxEquations(TPZVec<int64_t> &eqs);
     
     // global index of the average pressure equation
     int64_t AveragePressureEquation();
@@ -65,15 +81,19 @@ protected:
     
     // adjust the multiplying coeficients of the pressure equations
     void AdjustPressureCoefficients();
+    
+    /// compute internal coeficients as a function of the average pressure and boundary fluxes
+    void ComputeInternalCoefficients();
+    
+    // Identify the connects and associated equations
+    void IdentifyConnectandEquations();
+    
+    // Identify the condensed elements in this structure
+    void FindCondensed(TPZStack<TPZCondensedCompEl *> &condensedelements);
 
 public:
     
-    TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix = true) :
-        TPZCondensedCompEl(ref,keepmatrix)
-    {
-       
-        
-    }
+    TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix = false);
     
     
     /// Assignement constructor
@@ -98,6 +118,12 @@ public:
         
     }
 
+    /// compute the body force reference values
+    void ComputeBodyforceRefValues();
+    
+    /// compute pressure equation values with respect to a constant pressure
+    /// this will zero the body forces of the condensed elements
+    void ComputeConstantPressureValues();
     /**
      * @brief Computes the element stifness matrix and right hand side
      * @param ek element stiffness matrix

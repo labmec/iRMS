@@ -25,6 +25,15 @@ static LoggerPtr logger(Logger::getLogger("pz.mesh.tpzcondensedcompel"));
 
 bool TPZFastCondensedElement::fSkipLoadSolution = true;
 
+
+TPZFastCondensedElement::TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix) :
+    TPZCondensedCompEl(ref,keepmatrix)
+{
+    IdentifyConnectandEquations();
+    
+}
+
+
 /**
  * @brief Computes the element stifness matrix and right hand side
  * @param ek element stiffness matrix
@@ -37,40 +46,10 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     {
      
         TPZMaterial *mat = Material();
-        TPZDarcyFlowWithMem *matDarcy = dynamic_cast<TPZDarcyFlowWithMem *>(mat);
-        TMRSDarcyFractureFlowWithMem<TMRSMemory> *matfrac = dynamic_cast<TMRSDarcyFractureFlowWithMem<TMRSMemory> *>(mat);
-        if (! (matDarcy || matfrac) ) {
-            static bool passed = false;
-            if(!passed)
-            {
-                std::cout<<"I dont recognize the material type Element Group¿?"<<std::endl;
-                passed = true;
-            }
-        }
         
         TPZCondensedCompEl::CalcStiff(fEK, fEF);
-//#ifdef LOG4CXX
-//        if(logger->isDebugEnabled())
-//        {
-//            std::stringstream sout;
-//            sout << "eklog " << Norm(ek.fMat);
-//            LOGPZ_DEBUG(logger,sout.str())
-//        }
-//#endif
-//        TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *>(fReferenceCompEl);
-//        if(!elgr)
-//        {
-//            ShrinkElementMatrix(ek, fEK);
-//            ShrinkElementMatrix(ef, fEF);
-//        }
-//    #ifdef LOG4CXX
-//            if(logger->isDebugEnabled())
-//            {
-//                std::stringstream sout;
-//                sout << "ekshrink_log " << Norm(fEK.fMat);
-//                LOGPZ_DEBUG(logger,sout.str())
-//            }
-//    #endif
+        ComputeBodyforceRefValues();
+        ComputeConstantPressureValues();
         this->fMatrixComputed = true;
     }
     
@@ -144,55 +123,7 @@ void TPZFastCondensedElement::CalcResidual(TPZElementMatrix &ef)
 
 }
 
-void TPZFastCondensedElement::ShrinkElementMatrix(TPZElementMatrix &input, TPZElementMatrix &output)
-{
-    output.fType = input.fType;
-    output.fMesh = input.fMesh;
-    int nindep = 0;
-    int64_t condense_size = 0;
-    int ncon = input.fConnect.size();
-    output.fConnect.Resize(ncon);
-    int firstnon = -1;
-    for (int ic = 0; ic<ncon; ic++) {
-        int64_t cindex = input.fConnect[ic];
-        TPZConnect &c = input.fMesh->ConnectVec()[cindex];
-        if(c.IsCondensed() && firstnon != -1)
-        {
-            DebugStop();
-        }
-        if(c.IsCondensed()) continue;
-        if(firstnon == -1) firstnon = ic;
-        output.fConnect[nindep] = cindex;
-        condense_size += c.NShape()*c.NState();
-        nindep++;
-    }
-    output.fConnect.Resize(nindep);
-    if(input.fType == TPZElementMatrix::EK)
-    {
-        output.fMat.Redim(condense_size,condense_size);
-    } else
-    {
-        output.fMat.Redim(condense_size,input.fMat.Cols());
-    }
-    int row_orig = input.fMat.Rows();
-    if(input.fType == TPZElementMatrix::EK)
-    {
-        input.fMat.GetSub(row_orig-condense_size, row_orig-condense_size, condense_size, condense_size, output.fMat);
-    } else
-    {
-        input.fMat.GetSub(row_orig-condense_size, 0, condense_size,
-                          input.fMat.Cols(), output.fMat);
-    }
-    output.fBlock.SetNBlocks(nindep);
-    
-    for (int ic = ncon-nindep; ic < ncon; ic++) {
-        output.fBlock.Set(ic-ncon+nindep, input.fBlock.Size(ic));
-    }
-    output.fBlock.Resequence();
-    
-    
-    
-}
+
 
 void TPZFastCondensedElement::SetLambda(REAL lambda){
     fLambda = lambda;
@@ -261,33 +192,30 @@ void TPZFastCondensedElement::LoadSolution()
     }
     else
     {
-        AdjustPressureCoefficients();
+        ComputeInternalCoefficients();
     }
 }
 
 // global indices of the pressure equations
 void TPZFastCondensedElement::PressureEquations(TPZVec<int64_t> &eqs)
 {
-    TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(fReferenceCompEl);
-    if(!mphys) DebugStop();
-    int nel = mphys->NMeshes();
-//    if(nel != 4 && nel != 6) DebugStop();
-    int firstpressure_connect = mphys->Element(0)->NConnects();
-    int numpressure_connects = mphys->Element(1)->NConnects();
+    int nconnects = fPressureConnects.size();
     int numpressure_equations = 0;
-    for(int ic = firstpressure_connect; ic < firstpressure_connect+numpressure_connects; ic++)
+    TPZCompMesh *cmesh = Mesh();
+    for(int ic = 0; ic < nconnects; ic++)
     {
-        TPZConnect &c = fReferenceCompEl->Connect(ic);
+        int64_t pressconnectindex = fPressureConnects[ic];
+        TPZConnect &c = cmesh->ConnectVec()[pressconnectindex];
         int neq = c.NShape()*c.NState();
         numpressure_equations += neq;
     }
-    TPZCompMesh *cmesh = Mesh();
     TPZBlock<STATE> &block = cmesh->Block();
     eqs.Resize(numpressure_equations, 0);
     int count = 0;
-    for(int ic = firstpressure_connect; ic < firstpressure_connect+numpressure_connects; ic++)
+    for(int ic = 0; ic < nconnects; ic++)
     {
-        TPZConnect &c = fReferenceCompEl->Connect(ic);
+        int64_t pressconnectindex = fPressureConnects[ic];
+        TPZConnect &c = cmesh->ConnectVec()[pressconnectindex];
         int neq = c.NShape()*c.NState();
         int64_t seqnum = c.SequenceNumber();
         int64_t firsteq = block.Position(seqnum);
@@ -299,55 +227,26 @@ void TPZFastCondensedElement::PressureEquations(TPZVec<int64_t> &eqs)
     }
 }
 
-// global index of the average pressure equation
-int64_t TPZFastCondensedElement::AveragePressureEquation()
+// global indices of the pressure equations
+void TPZFastCondensedElement::InternalFluxEquations(TPZVec<int64_t> &eqs)
 {
-    TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(fReferenceCompEl);
-    if(!mphys) DebugStop();
-    int nel = mphys->NMeshes();
-    if(nel != 4 && nel != 6) DebugStop();
-    int firstpressure_connect = mphys->Element(0)->NConnects()+mphys->Element(1)->NConnects()
-        +mphys->Element(2)->NConnects();
-    int numpressure_connects = mphys->Element(3)->NConnects();
-    if(numpressure_connects != 1) DebugStop();
-    TPZConnect &c = mphys->Connect(firstpressure_connect);
-    int64_t seq_num = c.SequenceNumber();
-    int64_t globeq = Mesh()->Block().Position(seq_num);
-    return globeq;
-}
-
-// global indices of the boundary flux equations
-void TPZFastCondensedElement::BoundaryFluxEquations(TPZVec<int64_t> &eqs)
-{
-    TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(fReferenceCompEl);
-    if(!mphys) DebugStop();
-    int nel = mphys->NMeshes();
-//    if(nel != 4 && nel != 6) DebugStop();
-    int firstflux_connect = 0;
-    int numflux_connects = mphys->Element(0)->NConnects();
+    int nconnects = fFluxConnects.size();
     int numflux_equations = 0;
     TPZCompMesh *cmesh = Mesh();
-
-    // skip the internal flux connect
-    for(int ic = firstflux_connect; ic < firstflux_connect+numflux_connects-1; ic++)
+    for(int ic = 0; ic < nconnects; ic++)
     {
-        TPZConnect &c = fReferenceCompEl->Connect(ic);
+        int64_t fluxconnectindex = fFluxConnects[ic];
+        TPZConnect &c = cmesh->ConnectVec()[fluxconnectindex];
         int neq = c.NShape()*c.NState();
         numflux_equations += neq;
-        if(c.HasDependency())
-        {
-            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
-            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
-            neq = cdep.NShape()*cdep.NState();
-            numflux_equations += neq;
-        }
     }
     TPZBlock<STATE> &block = cmesh->Block();
     eqs.Resize(numflux_equations, 0);
     int count = 0;
-    for(int ic = firstflux_connect; ic < firstflux_connect+numflux_connects-1; ic++)
+    for(int ic = 0; ic < nconnects; ic++)
     {
-        TPZConnect &c = fReferenceCompEl->Connect(ic);
+        int64_t fluxconnectindex = fFluxConnects[ic];
+        TPZConnect &c = cmesh->ConnectVec()[fluxconnectindex];
         int neq = c.NShape()*c.NState();
         int64_t seqnum = c.SequenceNumber();
         int64_t firsteq = block.Position(seqnum);
@@ -356,18 +255,71 @@ void TPZFastCondensedElement::BoundaryFluxEquations(TPZVec<int64_t> &eqs)
             eqs[count] = firsteq+i;
             count++;
         }
-        if(c.HasDependency())
+    }
+}
+
+
+// global index of the average pressure equation
+int64_t TPZFastCondensedElement::AveragePressureEquation()
+{
+    if(fAveragePressureConnect == -1) DebugStop();
+    
+    TPZConnect &c = Mesh()->ConnectVec()[fAveragePressureConnect];
+    int64_t seq_num = c.SequenceNumber();
+#ifdef PZDEBUG
+    if(Mesh()->Block().Size(seq_num) != 1) DebugStop();
+#endif
+    int64_t globeq = Mesh()->Block().Position(seq_num);
+    return globeq;
+}
+
+// global indices of the boundary flux (external) equations
+void TPZFastCondensedElement::BoundaryFluxEquations(TPZVec<int64_t> &eqs)
+{
+
+    int nconnects = NConnects();
+    int numflux_equations = 0;
+    TPZCompMesh *cmesh = Mesh();
+    // the last connect is the pressure connect
+    for(int ic = 0; ic < nconnects-1; ic++)
+    {
+        TPZConnect &c = Connect(ic);
+        int neq = c.NShape()*c.NState();
+        numflux_equations += neq;
+//        if(c.HasDependency())
+//        {
+//            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
+//            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
+//            neq = cdep.NShape()*cdep.NState();
+//            numflux_equations += neq;
+//        }
+    }
+    TPZBlock<STATE> &block = cmesh->Block();
+    eqs.Resize(numflux_equations, 0);
+    int count = 0;
+    for(int ic = 0; ic < nconnects-1; ic++)
+    {
+        TPZConnect &c = Connect(ic);
+        int neq = c.NShape()*c.NState();
+        int64_t seqnum = c.SequenceNumber();
+        int64_t firsteq = block.Position(seqnum);
+        for(int i = 0; i<neq; i++)
         {
-            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
-            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
-            seqnum = cdep.SequenceNumber();
-            firsteq = block.Position(seqnum);
-            for(int i = 0; i<neq; i++)
-            {
-                eqs[count] = firsteq+i;
-                count++;
-            }
+            eqs[count] = firsteq+i;
+            count++;
         }
+//        if(c.HasDependency())
+//        {
+//            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
+//            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
+//            seqnum = cdep.SequenceNumber();
+//            firsteq = block.Position(seqnum);
+//            for(int i = 0; i<neq; i++)
+//            {
+//                eqs[count] = firsteq+i;
+//                count++;
+//            }
+//        }
     }
 }
 
@@ -386,6 +338,7 @@ void TPZFastCondensedElement::AdjustPressureCoefficients()
     TPZManVector<STATE> flux_pressure(npres,0.);
     TPZManVector<STATE> boundary_fluxes(nflux,0.);
     STATE average = solution(averagepressureq,0);
+    // store coeficients of the f
     for (int ifl = 0; ifl<nflux; ifl++) {
         boundary_fluxes[ifl] = solution(fluxeqs[ifl],0);
     }
@@ -417,3 +370,269 @@ void TPZFastCondensedElement::AdjustPressureCoefficients()
             flux_pressure[ipr]/fLambda;
     }
 }
+
+/// compute internal coeficients as a function of the average pressure and boundary fluxes
+void TPZFastCondensedElement::ComputeInternalCoefficients()
+{
+    TPZManVector<int64_t,20> fluxeqs, pressureqs;
+    PressureEquations(pressureqs);
+    InternalFluxEquations(fluxeqs);
+    int64_t avpreseq = AveragePressureEquation();
+    TPZCompMesh *cmesh = Mesh();
+    TPZFMatrix<STATE> &sol = cmesh->Solution();
+    STATE avpressure = sol(avpreseq);
+    int npressure = pressureqs.size();
+    int nfluxes = fluxeqs.size();
+    // value of the pressure due to fluid flow
+    TPZManVector<STATE,100> PressureValues(npressure);
+    // value of the fluxes due to fluid flow
+    TPZManVector<STATE,100> FluxValues(nfluxes);
+    
+    for(int i=0; i< npressure; i++)
+    {
+        PressureValues[i] = fBodyForcePressureRef[i]*fMixedDensity+fConstantUnitPressure[i]*avpressure;
+    }
+    for (int i = 0; i < nfluxes; i++) {
+        FluxValues[i] = fBodyForceFluxRef[i]*fMixedDensity/fLambda;
+    }
+
+    sol(avpreseq) = 0.;
+    TPZManVector<STATE,100> FlowFluxValues(nfluxes), FlowPressureValues(npressure);
+    TPZCondensedCompEl::LoadSolution();
+    for(int i=0; i< npressure; i++)
+    {
+        FlowPressureValues[i] = sol(pressureqs[i])/fLambda;
+        sol(pressureqs[i]) = PressureValues[i]+FlowPressureValues[i];
+    }
+    for (int i = 0; i < nfluxes; i++) {
+        FlowFluxValues[i] = sol(fluxeqs[i]);
+        sol(fluxeqs[i]) = FluxValues[i]+FlowFluxValues[i];
+    }
+    sol(avpreseq) = avpressure;
+    
+}
+
+
+static void GatherConnects(TPZCompEl *cel, std::set<std::pair<int64_t,int>> &connectset);
+
+static void GatherConnects(TPZMultiphysicsElement *cel, std::set<std::pair<int64_t,int>> &connectset)
+{
+    TPZManVector<std::pair<int64_t,int> > connectmesh;
+    cel->GetConnectMeshPairs(connectmesh);
+    int nc = connectmesh.size();
+    connectset.insert(&connectmesh[0], &connectmesh[0]+nc);
+}
+
+
+
+static void GatherConnects(TPZElementGroup *elgr, std::set<std::pair<int64_t,int>> &connectset)
+{
+    const TPZVec<TPZCompEl *> &elvec = elgr->GetElGroup();
+    int nel = elvec.size();
+    for (int el = 0; el<nel; el++) {
+        TPZCompEl *cel = elvec[el];
+        GatherConnects(cel, connectset);
+    }
+}
+
+static void GatherConnects(TPZCompEl *cel, std::set<std::pair<int64_t,int>> &connectset)
+{
+    if(!cel) DebugStop();
+    TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *>(cel);
+    TPZCondensedCompEl *cond = dynamic_cast<TPZCondensedCompEl *>(cel);
+    TPZMultiphysicsElement *mphys = dynamic_cast<TPZMultiphysicsElement *>(cel);
+    if(cond)
+    {
+        GatherConnects(cond->ReferenceCompEl(), connectset);
+        return;
+    }
+    if(elgr)
+    {
+        GatherConnects(elgr, connectset);
+        return;
+    }
+    if(mphys)
+    {
+        GatherConnects(mphys, connectset);
+        return;
+    }
+}
+
+// Identify the connects and associated equations
+void TPZFastCondensedElement::IdentifyConnectandEquations()
+{
+    std::set<std::pair<int64_t,int>> connects;
+    GatherConnects(fReferenceCompEl, connects);
+    std::set<int64_t> externalconnects;
+    int nconnects = NConnects();
+    externalconnects.insert(&fActiveConnectIndexes[0],&fActiveConnectIndexes[0]+nconnects);
+    std::map<int,int> nconnects_bymesh;
+
+    int pressmesh = 1;
+    int fluxmesh = 0;
+    int distfluxmesh = 2;
+    int avpressmesh = 3;
+    fAveragePressureConnect = -1;
+
+    for(auto it : connects)
+    {
+        if(externalconnects.find(it.first) == externalconnects.end())
+        {
+            nconnects_bymesh[it.second]++;
+        }
+        if(it.second == 3)
+        {
+            if(fAveragePressureConnect != -1) DebugStop();
+            fAveragePressureConnect = it.first;
+        }
+    }
+    
+    if(fAveragePressureConnect == -1) DebugStop();
+    
+    fPressureConnects.resize(nconnects_bymesh[pressmesh]);
+    fFluxConnects.resize(nconnects_bymesh[fluxmesh]);
+    
+    int iflux_connect = 0;
+    int ipres_connect = 0;
+    
+    for(auto it : connects)
+    {
+        if(externalconnects.find(it.first) == externalconnects.end())
+        {
+            int imesh = it.second;
+            if(imesh == pressmesh)
+            {
+                fPressureConnects[ipres_connect++] = it.first;
+            }
+            if(imesh == fluxmesh)
+            {
+                fFluxConnects[iflux_connect++] = it.first;
+            }
+        }
+    }
+    
+    if(ipres_connect != fPressureConnects.size()) DebugStop();
+    if(iflux_connect != fFluxConnects.size()) DebugStop();
+}
+
+static void FindCondensed(TPZCompEl *cel, TPZStack<TPZCondensedCompEl *> &condensedelements)
+{
+    TPZCondensedCompEl *cond = dynamic_cast<TPZCondensedCompEl *>(cel);
+    TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *>(cel);
+    if(cond)
+    {
+        condensedelements.Push(cond);
+        FindCondensed(cond->ReferenceCompEl(), condensedelements);
+        return;
+    }
+    if(elgr)
+    {
+        const TPZVec<TPZCompEl *> &elvec = elgr->GetElGroup();
+        int nel = elvec.size();
+        for (int el = 0; el<nel; el++) {
+            TPZCompEl *loccel = elvec[el];
+            FindCondensed(loccel, condensedelements);
+        }
+    }
+}
+
+// Identify the condensed elements in this structure
+void TPZFastCondensedElement::FindCondensed(TPZStack<TPZCondensedCompEl *> &condensedelements)
+{
+    ::FindCondensed(this,condensedelements);
+    
+}
+
+/// compute the body force reference values
+void TPZFastCondensedElement::ComputeBodyforceRefValues()
+{
+    int64_t avpress_eq = AveragePressureEquation();
+    TPZVec<int64_t> bound_flux_eq;
+    BoundaryFluxEquations(bound_flux_eq);
+    TPZFMatrix<STATE> &sol = Mesh()->Solution();
+    // copy the average pressure and set the solution value to zero
+    STATE avpress = sol(avpress_eq,0);
+    sol(avpress_eq,0) = 0.;
+    TPZVec<STATE> bound_fluxes(bound_flux_eq.size(),0.);
+    // copy the values of the boundary fluxes and set the fluxes to zero
+    for (int eq=0; eq<bound_flux_eq.size(); eq++) {
+        bound_fluxes[eq] = sol(bound_flux_eq[eq],0);
+        sol(bound_flux_eq[eq],0) = 0.;
+    }
+    // after this call the internal solution will be due to the body forces
+    TPZCondensedCompEl::LoadSolution();
+    
+    TPZVec<int64_t> pressure_eqs;
+    TPZVec<int64_t> flux_eqs;
+    PressureEquations(pressure_eqs);
+    InternalFluxEquations(flux_eqs);
+    
+    fBodyForceFluxRef.resize(flux_eqs.size());
+    fBodyForcePressureRef.resize(pressure_eqs.size());
+    
+    for (int eq = 0; eq<pressure_eqs.size(); eq++) {
+        fBodyForcePressureRef[eq] = sol(pressure_eqs[eq],0);
+    }
+    for (int eq = 0; eq<flux_eqs.size(); eq++) {
+        fBodyForceFluxRef[eq] = sol(flux_eqs[eq],0);
+    }
+    
+    sol(avpress_eq,0) = avpress;
+    // copy the values of the boundary fluxes and set the fluxes to zero
+    for (int eq=0; eq<bound_flux_eq.size(); eq++) {
+        sol(bound_flux_eq[eq],0) = bound_fluxes[eq];
+    }
+
+}
+
+/// compute pressure equation values with respect to a constant pressure
+/// this will zero the body forces of the condensed elements
+void TPZFastCondensedElement::ComputeConstantPressureValues()
+{
+    TPZStack<TPZCondensedCompEl *> condensed;
+    FindCondensed(condensed);
+    for (int el = 0; el<condensed.size(); el++) {
+        condensed[el]->Matrix().F0().Zero();
+    }
+    int64_t avpress_eq = AveragePressureEquation();
+    TPZManVector<int64_t,10> bound_flux_eq;
+    BoundaryFluxEquations(bound_flux_eq);
+    TPZFMatrix<STATE> &sol = Mesh()->Solution();
+    // copy the average pressure and set the solution value to zero
+    STATE avpress = sol(avpress_eq,0);
+    sol(avpress_eq,0) = 1.;
+    TPZVec<STATE> bound_fluxes(bound_flux_eq.size(),0.);
+    // copy the values of the boundary fluxes and set the fluxes to zero
+    for (int eq=0; eq<bound_flux_eq.size(); eq++) {
+        bound_fluxes[eq] = sol(bound_flux_eq[eq],0);
+        sol(bound_flux_eq[eq],0) = 0.;
+    }
+    // after this call the internal solution will be due to the body forces
+    TPZCondensedCompEl::LoadSolution();
+    
+    TPZManVector<int64_t,10> pressure_eqs;
+    TPZManVector<int64_t,20> flux_eqs;
+    PressureEquations(pressure_eqs);
+    InternalFluxEquations(flux_eqs);
+    fConstantUnitPressure.resize(pressure_eqs.size());
+    for (int eq = 0; eq<pressure_eqs.size(); eq++) {
+        fConstantUnitPressure[eq] = sol(pressure_eqs[eq],0);
+    }
+#ifdef PZDEBUG
+    bool allok = true;
+    TPZManVector<STATE,20> fluxvals(flux_eqs.size());
+    for (int eq = 0; eq<flux_eqs.size(); eq++) {
+        fluxvals[eq] = sol(flux_eqs[eq]);
+        if(!IsZero(fluxvals[eq])) allok = false;
+    }
+    if(!allok) DebugStop();
+#endif
+    sol(avpress_eq,0) = avpress;
+    // copy the values of the boundary fluxes and set the fluxes to zero
+    for (int eq=0; eq<bound_flux_eq.size(); eq++) {
+        sol(bound_flux_eq[eq],0) = bound_fluxes[eq];
+    }
+
+}
+
+

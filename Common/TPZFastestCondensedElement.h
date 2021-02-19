@@ -40,7 +40,7 @@ public:
 
 public:
     
-    TPZFastestCondensedElement(TPZCompEl *ref, bool keepmatrix = true) :
+    TPZFastestCondensedElement(TPZCompEl *ref, bool keepmatrix = false) :
         TPZFastCondensedElement(ref,keepmatrix)
     {
        

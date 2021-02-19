@@ -105,7 +105,7 @@ void SimpleTest2DHDiv(){
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
     
-    TPZFastCondensedElement::fSkipLoadSolution = true;
+    TPZFastCondensedElement::fSkipLoadSolution = false;
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
         if (sim_time >=  current_report_time) {

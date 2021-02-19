@@ -1035,7 +1035,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     GetMaterialIds(dimension, matids, bcmatids);
     
     InsertGeoWrappersForMortar();
-    TPZManVector<TPZCompMesh *> meshvec(5,0);
+    TPZManVector<TPZCompMesh *> meshvec(4,0);
     // hdiv mesh
     char fluxmortar = 5;
     meshvec[0] = HDivMortarFluxCmesh(fluxmortar);
@@ -1059,7 +1059,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     meshvec[3] = DiscontinuousCmesh(porder,avpressurelagrange);
     // transport mesh
     // @TODO I believe we don't need a transport mesh anymore
-    meshvec[4] = TransportCmesh();
+//    meshvec[4] = TransportCmesh();
     
     // create the multiphysics mesh
     TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
@@ -1152,8 +1152,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dim,nstate);
         mMixedOperator->InsertMaterialObject(nullmat);
     }
-    TPZManVector<int> active_approx_spaces(5,1);
-    active_approx_spaces[4] = 0;
+    TPZManVector<int> active_approx_spaces(4,1);
+//    active_approx_spaces[4] = 0;
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
 
     //Insert fractures properties
@@ -1190,9 +1190,9 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     // Maybe we should increment nelconnected of the fracture connects at this point?
     // only volumetric elements
     
-//    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
+    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
     // only fracture elements
-     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false);
+//     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false);
 #ifdef PZDEBUG
     {
         std::stringstream file_name;

@@ -31,8 +31,8 @@ void TPZFastestCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix
         }
         
         TPZCondensedCompEl::CalcStiff(ek, ef);
-        ShrinkElementMatrix(ek, fEK);
-        ShrinkElementMatrix(ef, fEF);
+//        ShrinkElementMatrix(ek, fEK);
+//        ShrinkElementMatrix(ef, fEF);
         this->fMatrixComputed = true;
     }
     
