@@ -1051,7 +1051,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     TPZVTKGeoMesh::PrintCMeshVTK(meshvec[1], file2);
     
     // distributed flux mesh
-        int porder = 0;
+    int porder = 0;
     char distfluxlagrange = 2;
     meshvec[2] = DiscontinuousCmesh(porder,distfluxlagrange);
     // constant pressure mesh
@@ -1104,8 +1104,6 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         mMixedOperator->InsertMaterialObject(fracmat);
 
     }
-    
-   
     if (!volume) {
         DebugStop();
     }
@@ -1190,9 +1188,9 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     // Maybe we should increment nelconnected of the fracture connects at this point?
     // only volumetric elements
     
-    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
+//    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
     // only fracture elements
-//     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false);
+     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false);
 #ifdef PZDEBUG
     {
         std::stringstream file_name;

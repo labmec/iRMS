@@ -101,3 +101,25 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
     cmesh->CleanUpUnconnectedNodes();
     
 }
+void TPZReservoirTools::FindCondensed(TPZCompEl *cel, TPZStack<TPZFastCondensedElement *> &condensedelements)
+{
+    TPZFastCondensedElement *cond = dynamic_cast<TPZFastCondensedElement *>(cel);
+    TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *>(cel);
+    if(cond)
+    {
+        condensedelements.Push(cond);
+        FindCondensed(cond->ReferenceCompEl(), condensedelements);
+        return;
+    }
+    if(elgr)
+    {
+        const TPZVec<TPZCompEl *> &elvec = elgr->GetElGroup();
+        int nel = elvec.size();
+        for (int el = 0; el<nel; el++) {
+            TPZCompEl *loccel = elvec[el];
+            FindCondensed(loccel, condensedelements);
+        }
+    }
+}
+
+
