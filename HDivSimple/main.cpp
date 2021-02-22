@@ -95,17 +95,16 @@ void SimpleTest2DHDiv(){
     mixed_operator->UpdatePreviousState(-1);
     mixedAnal->fsoltransfer.TransferFromMultiphysics();
     
-    TPZFastCondensedElement::fSkipLoadSolution = true;
+    TPZFastCondensedElement::fSkipLoadSolution = false;
     mixedAnal->PostProcessTimeStep();
 
-    
     //Test to verify the pressure gradient
     TransferLamdasToCondensedCompel(mixed_operator);
     mixedAnal->Assemble();
     mixedAnal->Solve();
     mixed_operator->UpdatePreviousState(-1);
     mixedAnal->fsoltransfer.TransferFromMultiphysics();
-    TPZFastCondensedElement::fSkipLoadSolution = true;
+    TPZFastCondensedElement::fSkipLoadSolution = false;
     mixedAnal->PostProcessTimeStep();
     
 
