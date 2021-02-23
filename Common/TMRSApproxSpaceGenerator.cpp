@@ -794,7 +794,15 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagra
     
         // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
         cmesh->SetDimModel(dim);
-        cmesh->SetAllCreateFunctionsDiscontinuous();
+        if(order > 0)
+        {
+            cmesh->SetAllCreateFunctionsContinuous();
+            cmesh->ApproxSpace().CreateDisconnectedElements(true);
+        }
+        else
+        {
+            cmesh->SetAllCreateFunctionsDiscontinuous();
+        }
         cmesh->AutoBuild(matids);
         cmesh->InitializeBlock();
     }

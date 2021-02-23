@@ -110,7 +110,13 @@ void TMRSMixedAnalysis::RunTimeStep(){
 //        DebugStop();
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
-        
+      
+#ifdef PZDEBUG
+        {
+            std::ofstream out("mphysics_flux.txt");
+            cmesh->Print(out);
+        }
+#endif
 
 #ifdef PZDEBUG
         {

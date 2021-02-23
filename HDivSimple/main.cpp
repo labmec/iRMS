@@ -78,6 +78,8 @@ void SimpleTest2DHDiv(){
     //The parallelism is just implemented for the "UsingPzSparse=True" case, with eigen for now is running in serial (the next task to do)
     mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
     mixedAnal->SetDataTransfer(&sim_data);
+    
+    
     mixedAnal->Assemble();
     size_t n_dof = mixedAnal->Solver().Matrix()->Rows();
     
@@ -93,20 +95,35 @@ void SimpleTest2DHDiv(){
     std::cout << "Number of dof = " << n_dof << std::endl;
     
     mixed_operator->UpdatePreviousState(-1);
-    mixedAnal->fsoltransfer.TransferFromMultiphysics();
     
     TPZFastCondensedElement::fSkipLoadSolution = false;
+    mixed_operator->LoadSolution(mixed_operator->Solution());
+    mixedAnal->fsoltransfer.TransferFromMultiphysics();
     mixedAnal->PostProcessTimeStep();
 
-    //Test to verify the pressure gradient
+    {
+        std::ofstream out("cmesh.txt");
+        mixed_operator->Print(out);
+    }
+    
+    
     TransferLamdasToCondensedCompel(mixed_operator);
+
+//    mixed_operator->Solution().Zero();
+//    mixed_operator->SolutionN().Zero();
+    //Test to verify the pressure gradient
     mixedAnal->Assemble();
     mixedAnal->Solve();
     mixed_operator->UpdatePreviousState(-1);
-    mixedAnal->fsoltransfer.TransferFromMultiphysics();
     TPZFastCondensedElement::fSkipLoadSolution = false;
+    mixed_operator->LoadSolution(mixed_operator->Solution());
+    mixedAnal->fsoltransfer.TransferFromMultiphysics();
     mixedAnal->PostProcessTimeStep();
-    
+    {
+        std::ofstream out("cmesh2.txt");
+        mixed_operator->Print(out);
+    }
+
 
 }
 
@@ -817,9 +834,9 @@ void TransferLamdasToCondensedCompel(TPZMultiphysicsCompMesh *mixed_operator){
             gel->CenterPoint(side, xifast);
             gel->X(xifast, coordFast);
             double lambda = (coordFast[0])/10.0;
+//            lambda = 20.;
             condensed->SetLambda(lambda);
-         
+//            return;
         }
-        
     }
 }

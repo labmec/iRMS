@@ -72,13 +72,17 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &e
     ek.fMat(nrows-1,ncols-1) *=fLambda;
 //    ek.fMat(nrows-1,ncols-1) *=fCompressibilityMatrixTerm;
     
-    TPZFMatrix<STATE> solvec(fEK.fMat.Rows(),1,0.);
+    TPZFNMatrix<30,STATE> solvec(fEK.fMat.Rows(),1,0.);
     GetSolutionVector(solvec);
     
 
     ef.fMat *= -1.0*Glambda;
 //    ef.fMat(nrows-1) = fCompressibiilityRhsTerm;
     
+//    std::cout << "Lambda " << fLambda << std::endl;
+//    ek.fMat.Print(std::cout);
+//    ef.fMat.Print(std::cout);
+//    solvec.Print(std::cout);
     
     
     /** @brief Computes z = alpha * opt(this)*x + beta * y */
