@@ -190,7 +190,7 @@ public:
     int IdentifyMaterial(TPZGeoElSideIndex gelsideindex, int64_t faceindex);
 
     // identify material of a face which is connected to a given geometric element
-    int IdentifyMaterial(const TPZGeoElSide &gelside);
+    int IdentifyMaterial(const TPZGeoElSide &gelside, int delta=0);
     
     // find the neighbouring interface element
     TPZGeoElSide IdentifyInterfaceElement(const TPZGeoElSide &gelside);

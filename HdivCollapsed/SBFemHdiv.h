@@ -21,6 +21,7 @@
 #include "TPZMultiphysicsCompMesh.h"
 #include "pzelchdiv.h"
 #include "pzshapequad.h"
+#include "pzshapetriang.h"
 #include "pzshapelinear.h"
 #include "TPZCompElHDivCollapsed.h"
 #include "TPZVTKGeoMesh.h"

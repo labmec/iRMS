@@ -12,7 +12,9 @@
 #include "pzmultiphysicselement.h"
 #include "TPZFastCondensedElement.h"
 #include "TPZVTKGeoMesh.h"
-
+#include "TPZCompElHDivCollapsed.h"
+#include "pzshapetriang.h"
+#include "pzshapequad.h"
 /// Default constructor
 TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer() : fFluxMesh(0), fTransportMesh(0)
 {
@@ -63,7 +65,7 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
 {
     // look for the geometric elements corresponding to interface elements
     // order them as a function of the number of corner nodes
-    TPZGeoMesh *gmesh = fTransportMesh->Reference();
+    TPZGeoMesh *gmesh =  fTransportMesh->Reference();
     std::pair<int, int64_t> defpair(100,-1);
     int nel_gmesh= gmesh->NElements();
     
@@ -236,10 +238,10 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             {
                 rightorient = rightgel->NormalOrientation(rightside.Side());
             }
-            if(leftorient != -rightorient && rightgel->Dimension() != gmesh->Dimension()-1)
-            {
-                DebugStop();
-            }
+//            if(leftorient != -rightorient && rightgel->Dimension() != gmesh->Dimension()-1)
+//            {
+//                DebugStop();
+//            }
             TPZGeoElSideIndex rightgelside(rightgel->Index(),rightside.Side());
             int rightmatid = rightside.Element()->Reference()->MaterialId();
             int64_t rightindex = right->Index();
@@ -299,7 +301,7 @@ int TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex gelindex, int64
 }
 
 // identify material of a face which is connected to a given geometric element
-int TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &gelside)
+int TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &gelside, int delta)
 {
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
     int64_t el = gelside.Element()->Index();
@@ -311,7 +313,7 @@ int TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &gelside)
         TPZGeoElSide neighbour = gelside.Neighbour();
         while(neighbour != gelside)
         {
-            i = SideLowerIndex(neighbour.Element(), neighbour.Side());
+            i = SideLowerIndex(neighbour.Element(), neighbour.Side()) + delta;
             interface = fInterfaceByGeom(neighbour.Element()->Index(),i);
             if(interface >= 0)
             {
@@ -432,6 +434,19 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
             TPZGeoEl *gel = cel->Reference();
             int64_t gelindex = gel->Index();
             TPZCompEl *hdiv = mphys->ReferredElement(0);
+            
+            
+            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *collapsedQuad = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>* >(hdiv);
+            
+             TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *collapsedTriangle = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>* >(hdiv);
+            int delt=0;
+            if (collapsedQuad) {
+                delt = 6;
+            }
+            if (collapsedTriangle) {
+                 delt = 5;
+            }
+            
             int nc = hdiv->NConnects();
             if(nc == 1)
             {
@@ -441,7 +456,7 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                 int64_t cindex = cel->ConnectIndex(0);
                 if(shouldtransfer[cindex] != 0) continue;
                 TPZGeoElSide gelside(gel,gel->NSides()-1);
-                int matid = IdentifyMaterial(gelside);
+                int matid = IdentifyMaterial(gelside, delt);
                 connectindexes[matid].Push(cindex);
                 if(ncontransfer.find(matid) == ncontransfer.end())
                 {
@@ -466,14 +481,14 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                 int dim = gel->Dimension();
                 int numfaces = gel->NSides(dim-1);
                 int firstside = nsides-numfaces-1;
-                if(nc != numfaces+1) DebugStop();
+//                if(nc != numfaces+1) DebugStop();
                 for(int ic=0; ic<nc-1; ic++)
                 {
                     int64_t cindex = cel->ConnectIndex(ic);
                     if(shouldtransfer[cindex] != 0) continue;
                     int side = firstside+ic;
                     TPZGeoElSide gelside(gel,side);
-                    int matid = IdentifyMaterial(gelside);
+                    int matid = IdentifyMaterial(gelside, delt);
                     if(ncontransfer.find(matid) == ncontransfer.end())
                     {
                         ncontransfer[matid].Resize(4, 0);
