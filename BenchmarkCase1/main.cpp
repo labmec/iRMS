@@ -596,10 +596,10 @@ void LearningReadFracMesh()
     TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
     
     
-//    TPZAlgebraicDataTransfer transfer;
-//    transfer.SetMeshes(*mixed_operator, *transport_operator);
-//    TPZAlgebraicTransport transport;
-//    transfer.BuildTransportDataStructure(transport);
+    TPZAlgebraicDataTransfer transfer;
+    transfer.SetMeshes(*mixed_operator, *transport_operator);
+    TPZAlgebraicTransport transport;
+    transfer.BuildTransportDataStructure(transport);
     
     
     

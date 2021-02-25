@@ -164,9 +164,10 @@ public:
     void InitializeFracProperties(TPZMultiphysicsCompMesh * MixedOperator);
    
     //
-    void findNeighElementbyMatId(TPZGeoElSide &gelside, TPZGeoElSide &neihside, std::set<int> VolMatIds);
+    void findNeighElementbyMatId(TPZGeoElSide &gelside, std::vector<TPZGeoElSide > &neihside, std::set<int> VolMatIds);
     void CreateElementInterfaces(TPZGeoEl *gel);
     void CreateInterfaces(TPZMultiphysicsCompMesh *cmesh);
+    void CreateFracInterfaces(TPZGeoEl *gel);
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

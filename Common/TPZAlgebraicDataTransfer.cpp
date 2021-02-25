@@ -238,10 +238,10 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             {
                 rightorient = rightgel->NormalOrientation(rightside.Side());
             }
-//            if(leftorient != -rightorient && rightgel->Dimension() != gmesh->Dimension()-1)
-//            {
-//                DebugStop();
-//            }
+            if(leftorient != -rightorient && rightgel->Dimension() != gmesh->Dimension()-1)
+            {
+                DebugStop();
+            }
             TPZGeoElSideIndex rightgelside(rightgel->Index(),rightside.Side());
             int rightmatid = rightside.Element()->Reference()->MaterialId();
             int64_t rightindex = right->Index();
@@ -481,7 +481,13 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                 int dim = gel->Dimension();
                 int numfaces = gel->NSides(dim-1);
                 int firstside = nsides-numfaces-1;
-//                if(nc != numfaces+1) DebugStop();
+                if (collapsedQuad) {
+                    numfaces=6;
+                }
+                if (collapsedTriangle) {
+                    numfaces=5;
+                }
+                if(nc != numfaces+1) DebugStop();
                 for(int ic=0; ic<nc-1; ic++)
                 {
                     int64_t cindex = cel->ConnectIndex(ic);
