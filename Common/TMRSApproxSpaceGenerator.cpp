@@ -1958,15 +1958,15 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
         
     }
     
-//    TPZMaterial * face = volume->CreateBC(volume,-11,1,val1,val2);
-//    mTransportOperator->InsertMaterialObject(face);
-//    
-//    TPZMaterial * face4 = volume->CreateBC(volume,-12,1,val1,val2);
-//    mTransportOperator->InsertMaterialObject(face4);
-//    
-//    TPZMaterial * face2 = volume->CreateBC(volume,1000,1,val1,val2);
-//    mTransportOperator->InsertMaterialObject(face2);
-//    
+    TPZMaterial * face = volume->CreateBC(volume,-101,1,val1,val2);
+    mTransportOperator->InsertMaterialObject(face);
+    
+    TPZMaterial * face4 = volume->CreateBC(volume,-102,1,val1,val2);
+    mTransportOperator->InsertMaterialObject(face4);
+    
+    TPZMaterial * face2 = volume->CreateBC(volume,-104,1,val1,val2);
+    mTransportOperator->InsertMaterialObject(face2);
+//
 //    TPZMaterial * face3 = volume->CreateBC(volume,101,1,val1,val2);
 //    mTransportOperator->InsertMaterialObject(face3);
     
@@ -2027,105 +2027,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
 
         }
 
-        
-        CreateInterfaceBetweenElements(mTransportOperator, 3);
-//        CreateInterfaceBetweenElements(mTransportOperator, cel_indexes[2]);
-        
-//        for (auto cel_index: cel_indexes[dimension]) { // Higher dimension case
-//            TPZCompEl *cel = mTransportOperator->Element(cel_index);
-//            TPZMultiphysicsElement * celmult = dynamic_cast<TPZMultiphysicsElement *>(cel);
-//            if (!celmult) {
-//                DebugStop();
-//            }
-//
-//            if (!cel){continue;};
-//            TPZGeoEl *gel = cel->Reference();
-//            if (!gel){continue;};
-//
-//
-//            int nsides = gel->NSides();
-//            int nsidesdim=0;
-//            if (gel->Dimension()==3) {
-//                nsidesdim = gel->NSides(1);
-//            }
-//
-//            for (int iside = gel->NNodes()+nsidesdim; iside < nsides-1; iside++) {
-//
-//                TPZGeoElSide gelside(gel,iside);
-//                TPZCompElSide celside_l(cel,iside);
-//                TPZGeoEl *neihel;
-//                TPZCompElSide celside_r;
-//                int verif =0;
-//                TPZGeoElSide neig = gelside.Neighbour();
-//                int bc_matid=0;
-//                bool IsBoundary = false;
-//                bool IsFracVol =false;
-//
-//                while (neig!= gelside) {
-//                    if (neig.Element()->Dimension() == gel->Dimension()){
-//                        neihel = neig.Element();
-//                        celside_r = neig.Reference();
-//                        verif=1;
-//                        break;
-//                    }
-//                    if (neig.Element()->Dimension() == gel->Dimension() - 1){
-//                        neihel = neig.Element();
-//                        celside_r = neig.Reference();
-//                        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
-//
-//                        int matid   =neihel->MaterialId();
-////                        int frac_matId = mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"];
-//                        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-//                            int bc_id   = get<0>(chunk);
-//                            if (bc_id == matid) {
-//                                IsBoundary = true;
-//                                bc_matid =bc_id;
-//                                break;
-//                            }
-//
-//
-//                        }
-//                        if (IsBoundary==true || IsFracVol==true) {
-//                            break;
-//                        }
-//                    }
-//                    neig=neig.Neighbour();
-//                }
-//
-//
-//                if (verif && (gel->Id() < neihel->Id()) ) {
-//                    TPZGeoElBC gbc(gelside,transport_matid);
-//
-//                    int64_t index;
-//                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-//                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-//                }
-//                if (verif==0) { // BC cases
-//                    if (IsBoundary) {
-//                        TPZGeoElBC gbc(gelside,bc_matid);
-//                        int64_t index;
-//                        TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-//                        mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-//                    }
-//                    if (IsFracVol) {
-//                        TPZGeoElBC gbc(gelside,1000);
-//                        int64_t index;
-//                        TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-//                        mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-//
-//
-//                        //Create 1D Interfaces
-//                        TPZGeoEl *fracGel = neihel;
-//                        int ncoord = fracGel->NCornerNodes();
-//                        for (int iside = ncoord; iside<fracGel->NSides()-1; iside++) {
-//                            TPZGeoElSide fracneih = fracGel->Neighbour(iside);
-//
-//                        }
-//                    }
-//
-//                }
-//            }
-//        }
+        CreateInterfaces(mTransportOperator);
     }
     
 #ifdef PZDEBUG
@@ -2773,21 +2675,88 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     }
     
 }
-void TMRSApproxSpaceGenerator::CreateInterfaceBetweenElements(TPZMultiphysicsCompMesh *multcmesh,int dim){
+
+
+void TMRSApproxSpaceGenerator::findNeighElementbyMatId(TPZGeoElSide &gelside, TPZGeoElSide &neihside, std::set<int> VolMatIds){
     
-    TPZManVector<std::vector<int64_t>,4> cel_indexes(4);
+    int verif =0;
+    TPZGeoElSide NeihSideAux = gelside.Neighbour();
+    while (gelside != NeihSideAux) {
+        for (auto Mat_id: VolMatIds) {
+            if (NeihSideAux.Element()->MaterialId() == Mat_id) {
+                verif=1;
+                break;
+            }
+        }
+        if (verif==1) {
+            break;
+        }
+      
+        NeihSideAux = NeihSideAux.Neighbour();
+    }
+    if (verif==1) {
+        neihside = NeihSideAux;
+    }
+}
+void TMRSApproxSpaceGenerator::CreateElementInterfaces(TPZGeoEl *gel){
+    
+    int dimension = gel->Dimension();
+    int nsides = gel->NSides();
+    int ncoord = gel->NCornerNodes();
+    int transport_matid = mSimData.mTGeometry.mInterface_material_id;
+    int val =0;
     
     TPZManVector<int64_t,3> left_mesh_indexes(2,0);
     left_mesh_indexes[0] = 0;
     left_mesh_indexes[1] = 4;
     TPZManVector<int64_t,3> right_mesh_indexes(1,0);
     right_mesh_indexes[0] = 4;
-    int transport_matid = mSimData.mTGeometry.mInterface_material_id;
-    int64_t nel = mTransportOperator->NElements();
     
+    if (dimension==3) {
+        val = gel->NSides(1);
+    }
+    for (int iside = ncoord+val; iside < nsides-1; iside++) {
+        TPZGeoElSide gelside(gel,iside);
+        TPZGeoElSide gelneig;
+        //Volumetric Elements
+        TPZCompElSide celside_l=gelside.Reference();
+        std::set<int> VolMatIds;
+        VolMatIds.insert(1);
+        VolMatIds.insert(2);
+        findNeighElementbyMatId(gelside,gelneig,VolMatIds);
+        if(gelneig){
+            if (gel->Id() < gelneig.Element()->Id()) {
+                TPZCompElSide celside_r = gelneig.Reference();
+                TPZGeoElBC gbc(gelside,transport_matid);
+                int64_t index;
+                TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
+                mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
+            }
+        }
+        //BoundaryElements
+        std::set<int> Boundaries;
+        Boundaries.insert(-1);
+        Boundaries.insert(-2);
+        Boundaries.insert(-4);
+        if(!gelneig){
+            findNeighElementbyMatId(gelside,gelneig,Boundaries);
+                TPZCompElSide celside_r = gelneig.Reference();
+            int matId = gelneig.Element()->MaterialId()-100;
+                TPZGeoElBC gbc(gelside,matId);
+                int64_t index;
+                TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
+                mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
+        }
+    }
+}
+
+void TMRSApproxSpaceGenerator::CreateInterfaces(TPZMultiphysicsCompMesh *cmesh){
     
-    for (int64_t el = 0; el < nel; el++) {
-        TPZCompEl *cel = mTransportOperator->Element(el);
+    int nels = cmesh->NElements();
+    int dim = cmesh->Dimension();
+    TPZManVector<std::vector<int64_t>,4> cel_indexes(4);
+    for (int64_t el = 0; el < nels; el++) {
+        TPZCompEl *cel = cmesh->Element(el);
         if(!cel) DebugStop();
         TPZMultiphysicsElement *celmp = dynamic_cast<TPZMultiphysicsElement *>(cel);
         if(!celmp) DebugStop();
@@ -2802,105 +2771,13 @@ void TMRSApproxSpaceGenerator::CreateInterfaceBetweenElements(TPZMultiphysicsCom
         }
         cel_indexes[gel_dim].push_back(el);
     }
-    
-    
-    for (auto cel_index: cel_indexes[dim]) { // Higher dimension case
-        TPZCompEl *cel = mTransportOperator->Element(cel_index);
-        TPZMultiphysicsElement * celmult = dynamic_cast<TPZMultiphysicsElement *>(cel);
-        if (!celmult) {
-            DebugStop();
-        }
-        
-        if (!cel){continue;};
+    //Creating Interfaces vol-vol and vol-bound without vol-fractures.
+    for(auto elindex: cel_indexes[dim]){
+        TPZCompEl *cel = cmesh->Element(elindex);
         TPZGeoEl *gel = cel->Reference();
-        if (!gel){continue;};
-        
-        
-        int nsides = gel->NSides();
-        int nsidesdim=0;
-        if (gel->Dimension()==3) {
-            nsidesdim = gel->NSides(1);
-        }
-        
-        for (int iside = gel->NNodes()+nsidesdim; iside < nsides-1; iside++) {
-            
-            TPZGeoElSide gelside(gel,iside);
-            TPZCompElSide celside_l(cel,iside);
-            TPZGeoEl *neihel;
-            TPZCompElSide celside_r;
-            int verif =0;
-            TPZGeoElSide neig = gelside.Neighbour();
-            int bc_matid=0;
-            bool IsBoundary = false;
-            bool IsFracVol =false;
-            
-            while (neig!= gelside) {
-                if (neig.Element()->Dimension() == gel->Dimension()){
-                    neihel = neig.Element();
-                    celside_r = neig.Reference();
-                    verif=1;
-                    break;
-                }
-                if (neig.Element()->Dimension() == gel->Dimension() - 1){
-                    neihel = neig.Element();
-                    celside_r = neig.Reference();
-                    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
-                    
-                    int matid   =neihel->MaterialId();
-                    //                        int frac_matId = mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"];
-                    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-                        int bc_id   = get<0>(chunk);
-                        if (bc_id == matid) {
-                            IsBoundary = true;
-                            bc_matid =bc_id;
-                            break;
-                        }
-                        
-                        
-                    }
-                    if (IsBoundary==true || IsFracVol==true) {
-                        break;
-                    }
-                }
-                neig=neig.Neighbour();
-            }
-            
-            
-            if (verif && (gel->Id() < neihel->Id()) ) {
-                TPZGeoElBC gbc(gelside,transport_matid);
-                
-                int64_t index;
-                TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-                mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-            }
-            if (verif==0) { // BC cases
-                if (IsBoundary) {
-                    TPZGeoElBC gbc(gelside,bc_matid);
-                    int64_t index;
-                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-                }
-                if (IsFracVol) {
-                    TPZGeoElBC gbc(gelside,1000);
-                    int64_t index;
-                    TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
-                    mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-                    
-                    
-                    //Create 1D Interfaces
-                    TPZGeoEl *fracGel = neihel;
-                    int ncoord = fracGel->NCornerNodes();
-                    for (int iside = ncoord; iside<fracGel->NSides()-1; iside++) {
-                        TPZGeoElSide fracneih = fracGel->Neighbour(iside);
-                        
-                    }
-                }
-                
-            }
-        }
+        CreateElementInterfaces(gel);
     }
-    
+    std::ofstream file("NewInterfaces.vtk");
+    TPZVTKGeoMesh::PrintCMeshVTK(cmesh, file);
+    int ok=0;
 }
-
-
-

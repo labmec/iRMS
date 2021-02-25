@@ -162,8 +162,11 @@ public:
     static void SetUpdateMemory(int dimension, TMRSDataTransfer & sim_data, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q = true);
 
     void InitializeFracProperties(TPZMultiphysicsCompMesh * MixedOperator);
-    void CreateInterfacesElements(TPZMultiphysicsCompMesh *cmesh, TPZCompEl*cel);
-    void CreateInterfaceBetweenElements(TPZMultiphysicsCompMesh *multcmesh,int dim);
+   
+    //
+    void findNeighElementbyMatId(TPZGeoElSide &gelside, TPZGeoElSide &neihside, std::set<int> VolMatIds);
+    void CreateElementInterfaces(TPZGeoEl *gel);
+    void CreateInterfaces(TPZMultiphysicsCompMesh *cmesh);
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */
