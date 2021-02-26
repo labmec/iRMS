@@ -205,6 +205,8 @@ add_subdirectory(MHMSimple)
 add_subdirectory(HdivCollapsed)
 add_subdirectory(Paper2d)
 add_subdirectory(BenchmarkCase1)
+add_subdirectory(SimpleCaseFracture)
+
 
 
 

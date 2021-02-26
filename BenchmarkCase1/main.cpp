@@ -16,11 +16,13 @@
 #endif
 
 void LearningReadFracMesh();
+void FracSimpleCase();
 void TransferLamdasToCondensedCompel(TPZMultiphysicsCompMesh *mixed_operator);
 
-TMRSDataTransfer SettingPaper3D();
 
+TMRSDataTransfer SettingPaper3D();
 TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain);
+TPZGeoMesh *ReadFractureMesh();
 
 TMRSDataTransfer SettingSimple2DHdiv();
 void  ForcingFunction (const TPZVec<REAL> &pt, TPZVec<STATE> &disp);
@@ -96,6 +98,58 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshFine, fileFine,subdomain);
     }
     delete gmeshCoarse;
+    return gmeshFine;
+}
+TPZGeoMesh *ReadFractureMesh(){
+    std::string fileFine("../../FracMeshes/jose_simple.msh");
+
+//    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
+    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
+    /*
+     2 4 "inlet"
+     2 5 "outlet"
+     2 6 "noflux"
+     3 3 "k33"
+     3 10 "k31"
+     */
+    
+    dim_name_and_physical_tagFine[3]["c1"] = 1;
+    dim_name_and_physical_tagFine[2]["inlet"] = -2;
+    dim_name_and_physical_tagFine[2]["outlet"] = -4;
+    dim_name_and_physical_tagFine[2]["noflux"] = -1;
+    
+    dim_name_and_physical_tagFine[2]["Fracture2"] = 10;
+    dim_name_and_physical_tagFine[1]["BCfrac0"] = -11;
+    /*
+     2 2 "Fractures"
+     3 1 "c1"
+     */
+
+//    for(int i=1; i<=100; i++)
+//    {
+//        std::stringstream sout;
+//        sout << "c" << i;
+//        dim_name_and_physical_tagFine[3][sout.str()] = i+9;
+//    }
+    TPZGmshReader  GeometryFine;
+    TPZGeoMesh *gmeshFine;
+   
+    {
+        REAL l = 1.0;
+        GeometryFine.SetCharacteristiclength(l);
+        GeometryFine.SetFormatVersion("4.1");
+
+        GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
+        gmeshFine = GeometryFine.GeometricGmshMesh(fileFine);
+        GeometryFine.PrintPartitionSummary(std::cout);
+    }
+   
+    {
+        std::ofstream fileFine("mesh3dFine.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(gmeshFine, fileFine);
+    }
+   
+   
     return gmeshFine;
 }
 
@@ -562,7 +616,8 @@ void LearningReadFracMesh()
      */
     // vector with subdomain index of the geometric elements
     TPZVec<int64_t> subdomain;
-    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+//    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingPaper3D();
@@ -596,15 +651,53 @@ void LearningReadFracMesh()
     TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
     
     
-    TPZAlgebraicDataTransfer transfer;
-    transfer.SetMeshes(*mixed_operator, *transport_operator);
-    TPZAlgebraicTransport transport;
-    transfer.BuildTransportDataStructure(transport);
+//    TPZAlgebraicDataTransfer transfer;
+//    transfer.SetMeshes(*mixed_operator, *transport_operator);
+//    TPZAlgebraicTransport transport;
+//    transfer.BuildTransportDataStructure(transport);
     
-    
+    //
+    {
+        //This parameter should be always "true"
+        bool UsePardiso_Q = true;
+        TMRSMixedAnalysis *mixedAnal = new TMRSMixedAnalysis(mixed_operator,must_opt_band_width_Q);
+        
+        //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
+        bool UsingPzSparse = false;
+        
+        //The parallelism is just implemented for the "UsingPzSparse=True" case, with eigen for now is running in serial (the next task to do)
+        mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+        mixedAnal->SetDataTransfer(&sim_data);
+        
+        
+        mixedAnal->Assemble();
+        size_t n_dof = mixedAnal->Solver().Matrix()->Rows();
+        
+#ifdef USING_BOOST
+        boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
+#endif
+        mixedAnal->Solve();
+#ifdef USING_BOOST
+        boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+        auto deltat = tsim2-tsim1;
+        std::cout << "Overal solve calling time " << deltat << std::endl;
+#endif
+        std::cout << "Number of dof = " << n_dof << std::endl;
+        
+        mixed_operator->UpdatePreviousState(-1);
+        
+        TPZFastCondensedElement::fSkipLoadSolution = false;
+//        mixed_operator->LoadSolution(mixed_operator->Solution());
+        mixedAnal->fsoltransfer.TransferFromMultiphysics();
+        mixedAnal->PostProcessTimeStep();
+    }
+    //
     
     // from
-    TMRSMixedAnalysis *TransportAnal = new TMRSMixedAnalysis(transport_operator,must_opt_band_width_Q);
+    TMRSMixedAnalysis *TransportAnal = new TMRSMixedAnalysis(mixed_operator,must_opt_band_width_Q);
+   
+    
+    
 
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
     sfi_analysis->SetDataTransfer(&sim_data);

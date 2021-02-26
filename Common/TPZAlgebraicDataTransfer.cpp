@@ -238,10 +238,12 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             {
                 rightorient = rightgel->NormalOrientation(rightside.Side());
             }
-            if(leftorient != -rightorient && rightgel->Dimension() != gmesh->Dimension()-1)
-            {
-                DebugStop();
-            }
+//            if(leftorient != -rightorient && rightgel->Dimension() != gmesh->Dimension()-1)
+//            {
+//                int lefori = leftgel->NormalOrientation(leftside.Side());
+//                int rihg = rightgel->NormalOrientation(rightside.Side());
+//                DebugStop();
+//            }
             TPZGeoElSideIndex rightgelside(rightgel->Index(),rightside.Side());
             int rightmatid = rightside.Element()->Reference()->MaterialId();
             int64_t rightindex = right->Index();

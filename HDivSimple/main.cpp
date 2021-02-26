@@ -30,8 +30,8 @@ void  ForcingFunction (const TPZVec<REAL> &pt, TPZVec<STATE> &disp);
 
 int main(){
     InitializePZLOG();
-//    LearningReadFracMesh();
-    SimpleTest2DHDiv();
+    LearningReadFracMesh();
+//    SimpleTest2DHDiv();
 //    SimpleTest2DHDiv();
 }
 
@@ -97,7 +97,7 @@ void SimpleTest2DHDiv(){
     mixed_operator->UpdatePreviousState(-1);
     
     TPZFastCondensedElement::fSkipLoadSolution = false;
-    mixed_operator->LoadSolution(mixed_operator->Solution());
+//    mixed_operator->LoadSolution(mixed_operator->Solution());
     mixedAnal->fsoltransfer.TransferFromMultiphysics();
     mixedAnal->PostProcessTimeStep();
 
