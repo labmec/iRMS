@@ -101,6 +101,77 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
     cmesh->CleanUpUnconnectedNodes();
     
 }
+
+//Condense by MATID
+
+void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix, std::set<int> matids)
+{
+    //    cmesh->ComputeNodElCon();
+    int64_t nel = cmesh->NElements();
+    for (int64_t el=0; el<nel; el++) {
+        //        std::cout << "Element " << el << std::endl;
+        TPZCompEl *cel = cmesh->Element(el);
+        if (!cel) {
+            continue;
+        }
+        TPZGeoEl *gel = cel->Reference();
+       
+        
+        int nc = cel->NConnects();
+        bool found = false;
+        if(LagrangeLevelNotCondensed >=0)
+        {
+            for (int ic=0; ic<nc; ic++) {
+                TPZConnect &c = cel->Connect(ic);
+                //                std::cout << "ic ";
+                //                c.Print(*cmesh,std::cout);
+                if(c.LagrangeMultiplier() >= LagrangeLevelNotCondensed && c.NElConnected() == 1)
+                {
+                    c.IncrementElConnected();
+                    found = true;
+                }
+            }
+        }
+        int ic;
+        for (ic=0; ic<nc; ic++) {
+            TPZConnect &c = cel->Connect(ic);
+            if (c.HasDependency() || c.NElConnected() > 1) {
+                continue;
+            }
+            break;
+        }
+        bool cancondense = (ic != nc);
+        if(cancondense)
+        {
+            int gel_matId = 0;
+            if (gel) {
+                    gel_matId = gel->MaterialId();
+            }
+            
+            if(LagrangeLevelNotCondensed >= 0 && !found) DebugStop();
+            int verif = 0;
+            
+            for (auto matId:matids) {
+                if (gel_matId==matId) {
+                    verif=1;
+                    break;
+                }
+            }
+            if (verif==1) {
+                TPZFastCondensedElement *cond = new TPZFastCondensedElement(cel, keepmatrix);
+                cond->SetLambda(1.0);
+            }
+            else{
+                TPZCondensedCompEl *cond = new TPZCondensedCompEl(cel, keepmatrix);
+            }
+        }
+        
+    }
+    
+    cmesh->CleanUpUnconnectedNodes();
+    
+}
+
 void TPZReservoirTools::FindCondensed(TPZCompEl *cel, TPZStack<TPZFastCondensedElement *> &condensedelements)
 {
     TPZFastCondensedElement *cond = dynamic_cast<TPZFastCondensedElement *>(cel);

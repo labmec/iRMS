@@ -191,7 +191,7 @@ TMRSDataTransfer SettingSimpleFracCase(){
 
 
 TPZGeoMesh *ReadFractureMesh(){
-    std::string fileFine("../../FracMeshes/jose_simple.msh");
+    std::string fileFine("../../FracMeshes/jose_simple1.msh");
     
     //    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D

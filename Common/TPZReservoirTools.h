@@ -27,6 +27,7 @@ class TPZReservoirTools
 public:
     static void CreatedCondensedElements(TPZCompMesh *cmesh, bool KeepOneLagrangian, bool keepmatrix);
     static void CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix);
+    static void CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix, std::set<int> matids);
     static void FindCondensed(TPZCompEl *cel, TPZStack<TPZFastCondensedElement *> &condensedelements);
 };
 
