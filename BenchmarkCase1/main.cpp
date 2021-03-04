@@ -101,7 +101,7 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     return gmeshFine;
 }
 TPZGeoMesh *ReadFractureMesh(){
-    std::string fileFine("../../FracMeshes/jose_simple1.msh");
+    std::string fileFine("../../FracMeshes/jose_simple.msh");
 
 //    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
@@ -543,7 +543,6 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
     sim_data.mTFluidProperties.mOilDensityRef = 500.0;
-    
     
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 1;

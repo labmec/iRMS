@@ -18,6 +18,8 @@ class TPZFastCondensedElement : public TPZCondensedCompEl
 protected:
     
     // this will be the multiplying factor for the condensed stiffness matrix K11
+    TPZCompEl *fcelmultiphysics;
+    bool fIsGroup = false;
     REAL fLambda = 1.0;
     TPZFNMatrix<9, REAL> fPermeabilityTensor;
     TPZFNMatrix<9, REAL> fInvPerm;
@@ -110,6 +112,19 @@ public:
         fEF = copy.fEF;
         fLambda = copy.fLambda;
         fMatrixComputed = copy.fMatrixComputed;
+    }
+    
+    void SetMultiphysics(TPZCompEl *celmult){
+        fcelmultiphysics = celmult;
+    }
+    TPZCompEl* GetMultiphysics(){
+        return fcelmultiphysics;
+    }
+    void SetIsGroup(bool isgroup){
+        fIsGroup = isgroup;
+    }
+    int GetIsGroup(){
+        return fIsGroup;
     }
     
     

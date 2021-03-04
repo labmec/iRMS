@@ -168,6 +168,7 @@ public:
     void CreateElementInterfaces(TPZGeoEl *gel);
     void CreateInterfaces(TPZMultiphysicsCompMesh *cmesh);
     void CreateFracInterfaces(TPZGeoEl *gel);
+    void CreateTransportElement(int p_order, TPZCompMesh *cmesh, TPZGeoEl *gel, bool is_BC);
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

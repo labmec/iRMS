@@ -14,6 +14,7 @@
 #include <vector>
 #include "TPZMultiphysicsCompMesh.h"
 #include "TPZAlgebraicTransport.h"
+#include "pzelementgroup.h"
 class TPZSubCompMesh;
 class TPZFastCondensedElement;
 class TPZAlgebraicTransport;
@@ -224,5 +225,7 @@ public:
     
     // verify the correspondence of the mixed elements and the algebraic cells
     void CheckDataTransferTransportToMixed();
+    
+    TPZMultiphysicsElement* findMultiphysics(TPZElementGroup *group);
 };
 #endif /* AlgebraicDataTransfer_h */
