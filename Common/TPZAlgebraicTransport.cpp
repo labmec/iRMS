@@ -68,11 +68,10 @@ void TPZAlgebraicTransport::ContributeResidual(int index, TPZFMatrix<double> &ef
     ef(0) = fCellsData.fVolume[index]*phi*(sat-satLast)/fdt;
 }
 
-void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef){
+void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId){
     
-    std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceid].fLeftRightVolIndex[index];
-    REAL fluxint  = fInterfaceData[interfaceid].fIntegralFlux[index];
-   
+    std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceId].fLeftRightVolIndex[index];
+    REAL fluxint  = fInterfaceData[interfaceId].fIntegralFlux[index];
     REAL fw_L = fCellsData.fWaterfractionalflow[lr_index.first];
     REAL fw_R = fCellsData.fWaterfractionalflow[lr_index.second];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
@@ -80,6 +79,9 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     
     REAL beta =0.0;
     //upwind
+//    if (interfaceId==102 ){
+//        fluxint*=-1.0;
+//    }
     if (fluxint>0.0) {
         beta = 1.0;
     }
@@ -91,9 +93,10 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     ek(0,1) = +1.0*dfwSw_R * (1-beta) * fluxint;
     ek(1,0) = -1.0*dfwSw_L* beta * fluxint;
     ek(1,1) = -1.0*dfwSw_R * (1-beta)*fluxint;
-    
+//    ef.Print(std::cout);
+//    ek.Print(std::cout);
     // Gravity fluxes contribution
-    ContributeInterfaceIHU(index, ek, ef);
+//    ContributeInterfaceIHU(index, ek, ef);
     
 }
 
@@ -378,8 +381,9 @@ void TPZAlgebraicTransport::UpdateIntegralFlux(int matid){
     
     if(fInterfaceData.find(matid) == fInterfaceData.end()) DebugStop();
     int nels = fInterfaceData[matid].fCoefficientsFlux.size();
-    if(nels == 0) DebugStop();
-    fInterfaceData[matid].fIntegralFlux= fInterfaceData[matid].fCoefficientsFlux[0];
+    if(nels == 0) return;
+    std::vector<REAL> val =fInterfaceData[matid].fCoefficientsFlux[0];
+    fInterfaceData[matid].fIntegralFlux=val;
     for (int i = 1; i<nels; i++) {
         int np =fInterfaceData[matid].fCoefficientsFlux[i].size();
         for (int index = 0; index<np; index++) {

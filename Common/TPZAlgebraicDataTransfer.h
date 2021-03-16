@@ -188,10 +188,10 @@ public:
     void Print(std::ostream &out = std::cout);
     
     // identify material of a face which is connected to a given geometric element
-    int IdentifyMaterial(TPZGeoElSideIndex gelsideindex, int64_t faceindex);
+    std::vector<int> IdentifyMaterial(TPZGeoElSideIndex gelsideindex, int64_t faceindex);
 
     // identify material of a face which is connected to a given geometric element
-    int IdentifyMaterial(const TPZGeoElSide &gelside, int delta=0);
+    std::vector<int> IdentifyMaterial(const TPZGeoElSide &gelside, int delta=0);
     
     // find the neighbouring interface element
     TPZGeoElSide IdentifyInterfaceElement(const TPZGeoElSide &gelside);
@@ -227,5 +227,8 @@ public:
     void CheckDataTransferTransportToMixed();
     
     TPZMultiphysicsElement* findMultiphysics(TPZElementGroup *group);
+    
+    std::pair<int, int> FindMortar(TPZGeoElSide &gelside);
+    std::pair<int, int> FindMortar(TPZGeoElSide &gelside, int targetId);
 };
 #endif /* AlgebraicDataTransfer_h */

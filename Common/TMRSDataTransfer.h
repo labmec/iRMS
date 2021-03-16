@@ -65,6 +65,10 @@ public:
           MaterialID of the interface element that will be inserted in the transport mesh
          */
         int mInterface_material_id = 100;
+        int mInterface_material_idFracSup = 101;
+        int mInterface_material_idFracInf = 102;
+        int mInterface_material_idFracFrac = 103;
+        int mIterface_material_idFracBound = 104;
         /// number of times the skeleton elements should be refined
         int mSkeletonDiv =0;
         /// unused variable in this project space
@@ -104,6 +108,11 @@ public:
             mDomainDimNameAndPhysicalTag = other.mDomainDimNameAndPhysicalTag;
             mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
             mInterface_material_id=other.mInterface_material_id;
+            mInterface_material_idFracSup = other.mInterface_material_idFracSup;
+            mInterface_material_idFracInf = other.mInterface_material_idFracInf;
+            mInterface_material_idFracFrac = other.mInterface_material_idFracFrac;
+            mIterface_material_idFracBound=other.mIterface_material_idFracBound;
+            
             mSkeletonDiv = other.mSkeletonDiv;
             mnLayers = other.mnLayers;
             mnref = other.mnref;
@@ -131,6 +140,10 @@ public:
                 mDomainDimNameAndPhysicalTag = other.mDomainDimNameAndPhysicalTag;
                 mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
                 mInterface_material_id=other.mInterface_material_id;
+                mInterface_material_idFracSup = other.mInterface_material_idFracSup;
+                mInterface_material_idFracInf = other.mInterface_material_idFracInf;
+                mInterface_material_idFracFrac = other.mInterface_material_idFracFrac;
+                mIterface_material_idFracBound=other.mIterface_material_idFracBound;
                 mSkeletonDiv = other.mSkeletonDiv;
                 mnLayers = other.mnLayers;
                 mnref = other.mnref;

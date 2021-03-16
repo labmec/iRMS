@@ -261,7 +261,7 @@ public:
     void Contribute(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     void ContributeResidual(int index, TPZFMatrix<double> &ef);
     
-    void ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
+    void ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId=100);
     void ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     
     void ContributeInterfaceResidual(int index, TPZFMatrix<double> &ef);

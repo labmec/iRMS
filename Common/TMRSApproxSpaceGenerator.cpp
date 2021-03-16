@@ -669,15 +669,15 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     {
         {
             std::ofstream out("FluxMortarMesh.txt");
-            cmesh->Print(out);
+//            cmesh->Print(out);
         }
         {
             std::ofstream out("FluxMortar.vtk");
-            TPZVTKGeoMesh::PrintCMeshVTK(cmesh, out);
+//            TPZVTKGeoMesh::PrintCMeshVTK(cmesh, out);
         }
         {
             std::ofstream out("GMeshAfterFluxMortar.vtk");
-            TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out);
+//            TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out);
         }
 
         cmesh->LoadReferences();
@@ -1277,8 +1277,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     {
         std::stringstream file_name;
         file_name  << "mixed_cmesh_four_space_mortar_one_condense" << ".txt";
-        std::ofstream sout(file_name.str().c_str());
-        mMixedOperator->Print(sout);
+//        std::ofstream sout(file_name.str().c_str());
+//        mMixedOperator->Print(sout);
     }
 #endif
     std::set<int64_t> groups2;
@@ -1295,7 +1295,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         std::stringstream file_name;
         file_name  << "mixed_cmesh_four_space_mortar_two_condense" << ".txt";
         std::ofstream sout(file_name.str().c_str());
-        mMixedOperator->Print(sout);
+//        mMixedOperator->Print(sout);
     }
 #endif
   
@@ -1566,7 +1566,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::stringstream file_name;
     file_name  << "mixed_cmesh_four_spaces" << ".txt";
     std::ofstream sout(file_name.str().c_str());
-    mMixedOperator->Print(sout);
+//    mMixedOperator->Print(sout);
 #endif
     TPZReservoirTools::CreatedCondensedElements(mMixedOperator, false, true);
     
@@ -1990,19 +1990,25 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
         mTransportOperator->InsertMaterialObject(face);
         
     }
+    //crear controle no simdata
     TPZMaterial * face3 = volume->CreateBC(volume,-11,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face3);
     
-    TPZMaterial * face = volume->CreateBC(volume,101,1,val1,val2);
+    int fracvol1ID = mSimData.mTGeometry.mInterface_material_idFracInf;
+    int fracvol2ID = mSimData.mTGeometry.mInterface_material_idFracSup;
+    int fracFracID = mSimData.mTGeometry.mInterface_material_idFracFrac;
+    int fracbounId = mSimData.mTGeometry.mIterface_material_idFracBound;
+    
+    TPZMaterial * face = volume->CreateBC(volume,fracvol1ID,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face);
 
-    TPZMaterial * face4 = volume->CreateBC(volume,102,1,val1,val2);
+    TPZMaterial * face4 = volume->CreateBC(volume,fracvol2ID,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face4);
     
-    TPZMaterial * face2 = volume->CreateBC(volume,103,1,val1,val2);
+    TPZMaterial * face2 = volume->CreateBC(volume,fracFracID,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face2);
 //
-    TPZMaterial * face5 = volume->CreateBC(volume,104,1,val1,val2);
+    TPZMaterial * face5 = volume->CreateBC(volume,fracbounId,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face5);
     
     
@@ -2300,7 +2306,7 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
             
             
             mem.m_sw = 0.0;
-            mem.m_phi = 0.1;
+            mem.m_phi = 1.0;
             
             REAL kappa = 1.0;
             mem.m_kappa.Resize(3, 3);
@@ -2319,7 +2325,7 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
         for (int i = 0; i < ndata; i++) {
             TMRSMemory &mem = memory_vector.get()->operator [](i);
             mem.m_sw = 0.0;
-            mem.m_phi = 0.1;
+            mem.m_phi = 1.0;
             REAL kappa = 1.0;
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
@@ -2774,6 +2780,7 @@ void TMRSApproxSpaceGenerator::CreateInterfaces(TPZMultiphysicsCompMesh *cmesh){
     
     int nels = cmesh->NElements();
     int dim = cmesh->Dimension();
+    int fracId = mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"];
     TPZManVector<std::vector<int64_t>,4> cel_indexes(4);
     for (int64_t el = 0; el < nels; el++) {
         TPZCompEl *cel = cmesh->Element(el);
@@ -2785,7 +2792,7 @@ void TMRSApproxSpaceGenerator::CreateInterfaces(TPZMultiphysicsCompMesh *cmesh){
         
         int gel_dim = gel->Dimension();
         if (gel_dim == 2) {
-            if (gel->MaterialId() != 10) {
+            if (gel->MaterialId() != fracId) {
                 continue;
             }
         }
@@ -2843,9 +2850,9 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                 for (int ivol = 0; ivol<2; ivol++) {
                     TPZGeoElSide gelneig =gelneigVec[ivol];
                     TPZCompElSide celside_r = gelneig.Reference();
-                    int matid=102;
+                    int matid=mSimData.mTGeometry.mInterface_material_idFracSup;
                     if (ivol==0) {
-                        matid=101;
+                        matid=mSimData.mTGeometry.mInterface_material_idFracInf;
                     }
                     TPZGeoElBC gbc(gelside,matid);
                     int64_t index;

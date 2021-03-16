@@ -197,13 +197,13 @@ void TMRSTransportAnalysis::RunTimeStep(){
     correction.Zero();
     
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-    bool QN_converge_Q = QuasiNewtonSteps(x,20); // assuming linear operator (tangent)
-    if(QN_converge_Q){
-        return;
-    }
+//    bool QN_converge_Q = QuasiNewtonSteps(x,20); // assuming linear operator (tangent)
+//    if(QN_converge_Q){
+//        return;
+//    }
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
-        NewtonIteration();
+//        NewtonIteration();
         dx = Solution();
 
         x += dx;
@@ -259,8 +259,10 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     AssembleResidual();
+//    PostProcessTimeStep();
     REAL res_norm = Norm(Rhs());
     std::cout << "Initial guess residue norm : " <<  res_norm << std::endl;
+    
 }
 
 bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
@@ -369,6 +371,7 @@ void TMRSTransportAnalysis::AnalyzePattern(){
     // Because in some parts this objects are needed.
     Solution().Resize(fTransportSpMatrix->NRhsRows(), 1);
     Rhs().Resize(fTransportSpMatrix->NRhsRows(), 1);
+    
 
 }
 

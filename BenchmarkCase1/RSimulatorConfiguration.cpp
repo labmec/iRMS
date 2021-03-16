@@ -670,19 +670,19 @@ TPZAnalysis * RSimulatorConfiguration::CreateAnalysis(TPZMultiphysicsCompMesh * 
         return analysis;
     }
     
-    if (fsim_case.UseFrontalQ) {
-        
-        TPZParFrontStructMatrix<TPZFrontSym<STATE> > matrix(cmesh_mult);
-        matrix.SetDecomposeType(ELDLt);
-        matrix.SetNumThreads(fsim_case.n_threads);
-     
-        analysis->SetStructuralMatrix(matrix);
-        TPZStepSolver<STATE> step;
-        step.SetDirect(ELDLt);
-        analysis->SetSolver(step);
-        
-        return analysis;
-    }
+//    if (fsim_case.UseFrontalQ) {
+//        
+//        TPZParFrontStructMatrix<TPZFrontSym<STATE> > matrix(cmesh_mult);
+//        matrix.SetDecomposeType(ELDLt);
+//        matrix.SetNumThreads(fsim_case.n_threads);
+//     
+//        analysis->SetStructuralMatrix(matrix);
+//        TPZStepSolver<STATE> step;
+//        step.SetDirect(ELDLt);
+//        analysis->SetSolver(step);
+//        
+//        return analysis;
+//    }
     else{
         
         TPZSkylineStructMatrix matrix(cmesh_mult);

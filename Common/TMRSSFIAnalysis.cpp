@@ -156,7 +156,7 @@ void TMRSSFIAnalysis::FillProperties(){
         }
         else{
             std::vector<REAL> kappa_phi(4,1.0);
-            kappa_phi[3]=0.1;
+            kappa_phi[3]=1.0;
             FillProperties(&m_transport_module->fAlgebraicTransport, kappa_phi);
         }
         
@@ -349,6 +349,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
         
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
+        break;
     }
     
     if (!stop_criterion_Q) {
@@ -427,11 +428,29 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     
     fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
+//    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(101);
+//    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(102);
+    
+    int fracvol1ID = m_sim_data->mTGeometry.mInterface_material_idFracInf;
+    int fracvol2ID = m_sim_data->mTGeometry.mInterface_material_idFracSup;
+    
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol1ID);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol2ID);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
  
+//    std::cout<<"FluxIntegrated"<<std::endl;
+//    int size = m_transport_module->fAlgebraicTransport.fInterfaceData[fracvol1ID].fIntegralFlux.size();
+//    for(int i = 0; i< size; i++){
+//        std::cout<<" i " <<i<< " integral val: "<<m_transport_module->fAlgebraicTransport.fInterfaceData[fracvol1ID].fIntegralFlux[i];
+//    }
+//    int size2 = m_transport_module->fAlgebraicTransport.fInterfaceData[fracvol2ID].fIntegralFlux.size();
+//    for(int i = 0; i< size2; i++){
+//        std::cout<<" i " <<i<< " integral val: "<<m_transport_module->fAlgebraicTransport.fInterfaceData[fracvol2ID].fIntegralFlux[i];
+//    }
     
-    fAlgebraicDataTransfer.TransferPressures();
+    
+//    fAlgebraicDataTransfer.TransferPressures();
     m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
     
 #ifdef USING_BOOST
@@ -439,6 +458,13 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     deltat = t4-t3;
     std::cout << "Transfer mixed to transport time: " << deltat << std::endl;
 #endif
+    
+//    std::ofstream fileprint("FluxBeforeTransport.txt");
+//    TPZCompMesh *compmesh = m_mixed_module->Mesh();
+//    TPZMultiphysicsCompMesh *multcmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(compmesh);
+////    multcmesh->MeshVector()[0]->Print(fileprint);
+    
+    
     
     m_transport_module->RunTimeStep();
 #ifdef USING_BOOST

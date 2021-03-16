@@ -90,7 +90,7 @@
 #include "pzstepsolver.h"
 #include "pzskylstrmatrix.h"
 #include "TPZSkylineNSymStructMatrix.h"
-#include "TPZParFrontStructMatrix.h"
+//#include "TPZParFrontStructMatrix.h"
 #include "TPZSSpStructMatrix.h"
 #include "TPZSpStructMatrix.h"
 #include "pzl2projection.h"

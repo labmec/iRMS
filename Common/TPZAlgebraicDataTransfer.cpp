@@ -238,6 +238,11 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZCompEl *left = leftside.Element();
             if(left->NConnects() > 1) DebugStop();
             TPZGeoEl *leftgel = left->Reference();
+            
+            //TestCorrectNormalOrientation
+//            FindMortar
+            
+            //
             int leftorient = leftgel->NormalOrientation(leftside.Side());
             TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(left);
             TPZCompEl *hdivBound = celmult->Element(0);
@@ -245,7 +250,12 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundT = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBound);
             
             bool is_collapsed = false;
-            if (hdivbound || hdivboundT) {
+            if (hdivbound ) {
+                leftorient = hdivbound->GetSideOrient(8);
+                is_collapsed=true;
+            }
+            if(hdivboundT){
+                leftorient = hdivboundT->GetSideOrient(6);
                 is_collapsed=true;
             }
           
@@ -313,8 +323,10 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
 }
 
 // identify material of a face which is connected to a given geometric element
-int TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex gelindex, int64_t faceindex)
+std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex gelindex, int64_t faceindex)
 {
+    std::vector<int> vector;
+    bool check =false;
     for(auto it=fInterfaceGelIndexes.begin(); it != fInterfaceGelIndexes.end(); it++)
     {
         TPZVec<TInterfaceWithVolume> &faces = it->second;
@@ -322,17 +334,22 @@ int TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex gelindex, int64
         TInterfaceWithVolume &intface = faces[faceindex];
         if(intface.fLeftRightGelSideIndex.first == gelindex || intface.fLeftRightGelSideIndex.second == gelindex)
         {
-            return it->first;
+            vector.push_back(it->first);
+            check = true;
+//            return it->first;
         }
+    }
+    if(check){
+        return vector;
     }
     std::cout << __PRETTY_FUNCTION__ << "couldnt find a material corresponding to gelindex " << gelindex <<
     " and faceindex " << faceindex << std::endl;
     DebugStop();
-    return -10000;
+//    return -10000;
 }
 
 // identify material of a face which is connected to a given geometric element
-int TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &gelside, int delta)
+std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &gelside, int delta)
 {
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
     int64_t el = gelside.Element()->Index();
@@ -341,7 +358,7 @@ int TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &gelside, int 
     int nsides = gelside.Element()->NSides();
     int ncord = gelside.Element()->NCornerNodes();
     TPZGeoElSide refside;
-    if (gelside.Side() > nsides-1) {
+    if (gelside.Side() >= nsides-1) {
         TPZGeoElSide gelsideaux(gelside.Element(), nsides-1);
         refside =gelsideaux;
     }
@@ -442,6 +459,11 @@ void TPZAlgebraicDataTransfer::GetElementAndSubmeshPointers(TPZCompMesh &mixedme
     {
         TPZCompEl *cel = mixedmesh.Element(el);
         if(!cel) continue;
+//        TPZGeoEl *gel = cel->Reference();
+//        if (gel->MaterialId()==40){
+//            int ok=0;
+//        }
+        
         TPZSubCompMesh *submesh = dynamic_cast<TPZSubCompMesh *>(cel);
         if(submesh)
         {
@@ -458,11 +480,13 @@ void TPZAlgebraicDataTransfer::GetElementAndSubmeshPointers(TPZCompMesh &mixedme
 void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *fluxmesh)
 {
     if(!fluxmesh) DebugStop();
+    
     std::list<TPZCompEl *> cellist;
     std::list<TPZSubCompMesh *> submeshes;
     GetElementAndSubmeshPointers(*fluxmesh,cellist,submeshes);
     TPZVec<int64_t> shouldtransfer(fluxmesh->NConnects(),0);
     TPZVec<int64_t> targetindex(fluxmesh->NConnects(),0);
+    fluxmesh->LoadReferences();     
     if(cellist.size())
     {
         // compute the number of connects that will transfer information
@@ -504,27 +528,27 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                 // a boundary condition element
                 // boundary elements are not considered
                 continue;
-                int64_t cindex = cel->ConnectIndex(0);
-                if(shouldtransfer[cindex] != 0) continue;
-                TPZGeoElSide gelside(gel,gel->NSides()-1);
-                int matid = IdentifyMaterial(gelside);
-                connectindexes[matid].Push(cindex);
-                if(ncontransfer.find(matid) == ncontransfer.end())
-                {
-                    ncontransfer[matid].Resize(4, 0);
-                }
-                int nshape = cel->Connect(0).NShape();
-                if(nshape > 4) DebugStop();
-                for(int is = 0; is<nshape; is++)
-                {
-                    ncontransfer[matid][is]++;
-                }
-                shouldtransfer[cindex] = 1;
-                TPZGeoElSide refside = IdentifyInterfaceElement(gelside);
-                int side = refside.Side();
-                int sidelower = SideLowerIndex(refside.Element(),side);
-                targetindex[cindex] = fInterfaceByGeom(refside.Element()->Index(),sidelower);
-                if(targetindex[cindex] < 0) DebugStop();
+//                int64_t cindex = cel->ConnectIndex(0);
+//                if(shouldtransfer[cindex] != 0) continue;
+//                TPZGeoElSide gelside(gel,gel->NSides()-1);
+////                int matid = IdentifyMaterial(gelside);
+//                connectindexes[matid].Push(cindex);
+//                if(ncontransfer.find(matid) == ncontransfer.end())
+//                {
+//                    ncontransfer[matid].Resize(4, 0);
+//                }
+//                int nshape = cel->Connect(0).NShape();
+//                if(nshape > 4) DebugStop();
+//                for(int is = 0; is<nshape; is++)
+//                {
+//                    ncontransfer[matid][is]++;
+//                }
+//                shouldtransfer[cindex] = 1;
+//                TPZGeoElSide refside = IdentifyInterfaceElement(gelside);
+//                int side = refside.Side();
+//                int sidelower = SideLowerIndex(refside.Element(),side);
+//                targetindex[cindex] = fInterfaceByGeom(refside.Element()->Index(),sidelower);
+//                if(targetindex[cindex] < 0) DebugStop();
             }
             else
             {
@@ -539,20 +563,58 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     numfaces=5;
                 }
                 if(nc != numfaces+1) DebugStop();
+                int warning = 0;
                 for(int ic=0; ic<nc-1; ic++)
                 {
-                    int64_t cindex = cel->ConnectIndex(ic);
-                    if(shouldtransfer[cindex] != 0) continue;
+                    if (collapsedQuad && ic ==4) {
+                        warning =1;
+                        nc++;
+                        continue;
+                    }
+                    
+                    if (collapsedTriangle && ic ==3) {
+                        warning =1;
+                        nc++;
+                        continue;
+                    }
+                    
                     int side = firstside+ic;
+                    if (warning) {
+                        side = side-1;
+                    }
+                    
+                    
                     TPZGeoElSide gelside(gel,side);
-                    int matid = IdentifyMaterial(gelside);
+                    std::vector<int> matidvec = IdentifyMaterial(gelside);
+                    
+                    //corregir connect_Index_solo si existe fluxo mortar
+//                    int64_t mortarExist = mortarExist
+                    int nshape = cel->Connect(ic).NShape();
+                    std::pair<int, int> connectIndexNshape = FindMortar(gelside);
+                    int mortarIndex = std::get<0>(connectIndexNshape);
+                    int nshap = std::get<1>(connectIndexNshape);
+                    int64_t cindex =-1;
+                    if(mortarIndex!=-1){
+                        cindex=mortarIndex;
+                        nshape=nshap;
+                    }
+                    else{
+                        cindex = cel->ConnectIndex(ic);
+                    }
+                    if(shouldtransfer[cindex] != 0) continue;
+                    int matid =matidvec[0];
+                    if (warning && side == 9) {
+                        matid = matidvec[1];
+                    }
                     if(ncontransfer.find(matid) == ncontransfer.end())
                     {
                         ncontransfer[matid].Resize(4, 0);
                     }
-                    
+                    if(matid==101){
+                        int ok=0;
+                    }
                     connectindexes[matid].Push(cindex);
-                    int nshape = cel->Connect(ic).NShape();
+                    
                     for(int is=0; is<nshape; is++)
                     {
                         ncontransfer[matid][is]++;
@@ -561,7 +623,10 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     TPZGeoElSide refside = IdentifyInterfaceElement(gelside);
                     int64_t elindex = refside.Element()->Index();
                     int sidelower = SideLowerIndex(refside.Element(),refside.Side());
-                    targetindex[cindex] = fInterfaceByGeom(elindex,sidelower);
+                    int targetind = fInterfaceByGeom(elindex,sidelower);
+                    targetindex[cindex] = targetind;
+//                    std::cout<<"MatId: "<<matid<<std::endl;
+//                    std::cout<<"cindex: "<< cindex <<"Target Index(cindex): "<<targetindex[cindex]<<std::endl;
                     if(targetindex[cindex] < 0) DebugStop();
                 }
             }
@@ -588,11 +653,13 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     int64_t blsize = fluxmesh->Block().Size(seqnum);
                     if(is>= blsize) continue;
                     if(count >= ncontransfer[matid][is]) DebugStop();
-                    transport.fGather[count] = position+is;
-                    transport.fScatter[count] = targetindex[cindex];
+                    int gather = position+is;
+                    transport.fGather[count] = gather;
+                    int scatter =targetindex[cindex];
+                    transport.fScatter[count] = scatter;
                     count++;
                 }
-                if(count != ncontransfer[matid][is]) DebugStop();
+//                if(count != ncontransfer[matid][is]) DebugStop();
                 fTransferMixedToTransport[matid].push_back(transport);
             }
         }
@@ -699,8 +766,8 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
                 {
                     int side = SideOriginalIndex(gel,i);
                     TPZGeoElSideIndex gelside(el,side);
-                    out << "i = " << i <<  " side " << side << " face index " << fInterfaceByGeom(el,i) << " matid "
-                    << IdentifyMaterial(gelside,fInterfaceByGeom(el,i)) << std::endl;
+//                    out << "i = " << i <<  " side " << side << " face index " << fInterfaceByGeom(el,i) << " matid "
+//                    << IdentifyMaterial(gelside,fInterfaceByGeom(el,i)) << std::endl;
                 }
             }
         }
@@ -887,8 +954,8 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
    
     transport.fCellsData.SetNumCells(nvols);
     transport.fCellsData.fViscosity.resize(2);
-    transport.fCellsData.fViscosity[0] = 0.5;
-    transport.fCellsData.fViscosity[1] = 0.1;
+    transport.fCellsData.fViscosity[0] = 1.0;
+    transport.fCellsData.fViscosity[1] = 1.0;
     std::cout << __PRETTY_FUNCTION__ << "Filling in property map\n";
 
     for (int64_t i=0 ; i<nvols; i++) {
@@ -896,8 +963,14 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
        
         TPZCompEl *cel = fTransportMesh->Element(celindex);
         TPZGeoEl *gel = cel->Reference();
+        int geldim = gel->Dimension();
+        //@TODO crear metodo de acceso
+        REAL fracFactor = 1.0;
         REAL volume = gel->Volume();
         int side = gel->NSides()-1;
+        if (geldim==2) {
+            volume=volume*fracFactor;
+        }
         transport.fCellsData.fVolume[i]=volume;
         
         if (cel->NConnects()!=1) {
@@ -989,10 +1062,12 @@ void TPZAlgebraicDataTransfer::TransferMixedMeshMultiplyingCoefficients()
 {
     for(auto &matit : fTransferMixedToTransport)
     {
+        std::cout<<"Mat_id= "<<matit.first<<std::endl;
         for(auto &mixed : matit.second)
         {
             int64_t nel = mixed.fGather.size();
             for (int64_t el = 0; el< nel; el++) {
+                
                 (*mixed.fTarget)[mixed.fScatter[el]] = (*mixed.fFrom)(mixed.fGather[el],0);
             }
         }
@@ -1043,8 +1118,11 @@ void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
         for (int icell = 0; icell < ncells; icell++)
         {
             int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
-            meshit.fMixedCell[icell]->SetLambda(meshit.fTransport->fCellsData.flambda[cellindex]);
-         meshit.fMixedCell[icell]->SetMixedDensity(meshit.fTransport->fCellsData.fMixedDensity[cellindex]);
+            REAL lambda = meshit.fTransport->fCellsData.flambda[cellindex];
+            meshit.fMixedCell[icell]->SetLambda(lambda);
+            
+            REAL mixedDensity =meshit.fTransport->fCellsData.fMixedDensity[cellindex];
+            meshit.fMixedCell[icell]->SetMixedDensity(mixedDensity);
             
             REAL porosity = meshit.fTransport->fCellsData.fporosity[cellindex];
             REAL dt = meshit.fTransport->fdt;
@@ -1186,4 +1264,85 @@ TPZMultiphysicsElement* TPZAlgebraicDataTransfer::findMultiphysics(TPZElementGro
         
         }
     return mult;
+}
+std::pair<int, int> TPZAlgebraicDataTransfer::FindMortar(TPZGeoElSide &gelside){
+    
+    
+    int mortarId = 40;
+    std::set<int> idstargets;
+    idstargets.insert(mortarId);
+    idstargets.insert(-1);
+    idstargets.insert(-2);
+    idstargets.insert(-3);
+    idstargets.insert(-4);
+  
+    std::pair<int, int> indextargetPair(-1,-1);
+    for(auto idtar:idstargets){
+        std::pair<int, int> candidatetarPair = FindMortar(gelside, idtar);
+        
+        int candidatetar = std::get<0>(candidatetarPair);
+        if(candidatetar!=-1){
+            indextargetPair=candidatetarPair;
+            break;
+        }
+    }
+    return indextargetPair;
+}
+std::pair<int, int> TPZAlgebraicDataTransfer::FindMortar(TPZGeoElSide &gelside, int targetId){
+    
+    
+    int indexcon =-1;
+    int nshape =-1;
+    std::pair<int, int> pairret(-1,-1);
+    int nsides = gelside.Element()->NSides();
+    gelside.Element()->Type();
+    int nsidesgelside = gelside.Side();
+    bool first = true;
+    if(nsidesgelside == 9){
+        first = false;
+    }
+    TPZGeoElSide gelsideAux;
+    if (nsidesgelside<8) {
+        std::pair<int, int> pairt(-1,-1);
+        return pairt;
+    }
+    if(nsidesgelside>=nsides && gelside.Element()->Dimension() == 2){
+        gelsideAux =  TPZGeoElSide(gelside.Element(), 8);
+    }
+    else{
+        gelsideAux =gelside;
+    }
+    TPZGeoElSide neig = gelsideAux.Neighbour();
+    int count =0;
+    while(gelsideAux!=neig){
+        int elId = neig.Element()->MaterialId();
+        //
+        if(elId == targetId){
+            TPZCompEl *comp = neig.Element()->Reference();
+            TPZMultiphysicsInterfaceElement * mult = dynamic_cast<TPZMultiphysicsInterfaceElement *>(comp);
+            if(comp && ! mult){
+                count++;
+                if(!first){
+                    neig = neig.Neighbour();
+                    first=true;
+                    continue;
+                }
+                int ncon = comp->NConnects();
+                if(ncon!=1){
+                    DebugStop();
+                }
+                indexcon = comp->ConnectIndex(0);
+                nshape = comp->Connect(0).NShape();
+                std::pair<int, int> pairp(indexcon, nshape);
+                pairret=pairp;
+                break;
+            }
+        }
+        neig = neig.Neighbour();
+    }
+    
+    
+    return pairret;
+    //    compelside
+    
 }
