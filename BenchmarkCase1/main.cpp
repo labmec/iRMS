@@ -54,7 +54,6 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     dim_name_and_physical_tagCoarse[2]["inlet"] = -2;
     dim_name_and_physical_tagCoarse[2]["outlet"] = -4;
     dim_name_and_physical_tagCoarse[2]["noflux"] = -1;
-    
     /*
      2 2 "Fractures"
      3 1 "c1"

@@ -41,27 +41,19 @@ TPZFastCondensedElement::TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix
  */
 void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &ef)
 {
-    
     if(this->fMatrixComputed == false)
     {
-     
         TPZMaterial *mat = Material();
-        
         TPZCondensedCompEl::CalcStiff(fEK, fEF);
         ComputeBodyforceRefValues();
         ComputeConstantPressureValues();
         this->fMatrixComputed = true;
     }
-    
     ek = fEK;
     ef = fEF;
-    
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
-    
-
     REAL Glambda = fMixedDensity;
-
     ek.fMat *= (1./fLambda);
     for (int icol=0; icol<ncols; icol++) {
         ek.fMat(nrows-1,icol) *= fLambda;
