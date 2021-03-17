@@ -210,6 +210,8 @@ add_subdirectory(MHMSimple)
 # add_subdirectory(Paper2d)
 add_subdirectory(BenchmarkCase1)
 add_subdirectory(SimpleCaseFracture)
+add_subdirectory(SimpleCaseFractureTwoElements)
+
 
 
 
