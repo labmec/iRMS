@@ -8,12 +8,12 @@
 #include "TMRSMultiphaseFlow.h"
 
 template <class TMEM>
-TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow() : TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>(), mSimData(){
+TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow() : TPZMatWithMem<TMEM,TPZMaterial>(), mSimData(){
     m_dimension = 0;
 }
 
 template <class TMEM>
-TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow(int matid, int dimension) : TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>(matid), mSimData(){
+TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow(int matid, int dimension) : TPZMatWithMem<TMEM,TPZMaterial>(matid), mSimData(){
     m_dimension = dimension;
 }
 
@@ -63,7 +63,7 @@ void TMRSMultiphaseFlow<TMEM>::FillDataRequirementsInterface(TPZMaterialData &da
     data.SetAllRequirements(false);
     data.fNeedsSol = true;
     data.fNeedsNormal = true;
-    if(TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>::fLinearContext == false){
+    if(TPZMatWithMem<TMEM,TPZMaterial>::fLinearContext == false){
         data.fNeedsNeighborSol = true;
     }
 }
@@ -106,7 +106,7 @@ int TMRSMultiphaseFlow<TMEM>::VariableIndex(const std::string &name) {
     if (!strcmp("So", name.c_str())) return 1;
   
     
-    return TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>::VariableIndex(name);
+    return TPZMatWithMem<TMEM,TPZMaterial>::VariableIndex(name);
 }
 
 template <class TMEM>
@@ -119,7 +119,7 @@ int TMRSMultiphaseFlow<TMEM>::NSolutionVariables(int var) {
       
             
     }
-    return TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin>::NSolutionVariables(var);
+    return TPZMatWithMem<TMEM,TPZMaterial>::NSolutionVariables(var);
 }
 
 template <class TMEM>
@@ -441,6 +441,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZV
 template <class TMEM>
 int TMRSMultiphaseFlow<TMEM>::ClassId() const{
     DebugStop();
+    return -1;
 }
 
 template <class TMEM>

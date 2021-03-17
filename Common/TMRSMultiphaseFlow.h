@@ -12,13 +12,13 @@
 #include "TPZMatWithMem.h"
 #include "pzbndcond.h"
 #include "pzaxestools.h"
-#include "pzdiscgal.h"
+// #include "pzdiscgal.h"
 #include "TMRSDataTransfer.h"
 #include <tuple>
 #include <functional>
 
 template <class TMEM>
-class TMRSMultiphaseFlow : public TPZMatWithMem<TMEM,TPZDiscontinuousGalerkin> {
+class TMRSMultiphaseFlow : public TPZMatWithMem<TMEM,TPZMaterial> {
   
 private:
     

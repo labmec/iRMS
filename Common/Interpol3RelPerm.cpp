@@ -126,10 +126,10 @@ Matrix Interpol3RelPerm::Deriv(double Sw, double Sg){
     
     double krocw = Krow.Val(fswc);
     
-    std::pair<double, double> krw  = Krw.ValDeriv(Sw);
-    std::pair<double, double> krow = Krow.ValDeriv(Sw);
-    std::pair<double, double> krg  = Krg.ValDeriv(Sg);
-    std::pair<double, double> krog = Krog.ValDeriv(Sg);
+    std::tuple<double, double> krw  = Krw.ValDeriv(Sw);
+    std::tuple<double, double> krow = Krow.ValDeriv(Sw);
+    std::tuple<double, double> krg  = Krg.ValDeriv(Sg);
+    std::tuple<double, double> krog = Krog.ValDeriv(Sg);
 
     double a, b, dKrwdSw, dKrgdSg, dKrodSw, dKrodSg;
 

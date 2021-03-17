@@ -4,7 +4,7 @@
 //
 //  Created by Jose on 7/20/20.
 //
-
+// #include "pz_config.h"
 #include "TPZSpMatrixEigen.h"
 #include "TPZSSpMatrixEigen.h"
 #include "pzysmp.h"
@@ -17,7 +17,7 @@
 #include <pthread.h>
 
 #include "tpzverysparsematrix.h"
-#include "pz_pthread.h"
+// #include "pz_pthread.h"
 #include "pzstack.h"
 
 using namespace std;

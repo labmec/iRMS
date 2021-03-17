@@ -6,10 +6,10 @@
 #define TPZTracerFlow_h
 
 #include <stdio.h>
-#include "pzdiscgal.h"
+// #include "pzdiscgal.h"
 #include "pzbndcond.h"
 
-class TPZTracerFlow : public TPZDiscontinuousGalerkin {
+class TPZTracerFlow : public TPZMaterial {
     
 private:
     

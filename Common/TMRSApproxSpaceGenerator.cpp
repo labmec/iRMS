@@ -54,6 +54,7 @@ void TMRSApproxSpaceGenerator::Read(TPZStream &buf, void *context){
 
 int TMRSApproxSpaceGenerator::ClassId() const{
     DebugStop();
+    return -1;
 }
 
 void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * geometry){
@@ -2269,7 +2270,7 @@ void TMRSApproxSpaceGenerator::UnifyMaterialMemory(int material_id, TPZMultiphys
     }
     
     TPZMatWithMem<TMRSMemory> * mat_with_memory_o = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material_o);
-    TPZMatWithMem<TMRSMemory,TPZDiscontinuousGalerkin> * mat_with_memory_d = dynamic_cast<TPZMatWithMem<TMRSMemory,TPZDiscontinuousGalerkin> * >(material_d);
+    TPZMatWithMem<TMRSMemory,TPZMaterial> * mat_with_memory_d = dynamic_cast<TPZMatWithMem<TMRSMemory,TPZMaterial> * >(material_d);
     if (!mat_with_memory_o || !mat_with_memory_d) {
         DebugStop();
     }
@@ -2455,7 +2456,7 @@ void TMRSApproxSpaceGenerator::SetUpdateMaterialMemory(int material_id, TPZMulti
         return;
     }
     
-    TPZMatWithMem<TMRSMemory,TPZDiscontinuousGalerkin> * mat_with_memory_trans = dynamic_cast<TPZMatWithMem<TMRSMemory,TPZDiscontinuousGalerkin> * >(material);
+    TPZMatWithMem<TMRSMemory,TPZMaterial> * mat_with_memory_trans = dynamic_cast<TPZMatWithMem<TMRSMemory,TPZMaterial> * >(material);
     if (mat_with_memory_trans) {
         mat_with_memory_trans->SetUpdateMem(update_memory_Q);
         return;

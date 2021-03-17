@@ -11,10 +11,10 @@
 #define TPZPostProcessResProp_h
 
 #include <stdio.h>
-#include "pzdiscgal.h"
+// #include "pzdiscgal.h"
 #include "pzbndcond.h"
 
-class TPZPostProcessResProp : public TPZDiscontinuousGalerkin {
+class TPZPostProcessResProp : public TPZMaterial {
     
 private:
     

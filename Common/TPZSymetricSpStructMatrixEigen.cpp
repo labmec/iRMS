@@ -6,7 +6,8 @@
 //
 
 #include "TPZSymetricSpStructMatrixEigen.h"
-
+// #include "pz_config.h"
+// #include "threads.h"
 
 #include "pzstrmatrix.h"
 
