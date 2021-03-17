@@ -227,6 +227,7 @@ add_subdirectory(SimpleCaseFracture)
 add_subdirectory(SimpleCaseFractureTwoElements)
 
 
-
+enable_testing()
+add_subdirectory(CTest)
 
 
