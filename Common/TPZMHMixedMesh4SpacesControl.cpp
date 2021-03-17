@@ -439,7 +439,7 @@ void TPZMHMixedMesh4SpacesControl::BuildMultiPhysicsMesh()
         sout << "Geometric indices for which we will create multiphysics elements" << std::endl;
         sout << gelindexes;
         //        std::cout << sout.str() << std::endl;
-        LOGPZ_DEBUG(logger, sout.str())
+        LOGPZ_DEBUG(logger, sout.str());
     }
 #endif
 

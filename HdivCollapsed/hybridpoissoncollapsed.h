@@ -6,7 +6,7 @@
 #pragma once
 
 #include "TPZMaterial.h"
-#include "pzdiscgal.h"
+// #include "pzdiscgal.h"
 #include "mixedpoisson.h"
 #include "pzpoisson3d.h"
 #include "TPZMaterial.h"

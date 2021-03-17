@@ -2,7 +2,7 @@
 
 cmake_minimum_required (VERSION 2.8.0)
 
-set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE TYPE  INTERNAL FORCE )
+set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE STRING  INTERNAL FORCE )
 
 project (iMRS)
 
@@ -15,8 +15,11 @@ ELSE (WIN32)
 ENDIF()
 
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Location to search files or libraries
+set(SEARCH_DIRS ENV PATH ../lib/neopz-install ../lib/libInterpolate-install /usr/local/opt/ /usr/local/opt/qt5/lib/cmake/ /usr/include /usr/local/include /usr/local/include/boost /usr/local/include/log4cxx /usr/local/include/tbb /usr/lib /usr/lib64 /usr/local/lib ./. ./.. ./../libs ./../libs/fad ./../libs/metis ./../libs/metis/include ./../libs/metis/lib ./../externallibs ./../externallibs/fad ./../externallibs/pthread ./../externallibs/metis ./../externallibs/metis/include ./../externallibs/metis/lib ./..metis ./../metis/include ./../metis/lib ./externallibs/lib ./externallibs/include ./../externallibs/lib ./../externallibs/include)
 
 IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
@@ -42,8 +45,6 @@ ENDIF(APPLE)
 
 include_directories(${PZ_INCLUDE_DIRS})
 
-# Location to search files or libraries
-set(SEARCH_DIRS ENV PATH /usr/local/opt/ /usr/local/opt/qt5/lib/cmake/ /usr/include /usr/local/include /usr/local/include/boost /usr/local/include/log4cxx /usr/local/include/tbb /usr/lib /usr/lib64 /usr/local/lib ./. ./.. ./../libs ./../libs/fad ./../libs/metis ./../libs/metis/include ./../libs/metis/lib ./../externallibs ./../externallibs/fad ./../externallibs/pthread ./../externallibs/metis ./../externallibs/metis/include ./../externallibs/metis/lib ./..metis ./../metis/include ./../metis/lib ./externallibs/lib ./externallibs/include ./../externallibs/lib ./../externallibs/include)
 
 #enabling pthread library
 # find_path(PTHREAD_INCLUDE NAMES PThread.h pthread.h PATHS ${SEARCH_DIRS} D:/Projetos/externallibs/include )
@@ -57,6 +58,8 @@ set(SEARCH_DIRS ENV PATH /usr/local/opt/ /usr/local/opt/qt5/lib/cmake/ /usr/incl
 # include_directories(${PTHREAD_INCLUDE})
 
 #message(${PTHREAD_INCLUDE})
+
+find_package(Threads REQUIRED)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
 	set(PZDEBUG PZDEBUG)
@@ -198,14 +201,14 @@ add_subdirectory(Common)
 #add_subdirectory(LinearTracer)
 #add_subdirectory(FourSpacesTest)
 #add_subdirectory(Buckley_Levertt)
- add_subdirectory(MHMTest)
+# add_subdirectory(MHMTest)
 add_subdirectory(HDivSimple)
 add_subdirectory(MHMSimple)
 #add_subdirectory(GeoMeshAndPropsGenerator)
 #add_subdirectory(CGP)
 # add_subdirectory(HdivCollapsed)
 # add_subdirectory(Paper2d)
- add_subdirectory(BenchmarkCase1)
+add_subdirectory(BenchmarkCase1)
 add_subdirectory(SimpleCaseFracture)
 
 

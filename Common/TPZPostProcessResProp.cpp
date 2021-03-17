@@ -7,7 +7,7 @@ TPZPostProcessResProp::TPZPostProcessResProp(){
 }
 
 /** @brief Constructor based on a material id */
-TPZPostProcessResProp::TPZPostProcessResProp(int matid, int dimension) : TPZDiscontinuousGalerkin(matid) {
+TPZPostProcessResProp::TPZPostProcessResProp(int matid, int dimension) : TPZMaterial(matid) {
 
     m_mat_id = matid;
     m_dimension = dimension;
@@ -19,7 +19,7 @@ TPZPostProcessResProp::TPZPostProcessResProp(int matid, int dimension) : TPZDisc
 }
 
 /** @brief Constructor based on a TRMMultiphase object */
-TPZPostProcessResProp::TPZPostProcessResProp(const TPZPostProcessResProp &other) : TPZDiscontinuousGalerkin(other) {
+TPZPostProcessResProp::TPZPostProcessResProp(const TPZPostProcessResProp &other) : TPZMaterial(other) {
     m_mat_id = other.m_mat_id;
     m_dimension = other.m_dimension;
     m_mass_matrix_Q = other.m_mass_matrix_Q;
@@ -175,7 +175,7 @@ void TPZPostProcessResProp::Solution(TPZVec<TPZMaterialData> &datavec, int var, 
 }
 
 REAL TPZPostProcessResProp::FractureFactor(TPZMaterialData & data){
-    return;
+    return 0.;
 }
 
 void TPZPostProcessResProp::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){

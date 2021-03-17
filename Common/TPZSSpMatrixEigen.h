@@ -105,6 +105,7 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
         {
             DebugStop();
         }
+        return 0;
     }
     
     /** @brief Fill matrix storage with randomic values */

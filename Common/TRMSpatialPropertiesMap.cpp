@@ -8,6 +8,7 @@
 
 #include "TRMSpatialPropertiesMap.h"
 #include <limits>
+#include <cassert>
 
 TRMSpatialPropertiesMap::TRMSpatialPropertiesMap(){
     

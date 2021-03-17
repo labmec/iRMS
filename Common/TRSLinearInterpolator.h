@@ -17,6 +17,7 @@
 #include <stdio.h>
 #include <tuple>
 #include "pzmatrix.h"
+#include <functional>
 //#include "tpanic.h"
 //#include <libInterpolate/Interpolate.hpp>
 //#include <libInterpolate/AnyInterpolator.hpp>
