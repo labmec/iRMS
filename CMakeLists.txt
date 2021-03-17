@@ -19,20 +19,34 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Location to search files or libraries
-set(SEARCH_DIRS ENV PATH ../lib/neopz-install ../lib/libInterpolate-install /usr/local/opt/ /usr/local/opt/qt5/lib/cmake/ /usr/include /usr/local/include /usr/local/include/boost /usr/local/include/log4cxx /usr/local/include/tbb /usr/lib /usr/lib64 /usr/local/lib ./. ./.. ./../libs ./../libs/fad ./../libs/metis ./../libs/metis/include ./../libs/metis/lib ./../externallibs ./../externallibs/fad ./../externallibs/pthread ./../externallibs/metis ./../externallibs/metis/include ./../externallibs/metis/lib ./..metis ./../metis/include ./../metis/lib ./externallibs/lib ./externallibs/include ./../externallibs/lib ./../externallibs/include)
+set(SEARCH_DIRS ENV PATH ../lib /usr/local/opt/ /usr/local/opt/qt5/lib/cmake/ /usr/include /usr/local/include /usr/local/include/boost /usr/local/include/log4cxx /usr/local/include/tbb /usr/lib /usr/lib64 /usr/local/lib ./. ./.. ./../libs ./../libs/fad ./../libs/metis ./../libs/metis/include ./../libs/metis/lib ./../externallibs ./../externallibs/fad ./../externallibs/pthread ./../externallibs/metis ./../externallibs/metis/include ./../externallibs/metis/lib ./..metis ./../metis/include ./../metis/lib ./externallibs/lib ./externallibs/include ./../externallibs/lib ./../externallibs/include)
 
+# Linking PZ
 IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
 ELSE()
-	find_package( PZ REQUIRED )
-	find_package(libInterpolate REQUIRED)
+	find_package( PZ REQUIRED 
+					HINTS ${SEARCH_DIRS}
+					# PATH_SUFFIXES "/neopz-install/CMake" # Labmec standard
+					PATH_SUFFIXES "/neopz-install-RefactorGeom/CMake"
+	)
+	# find_package( PZ REQUIRED HINTS "../lib/neopz-install-RefactorGeom/CMake")
 ENDIF (WIN32)
 
-
 include_directories(${PZ_INCLUDE_DIRS})
-
 # this is the top level directory of your build tree 
 MESSAGE( STATUS "CMAKE_BINARY_DIR:         " ${PZ_INCLUDE_DIRS} )
+
+
+# Linking LibInterpolate
+find_package(libInterpolate REQUIRED 
+				HINTS ${SEARCH_DIRS} 
+				PATH_SUFFIXES "/libInterpolate-install/cmake"
+)
+# find_package(libInterpolate REQUIRED HINTS ${SEARCH_DIRS})
+
+
+
 
 IF(APPLE)
    # Mac OS X specific code
@@ -43,7 +57,6 @@ IF(APPLE)
 #   SET(OperatingSystem "Mac OS X")
 ENDIF(APPLE)
 
-include_directories(${PZ_INCLUDE_DIRS})
 
 
 #enabling pthread library
@@ -192,22 +205,23 @@ file(COPY Reservoir DESTINATION ./Paper2d/Release)
 file (COPY PreProcess  DESTINATION ./Paper2d/Debug)
 file (COPY PreProcess  DESTINATION ./Paper2d/Release)
 
-
+# Option for SuperLU library
+option(USING_SUPERLU "Whether you'll be linking SuperLU library" ON)
 
 find_package(Threads REQUIRED)
 find_package(TBB REQUIRED) 
 add_subdirectory(Common)
 
-#add_subdirectory(LinearTracer)
-#add_subdirectory(FourSpacesTest)
-#add_subdirectory(Buckley_Levertt)
-# add_subdirectory(MHMTest)
+# add_subdirectory(LinearTracer)
+# add_subdirectory(FourSpacesTest)
+# add_subdirectory(Buckley_Levertt)
+add_subdirectory(MHMTest)
 add_subdirectory(HDivSimple)
 add_subdirectory(MHMSimple)
 #add_subdirectory(GeoMeshAndPropsGenerator)
 #add_subdirectory(CGP)
 # add_subdirectory(HdivCollapsed)
-# add_subdirectory(Paper2d)
+add_subdirectory(Paper2D)
 add_subdirectory(BenchmarkCase1)
 add_subdirectory(SimpleCaseFracture)
 add_subdirectory(SimpleCaseFractureTwoElements)
