@@ -41,7 +41,7 @@ TMRSApproxSpaceGenerator &TMRSApproxSpaceGenerator::operator=(const TMRSApproxSp
 }
 
 TMRSApproxSpaceGenerator::~TMRSApproxSpaceGenerator(){
-    
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 void TMRSApproxSpaceGenerator::Write(TPZStream &buf, int withclassid) const{
@@ -1437,7 +1437,7 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
 void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, std::set<int> &bcmatids)
 {
 #ifdef PZDEBUG
-    std::cout << "Inserting material objects for dimension " << dim << std::endl;
+    std::cout << "GetMaterialIds - Identifying material objects for dimension " << dim << std::endl;
 #endif
     if(dim == mGeometry->Dimension())
     {
