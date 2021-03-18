@@ -590,12 +590,14 @@ void TPZFastCondensedElement::ComputeConstantPressureValues()
     for (int el = 0; el<condensed.size(); el++) {
         condensed[el]->Matrix().F0().Zero();
     }
+    // avpress_eq is the equation of the constant pressure
     int64_t avpress_eq = AveragePressureEquation();
     TPZManVector<int64_t,10> bound_flux_eq;
     BoundaryFluxEquations(bound_flux_eq);
     TPZFMatrix<STATE> &sol = Mesh()->Solution();
     // copy the average pressure and set the solution value to zero
     STATE avpress = sol(avpress_eq,0);
+    // average pressure is now equal one
     sol(avpress_eq,0) = 1.;
     TPZVec<STATE> bound_fluxes(bound_flux_eq.size(),0.);
     // copy the values of the boundary fluxes and set the fluxes to zero
@@ -603,7 +605,7 @@ void TPZFastCondensedElement::ComputeConstantPressureValues()
         bound_fluxes[eq] = sol(bound_flux_eq[eq],0);
         sol(bound_flux_eq[eq],0) = 0.;
     }
-    // after this call the internal solution will be due to the body forces
+    // after this call the internal solution will be constant
     TPZCondensedCompEl::LoadSolution();
     
     TPZManVector<int64_t,10> pressure_eqs;
@@ -619,7 +621,7 @@ void TPZFastCondensedElement::ComputeConstantPressureValues()
     TPZManVector<STATE,20> fluxvals(flux_eqs.size());
     for (int eq = 0; eq<flux_eqs.size(); eq++) {
         fluxvals[eq] = sol(flux_eqs[eq]);
-        if(!IsZero(fluxvals[eq])) allok = false;
+        if(abs(fluxvals[eq]) > 1.e-8) allok = false;
     }
     if(!allok) DebugStop();
 #endif
