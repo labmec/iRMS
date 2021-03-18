@@ -46,7 +46,7 @@ TMRSDataTransfer & TMRSDataTransfer::operator=(const TMRSDataTransfer &other){
 }
 
 TMRSDataTransfer::~TMRSDataTransfer(){
-
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
 void TMRSDataTransfer::Write(TPZStream &buf, int withclassid) const{
