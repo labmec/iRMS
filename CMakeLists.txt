@@ -25,7 +25,7 @@ set(SEARCH_DIRS ENV PATH ../lib /usr/local/opt/ /usr/local/opt/qt5/lib/cmake/ /u
 IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
 ELSE()
-	find_package( PZ REQUIRED 
+	find_package( NeoPZ REQUIRED 
 					HINTS ${SEARCH_DIRS}
 					# PATH_SUFFIXES "/neopz-install/CMake" # Labmec standard
 					PATH_SUFFIXES "/neopz-install-RefactorGeom/CMake"

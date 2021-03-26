@@ -14,7 +14,7 @@ find_package (Eigen3 3.3 REQUIRED)
 
 
 add_library(iMRS_library ${common_headers} ${common_sources})
-target_link_libraries(iMRS_library pz libInterpolate::Interpolate)
+target_link_libraries(iMRS_library NeoPZ::pz libInterpolate::Interpolate)
 
 if(USING_SUPERLU)
     include(SuperLU.cmake)
@@ -22,7 +22,7 @@ if(USING_SUPERLU)
 endif(USING_SUPERLU)
 # if(USING_SUPERLU)
 #     include(SuperLU.cmake)
-#     target_link_libraries(iMRS_library pz libInterpolate::Interpolate ${SUPERLU_LIBRARIES})
+#     target_link_libraries(iMRS_library NeoPZ::pz libInterpolate::Interpolate ${SUPERLU_LIBRARIES})
 # else(USING_SUPERLU)
-#     target_link_libraries(iMRS_library pz libInterpolate::Interpolate)
+#     target_link_libraries(iMRS_library NeoPZ::pz libInterpolate::Interpolate)
 # endif(USING_SUPERLU)
