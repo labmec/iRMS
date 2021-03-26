@@ -20,11 +20,11 @@
 
 #include "pzelmat.h"
 #include "pzysmp.h"
-#include "pzmetis.h"
 #include "pzbndcond.h"
-#include "TPZTimer.h"
 
 #include "pzlog.h"
+#include "TPZTimer.h"
+#include "TPZRenumbering.h"
 using namespace std;
 
 #ifdef LOG4CXX
@@ -88,9 +88,9 @@ TPZMatrix<STATE> * TPZSpStructMatrixEigen::Create(){
     //    int nnodes = 0;
     fMesh->ComputeElGraph(elgraph,elgraphindex);
     /**Creates a element graph*/
-    TPZMetis metis;
-    metis.SetElementsNodes(elgraphindex.NElements() -1 ,fMesh->NIndependentConnects());
-    metis.SetElementGraph(elgraph,elgraphindex);
+    TPZRenumbering renum;
+    renum.SetElementsNodes(elgraphindex.NElements() -1 ,fMesh->NIndependentConnects());
+    renum.SetElementGraph(elgraph,elgraphindex);
     
     TPZManVector<int64_t> nodegraph;
     TPZManVector<int64_t> nodegraphindex;
@@ -98,13 +98,13 @@ TPZMatrix<STATE> * TPZSpStructMatrixEigen::Create(){
      *converts an element graph structure into a node graph structure
      *those vectors have size ZERO !!!
      */
-    metis.ConvertGraph(elgraph,elgraphindex,nodegraph,nodegraphindex);
+    renum.ConvertGraph(elgraph,elgraphindex,nodegraph,nodegraphindex);
     
 #ifdef LOG4CXX2
     if(logger->isDebugEnabled()){
         std::stringstream sout;
         sout << "Node graph \n";
-        metis.TPZRenumbering::Print(nodegraph, nodegraphindex);
+        renum.TPZRenumbering::Print(nodegraph, nodegraphindex);
         LOGPZ_DEBUG(logger, sout.str())
     }
 #endif

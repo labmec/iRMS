@@ -11,6 +11,7 @@
 #include "TMRSTransportAnalysis.h"
 #include "TPZRefPatternTools.h"
 #include "TPZReservoirTools.h"
+#include "pzlog.h"
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
@@ -23,7 +24,7 @@ TPZGeoMesh *ReadFractureMesh();
 TMRSDataTransfer SettingSimple2DHdiv();
 
 int main(){
-    InitializePZLOG();
+    TPZLogger::InitializePZLOG();
     LearningReadFracMesh();
 
 }

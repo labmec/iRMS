@@ -25,7 +25,6 @@
 #include "pzelmat.h"
 
 #include "pzsysmp.h"
-#include "pzmetis.h"
 #include "pzbndcond.h"
 #include "TPZTimer.h"
 #ifdef USING_TBB
@@ -110,9 +109,9 @@ TPZMatrix<STATE> * TPZSymetricSpStructMatrixEigen::SetupMatrixData(TPZStack<int6
     TPZSYsmpMatrixEigen<STATE> * mat = new TPZSYsmpMatrixEigen<STATE>(neq,neq);
     
     /**Creates a element graph*/
-    TPZMetis metis;
-    metis.SetElementsNodes(elgraphindex.NElements() -1 ,fMesh->NIndependentConnects());
-    metis.SetElementGraph(elgraph,elgraphindex);
+    TPZRenumbering renum;
+    renum.SetElementsNodes(elgraphindex.NElements() -1 ,fMesh->NIndependentConnects());
+    renum.SetElementGraph(elgraph,elgraphindex);
     
     TPZManVector<int64_t> nodegraph;
     TPZManVector<int64_t> nodegraphindex;
@@ -120,7 +119,7 @@ TPZMatrix<STATE> * TPZSymetricSpStructMatrixEigen::SetupMatrixData(TPZStack<int6
      *converts an element graph structure into a node graph structure
      *those vectors have size ZERO !!!
      */
-    metis.ConvertGraph(elgraph,elgraphindex,nodegraph,nodegraphindex);
+    renum.ConvertGraph(elgraph,elgraphindex,nodegraph,nodegraphindex);
     /**vector sizes*/
     int64_t i;
     int64_t nblock = nodegraphindex.NElements()-1;

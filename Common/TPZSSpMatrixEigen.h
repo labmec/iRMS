@@ -32,7 +32,7 @@
 #include <iostream>
 #include<Eigen/SparseCholesky>
 
-#ifdef USING_MKL
+#ifdef PZ_USING_MKL
 
 #include "TPZPardisoControl.h"
 #endif
@@ -45,7 +45,7 @@
 template<class TVar>
 class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
     
-#ifdef USING_MKL
+#ifdef PZ_USING_MKL
     friend class TPZPardisoControl<TVar>;
 #endif
     
@@ -87,7 +87,7 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
         
 //        fA.Fill(0.);
 //        fDiag.Fill(0.);
-#ifndef USING_MKL
+#ifndef PZ_USING_MKL
 //        TPZMatrix<TVar>::fDecomposed = ENoDecompose;
 #endif
         return 0;
@@ -148,7 +148,7 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
     /** @brief Print the matrix along with a identification title */
     virtual void Print(const char *title, std::ostream &out = std::cout ,const MatrixOutputFormat = EFormatted ) const override;
     
-#ifdef USING_MKL
+#ifdef PZ_USING_MKL
     /**
      * @name Factorization
      * @brief Those member functions perform the matrix factorization
@@ -258,7 +258,7 @@ public:
     TPZVec<int64_t>  fJA;
     TPZVec<TVar> fA;
     
-#ifdef USING_MKL
+#ifdef PZ_USING_MKL
 //    TPZPardisoControl<TVar> fPardisoControl;
 #endif
     
