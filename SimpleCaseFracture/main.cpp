@@ -45,7 +45,7 @@ void LearningReadFracMesh()
     
 //    TPZGeoMesh *gmesh = ReadFractureMesh();
     TPZVec<int64_t> subdomain;
-    TPZGeoMesh *gmesh =ReadFractureMesh(subdomain);
+//    TPZGeoMesh *gmesh =ReadFractureMesh(subdomain);
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingSimpleFracCase();

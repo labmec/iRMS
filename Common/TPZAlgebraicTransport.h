@@ -264,11 +264,11 @@ public:
     void ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId=100);
     void ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
     
-    void ContributeInterfaceResidual(int index, TPZFMatrix<double> &ef);
+    void ContributeInterfaceResidual(int index, TPZFMatrix<double> &ef, int interfaceID=100);
     void ContributeInterfaceIHUResidual(int index, TPZFMatrix<double> &ef);
     
     void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef);
-    void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef);
+    void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int OutId=-4);
     void ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef);
 
     

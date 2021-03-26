@@ -74,6 +74,7 @@ void LearningReadFracMesh()
       
         TMRSMixedAnalysis *mixedAnal = new TMRSMixedAnalysis(mixed_operator,must_opt_band_width_Q);
         
+        
         //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
         bool UsingPzSparse = false;
         
@@ -195,7 +196,7 @@ TMRSDataTransfer SettingSimpleFracCase(){
 
 
 TPZGeoMesh *ReadFractureMesh(){
-    std::string fileFine("../../FracMeshes/jose_simple0.msh");
+    std::string fileFine("../../FracMeshes/jose_simple2.msh");
     
     //    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D

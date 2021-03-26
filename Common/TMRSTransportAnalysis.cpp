@@ -191,7 +191,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_transport;
 
-    
+//    std::cout<<Solution()<<std::endl;
     TPZFMatrix<STATE> dx(Solution()),x(Solution());
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
@@ -201,14 +201,22 @@ void TMRSTransportAnalysis::RunTimeStep(){
 //    if(QN_converge_Q){
 //        return;
 //    }
+//    std::cout<<Solution()<<std::endl;
+    if(Norm(Rhs()) < 1.0e-9){
+        std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
+        std::cout << "Number of iterations = " << 1 << std::endl;
+        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
+        return;
+    }
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
-//        NewtonIteration();
+        NewtonIteration();
         dx = Solution();
 
         x += dx;
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
+//        PostProcessTimeStep();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
@@ -252,11 +260,11 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     cmesh->LoadSolutionFromMultiPhysics();
     
     NewtonIteration();
-    
     x += Solution();
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+//    std::cout<<x<<std::endl;
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     AssembleResidual();
 //    PostProcessTimeStep();
@@ -350,6 +358,7 @@ void TMRSTransportAnalysis::NewtonIteration(){
             std::cout << "Transport:: Serial Newton step time: " << deltats << std::endl;
         #endif
     }
+    
 }
 
 void TMRSTransportAnalysis::NewtonIteration_serial(){
@@ -389,13 +398,13 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
     std::cout << "Transport Assembly::  Parallel Newton  time: " << deltat << std::endl;
 #endif
 #ifdef PZDEBUG
-    {
-        auto norm = fTransportSpMatrix->RhsNorm();
-        if(std::isnan(norm))
-        {
-            DebugStop();
-        }
-    }
+//    {
+//        auto norm = fTransportSpMatrix->RhsNorm();
+//        if(std::isnan(norm))
+//        {
+//            DebugStop();
+//        }
+//    }
 #endif
 
     fTransportSpMatrix->Solve();
@@ -501,7 +510,7 @@ void TMRSTransportAnalysis::AssembleResidual_Eigen(){
     fTransportSpMatrix->AssembleResidual();
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> r = fTransportSpMatrix->Rhs().toDense();
     assert(Rhs().Rows() == r.rows());
-    #ifdef USING_TBB
+    #ifdef USING_TBB2
         tbb::parallel_for(size_t(0), size_t(r.rows()), size_t(1),
             [this,&r] (size_t & i){
              Rhs()(i,0) = r(i,0);
@@ -511,6 +520,7 @@ void TMRSTransportAnalysis::AssembleResidual_Eigen(){
         for (int i = 0; i < r.rows(); i++) {
             Rhs()(i,0) = r(i,0);
         }
+//    std::cout<<"RHS= "<<Rhs()<<std::endl;
     #endif
     
 }
@@ -529,6 +539,8 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     
     DefineGraphMesh(dim,scalnames,vecnames,file);
     PostProcess(div,dim);
+    
+  
 }
 
 void TMRSTransportAnalysis::UpdateInitialSolutionFromCellsData(){

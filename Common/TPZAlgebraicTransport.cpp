@@ -79,9 +79,11 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     
     REAL beta =0.0;
     //upwind
-//    if (interfaceId==102 ){
-//        fluxint*=-1.0;
-//    }
+    if (interfaceId==102 ){
+        REAL Aux =fw_L;
+        fw_L =fw_R;
+        fw_R =Aux;
+    }
     if (fluxint>0.0) {
         beta = 1.0;
     }
@@ -100,16 +102,20 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     
 }
 
-void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<double> &ef){
+void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<double> &ef, int interfaceID){
     
-    std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceid].fLeftRightVolIndex[index];
-    REAL fluxint  = fInterfaceData[interfaceid].fIntegralFlux[index];
+    std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceID].fLeftRightVolIndex[index];
+    REAL fluxint  = fInterfaceData[interfaceID].fIntegralFlux[index];
    
     REAL fw_L = fCellsData.fWaterfractionalflow[lr_index.first];
     REAL fw_R = fCellsData.fWaterfractionalflow[lr_index.second];
     
     REAL beta =0.0;
     //upwind
+    if(interfaceID==102){
+        beta=1;
+    }
+  
     if (fluxint>0.0) {
         beta = 1.0;
     }
@@ -118,7 +124,7 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
     ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint;
     
     // Gravity fluxes contribution
-    ContributeInterfaceIHUResidual(index, ef);
+//    ContributeInterfaceIHUResidual(index, ef);
     
 #ifdef PZDEBUG
     if(std::isnan(Norm(ef)))
@@ -334,10 +340,10 @@ void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<dou
     REAL fluxint  = fInterfaceData[inletmatid].fIntegralFlux[index];
     ef(0,0) = 1.0*s_inlet*fluxint;
 }
-void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef){
+void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int outID){
   
-    std::pair<int64_t, int64_t> lr_index = fInterfaceData[outletmatid].fLeftRightVolIndex[index];
-    REAL fluxint  = fInterfaceData[outletmatid].fIntegralFlux[index];
+    std::pair<int64_t, int64_t> lr_index = fInterfaceData[outID].fLeftRightVolIndex[index];
+    REAL fluxint  = fInterfaceData[outID].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
     ef(0,0) = 1.0*fw_L*fluxint;

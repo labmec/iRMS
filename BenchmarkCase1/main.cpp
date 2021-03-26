@@ -100,7 +100,7 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     return gmeshFine;
 }
 TPZGeoMesh *ReadFractureMesh(){
-    std::string fileFine("../../FracMeshes/jose_simple1.msh");
+    std::string fileFine("../../FracMeshes/jose_simple2.msh");
 
 //    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
@@ -517,7 +517,7 @@ TMRSDataTransfer SettingPaper3D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 4.0;
+    REAL pressure_in = 11.0;
     REAL pressure_out = 1.0;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
@@ -541,7 +541,7 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTFluidProperties.mWaterViscosity = 0.001;
     sim_data.mTFluidProperties.mOilViscosity = 0.001;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
-    sim_data.mTFluidProperties.mOilDensityRef = 500.0;
+    sim_data.mTFluidProperties.mOilDensityRef = 1000.0;
     
     // Numerical controls
     sim_data.mTNumerics.m_max_iter_mixed = 1;
@@ -550,11 +550,11 @@ TMRSDataTransfer SettingPaper3D(){
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0000001;
-    sim_data.mTNumerics.m_n_steps = 1;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_n_steps = 10   ;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 10.0;//*day;
+    sim_data.mTNumerics.m_dt      = 1.0;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -614,8 +614,8 @@ void LearningReadFracMesh()
      */
     // vector with subdomain index of the geometric elements
     TPZVec<int64_t> subdomain;
-    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
-//    TPZGeoMesh *gmesh = ReadFractureMesh();
+//    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingPaper3D();
@@ -680,20 +680,25 @@ void LearningReadFracMesh()
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
     
-    TPZFastCondensedElement::fSkipLoadSolution = true;
+    TPZFastCondensedElement::fSkipLoadSolution = false;
+    bool first=true;
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
         if (sim_time >=  current_report_time) {
-            TPZFastCondensedElement::fSkipLoadSolution = true;
+            TPZFastCondensedElement::fSkipLoadSolution = false;
         }
+        
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
-        
-        
+        mixed_operator->LoadSolution(mixed_operator->Solution());
         if (sim_time >=  current_report_time) {
             std::cout << "Time step number:  " << it << std::endl;
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
-            sfi_analysis->PostProcessTimeStep();
+            if(first==true){
+                sfi_analysis->PostProcessTimeStep(1);
+                first=false;
+            }
+            sfi_analysis->PostProcessTimeStep(2);
             pos++;
             current_report_time =reporting_times[pos];
             

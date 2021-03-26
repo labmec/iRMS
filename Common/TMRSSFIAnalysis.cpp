@@ -346,6 +346,8 @@ void TMRSSFIAnalysis::RunTimeStep(){
             m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
             break;
         }
+     
+       
         
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
@@ -396,16 +398,19 @@ void TMRSSFIAnalysis::SFIIteration(){
 #endif
 m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
         
-        m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
-        fAlgebraicDataTransfer.TransferLambdaCoefficients();
+//        m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
+//        fAlgebraicDataTransfer.TransferLambdaCoefficients();
 #ifdef USING_BOOST
         boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
         auto deltat = t2-t1;
         std::cout << "Transfer from transport to mixed time: " << deltat << std::endl;
 #endif
         
-        
+    if(isLinear){
         m_mixed_module->RunTimeStep();
+        isLinear=false;
+    }
+    
 #ifdef USING_BOOST
         boost::posix_time::ptime t3 = boost::posix_time::microsec_clock::local_time();
         deltat = t3-t2;
@@ -436,6 +441,8 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol1ID);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol2ID);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(103);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(104);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
  
@@ -451,7 +458,7 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     
     
 //    fAlgebraicDataTransfer.TransferPressures();
-    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
+//    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
     
 #ifdef USING_BOOST
     boost::posix_time::ptime t4 = boost::posix_time::microsec_clock::local_time();

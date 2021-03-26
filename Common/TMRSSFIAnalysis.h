@@ -29,6 +29,7 @@ private:
 
     TPZFMatrix<STATE> m_x_mixed;
     TPZFMatrix<STATE> m_x_transport;
+    bool isLinear=true;
     
 public:
     

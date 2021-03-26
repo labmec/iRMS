@@ -18,6 +18,7 @@
 #include "pzshapecube.h"
 #include "pzshapelinear.h"
 #include "pzelementgroup.h"
+#include "TPZLagrangeMultiplier.h"         // for TPZLagrangeMultiplier
 /// Default constructor
 TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer() : fFluxMesh(0), fTransportMesh(0)
 {
@@ -298,6 +299,19 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                 VolumeElementIndex[rightindex] = volumecount;
                 volumecount++;
             }
+            
+            //Left Right by ID.
+//            int id_left = leftgel->Id();
+//            int id_right = rightgel->Id();
+//            if(id_right>id_left){
+//                facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
+//                facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
+//            }
+//            else{
+//                facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
+//                facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
+//            }
+            
             if(leftorient == 1)
             {
                 facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
@@ -307,7 +321,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             {
                 facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
                 facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
-
+//
             }
         }
     }
@@ -484,6 +498,11 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
     std::list<TPZCompEl *> cellist;
     std::list<TPZSubCompMesh *> submeshes;
     GetElementAndSubmeshPointers(*fluxmesh,cellist,submeshes);
+    //
+//    TestSideOrient(fluxmesh);
+    //
+    
+    
     TPZVec<int64_t> shouldtransfer(fluxmesh->NConnects(),0);
     TPZVec<int64_t> targetindex(fluxmesh->NConnects(),0);
     fluxmesh->LoadReferences();     
@@ -965,13 +984,13 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         TPZGeoEl *gel = cel->Reference();
         int geldim = gel->Dimension();
         //@TODO crear metodo de acceso
-        REAL fracFactor = 1.0;
+        REAL fracFactor = 1;
         REAL volume = gel->Volume();
         int side = gel->NSides()-1;
         if (geldim==2) {
             volume=volume*fracFactor;
         }
-        transport.fCellsData.fVolume[i]=volume;
+        transport.fCellsData.fVolume[i]=4;
         
         if (cel->NConnects()!=1) {
             DebugStop();
@@ -981,7 +1000,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int eq_number = fTransportMesh->Block().Position(block_num);
 
         transport.fCellsData.fEqNumber[i]=eq_number;
-        transport.fCellsData.fDensityOil[i]=800.00;
+        transport.fCellsData.fDensityOil[i]=1000.00;
         transport.fCellsData.fDensityWater[i]=1000.00;
 
         int dim= gel->Dimension();
@@ -1345,4 +1364,87 @@ std::pair<int, int> TPZAlgebraicDataTransfer::FindMortar(TPZGeoElSide &gelside, 
     return pairret;
     //    compelside
     
+}
+
+void TPZAlgebraicDataTransfer::TestSideOrient(TPZCompMesh *MultFlux){
+    int nels = MultFlux->NElements();
+//    for(int iel =0; iel < nels; iel++){
+//        TPZCompEl * cel = MultFlux->Element(iel);
+    std::list<TPZCompEl *> elpointers;
+    std::list<TPZSubCompMesh *> submeshes;
+    GetElementAndSubmeshPointers(*MultFlux, elpointers, submeshes);
+    MultFlux->LoadReferences();
+    int count =0;
+    for(auto cel: elpointers){
+    
+        
+//        TPZCompEl *cel =neigel->Reference();
+//        TPZMultiphysicsElement *cmulint = dynamic_cast<TPZMultiphysicsElement *>(cel);
+//        TPZCompEl *hdivBound = cmulint->Element(0);
+//        TPZCompElHDivBound2<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeQuad>*>(cel);
+//        int sideOrient =hdivbound->GetSideOrient(8);
+//        std::cout<<"SideOrientSide1: "<<sideOrient <<std::endl;
+        
+        if (count ==0){
+        TPZGeoEl *gel = cel->Reference();
+        int nsides = gel->NSides();
+        TPZGeoElSide gelside(gel, nsides-1);
+        TPZGeoElSide neig = gelside.Neighbour();
+        
+        while(gelside!=neig){
+            TPZGeoEl *neigel = neig.Element();
+            int GelIndex = neigel->Index();
+            if(neigel->Dimension()==3){
+                std::cout<<"GelIndex: "<<GelIndex<<std::endl;
+                TPZVec<REAL> coordFast(3), xifast(3,0);
+                neigel->CenterPoint(neigel->NSides()-1, xifast);
+                neigel->X(xifast, coordFast);
+                std::cout<<"CoordX: "<<coordFast[0]<<std::endl;
+                std::cout<<"CoordY: "<<coordFast[1]<<std::endl;
+                std::cout<<"CoordZ: "<<coordFast[2]<<std::endl;
+                int sideOrient = neigel->NormalOrientation(neig.Side());
+                std::cout<<"SideOrientVol: "<<sideOrient <<std::endl;
+            }
+            int mat_id =neigel->MaterialId();
+            int sideOrient = neigel->NormalOrientation(neig.Side());
+            if(mat_id==40 || mat_id==15){
+                TPZCompEl *cel =neigel->Reference();
+                TPZMultiphysicsElement *cmulint = dynamic_cast<TPZMultiphysicsElement *>(cel);
+                TPZCompEl *hdivBound = cmulint->Element(0);
+                TPZCompElHDivBound2<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeQuad>*>(hdivBound);
+                int sideOrient =hdivbound->GetSideOrient(neig.Side());
+                std::cout<<"SideOrientSide1: "<<sideOrient <<std::endl;
+                
+            }
+            std::cout<<"SideOrientSide: "<<sideOrient <<std::endl;
+            std::cout<<"PrevId: "<<mat_id<<std::endl;
+            if(mat_id == 30 || mat_id==35){
+                TPZCompEl *cel =neigel->Reference();
+                TPZMultiphysicsInterfaceElement *cmulint = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
+                
+                TPZMaterial *mat = cmulint->Material();
+//                TPZBndCond *bc = dynamic_cast<TPZBndCond *> (mat);
+                TPZLagrangeMultiplier *lag = dynamic_cast<TPZLagrangeMultiplier *> (mat);
+                std::cout<<"Mult= "<<lag->Multiplier()<<std::endl;
+                int nconects = cmulint->NConnects();
+                for (int icon = 0; icon< nconects; icon++){
+                    //TPZLagrangeMultiplier.()
+                    
+                    int lagrange = cmulint->Connect(icon).LagrangeMultiplier();
+                    std::cout<<"LagrangeMult= "<<lagrange<<std::endl;
+                }
+               
+                int ok=10;
+            }
+            neig = neig.Neighbour();
+            
+        }
+            count++;
+        }
+    }
+    
+    
+        
+        
+//    }
 }
