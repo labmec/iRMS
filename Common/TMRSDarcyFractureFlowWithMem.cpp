@@ -271,7 +271,7 @@ template <class TMEM>
 void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
     
 
-    REAL gBigNumber = 1.0e12; //TPZMaterial::gBigNumber;
+    REAL gBigNumber = 1.0e19; //TPZMaterial::gBigNumber;
 
     int qb = 0;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;

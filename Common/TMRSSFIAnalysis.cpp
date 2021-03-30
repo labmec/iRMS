@@ -443,6 +443,7 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol2ID);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(103);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(104);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-1);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
  

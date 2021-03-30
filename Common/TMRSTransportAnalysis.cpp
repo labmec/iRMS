@@ -202,6 +202,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
 //        return;
 //    }
 //    std::cout<<Solution()<<std::endl;
+    return;
     if(Norm(Rhs()) < 1.0e-9){
         std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
         std::cout << "Number of iterations = " << 1 << std::endl;

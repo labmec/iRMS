@@ -100,7 +100,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     return gmeshFine;
 }
 TPZGeoMesh *ReadFractureMesh(){
-    std::string fileFine("../../FracMeshes/jose_simple2.msh");
+//    std::string fileFine("../../FracMeshes/jose_simple1.msh");
+    std::string fileFine("../../FracMeshes/flem_case1_Coarse_BC.msh");
 
 //    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
@@ -517,8 +518,8 @@ TMRSDataTransfer SettingPaper3D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 11.0;
-    REAL pressure_out = 1.0;
+    REAL pressure_in = 4.0 * 1.013e5;
+    REAL pressure_out = 1.0 * 1.013e5;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
@@ -552,9 +553,9 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 10   ;
+    sim_data.mTNumerics.m_n_steps = 10;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 1.0;//*day;
+    sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -614,8 +615,8 @@ void LearningReadFracMesh()
      */
     // vector with subdomain index of the geometric elements
     TPZVec<int64_t> subdomain;
-//    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
-    TPZGeoMesh *gmesh = ReadFractureMesh();
+    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+//    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingPaper3D();

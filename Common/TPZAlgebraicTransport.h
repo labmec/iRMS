@@ -267,7 +267,7 @@ public:
     void ContributeInterfaceResidual(int index, TPZFMatrix<double> &ef, int interfaceID=100);
     void ContributeInterfaceIHUResidual(int index, TPZFMatrix<double> &ef);
     
-    void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef);
+    void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef, int InletID = -2);
     void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int OutId=-4);
     void ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef);
 

@@ -239,12 +239,14 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZCompEl *left = leftside.Element();
             if(left->NConnects() > 1) DebugStop();
             TPZGeoEl *leftgel = left->Reference();
+         
+            
             
             //TestCorrectNormalOrientation
-//            FindMortar
-            
+            //FindMortar
             //
             int leftorient = leftgel->NormalOrientation(leftside.Side());
+            
             TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(left);
             TPZCompEl *hdivBound = celmult->Element(0);
             TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBound);
@@ -260,6 +262,11 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                 is_collapsed=true;
             }
           
+//            std::cout<< "Left Orient: "<<leftorient<<std::endl;
+//            std::cout<< "Left matID: "<<leftgel->MaterialId()<<std::endl;
+//            std::cout<< "Left id: "<<leftgel->Id()<<std::endl;
+//            std::cout<< "Left index: "<<leftgel->Index()<<std::endl;
+            
             TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
             int lowerindex = -1;
             if (is_collapsed) {
@@ -283,6 +290,36 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZCompEl *right = rightside.Element();
             if(right->NConnects() > 1) DebugStop();
             TPZGeoEl *rightgel = right->Reference();
+            int right_orient = rightgel->NormalOrientation(rightside.Side());
+//            std::cout<< "Right Orient: "<<right_orient<<std::endl;
+//            std::cout<< "Right matID: "<<rightgel->MaterialId()<<std::endl;
+//            std::cout<< "Right id: "<<rightgel->Id()<<std::endl;
+//            std::cout<< "Right index: "<<rightgel->Index()<<std::endl;
+            
+            //
+//            if(left->NConnects() > 1) DebugStop();
+//            TPZGeoEl *rightgel = left->Reference();
+//
+//            //TestCorrectNormalOrientation
+//            //FindMortar
+//            //
+//            int rightorient = rightgel->NormalOrientation(rightside.Side());
+//
+//            TPZMultiphysicsElement *celmultR =dynamic_cast<TPZMultiphysicsElement *>(right);
+//            TPZCompEl *hdivBoundR = celmultR->Element(0);
+//            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivboundR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBoundR);
+//            TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundTR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBoundR);
+//
+//            bool is_collapsedR = false;
+//            if (hdivboundR ) {
+//                rightorient = hdivbound->GetSideOrient(8);
+//                is_collapsedR=true;
+//            }
+//            if(hdivboundTR){
+//                rightorient = hdivboundT->GetSideOrient(6);
+//                is_collapsedR=true;
+//            }
+            //
 //            if(leftorient != -rightorient && rightgel->Dimension() != gmesh->Dimension()-1)
 //            {
 //                DebugStop();
@@ -314,15 +351,22 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             
             if(leftorient == 1)
             {
-                facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
-                facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
+                if(right_orient != 1){
+                    facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
+                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
+                }
+                else{
+                    facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
+                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
+                }
+                
             }
             else
             {
                 facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
                 facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
-//
             }
+            
         }
     }
     fVolumeElements.Resize(volumecount);
@@ -622,16 +666,18 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     }
                     if(shouldtransfer[cindex] != 0) continue;
                     int matid =matidvec[0];
-                    if (warning && side == 9) {
+                    if (warning && collapsedTriangle && side == 7) {
                         matid = matidvec[1];
                     }
+                    if (warning && collapsedQuad && side == 9) {
+                        matid = matidvec[1];
+                    }
+                    
                     if(ncontransfer.find(matid) == ncontransfer.end())
                     {
                         ncontransfer[matid].Resize(4, 0);
                     }
-                    if(matid==101){
-                        int ok=0;
-                    }
+                    
                     connectindexes[matid].Push(cindex);
                     
                     for(int is=0; is<nshape; is++)
@@ -983,14 +1029,24 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         TPZCompEl *cel = fTransportMesh->Element(celindex);
         TPZGeoEl *gel = cel->Reference();
         int geldim = gel->Dimension();
+        int matId = gel->MaterialId();
+        if(matId==1){
+            transport.fCellsData.fporosity[i]=0.2;
+        }
+        if(matId==2){
+            transport.fCellsData.fporosity[i]=0.25;
+        }
+        if(matId==10){
+            transport.fCellsData.fporosity[i]=0.4;
+        }
         //@TODO crear metodo de acceso
-        REAL fracFactor = 1;
+        REAL fracFactor = 0.01;
         REAL volume = gel->Volume();
         int side = gel->NSides()-1;
         if (geldim==2) {
             volume=volume*fracFactor;
         }
-        transport.fCellsData.fVolume[i]=4;
+        transport.fCellsData.fVolume[i]=volume;
         
         if (cel->NConnects()!=1) {
             DebugStop();
@@ -1081,7 +1137,6 @@ void TPZAlgebraicDataTransfer::TransferMixedMeshMultiplyingCoefficients()
 {
     for(auto &matit : fTransferMixedToTransport)
     {
-        std::cout<<"Mat_id= "<<matit.first<<std::endl;
         for(auto &mixed : matit.second)
         {
             int64_t nel = mixed.fGather.size();
@@ -1309,24 +1364,37 @@ std::pair<int, int> TPZAlgebraicDataTransfer::FindMortar(TPZGeoElSide &gelside){
 }
 std::pair<int, int> TPZAlgebraicDataTransfer::FindMortar(TPZGeoElSide &gelside, int targetId){
     
-    
     int indexcon =-1;
     int nshape =-1;
     std::pair<int, int> pairret(-1,-1);
     int nsides = gelside.Element()->NSides();
     gelside.Element()->Type();
     int nsidesgelside = gelside.Side();
+    auto elType = gelside.Element()->Type();
     bool first = true;
-    if(nsidesgelside == 9){
+    if(nsidesgelside == 9 && elType== EQuadrilateral){
+        first = false;
+    }
+    if(nsidesgelside == 7 && elType== ETriangle){
         first = false;
     }
     TPZGeoElSide gelsideAux;
-    if (nsidesgelside<8) {
+    if (nsidesgelside<8 && elType== EQuadrilateral) {
+        std::pair<int, int> pairt(-1,-1);
+        return pairt;
+    }
+    if (nsidesgelside<6 && elType== ETriangle) {
         std::pair<int, int> pairt(-1,-1);
         return pairt;
     }
     if(nsidesgelside>=nsides && gelside.Element()->Dimension() == 2){
-        gelsideAux =  TPZGeoElSide(gelside.Element(), 8);
+        if(elType== EQuadrilateral){
+            gelsideAux =  TPZGeoElSide(gelside.Element(), 8);
+        }
+        if(elType== ETriangle){
+            gelsideAux =  TPZGeoElSide(gelside.Element(), 6);
+        }
+        
     }
     else{
         gelsideAux =gelside;

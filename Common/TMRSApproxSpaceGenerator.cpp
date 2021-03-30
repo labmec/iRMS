@@ -2605,7 +2605,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
 //            REAL kappa = mSimData.mTFracProperties.m_Permeability;
-            REAL kappa = 1; // Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
+            REAL kappa = 1.0e-3; // Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
@@ -2638,7 +2638,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
 //            REAL kappa = 1.0e-5;
-            REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
+            REAL kappa = 1.0e-6;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
@@ -2669,9 +2669,9 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
         for (int i = 0; i < ndata1; i++) {
             TMRSMemory &mem = memory_vector2.get()->operator [](i);
             mem.m_sw = 0.0;
-            mem.m_phi = 0.1;
+            mem.m_phi = 0.25;
 //            REAL kappa = 1.0e-6;
-            REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
+            REAL kappa = 1.0e-5;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
@@ -2745,7 +2745,7 @@ void TMRSApproxSpaceGenerator::CreateElementInterfaces(TPZGeoEl *gel){
                 }
             }
             else{
-                std::cout<<"Not created VolFrac"<<std::endl;
+//                std::cout<<"Not created Vol-Vol (Frac-Vol -> ok)"<<std::endl;
             }
            
         }
@@ -2860,13 +2860,12 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                     if(gel->Id() < gelneig.Element()->Id()){
                         TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
                         mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-                        std::cout<<" created FracVol 1"<<std::endl;
+                        std::cout<<" created FracFrac MatID: "<<matid <<std::endl; 
                     }
                     else{
                         TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index,celside_r, celside_l);
                         mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-                        std::cout<<" created FracVol 2"<<std::endl;
-                    }
+                        std::cout<<" created FracFrac MatID: "<<matid <<std::endl;                    }
                    
                 }
             }
@@ -2890,7 +2889,7 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                     if(gel->Id() < gelneig.Element()->Id()){
                         TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index, celside_l,celside_r);
                         mp_interface_el->SetLeftRightElementIndices(left_mesh_indexes,right_mesh_indexes);
-                        std::cout<<" created FracFrac 1"<<std::endl;
+                        std::cout<<" created FracFrac MatIDBound: "<<matid <<std::endl;
                     }
                     else{
                         TPZMultiphysicsInterfaceElement *mp_interface_el = new TPZMultiphysicsInterfaceElement(*mTransportOperator, gbc.CreatedElement(), index,celside_r, celside_l);

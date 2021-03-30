@@ -79,11 +79,11 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     
     REAL beta =0.0;
     //upwind
-    if (interfaceId==102 ){
-        REAL Aux =fw_L;
-        fw_L =fw_R;
-        fw_R =Aux;
-    }
+//    if (interfaceId==102 || interfaceId==103){
+//        REAL Aux =fw_L;
+//        fw_L =fw_R;
+//        fw_R =Aux;
+//    }
     if (fluxint>0.0) {
         beta = 1.0;
     }
@@ -112,9 +112,9 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
     
     REAL beta =0.0;
     //upwind
-    if(interfaceID==102){
-        beta=1;
-    }
+//    if(interfaceID==102){
+//        beta=1;
+//    }
   
     if (fluxint>0.0) {
         beta = 1.0;
@@ -334,10 +334,10 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
     return std::make_pair(lambda_star, std::make_pair(dlambda_starL, dlambda_starR));
 }
 
-void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef){
+void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef, int inId){
    
-    int s_inlet = 1.0;
-    REAL fluxint  = fInterfaceData[inletmatid].fIntegralFlux[index];
+    int s_inlet = 0.1;
+    REAL fluxint  = fInterfaceData[inId].fIntegralFlux[index];
     ef(0,0) = 1.0*s_inlet*fluxint;
 }
 void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int outID){
