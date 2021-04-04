@@ -40,7 +40,7 @@ public:
         //dado x calcula a permeabilidade... calcular a permeabilidade
         // transferir las densidades al problema mixto en transport to mixed
         
-        TInterfaceDataTransport() : fMatid(0), fcelindex(0), fCoefficientsFlux(0), fIntegralFluxFunctions(0), fIntegralFlux(0),fFluxSign(0), fNormalFaceDirection(0) {
+        TInterfaceDataTransport() : fMatid(0), fcelindex(0), fCoefficientsFlux(0), fIntegralFluxFunctions(0), fLeftRightVolIndex(0),fIntegralFlux(0),fFluxSign(0), fNormalFaceDirection(0) {
            
         }
         TInterfaceDataTransport(const TInterfaceDataTransport &copy){
@@ -51,6 +51,7 @@ public:
             fFluxSign= copy.fFluxSign;
             fNormalFaceDirection = copy.fNormalFaceDirection;
             fcelindex=copy.fcelindex;
+            fLeftRightVolIndex=copy.fLeftRightVolIndex;
         }
         TInterfaceDataTransport &operator=(const TInterfaceDataTransport &copy)
         {
@@ -60,7 +61,7 @@ public:
             fIntegralFlux = copy.fIntegralFlux;
             fFluxSign= copy.fFluxSign;
             fNormalFaceDirection = copy.fNormalFaceDirection;
-            
+            fLeftRightVolIndex=copy.fLeftRightVolIndex;
             return *this;
         }
         void Print(std::ostream &out);
@@ -282,6 +283,7 @@ public:
     REAL CalculateMass();
     
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
+    void VerifyElementFLuxes();
 };
 
 #endif /* AlgebraicTransport_h */

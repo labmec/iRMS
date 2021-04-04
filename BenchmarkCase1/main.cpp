@@ -100,8 +100,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     return gmeshFine;
 }
 TPZGeoMesh *ReadFractureMesh(){
-//    std::string fileFine("../../FracMeshes/jose_simple1.msh");
-    std::string fileFine("../../FracMeshes/flem_case1_Coarse_BC.msh");
+    std::string fileFine("../../FracMeshes/jose_simple5.msh");
+//    std::string fileFine("../../FracMeshes/flem_case1_Coarse_BC.msh");
 
 //    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
@@ -113,7 +113,9 @@ TPZGeoMesh *ReadFractureMesh(){
      3 10 "k31"
      */
     
-    dim_name_and_physical_tagFine[3]["c1"] = 1;
+//    dim_name_and_physical_tagFine[3]["c1"] = 1;
+    dim_name_and_physical_tagFine[3]["k33"] = 2;
+    dim_name_and_physical_tagFine[3]["k31"] = 1;
     dim_name_and_physical_tagFine[2]["inlet"] = -2;
     dim_name_and_physical_tagFine[2]["outlet"] = -4;
     dim_name_and_physical_tagFine[2]["noflux"] = -1;
@@ -518,8 +520,8 @@ TMRSDataTransfer SettingPaper3D(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 4.0 * 1.013e5;
-    REAL pressure_out = 1.0 * 1.013e5;
+    REAL pressure_in = 4.0 ;
+    REAL pressure_out = 1.0 ;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
@@ -539,8 +541,8 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(-4,bc_outlet,0.0);
     
     //Fluid Properties
-    sim_data.mTFluidProperties.mWaterViscosity = 0.001;
-    sim_data.mTFluidProperties.mOilViscosity = 0.001;
+    sim_data.mTFluidProperties.mWaterViscosity = 0.1;
+    sim_data.mTFluidProperties.mOilViscosity = 0.1;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
     sim_data.mTFluidProperties.mOilDensityRef = 1000.0;
     
@@ -553,7 +555,7 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 10;
+    sim_data.mTNumerics.m_n_steps = 25;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -628,6 +630,7 @@ void LearningReadFracMesh()
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
     std::string name("fractureTest.vtk");
+    
     aspace.PrintGeometry(name);
     
     aspace.SetDataTransfer(sim_data);

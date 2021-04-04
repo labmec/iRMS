@@ -190,8 +190,6 @@ void TMRSTransportAnalysis::RunTimeStep(){
     REAL corr_norm = 1.0;
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_transport;
-
-//    std::cout<<Solution()<<std::endl;
     TPZFMatrix<STATE> dx(Solution()),x(Solution());
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
@@ -201,7 +199,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
 //    if(QN_converge_Q){
 //        return;
 //    }
-//    std::cout<<Solution()<<std::endl;
+
+    //Linear problem Benchmark
     return;
     if(Norm(Rhs()) < 1.0e-9){
         std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
@@ -213,8 +212,10 @@ void TMRSTransportAnalysis::RunTimeStep(){
        
         NewtonIteration();
         dx = Solution();
-
+        std::cout<<"Sol Correct: "<<std::endl;
         x += dx;
+        std::cout<<x<<std::endl;
+
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
 //        PostProcessTimeStep();
@@ -267,7 +268,7 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
 //    std::cout<<x<<std::endl;
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
-    AssembleResidual();
+//    AssembleResidual();
 //    PostProcessTimeStep();
     REAL res_norm = Norm(Rhs());
     std::cout << "Initial guess residue norm : " <<  res_norm << std::endl;
@@ -537,7 +538,16 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();
     std::string file = m_sim_data->mTPostProcess.m_file_name_transport;
+    //
+    std::set<int> mat_id_2D;
     
+    
+   
+    mat_id_2D.insert(10);
+    std::string file_frac("fracture_s.vtk");
+    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
+    PostProcess(div,2);
+    //
     DefineGraphMesh(dim,scalnames,vecnames,file);
     PostProcess(div,dim);
     

@@ -266,12 +266,12 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport, 
     }
     
     int ncells = algebraicTransport->fCellsData.fVolume.size();
-    for (int icell =0; icell<ncells; icell++) {
-        algebraicTransport->fCellsData.fKx[icell]  = kappa_phi[0];
-        algebraicTransport->fCellsData.fKy[icell]  = kappa_phi[1];
-        algebraicTransport->fCellsData.fKz[icell]  = kappa_phi[2];
-        algebraicTransport->fCellsData.fporosity[icell] = kappa_phi[3] ;
-    }
+//    for (int icell =0; icell<ncells; icell++) {
+//        algebraicTransport->fCellsData.fKx[icell]  = kappa_phi[0];
+//        algebraicTransport->fCellsData.fKy[icell]  = kappa_phi[1];
+//        algebraicTransport->fCellsData.fKz[icell]  = kappa_phi[2];
+//        algebraicTransport->fCellsData.fporosity[icell] = kappa_phi[3] ;
+//    }
     
    
     m_transport_module->fAlgebraicTransport.fHasPropQ=true;
@@ -446,7 +446,7 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-1);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
- 
+    m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
 //    std::cout<<"FluxIntegrated"<<std::endl;
 //    int size = m_transport_module->fAlgebraicTransport.fInterfaceData[fracvol1ID].fIntegralFlux.size();
 //    for(int i = 0; i< size; i++){
@@ -475,6 +475,14 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     
     
     m_transport_module->RunTimeStep();
+    
+    m_transport_module->Mesh();
+    std::ofstream fileo("TransportCmesh.vtk");
+    TPZVTKGeoMesh::PrintCMeshVTK(m_transport_module->Mesh(),fileo );
+    REAL integralInlet=m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
+    REAL integralOutlet=m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
+    std::cout<<"IntegralInlet: "<<integralInlet<<std::endl;
+    std::cout<<"IntegraOutlet: "<<integralOutlet<<std::endl;
 #ifdef USING_BOOST
     boost::posix_time::ptime t5 = boost::posix_time::microsec_clock::local_time();
     deltat = t5-t4;

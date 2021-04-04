@@ -363,7 +363,7 @@ void TPZDarcyFlowWithMem::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL we
 void TPZDarcyFlowWithMem::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
     
     REAL gBigNumber = TPZMaterial::gBigNumber;
-    gBigNumber = 1.0e19;
+    gBigNumber = 1.0e20;
     int qb = 0;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     

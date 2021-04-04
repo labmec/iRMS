@@ -133,11 +133,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
 //    // Total mobility
 //    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,memory.sw_n(),p);
    REAL lambda_v = 1.0;
-  
-    
     int s_i, s_j;
     int v_i, v_j;
-    
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
@@ -146,9 +143,13 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     
     for (int iq = 0; iq < nphi_q; iq++)
     {
-        
+        bool val = 1;
+        if(iq == (nphi_q-1) || iq == (nphi_q-2)){
+            val=20e5;
+        }
         v_i = datavec[qb].fVecShapeIndex[iq].first;
         s_i = datavec[qb].fVecShapeIndex[iq].second;
+    
         
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
@@ -160,6 +161,10 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
         
         for (int jq = 0; jq < nphi_q; jq++)
         {
+            bool val = 1;
+            if(iq == (nphi_q-1) || iq == (nphi_q-2)){
+                val=1.0;
+            }
             
             v_j = datavec[qb].fVecShapeIndex[jq].first;
             s_j = datavec[qb].fVecShapeIndex[jq].second;
@@ -167,7 +172,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j)*val;
                 }
             }
             
@@ -271,7 +276,7 @@ template <class TMEM>
 void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
     
 
-    REAL gBigNumber = 1.0e19; //TPZMaterial::gBigNumber;
+    REAL gBigNumber = 1.0e20; //TPZMaterial::gBigNumber;
 
     int qb = 0;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
