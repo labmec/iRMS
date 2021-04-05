@@ -12,5 +12,5 @@ target_include_directories(BecnhmarkCase1 PUBLIC ${common_dir})
 # find_package(libInterpolate REQUIRED)
 # find_package (Eigen3 3.3 REQUIRED)
 
-
-target_link_libraries(BecnhmarkCase1 iMRS_library blas)
+find_package(BLAS)
+target_link_libraries(BecnhmarkCase1 iMRS_library ${BLAS_LIBRARIES})

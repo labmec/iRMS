@@ -26,9 +26,7 @@
 #include "pzelmat.h"
 
 #include "pzysmp.h"
-#include "pzmetis.h"
 #include "pzbndcond.h"
-#include "TPZTimer.h"
 #include "TPZAlgebraicTransport.h"
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
