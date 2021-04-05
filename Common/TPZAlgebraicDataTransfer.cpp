@@ -49,13 +49,12 @@ TPZAlgebraicDataTransfer::~TPZAlgebraicDataTransfer(){
 void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport &transport)
 {
     
-        IdentifyInterfaceGeometricElements();
+    IdentifyInterfaceGeometricElements();
     this->IdentifyVolumeGeometricElements();
     BuildMixedToTransportDataStructures(fFluxMesh);
     TPZVec<int64_t> Volume_Index;
     BuildTransportToMixedCorrespondenceDatastructure(fFluxMesh, Volume_Index);
     InitializeTransportDataStructure(transport);
-    // check the Volume_index xyz with transport xyz
     InitializeVectorPointersMixedToTransport(transport);
     InitializeVectorPointersTranportToMixed(transport);
 
@@ -268,11 +267,6 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                 is_collapsed=true;
             }
           
-            std::cout<< "Left Orient: "<<leftorient<<std::endl;
-            std::cout<< "Left matID: "<<leftgel->MaterialId()<<std::endl;
-            std::cout<< "Left id: "<<leftgel->Id()<<std::endl;
-            std::cout<< "Left index: "<<leftgel->Index()<<std::endl;
-            
             TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
             int lowerindex = -1;
             if (is_collapsed) {
@@ -317,39 +311,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                 is_collapsedR=true;
             }
             
-            std::cout<< "Right Orient: "<<right_orient<<std::endl;
-            std::cout<< "Right matID: "<<rightgel->MaterialId()<<std::endl;
-            std::cout<< "Right id: "<<rightgel->Id()<<std::endl;
-            std::cout<< "Right index: "<<rightgel->Index()<<std::endl;
-            
-            //
-//            if(left->NConnects() > 1) DebugStop();
-//            TPZGeoEl *rightgel = left->Reference();
-//
-//            //TestCorrectNormalOrientation
-//            //FindMortar
-//            //
-//            int rightorient = rightgel->NormalOrientation(rightside.Side());
-//
-//            TPZMultiphysicsElement *celmultR =dynamic_cast<TPZMultiphysicsElement *>(right);
-//            TPZCompEl *hdivBoundR = celmultR->Element(0);
-//            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivboundR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBoundR);
-//            TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundTR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBoundR);
-//
-//            bool is_collapsedR = false;
-//            if (hdivboundR ) {
-//                rightorient = hdivbound->GetSideOrient(8);
-//                is_collapsedR=true;
-//            }
-//            if(hdivboundTR){
-//                rightorient = hdivboundT->GetSideOrient(6);
-//                is_collapsedR=true;
-//            }
-            //
-//            if(leftorient != -rightorient && rightgel->Dimension() != gmesh->Dimension()-1)
-//            {
-//                DebugStop();
-//            }
+        
             TPZGeoElSideIndex rightgelside(rightgel->Index(),rightside.Side());
             int64_t rightindex = right->Index();
             lowerindex = SideLowerIndex(rightgel,rightside.Side());
@@ -367,32 +329,26 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             {
                 if(right_orient == 1){
                     facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
-//                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
+
                     facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
-                    std::cout<<"Troquei1"<<std::endl;
+               
                 }
                 if(right_orient == -1){
                     facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
-                    //                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
                     facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
-                                        std::cout<<"Troquei2"<<std::endl;
+                    
                 }
                 if(right_orient == 0){
                     facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
                     facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
-                    std::cout<<"Troquei2"<<std::endl;
                 }
                 
             }
             else
             {
                 
-//                facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
-//                facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
-                
                 facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
                 facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
-                std::cout<<"Troquei3"<<std::endl;
         
             }
             
@@ -658,9 +614,7 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                 int warning = 0;
                 for(int ic=0; ic<nc-1; ic++)
                 {
-                    if(collapsedQuad){
-                        int ok=0;
-                    }
+             
                     if (collapsedQuad && ic ==4) {
                         warning =1;
                         nc++;
@@ -685,19 +639,7 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     //corregir connect_Index_solo si existe fluxo mortar
 //                    int64_t mortarExist = mortarExist
                     int nshape = cel->Connect(ic).NShape();
-//                    std::pair<int, int> connectIndexNshape = FindMortar(gelside);
-//                    int mortarIndex = std::get<0>(connectIndexNshape);
-//                    int nshap = std::get<1>(connectIndexNshape);
-//                    int64_t cindex =-1;
-//                    if(mortarIndex!=-1){
-//                        cindex=mortarIndex;
-//                        nshape=nshap;
-//                    }
-//                    else{
-                    int64_t cindex;
-                        cindex = cel->ConnectIndex(ic);
-//                    }
-                    if(shouldtransfer[cindex] != 0) continue;
+                    int64_t cindex = cel->ConnectIndex(ic);                                    if(shouldtransfer[cindex] != 0) continue;
                     int matid =matidvec[0];
                     if (warning && collapsedTriangle && side == 7) {
                         matid = matidvec[1];

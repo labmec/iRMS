@@ -617,8 +617,8 @@ void LearningReadFracMesh()
      */
     // vector with subdomain index of the geometric elements
     TPZVec<int64_t> subdomain;
-    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
-//    TPZGeoMesh *gmesh = ReadFractureMesh();
+//    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingPaper3D();

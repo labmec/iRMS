@@ -143,10 +143,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     
     for (int iq = 0; iq < nphi_q; iq++)
     {
-        bool val = 1;
-        if(iq == (nphi_q-1) || iq == (nphi_q-2)){
-            val=20e5;
-        }
+        
         v_i = datavec[qb].fVecShapeIndex[iq].first;
         s_i = datavec[qb].fVecShapeIndex[iq].second;
     
@@ -161,10 +158,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
         
         for (int jq = 0; jq < nphi_q; jq++)
         {
-            bool val = 1;
-            if(iq == (nphi_q-1) || iq == (nphi_q-2)){
-                val=1.0;
-            }
+           
             
             v_j = datavec[qb].fVecShapeIndex[jq].first;
             s_j = datavec[qb].fVecShapeIndex[jq].second;
@@ -172,7 +166,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j)*val;
+                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
                 }
             }
             

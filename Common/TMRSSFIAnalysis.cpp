@@ -336,13 +336,14 @@ void TMRSSFIAnalysis::RunTimeStep(){
         
         SFIIteration();
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
+        m_x_transport = m_transport_module->Solution();
         error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         stop_criterion_Q = error_rel_transport < eps_tol; // Stop by saturation variation
-        if (stop_criterion_Q && m_k_iteration > 1) {
+        if (stop_criterion_Q && m_k_iteration >= 1) {
             std::cout << "SFI converged " << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
-            std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
-            std::cout << "Transport problem variation = " << error_rel_transport << std::endl;
+//            std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
+//            std::cout << "Transport problem variation = " << error_rel_transport << std::endl;
             m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
             break;
         }
@@ -446,16 +447,7 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-1);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
-    m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
-//    std::cout<<"FluxIntegrated"<<std::endl;
-//    int size = m_transport_module->fAlgebraicTransport.fInterfaceData[fracvol1ID].fIntegralFlux.size();
-//    for(int i = 0; i< size; i++){
-//        std::cout<<" i " <<i<< " integral val: "<<m_transport_module->fAlgebraicTransport.fInterfaceData[fracvol1ID].fIntegralFlux[i];
-//    }
-//    int size2 = m_transport_module->fAlgebraicTransport.fInterfaceData[fracvol2ID].fIntegralFlux.size();
-//    for(int i = 0; i< size2; i++){
-//        std::cout<<" i " <<i<< " integral val: "<<m_transport_module->fAlgebraicTransport.fInterfaceData[fracvol2ID].fIntegralFlux[i];
-//    }
+    
     
     
 //    fAlgebraicDataTransfer.TransferPressures();
@@ -467,33 +459,15 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     std::cout << "Transfer mixed to transport time: " << deltat << std::endl;
 #endif
     
-//    std::ofstream fileprint("FluxBeforeTransport.txt");
-//    TPZCompMesh *compmesh = m_mixed_module->Mesh();
-//    TPZMultiphysicsCompMesh *multcmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(compmesh);
-////    multcmesh->MeshVector()[0]->Print(fileprint);
-    
-    
-    
     m_transport_module->RunTimeStep();
     
-    m_transport_module->Mesh();
-    std::ofstream fileo("TransportCmesh.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(m_transport_module->Mesh(),fileo );
-    REAL integralInlet=m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-2);
-    REAL integralOutlet=m_transport_module->fAlgebraicTransport.FLuxIntegralbyID(-4);
-    std::cout<<"IntegralInlet: "<<integralInlet<<std::endl;
-    std::cout<<"IntegraOutlet: "<<integralOutlet<<std::endl;
 #ifdef USING_BOOST
     boost::posix_time::ptime t5 = boost::posix_time::microsec_clock::local_time();
     deltat = t5-t4;
     std::cout << "Total Transport time: " << deltat << std::endl;
 #endif
-    
-    //    m_transport_module->PostProcessTimeStep();
-    //    m_transport_module->PostProcessTimeStep();
     //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
     //    TransferToMixedModule();        // Transfer to mixed
-    
 }
 
 

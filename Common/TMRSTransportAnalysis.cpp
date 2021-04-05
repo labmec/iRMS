@@ -201,7 +201,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
 //    }
 
     //Linear problem Benchmark
-    return;
+   
     if(Norm(Rhs()) < 1.0e-9){
         std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
         std::cout << "Number of iterations = " << 1 << std::endl;
@@ -266,10 +266,8 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-//    std::cout<<x<<std::endl;
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
-//    AssembleResidual();
-//    PostProcessTimeStep();
+    AssembleResidual();
     REAL res_norm = Norm(Rhs());
     std::cout << "Initial guess residue norm : " <<  res_norm << std::endl;
     

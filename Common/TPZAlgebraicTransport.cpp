@@ -131,8 +131,8 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
         beta = 1.0;
     }
     
-    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint;
-    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint;
+    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint* fdt;
+    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
     
     // Gravity fluxes contribution
 //    ContributeInterfaceIHUResidual(index, ef);
@@ -366,7 +366,7 @@ void TPZAlgebraicTransport::ContributeBCOutletInterfaceResidual(int index, TPZFM
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outletmatid].fLeftRightVolIndex[index];
     REAL fluxint  = fInterfaceData[outletmatid].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
-    ef(0,0) = 1.0*fw_L*fluxint;
+    ef(0,0) = 1.0*fw_L*fluxint* fdt;
 }
 
 void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
