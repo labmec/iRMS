@@ -7,7 +7,7 @@
 
 #include "TPZAlgebraicTransport.h"
 #include "pzelmat.h"
-#include <Eigen/PardisoSupport>
+//#include <Eigen/PardisoSupport>
 
 /// Default constructor
 TPZAlgebraicTransport::TPZAlgebraicTransport(){

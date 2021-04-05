@@ -25,10 +25,10 @@ set(SEARCH_DIRS ENV PATH ../lib /usr/local/opt/ /usr/local/opt/qt5/lib/cmake/ /u
 IF (WIN32)
 	find_package( PZ PATHS "C:/Arquivos de Programas/PZ" REQUIRED NO_DEFAULT_PATH)
 ELSE()
-	find_package( PZ REQUIRED 
+	find_package( NeoPZ REQUIRED 
 					HINTS ${SEARCH_DIRS}
-					# PATH_SUFFIXES "/pz-install/CMake" # Labmec standard
-					PATH_SUFFIXES "/pz-install-RefactorGeom/CMake"
+					# PATH_SUFFIXES "/neopz-install/CMake" # Labmec standard
+					PATH_SUFFIXES "/neopz-install-RefactorGeom/CMake"
 	)
 	# find_package( PZ REQUIRED HINTS "../lib/neopz-install-RefactorGeom/CMake")
 ENDIF (WIN32)
@@ -215,13 +215,13 @@ add_subdirectory(Common)
 # add_subdirectory(LinearTracer)
 # add_subdirectory(FourSpacesTest)
 # add_subdirectory(Buckley_Levertt)
-add_subdirectory(MHMTest)
+# add_subdirectory(MHMTest)
 add_subdirectory(HDivSimple)
-add_subdirectory(MHMSimple)
+# add_subdirectory(MHMSimple)
 #add_subdirectory(GeoMeshAndPropsGenerator)
 #add_subdirectory(CGP)
 # add_subdirectory(HdivCollapsed)
-add_subdirectory(Paper2D)
+# add_subdirectory(Paper2D)
 add_subdirectory(BenchmarkCase1)
 add_subdirectory(SimpleCaseFracture)
 add_subdirectory(SimpleCaseFractureTwoElements)

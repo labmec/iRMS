@@ -204,11 +204,11 @@ void TMRSMixedAnalysis::PostProcessTimeStep(){
     
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();
-    std::set<int> mat_id_2D;
-    mat_id_2D.insert(10);
-    std::string file_frac("fractureFlux_s.vtk");
-    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
-    PostProcess(div,2);
+//    std::set<int> mat_id_2D;
+//    mat_id_2D.insert(10);
+//    std::string file_frac("fractureFlux_s.vtk");
+//    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
+//    PostProcess(div,2);
     
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
     DefineGraphMesh(dim,scalnames,vecnames,file);

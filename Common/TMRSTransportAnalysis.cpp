@@ -541,10 +541,10 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     
     
    
-    mat_id_2D.insert(10);
-    std::string file_frac("fracture_s.vtk");
-    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
-    PostProcess(div,2);
+//    mat_id_2D.insert(10);
+//    std::string file_frac("fracture_s.vtk");
+//    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
+//    PostProcess(div,2);
     //
     DefineGraphMesh(dim,scalnames,vecnames,file);
     PostProcess(div,dim);

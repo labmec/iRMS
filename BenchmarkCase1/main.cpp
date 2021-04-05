@@ -557,7 +557,7 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 25;
+    sim_data.mTNumerics.m_n_steps = 5;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;

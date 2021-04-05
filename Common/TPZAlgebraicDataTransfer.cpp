@@ -246,7 +246,14 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             //TestCorrectNormalOrientation
             //FindMortar
             //
-            int leftorient = leftgel->NormalOrientation(leftside.Side());
+            
+            int SideL =leftside.Side();
+            int nsidesmL = leftgel->NSides();
+            int leftorient = 0;
+            if(SideL < nsidesmL-1){
+                leftorient = leftgel->NormalOrientation(leftside.Side());
+            }
+            
             
             TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(left);
             TPZCompEl *hdivBound = celmult->Element(0);
@@ -262,9 +269,11 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                 
                 
             }
-            if(hdivboundT && matid!=103){
-                leftorient = hdivboundT->GetSideOrient(6);
+            if(hdivboundT ){
                 is_collapsed=true;
+                if(matid!=103){
+                     leftorient = hdivboundT->GetSideOrient(6);
+                }
             }
           
             TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
@@ -290,26 +299,47 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZCompEl *right = rightside.Element();
             if(right->NConnects() > 1) DebugStop();
             TPZGeoEl *rightgel = right->Reference();
-            int right_orient = rightgel->NormalOrientation(rightside.Side());
+            int matIDR = rightgel->MaterialId();
             
+            //
             TPZMultiphysicsElement *celmultR =dynamic_cast<TPZMultiphysicsElement *>(right);
-            TPZCompEl *hdivBoundr = celmultR->Element(0);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivboundr = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBoundr);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundTr = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBoundr);
+            TPZCompEl *hdivBoundR = celmultR->Element(0);
+            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivboundR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBoundR);
+            TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundTR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBoundR);
             
             bool is_collapsedR = false;
-            if (hdivboundr  ) {
+            
+            int SideR =rightside.Side();
+            int nsidesmR = rightgel->NSides();
+            
+            int right_orient = 0;
+            if(SideR < nsidesmR-1){
+                right_orient = rightgel->NormalOrientation(rightside.Side());
+            }
+            
+            
+            
+            if (hdivboundR  ) {
                 is_collapsedR=true;
-                if(matid!=103){
-                    right_orient = hdivboundr->GetSideOrient(8);
+                if(matIDR!=103){
+                    right_orient = hdivboundR->GetSideOrient(8);
+                }
+            }
+           
+            if(hdivboundTR ){
+                is_collapsedR=true;
+                if(matIDR!=103){
+                right_orient = hdivboundTR->GetSideOrient(6);
                 }
                 
-                
             }
-            if(hdivboundTr && matid!=103){
-                right_orient = hdivboundT->GetSideOrient(6);
-                is_collapsedR=true;
-            }
+//            else
+//            {
+//                right_orient = rightgel->NormalOrientation(rightside.Side());
+//            }
+//            
+            
+        
             
         
             TPZGeoElSideIndex rightgelside(rightgel->Index(),rightside.Side());

@@ -22,7 +22,7 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
-#include <Eigen/PardisoSupport>
+//#include <Eigen/PardisoSupport>
 //#include <Eigen/SuperLUSupport>
 #include "TPZAnalysisAuxEigen.h"
 #include "TPZSpMatrixEigen.h"
