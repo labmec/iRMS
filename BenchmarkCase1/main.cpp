@@ -40,8 +40,11 @@ void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh, TPZVec<int64_t> &
 
 TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 {
-    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
-    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
+//    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
+//    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
+    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC1.msh");
+    std::string fileFine("../../FracMeshes/flem_case1_Fine_BC1.msh");
+    
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
     /*
@@ -60,7 +63,10 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
      2 2 "Fractures"
      3 1 "c1"
      */
-    dim_name_and_physical_tagFine[2]["Fractures"] = 10;
+//    dim_name_and_physical_tagFine[2]["Fractures"] = 10;
+    dim_name_and_physical_tagFine[2]["Fracture2"] = 10;
+    dim_name_and_physical_tagFine[1]["BCfrac0"] = -11;
+    
     for(int i=1; i<=100; i++)
     {
         std::stringstream sout;
@@ -101,6 +107,7 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     delete gmeshCoarse;
     return gmeshFine;
 }
+
 TPZGeoMesh *ReadFractureMesh(){
     std::string fileFine("../../FracMeshes/jose_simple5.msh");
 //    std::string fileFine("../../FracMeshes/flem_case1_Coarse_BC.msh");
@@ -557,7 +564,7 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 5;
+    sim_data.mTNumerics.m_n_steps = 1;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -619,8 +626,8 @@ void LearningReadFracMesh()
      */
     // vector with subdomain index of the geometric elements
     TPZVec<int64_t> subdomain;
-//    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
-    TPZGeoMesh *gmesh = ReadFractureMesh();
+    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+//    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingPaper3D();
@@ -631,17 +638,18 @@ void LearningReadFracMesh()
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
-    std::string name("fractureTest.vtk");
-    
-    aspace.PrintGeometry(name);
+    aspace.SetSubdomainIndexes(subdomain);
+    std::ofstream name("fractureTest.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, name, subdomain);
+   
     
     aspace.SetDataTransfer(sim_data);
     
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-//    std::ofstream filemulti("mixedMulty.txt");
-//    mixed_operator->Print(filemulti);
+//    aspace.VerifySideOrientsCoarseFine(mixed_operator);
+
     
    bool must_opt_band_width_Q = true;
     int n_threads = 0;

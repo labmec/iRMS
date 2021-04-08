@@ -7,10 +7,10 @@ file(GLOB SOURCE *.cpp)
 
 
 
-add_executable(BecnhmarkCase1 main.cpp ${SOURCE} ${HEADERS})
-target_include_directories(BecnhmarkCase1 PUBLIC ${common_dir})
+add_executable(BenchmarkCase1 main.cpp ${SOURCE} ${HEADERS})
+target_include_directories(BenchmarkCase1 PUBLIC ${common_dir})
 # find_package(libInterpolate REQUIRED)
 # find_package (Eigen3 3.3 REQUIRED)
 
 find_package(BLAS)
-target_link_libraries(BecnhmarkCase1 iMRS_library ${BLAS_LIBRARIES})
+target_link_libraries(BenchmarkCase1 iMRS_library ${BLAS_LIBRARIES})

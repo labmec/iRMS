@@ -43,6 +43,8 @@ public:
     TPZMultiphysicsCompMesh * mMixedOperator;
     
     TPZMultiphysicsCompMesh * mTransportOperator;
+    
+    TPZVec<int64_t> mSubdomainIndexGel;
  
     
 public:
@@ -71,6 +73,13 @@ public:
     virtual int ClassId() const;
     
     void SetGeometry(TPZGeoMesh * geometry);
+    
+    void SetSubdomainIndexes(TPZVec<int64_t> subIndexes){
+        mSubdomainIndexGel =subIndexes;
+    }
+    TPZVec<int64_t> GetSubdomainIndexes(){
+        return mSubdomainIndexGel;
+    }
     
     void LoadGeometry(std::string geometry_file);
     
@@ -123,6 +132,8 @@ public:
     /// insert wrapper elements necessary for creating the (hybridized) mortar spaces
     void InsertGeoWrappersForMortar();
     
+    void GeoWrappersForMortarGelSide(TPZGeoElSide &gelside, std::set<int> bcids);
+    int  FindNeighSubDomain(TPZGeoElSide &gelside);
     void BuildMHMMixed2SpacesMultiPhysicsCompMesh();
     
     void BuildMHMMixed4SpacesMultiPhysicsCompMesh();
@@ -170,6 +181,8 @@ public:
     void CreateFracInterfaces(TPZGeoEl *gel);
     void CreateTransportElement(int p_order, TPZCompMesh *cmesh, TPZGeoEl *gel, bool is_BC);
     void TestSideOrient(TPZCompMesh *MultFlux);
+    void TakeElementsbyID(std::map<int, std::vector<TPZGeoEl* >> &, std::vector<int> & );
+    void VerifySideOrientsCoarseFine(TPZCompMesh *fluxCmesh);
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

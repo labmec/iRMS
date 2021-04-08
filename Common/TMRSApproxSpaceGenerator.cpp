@@ -34,6 +34,7 @@ TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator()
     mGeometry = nullptr;
     mMixedOperator = nullptr;
     mTransportOperator = nullptr;
+    
 }
 
 TMRSApproxSpaceGenerator &TMRSApproxSpaceGenerator::operator=(const TMRSApproxSpaceGenerator &other){
@@ -1390,6 +1391,10 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
     // - second interface element
     // - a flux hdiv boundary element (conditionally)
     int64_t nel = mGeometry->NElements();
+    int nElSubDomain = mSubdomainIndexGel.size();
+    if(nel != nElSubDomain){
+        DebugStop();
+    }
     for(int64_t el = 0; el<nel; el++)
     {
         TPZGeoEl *gel = mGeometry->Element(el);
@@ -1401,37 +1406,93 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
         }
         for (int side=firstside; side < gel->NSides()-1; side++) {
             TPZGeoElSide gelside(gel,side);
-            int hdiv_orient = gel->NormalOrientation(side);
-            int first_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
-            int second_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
-            if(hdiv_orient < 0)
-            {
-                first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
-                second_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
-            }
-            TPZGeoElBC gbc1(gelside,mSimData.mTGeometry.m_HdivWrapMatId);
-            TPZGeoElSide gelwrapside(gbc1.CreatedElement());
-            TPZGeoElBC gbc2(gelwrapside,first_lagrange);
-            TPZGeoElSide gelintface1(gbc2.CreatedElement());
-            TPZGeoElBC gbc3(gelintface1,mSimData.mTGeometry.m_MortarMatId);
-            TPZGeoElSide gelmortar(gbc3.CreatedElement());
-            TPZGeoElBC gbc4(gelmortar,second_lagrange);
-            TPZGeoElSide gelinterface2(gbc4.CreatedElement());
-            // this method has to be adjusted if we create MHM meshes
-            if(!gelinterface2.HasNeighbour(bcmatids))
-            {
-                TPZGeoElBC gbc5(gelinterface2,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
-            }
+            GeoWrappersForMortarGelSide(gelside,bcmatids);
         }
     }
-#ifdef PZDEBUG
-    {
-        std::ofstream out("gmesh_withwrap.vtk");
-        TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out);
+    
+    nel = mGeometry->NElements();
+    nElSubDomain = mSubdomainIndexGel.size();
+    if(nel != nElSubDomain){
+        DebugStop();
     }
-#endif
+    std::ofstream out("gmesh_withwrap.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out, mSubdomainIndexGel);
+
+}
+void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside, std::set<int> bcmatids){
+   
+    TPZGeoEl *gel = gelside.Element();
+    int side = gelside.Side();
+    int gelindex = gel->Index();
+    int hdiv_orient = gel->NormalOrientation(side);
+    int subDomainIndex = mSubdomainIndexGel[gelindex];
+    int subDomainIndexNeig = FindNeighSubDomain(gelside);
+    if(subDomainIndex<0){
+        DebugStop();
+    }
+    
+    int first_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
+    int second_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
+    if(hdiv_orient < 0 || subDomainIndexNeig>0)
+    {
+        first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
+        second_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
+    }
+    TPZGeoElBC gbc1(gelside,mSimData.mTGeometry.m_HdivWrapMatId);
+    TPZGeoElSide gelwrapside(gbc1.CreatedElement());
+    int nBCCreated = 4;
+    int index1 =gbc1.CreatedElement()->Index();
+    
+    TPZGeoElBC gbc2(gelwrapside,first_lagrange);
+    TPZGeoElSide gelintface1(gbc2.CreatedElement());
+    int index2 =gbc2.CreatedElement()->Index();
+    
+    
+    TPZGeoElBC gbc3(gelintface1,mSimData.mTGeometry.m_MortarMatId);
+    TPZGeoElSide gelmortar(gbc3.CreatedElement());
+    int index3 =gbc3.CreatedElement()->Index();
+    
+    TPZGeoElBC gbc4(gelmortar,second_lagrange);
+    TPZGeoElSide gelinterface2(gbc4.CreatedElement());
+    int index4 =gbc4.CreatedElement()->Index();
+   
+    int size =mSubdomainIndexGel.size();
+    mSubdomainIndexGel.resize(size + nBCCreated);
+    if(index1 != size || index2!=(size+1) || index3!=(size+2) || index4!=(size+3)){
+        DebugStop();
+    }
+    mSubdomainIndexGel[index1]=subDomainIndex;
+    mSubdomainIndexGel[index2]=subDomainIndex;
+    mSubdomainIndexGel[index3]=subDomainIndex;
+    mSubdomainIndexGel[index4]=subDomainIndex;
+    
+    // this method has to be adjusted if we create MHM meshes
+    if(!gelinterface2.HasNeighbour(bcmatids)){
+        TPZGeoElBC gbc5(gelinterface2,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+        mSubdomainIndexGel.resize(size + nBCCreated +1);
+        mSubdomainIndexGel[size + nBCCreated]=subDomainIndex;
+    }
+ 
 }
 
+int TMRSApproxSpaceGenerator::FindNeighSubDomain(TPZGeoElSide &gelside){
+    TPZGeoEl *gel = gelside.Element();
+    int indexGel = gel->Index();
+    int indexSubDomain = mSubdomainIndexGel[indexGel];
+    int subdomainIndex =-1;
+    TPZGeoElSide neigh = gelside.Neighbour();
+    while(neigh!= gelside){
+        int neighIndex=neigh.Element()->Index();
+        if(neigh.Element()->Dimension() != gel->Dimension()){
+            neigh = neigh.Neighbour();
+            continue;
+        }
+        subdomainIndex = mSubdomainIndexGel[neighIndex];
+        break;
+    }
+    
+    return subdomainIndex;
+}
 
 /// return the material ids and boundary condition material ids
 void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, std::set<int> &bcmatids)
@@ -2949,4 +3010,52 @@ void TMRSApproxSpaceGenerator::CreateTransportElement(int p_order, TPZCompMesh *
         DebugStop();
     }
     gel->ResetReference();
+}
+void TMRSApproxSpaceGenerator::TakeElementsbyID(std::map<int, std::vector<TPZGeoEl* >> &interfaces, std::vector<int> &matIds){
+    int nels = mGeometry->NElements();
+    for(int iel =0; iel <nels; iel++){
+        TPZGeoEl *gel = mGeometry->Element(iel);
+        int matId = gel->MaterialId();
+        for(auto mat: matIds){
+            if(matId==mat){
+                interfaces[matId].push_back(gel);
+                break;
+            }
+        }
+    }
+}
+void TMRSApproxSpaceGenerator::VerifySideOrientsCoarseFine(TPZCompMesh *fluxCmesh){
+    int nels = fluxCmesh->NElements();
+    std::map<int, std::vector<TPZGeoEl* >> interfaces;
+    std::vector<int> matIds;
+    int skeletonCoarseId = 19;
+    matIds.push_back(skeletonCoarseId);
+    TakeElementsbyID(interfaces, matIds);
+    for(auto gel:interfaces[skeletonCoarseId] ){
+        TPZStack<TPZGeoEl *> Sons;
+        gel->YoungestChildren(Sons);
+        std::cout<<"NSons= "<<Sons.size()<<std::endl;
+        std::cout<<"IndexFat: "<<gel->Index()<<std::endl;
+        for(auto songel: Sons){
+            TPZGeoElSide gelside(songel, songel->NSides()-1);
+            TPZGeoElSide neig = gelside.Neighbour();
+            std::vector<TPZCompEl *> fluxEls;
+            std::cout<<"IndexSon: "<<songel->Index()<<std::endl;
+
+            while(neig!=gelside){
+                TPZGeoEl *neigGel = neig.Element();
+                int matId = neigGel->MaterialId();
+                TPZCompEl *neigCel = neigGel->Reference();
+                if(neigCel && matId==40){
+                    TPZMultiphysicsElement *cel = dynamic_cast<TPZMultiphysicsElement *>(neigCel);
+                    fluxEls.push_back(cel);
+                }
+                if(matId==1){
+                    std::cout<<"IndexVol: "<<neigGel->Index()<<std::endl;
+                }
+                neig=neig.Neighbour();
+            }
+            int ok=0;
+        }
+    }
 }
