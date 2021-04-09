@@ -1433,11 +1433,14 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
     
     int first_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
     int second_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
-    if(hdiv_orient < 0 || subDomainIndexNeig>0)
+    bool cond1 = hdiv_orient < 0 ;
+    bool cond2 =subDomainIndexNeig!=-1 && (subDomainIndexNeig > subDomainIndex);
+    if(cond1 || cond2)
     {
         first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
         second_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
     }
+    
     TPZGeoElBC gbc1(gelside,mSimData.mTGeometry.m_HdivWrapMatId);
     TPZGeoElSide gelwrapside(gbc1.CreatedElement());
     int nBCCreated = 4;
