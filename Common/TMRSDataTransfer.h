@@ -76,7 +76,7 @@ public:
         /// number of times the global mesh should be divided
         int mnref =0;
         /// material id for the Macro fluxes
-        int m_skeletonMatId = 45;
+        int m_skeletonMatId = 19;
         /// material id for H(div) wrap materials
         int m_HdivWrapMatId = 15;
         /// material id for the mortar pressure space

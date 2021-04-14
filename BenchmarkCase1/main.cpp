@@ -42,8 +42,15 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 {
 //    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
 //    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
-    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC1.msh");
-    std::string fileFine("../../FracMeshes/flem_case1_Fine_BC1.msh");
+//    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC1.msh");
+//    std::string fileFine("../../FracMeshes/flem_case1_Fine_BC1.msh");
+    
+    
+    
+    std::string fileCoarse("../../FracMeshes/jose11_coarse.msh");
+    std::string fileFine("../../FracMeshes/jose11_fine.msh");
+    
+    
     
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
@@ -648,7 +655,6 @@ void LearningReadFracMesh()
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-//    aspace.VerifySideOrientsCoarseFine(mixed_operator);
 
     
    bool must_opt_band_width_Q = true;

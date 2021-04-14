@@ -62,9 +62,11 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
     for (int64_t el=0; el<nel; el++) {
         //        std::cout << "Element " << el << std::endl;
         TPZCompEl *cel = cmesh->Element(el);
+        
         if (!cel) {
             continue;
         }
+        TPZGeoEl *gel = cel->Reference();
         int nc = cel->NConnects();
         bool found = false;
         if(LagrangeLevelNotCondensed >=0)
@@ -73,7 +75,8 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
                 TPZConnect &c = cel->Connect(ic);
                 //                std::cout << "ic ";
                 //                c.Print(*cmesh,std::cout);
-                if(c.LagrangeMultiplier() >= LagrangeLevelNotCondensed && c.NElConnected() == 1)
+        
+                if((c.LagrangeMultiplier() >= LagrangeLevelNotCondensed && c.NElConnected() == 1) )
                 {
                     c.IncrementElConnected();
                     found = true;
@@ -106,6 +109,7 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
 
 void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix, std::set<int> matids)
 {
+    
     //    cmesh->ComputeNodElCon();
     int64_t nel = cmesh->NElements();
     for (int64_t el=0; el<nel; el++) {
@@ -115,17 +119,15 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
             continue;
         }
         TPZGeoEl *gel = cel->Reference();
-       
-        
+     
         int nc = cel->NConnects();
         bool found = false;
         if(LagrangeLevelNotCondensed >=0)
         {
             for (int ic=0; ic<nc; ic++) {
                 TPZConnect &c = cel->Connect(ic);
-                //                std::cout << "ic ";
-                //                c.Print(*cmesh,std::cout);
-                if(c.LagrangeMultiplier() >= LagrangeLevelNotCondensed && c.NElConnected() == 1)
+              
+                if((c.LagrangeMultiplier() >= LagrangeLevelNotCondensed && c.NElConnected() == 1))
                 {
                     c.IncrementElConnected();
                     found = true;
@@ -193,4 +195,99 @@ void TPZReservoirTools::FindCondensed(TPZCompEl *cel, TPZStack<TPZFastCondensedE
     }
 }
 
-
+void TPZReservoirTools::AddDependency( std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons){
+    
+    for(auto pairfatherson:fatherAndSons){
+        TPZCompEl *celfat = pairfatherson.first->Reference();
+        TPZMultiphysicsElement *celfatFlux = dynamic_cast<TPZMultiphysicsElement *>(celfat);
+        TPZInterpolatedElement *intelFather = dynamic_cast<TPZInterpolatedElement*>(celfatFlux->Element(0));
+        if(celfatFlux->NConnects() !=1){
+            DebugStop();
+        }
+        int index = celfat->ConnectIndex(0);
+        TPZConnect &connect =celfat->Mesh()->ConnectVec()[index];
+        char lag = 6;
+        connect.SetLagrangeMultiplier(lag);
+        for(auto son:pairfatherson.second){
+            TPZCompEl *celSon= son->Reference();
+            TPZMultiphysicsElement *celSonFlux = dynamic_cast<TPZMultiphysicsElement *>(celSon);
+            
+            if(celSonFlux->NConnects() !=1){
+                DebugStop();
+            }
+            TPZInterpolatedElement *intelSon = dynamic_cast<TPZInterpolatedElement*>(celSonFlux->Element(0));
+            intelSon->RestrainSide(son->NSides()-1, intelFather, pairfatherson.first->NSides()-1);
+            
+        }
+       
+    }
+    
+}
+void TPZReservoirTools::TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh,  std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons){
+    
+    int nels = fluxCmesh->NElements();
+    TPZGeoMesh *gmesh = fluxCmesh->Reference();
+//    gmesh->ResetReference();
+//    fluxCmesh->LoadReferences();
+    std::map<int, std::vector<TPZGeoEl* >> interfaces;
+    std::vector<int> matIds;
+    int skeletonCoarseId = 19;
+    matIds.push_back(skeletonCoarseId);
+    TakeElementsbyID(gmesh, interfaces, matIds);
+    int count=-1;
+    for(auto gel:interfaces[skeletonCoarseId] ){
+        TPZStack<TPZGeoEl *> Sons;
+        gel->YoungestChildren(Sons);
+        std::vector<TPZGeoEl*> sons;
+        TPZGeoElSide fatside(gel, gel->NSides()-1);
+        TPZGeoElSide neigfatside = fatside.Neighbour();
+        while(fatside!=neigfatside){
+            TPZCompEl *cel = neigfatside.Element()->Reference();
+            int matId =neigfatside.Element()->MaterialId();
+            int nconnects =-1;
+            if(cel){
+                nconnects=cel->NConnects();
+            }
+            if(matId==19 && nconnects>0){
+                std::pair fatson = std::make_pair(neigfatside.Element(),sons);
+                fatherAndSons.push_back(fatson);
+                count++;
+            }
+            neigfatside = neigfatside.Neighbour();
+        }
+        for(auto songel: Sons){
+            TPZGeoElSide gelside(songel, songel->NSides()-1);
+            TPZGeoElSide neig = gelside.Neighbour();
+            std::vector<TPZCompEl *> fluxEls;
+            while(neig!=gelside){
+                TPZGeoEl *neigGel = neig.Element();
+                int matId = neigGel->MaterialId();
+                TPZCompEl *celneih = neigGel->Reference();
+                int nconnects = -1;
+                if(celneih){
+                    nconnects=celneih->NConnects();
+                }
+                
+//                TPZCompEl *neigCel = neigGel->Reference();
+                if( matId==40){
+                    fatherAndSons[count].second.push_back(neigGel);
+//                    TPZMultiphysicsElement *cel = dynamic_cast<TPZMultiphysicsElement *>(neigCel);
+                }
+                neig=neig.Neighbour();
+            }
+        }
+    }
+}
+void TPZReservoirTools::TakeElementsbyID(TPZGeoMesh *mGeometry, std::map<int, std::vector<TPZGeoEl* >> &interfaces, std::vector<int> &matIds){
+    int nels = mGeometry->NElements();
+    for(int iel =0; iel <nels; iel++){
+        TPZGeoEl *gel = mGeometry->Element(iel);
+        int matId = gel->MaterialId();
+        for(auto mat: matIds){
+            if(matId==mat){
+                interfaces[matId].push_back(gel);
+                break;
+            }
+        }
+    }
+}

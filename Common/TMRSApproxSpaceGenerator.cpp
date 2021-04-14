@@ -394,6 +394,8 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
         TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dimension-1,nstate);
         cmesh->InsertMaterialObject(nullmat);
     }
+    
+    
     std::set<int> buildmatids(matids);
     // create all flux elements as discontinuous elements
     cmesh->AutoBuild(buildmatids);
@@ -436,6 +438,9 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     }
 
     buildmatids.clear();
+    buildmatids.insert(19);
+    TPZNullMaterial *nullmat = new TPZNullMaterial(19,2,1);
+    cmesh->InsertMaterialObject(nullmat);
     buildmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
     buildmatids.insert(bcmatids.begin(),bcmatids.end());
     cmesh->SetDefaultOrder(0);
@@ -447,6 +452,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     // vector with computational element pointers for creating fracture elements
     TPZVec<TPZCompEl *> fracsupport(mGeometry->NElements(),0);
     
+  
     // set the lagrange level
     {
         int64_t nel = cmesh->NElements();
@@ -460,6 +466,8 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
             }
         }
     }
+    
+   
     
     cmesh->SetDimModel(dimension-1);
     matids.clear();
@@ -1226,9 +1234,18 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dim,nstate);
         mMixedOperator->InsertMaterialObject(nullmat);
     }
+//    mGeometry->ResetReference();
+//    mMixedOperator->LoadReferences();
+    
+    TMRSDarcyFlowWithMem<TMRSMemory>*volume2 = new TMRSDarcyFlowWithMem<TMRSMemory>(19,2);
+    mMixedOperator->InsertMaterialObject(volume2);
+    
+
+    
     TPZManVector<int> active_approx_spaces(4,1);
 //    active_approx_spaces[4] = 0;
     mMixedOperator->SetDimModel(3);
+    
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
 
     //Insert fractures properties
@@ -1273,8 +1290,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
     std::set<int> volmatId;
     volmatId.insert(10);
-//    volmatId.insert(1);
-     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false,volmatId);
+    std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> fatherAndSons;
+    TPZReservoirTools::TakeFatherSonsCorrespondence(mMixedOperator, fatherAndSons);
+    TPZReservoirTools::AddDependency(fatherAndSons);
+    TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false,volmatId);
 #ifdef PZDEBUG
     {
         std::stringstream file_name;
@@ -1287,7 +1306,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 
     // this will act only on volumetric elements
     TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
-    mMixedOperator->ComputeNodElCon();
+//    mMixedOperator->ComputeNodElCon();
     // this shouldn't affect the fracture elements as they won't have condensable connects
     // we should create fast condensed elements at this point...
 //    TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
@@ -1300,7 +1319,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 //        mMixedOperator->Print(sout);
     }
 #endif
-  
+    
 
     
 }
@@ -3013,52 +3032,4 @@ void TMRSApproxSpaceGenerator::CreateTransportElement(int p_order, TPZCompMesh *
         DebugStop();
     }
     gel->ResetReference();
-}
-void TMRSApproxSpaceGenerator::TakeElementsbyID(std::map<int, std::vector<TPZGeoEl* >> &interfaces, std::vector<int> &matIds){
-    int nels = mGeometry->NElements();
-    for(int iel =0; iel <nels; iel++){
-        TPZGeoEl *gel = mGeometry->Element(iel);
-        int matId = gel->MaterialId();
-        for(auto mat: matIds){
-            if(matId==mat){
-                interfaces[matId].push_back(gel);
-                break;
-            }
-        }
-    }
-}
-void TMRSApproxSpaceGenerator::VerifySideOrientsCoarseFine(TPZCompMesh *fluxCmesh){
-    int nels = fluxCmesh->NElements();
-    std::map<int, std::vector<TPZGeoEl* >> interfaces;
-    std::vector<int> matIds;
-    int skeletonCoarseId = 19;
-    matIds.push_back(skeletonCoarseId);
-    TakeElementsbyID(interfaces, matIds);
-    for(auto gel:interfaces[skeletonCoarseId] ){
-        TPZStack<TPZGeoEl *> Sons;
-        gel->YoungestChildren(Sons);
-        std::cout<<"NSons= "<<Sons.size()<<std::endl;
-        std::cout<<"IndexFat: "<<gel->Index()<<std::endl;
-        for(auto songel: Sons){
-            TPZGeoElSide gelside(songel, songel->NSides()-1);
-            TPZGeoElSide neig = gelside.Neighbour();
-            std::vector<TPZCompEl *> fluxEls;
-            std::cout<<"IndexSon: "<<songel->Index()<<std::endl;
-
-            while(neig!=gelside){
-                TPZGeoEl *neigGel = neig.Element();
-                int matId = neigGel->MaterialId();
-                TPZCompEl *neigCel = neigGel->Reference();
-                if(neigCel && matId==40){
-                    TPZMultiphysicsElement *cel = dynamic_cast<TPZMultiphysicsElement *>(neigCel);
-                    fluxEls.push_back(cel);
-                }
-                if(matId==1){
-                    std::cout<<"IndexVol: "<<neigGel->Index()<<std::endl;
-                }
-                neig=neig.Neighbour();
-            }
-            int ok=0;
-        }
-    }
 }

@@ -16,6 +16,7 @@
 #include "pzmultiphysicselement.h"
 #include "TPZMeshSolution.h"
 #include "TPZFastCondensedElement.h"
+#include "TPZMultiphysicsCompMesh.h"
 
 #ifndef ReservoirTools_hpp
 #define ReservoirTools_hpp
@@ -28,6 +29,9 @@ public:
     static void CreatedCondensedElements(TPZCompMesh *cmesh, bool KeepOneLagrangian, bool keepmatrix);
     static void CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix);
     static void CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix, std::set<int> matids);
+    static void AddDependency(std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons);
+    static void TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh,  std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons);
+    static void TakeElementsbyID(TPZGeoMesh *mGeometry, std::map<int, std::vector<TPZGeoEl* >> &interfaces, std::vector<int> &matIds);
     static void FindCondensed(TPZCompEl *cel, TPZStack<TPZFastCondensedElement *> &condensedelements);
 };
 
