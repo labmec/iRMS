@@ -139,10 +139,10 @@ void TMRSMixedAnalysis::RunTimeStep(){
   
             break;
         }
-                if (m_k_iteration >= n) {
-                    std::cout << "Mixed operator not converge " << std::endl;
-//                    DebugStop();
-                }
+//                if (m_k_iteration >= n) {
+//                    std::cout << "Mixed operator not converge " << std::endl;
+////                    DebugStop();
+//                }
     }
 }
 

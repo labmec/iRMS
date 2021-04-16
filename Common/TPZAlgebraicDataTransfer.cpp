@@ -498,8 +498,8 @@ static void ExtractElement(TPZCompEl *cel, std::list<TPZCompEl *> &ellist)
     TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *> (cel);
     if(cond)
     {
-        TPZCompEl *celref = cond->ReferenceCompEl();
-//        ExtractElement(celref,ellist);
+//        TPZCompEl *celref = cond->ReferenceCompEl();
+//       ExtractElement(celref,ellist);
          ellist.push_back(cel);
     }
 //    else if(gel)
@@ -532,10 +532,7 @@ void TPZAlgebraicDataTransfer::GetElementAndSubmeshPointers(TPZCompMesh &mixedme
     {
         TPZCompEl *cel = mixedmesh.Element(el);
         if(!cel) continue;
-//        TPZGeoEl *gel = cel->Reference();
-//        if (gel->MaterialId()==40){
-//            int ok=0;
-//        }
+
         
         TPZSubCompMesh *submesh = dynamic_cast<TPZSubCompMesh *>(cel);
         if(submesh)
@@ -677,7 +674,7 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     if (warning && collapsedQuad && side == 9) {
                         matid = matidvec[1];
                     }
-                    
+//                    std::cout<<"MatId: "<<matid<<std::endl;
                     if(ncontransfer.find(matid) == ncontransfer.end())
                     {
                         ncontransfer[matid].Resize(4, 0);
@@ -1035,10 +1032,10 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         TPZGeoEl *gel = cel->Reference();
         int geldim = gel->Dimension();
         int matId = gel->MaterialId();
-        if(matId==1){
+        if(matId==2){
             transport.fCellsData.fporosity[i]=0.2;
         }
-        if(matId==2){
+        if(matId==1){
             transport.fCellsData.fporosity[i]=0.25;
         }
         if(matId==10){

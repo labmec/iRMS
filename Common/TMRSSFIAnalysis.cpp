@@ -36,7 +36,7 @@ void TMRSSFIAnalysis::BuildAlgebraicDataStructure(){
  
 //    SetDataTransfer(m_mixed_module->GetDataTransfer());
     FillProperties();
-    FillMaterialMemoryDarcy(1);
+//    FillMaterialMemoryDarcy(1);
     
 }
 
@@ -94,55 +94,55 @@ void TMRSSFIAnalysis::FillMaterialMemoryDarcy(int material_id){
     }
     //Inicializar puntos de integracion
     
-//    TPZCompMesh * cmesh = m_mixed_module->Mesh();
-//    TPZMaterial * material = cmesh->FindMaterial(material_id);
-//    TPZDarcyFlowWithMem *mat = dynamic_cast<TPZDarcyFlowWithMem *>(material);
-//
+    TPZCompMesh * cmesh = m_mixed_module->Mesh();
+    TPZMaterial * material = cmesh->FindMaterial(material_id);
+    TPZDarcyFlowWithMem *mat = dynamic_cast<TPZDarcyFlowWithMem *>(material);
+
 //    mat->SetAlgebraicTransport(&m_transport_module->fAlgebraicTransport);
-//    if (!material) {
-//        DebugStop();
-//    }
-//
-//    TPZMatWithMem<TPZDarcyMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TPZDarcyMemory> * >(material);
-//    if (!mat_with_memory) {
-//        DebugStop();
-//    }
-//
-//    std::shared_ptr<TPZAdmChunkVector<TPZDarcyMemory>> & memory_vector = mat_with_memory->GetMemory();
-//
-//    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
-//    {
-//        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
-//#ifdef PZDEBUG
-//        if(meshit.fTransport == 0)
-//        {
-//            DebugStop();
-//        }
-//#endif
-//        for (int icell = 0; icell < ncells; icell++)
-//        {
-//            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
-//            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
-//            if(fastCond->Reference()->MaterialId()!=material_id){
-//                continue;
-//            }
-//            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
-//
-//
-//            TPZManVector<int64_t> indices;
-//            celcomp->GetMemoryIndices(indices);
-//            indices.Print();
-//            for (int index = 0; index<indices.size(); index++) {
-//                int valIndex = indices[index];
-//                TPZDarcyMemory &mem = memory_vector.get()->operator [](valIndex);
-//                mem.fTransportCellIndex = algbindex;
-////                m_transport_module->fAlgebraicTransport.fCellsData.fKx[algbindex] = 1.0;
-////                m_transport_module->fAlgebraicTransport.fCellsData.fKy[algbindex] = 1.0;
-////                m_transport_module->fAlgebraicTransport.fCellsData.fKz[algbindex] = 1.0;
-////                m_transport_module->fAlgebraicTransport.fCellsData.fporosity[algbindex] = 0.1;
-//            }
-//        }
-//    }
+    if (!material) {
+        DebugStop();
+    }
+
+    TPZMatWithMem<TPZDarcyMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TPZDarcyMemory> * >(material);
+    if (!mat_with_memory) {
+        DebugStop();
+    }
+
+    std::shared_ptr<TPZAdmChunkVector<TPZDarcyMemory>> & memory_vector = mat_with_memory->GetMemory();
+
+    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
+    {
+        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
+#ifdef PZDEBUG
+        if(meshit.fTransport == 0)
+        {
+            DebugStop();
+        }
+#endif
+        for (int icell = 0; icell < ncells; icell++)
+        {
+            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
+            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
+            if(fastCond->Reference()->MaterialId()!=material_id){
+                continue;
+            }
+            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
+
+
+            TPZManVector<int64_t> indices;
+            celcomp->GetMemoryIndices(indices);
+            indices.Print();
+            for (int index = 0; index<indices.size(); index++) {
+                int valIndex = indices[index];
+                TPZDarcyMemory &mem = memory_vector.get()->operator [](valIndex);
+                mem.fTransportCellIndex = algbindex;
+                m_transport_module->fAlgebraicTransport.fCellsData.fKx[algbindex] = 1.0;
+                m_transport_module->fAlgebraicTransport.fCellsData.fKy[algbindex] = 1.0;
+                m_transport_module->fAlgebraicTransport.fCellsData.fKz[algbindex] = 1.0;
+                m_transport_module->fAlgebraicTransport.fCellsData.fporosity[algbindex] = 0.1;
+            }
+        }
+    }
     
 }
 void TMRSSFIAnalysis::FillProperties(){
@@ -266,12 +266,12 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport, 
     }
     
     int ncells = algebraicTransport->fCellsData.fVolume.size();
-//    for (int icell =0; icell<ncells; icell++) {
-//        algebraicTransport->fCellsData.fKx[icell]  = kappa_phi[0];
-//        algebraicTransport->fCellsData.fKy[icell]  = kappa_phi[1];
-//        algebraicTransport->fCellsData.fKz[icell]  = kappa_phi[2];
-//        algebraicTransport->fCellsData.fporosity[icell] = kappa_phi[3] ;
-//    }
+    for (int icell =0; icell<ncells; icell++) {
+        algebraicTransport->fCellsData.fKx[icell]  = kappa_phi[0];
+        algebraicTransport->fCellsData.fKy[icell]  = kappa_phi[1];
+        algebraicTransport->fCellsData.fKz[icell]  = kappa_phi[2];
+        algebraicTransport->fCellsData.fporosity[icell] = kappa_phi[3] ;
+    }
     
    
     m_transport_module->fAlgebraicTransport.fHasPropQ=true;

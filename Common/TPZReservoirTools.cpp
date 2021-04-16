@@ -62,6 +62,7 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
     for (int64_t el=0; el<nel; el++) {
         //        std::cout << "Element " << el << std::endl;
         TPZCompEl *cel = cmesh->Element(el);
+     
         
         if (!cel) {
             continue;
@@ -126,7 +127,8 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
         {
             for (int ic=0; ic<nc; ic++) {
                 TPZConnect &c = cel->Connect(ic);
-              
+                char lag =c.LagrangeMultiplier();
+                int ncon =c.NElConnected();
                 if((c.LagrangeMultiplier() >= LagrangeLevelNotCondensed && c.NElConnected() == 1))
                 {
                     c.IncrementElConnected();
@@ -199,36 +201,26 @@ void TPZReservoirTools::AddDependency( std::vector<std::pair<TPZGeoEl*, std::vec
     
     for(auto pairfatherson:fatherAndSons){
         TPZCompEl *celfat = pairfatherson.first->Reference();
-        TPZMultiphysicsElement *celfatFlux = dynamic_cast<TPZMultiphysicsElement *>(celfat);
-        TPZInterpolatedElement *intelFather = dynamic_cast<TPZInterpolatedElement*>(celfatFlux->Element(0));
-        if(celfatFlux->NConnects() !=1){
+        TPZInterpolatedElement *intelFather = dynamic_cast<TPZInterpolatedElement*>(celfat);
+        if(celfat->NConnects() !=1){
             DebugStop();
         }
-        int index = celfat->ConnectIndex(0);
-        TPZConnect &connect =celfat->Mesh()->ConnectVec()[index];
-        char lag = 6;
-        connect.SetLagrangeMultiplier(lag);
         for(auto son:pairfatherson.second){
             TPZCompEl *celSon= son->Reference();
-            TPZMultiphysicsElement *celSonFlux = dynamic_cast<TPZMultiphysicsElement *>(celSon);
-            
-            if(celSonFlux->NConnects() !=1){
+            if(celSon->NConnects() !=1){
                 DebugStop();
             }
-            TPZInterpolatedElement *intelSon = dynamic_cast<TPZInterpolatedElement*>(celSonFlux->Element(0));
+            TPZInterpolatedElement *intelSon = dynamic_cast<TPZInterpolatedElement*>(celSon);
             intelSon->RestrainSide(son->NSides()-1, intelFather, pairfatherson.first->NSides()-1);
-            
         }
-       
     }
-    
 }
 void TPZReservoirTools::TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh,  std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons){
     
     int nels = fluxCmesh->NElements();
     TPZGeoMesh *gmesh = fluxCmesh->Reference();
 //    gmesh->ResetReference();
-//    fluxCmesh->LoadReferences();
+    fluxCmesh->LoadReferences();
     std::map<int, std::vector<TPZGeoEl* >> interfaces;
     std::vector<int> matIds;
     int skeletonCoarseId = 19;
@@ -238,6 +230,7 @@ void TPZReservoirTools::TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh,  st
     for(auto gel:interfaces[skeletonCoarseId] ){
         TPZStack<TPZGeoEl *> Sons;
         gel->YoungestChildren(Sons);
+        TPZCompEl *celFat = gel->Reference();
         std::vector<TPZGeoEl*> sons;
         TPZGeoElSide fatside(gel, gel->NSides()-1);
         TPZGeoElSide neigfatside = fatside.Neighbour();

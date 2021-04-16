@@ -44,12 +44,12 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 //    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
 //    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC1.msh");
 //    std::string fileFine("../../FracMeshes/flem_case1_Fine_BC1.msh");
+//
     
     
-    
-    std::string fileCoarse("../../FracMeshes/jose11_coarse.msh");
-    std::string fileFine("../../FracMeshes/jose11_fine.msh");
-    
+    std::string fileCoarse("../../FracMeshes/jose6_coarse.msh");
+    std::string fileFine("../../FracMeshes/jose6_fine.msh");
+//
     
     
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
@@ -116,7 +116,7 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 }
 
 TPZGeoMesh *ReadFractureMesh(){
-    std::string fileFine("../../FracMeshes/jose_simple5.msh");
+    std::string fileFine("../../FracMeshes/jose_simple0.msh");
 //    std::string fileFine("../../FracMeshes/flem_case1_Coarse_BC.msh");
 
 //    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
@@ -571,7 +571,7 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 1;
+    sim_data.mTNumerics.m_n_steps = 100;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -641,7 +641,7 @@ void LearningReadFracMesh()
     sim_data.mTGeometry.mSkeletonDiv =0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q = false;
+    sim_data.mTNumerics.m_mhm_mixed_Q = true;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
@@ -742,9 +742,6 @@ void LearningReadFracMesh()
 //    transfer.BuildTransportDataStructure(transport);
 //
 //    TMRSTransportAnalysis *anal = new TMRSTransportAnalysis(transport_operator, true);
-    
-    
-    int ok=0;
     
     
     

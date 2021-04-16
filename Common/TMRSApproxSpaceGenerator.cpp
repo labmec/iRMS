@@ -409,7 +409,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     {
         {
             std::ofstream out("FluxMortarMesh.txt");
-            cmesh->Print(out);
+//            cmesh->Print(out);
         }
     }
 #endif
@@ -438,9 +438,12 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     }
 
     buildmatids.clear();
-    buildmatids.insert(19);
-    TPZNullMaterial *nullmat = new TPZNullMaterial(19,2,1);
-    cmesh->InsertMaterialObject(nullmat);
+    
+    if(mSimData.mTNumerics.m_mhm_mixed_Q){
+        buildmatids.insert(19);
+        TPZNullMaterial *nullmat = new TPZNullMaterial(19,2,1);
+        cmesh->InsertMaterialObject(nullmat);
+    }
     buildmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
     buildmatids.insert(bcmatids.begin(),bcmatids.end());
     cmesh->SetDefaultOrder(0);
@@ -678,15 +681,15 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
 #ifdef PZDEBUG
     {
         {
-            std::ofstream out("FluxMortarMesh.txt");
+//            std::ofstream out("FluxMortarMesh.txt");
 //            cmesh->Print(out);
         }
         {
-            std::ofstream out("FluxMortar.vtk");
+//            std::ofstream out("FluxMortar.vtk");
 //            TPZVTKGeoMesh::PrintCMeshVTK(cmesh, out);
         }
         {
-            std::ofstream out("GMeshAfterFluxMortar.vtk");
+//            std::ofstream out("GMeshAfterFluxMortar.vtk");
 //            TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out);
         }
 
@@ -1040,7 +1043,7 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
             break;
         case TMRSDataTransfer::TNumerics::E4SpaceMortar:
             if(!cond1) DebugStop();
-            if(cond2) DebugStop();
+//            if(cond2) DebugStop();
             BuildMixed4SpacesMortarMesh();
             break;
         default:
@@ -1123,8 +1126,12 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     // hdiv mesh
     char fluxmortar = 5;
     meshvec[0] = HDivMortarFluxCmesh(fluxmortar);
-    std::ofstream file("FluxCmesh.txt");
-    meshvec[0]->Print(file);
+    
+    if(mSimData.mTNumerics.m_mhm_mixed_Q){
+        std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> fatherAndSons;
+        TPZReservoirTools::TakeFatherSonsCorrespondence(meshvec[0], fatherAndSons);
+        TPZReservoirTools::AddDependency(fatherAndSons);
+    }
     // pressure mesh
     char firstpressurelagrange = 1;
     char pressurelagrange = 3;
@@ -1237,11 +1244,15 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 //    mGeometry->ResetReference();
 //    mMixedOperator->LoadReferences();
     
-    TMRSDarcyFlowWithMem<TMRSMemory>*volume2 = new TMRSDarcyFlowWithMem<TMRSMemory>(19,2);
-    mMixedOperator->InsertMaterialObject(volume2);
+//    TMRSDarcyFlowWithMem<TMRSMemory>*volume2 = new TMRSDarcyFlowWithMem<TMRSMemory>(19,2);
+    
+    if(mSimData.mTNumerics.m_mhm_mixed_Q){
+        TPZNullMaterial*volume2 = new TPZNullMaterial(19,2,1);
+        mMixedOperator->InsertMaterialObject(volume2);
+    }
+   
     
 
-    
     TPZManVector<int> active_approx_spaces(4,1);
 //    active_approx_spaces[4] = 0;
     mMixedOperator->SetDimModel(3);
@@ -1274,8 +1285,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
     mMixedOperator->ComputeNodElCon();
     {
-        std::ofstream out("FluxGrouped.txt");
-        mMixedOperator->Print(out);
+//        std::ofstream out("FluxGrouped.txt");
+//        mMixedOperator->Print(out);
     }
     // this will group the volumetric AND fracture elements
     // fracture elements should be condensed in FASTCondense elements
@@ -1290,9 +1301,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
     std::set<int> volmatId;
     volmatId.insert(10);
-    std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> fatherAndSons;
-    TPZReservoirTools::TakeFatherSonsCorrespondence(mMixedOperator, fatherAndSons);
-    TPZReservoirTools::AddDependency(fatherAndSons);
+    
     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false,volmatId);
 #ifdef PZDEBUG
     {
@@ -1306,7 +1315,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 
     // this will act only on volumetric elements
     TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
-//    mMixedOperator->ComputeNodElCon();
+    mMixedOperator->ComputeNodElCon();
     // this shouldn't affect the fracture elements as they won't have condensable connects
     // we should create fast condensed elements at this point...
 //    TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
@@ -1411,9 +1420,12 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
     // - a flux hdiv boundary element (conditionally)
     int64_t nel = mGeometry->NElements();
     int nElSubDomain = mSubdomainIndexGel.size();
-    if(nel != nElSubDomain){
+    if(mSimData.mTNumerics.m_mhm_mixed_Q){
+        if(nel != nElSubDomain){
         DebugStop();
+        }
     }
+    
     for(int64_t el = 0; el<nel; el++)
     {
         TPZGeoEl *gel = mGeometry->Element(el);
@@ -1431,11 +1443,18 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
     
     nel = mGeometry->NElements();
     nElSubDomain = mSubdomainIndexGel.size();
-    if(nel != nElSubDomain){
-        DebugStop();
+    if(mSimData.mTNumerics.m_mhm_mixed_Q){
+        if(nel != nElSubDomain){
+            DebugStop();
+        }
+        std::ofstream out("gmesh_withwrap.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out, mSubdomainIndexGel);
     }
-    std::ofstream out("gmesh_withwrap.vtk");
-    TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out, mSubdomainIndexGel);
+    else{
+        std::ofstream out("gmesh_withwrap.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out);
+    }
+    
 
 }
 void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside, std::set<int> bcmatids){
@@ -1444,16 +1463,27 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
     int side = gelside.Side();
     int gelindex = gel->Index();
     int hdiv_orient = gel->NormalOrientation(side);
-    int subDomainIndex = mSubdomainIndexGel[gelindex];
-    int subDomainIndexNeig = FindNeighSubDomain(gelside);
-    if(subDomainIndex<0){
-        DebugStop();
+    int subDomainIndex =-1;
+    int subDomainIndexNeig =-1;
+    
+    if(mSimData.mTNumerics.m_mhm_mixed_Q){
+         subDomainIndex = mSubdomainIndexGel[gelindex];
+         subDomainIndexNeig = FindNeighSubDomain(gelside);
+        if(subDomainIndex<0){
+            DebugStop();
+        }
     }
+    
     
     int first_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
     int second_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
     bool cond1 = hdiv_orient < 0 ;
-    bool cond2 =subDomainIndexNeig!=-1 && (subDomainIndexNeig > subDomainIndex);
+    bool cond2 = false;
+    
+    if(mSimData.mTNumerics.m_mhm_mixed_Q){
+        cond2 =subDomainIndexNeig!=-1 && (subDomainIndexNeig > subDomainIndex);
+    }
+    
     if(cond1 || cond2)
     {
         first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
@@ -1479,20 +1509,27 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
     int index4 =gbc4.CreatedElement()->Index();
    
     int size =mSubdomainIndexGel.size();
-    mSubdomainIndexGel.resize(size + nBCCreated);
-    if(index1 != size || index2!=(size+1) || index3!=(size+2) || index4!=(size+3)){
-        DebugStop();
+    if(mSimData.mTNumerics.m_mhm_mixed_Q){
+        mSubdomainIndexGel.resize(size + nBCCreated);
+        if(index1 != size || index2!=(size+1) || index3!=(size+2) || index4!=(size+3)){
+            DebugStop();
+        }
+        mSubdomainIndexGel[index1]=subDomainIndex;
+        mSubdomainIndexGel[index2]=subDomainIndex;
+        mSubdomainIndexGel[index3]=subDomainIndex;
+        mSubdomainIndexGel[index4]=subDomainIndex;
     }
-    mSubdomainIndexGel[index1]=subDomainIndex;
-    mSubdomainIndexGel[index2]=subDomainIndex;
-    mSubdomainIndexGel[index3]=subDomainIndex;
-    mSubdomainIndexGel[index4]=subDomainIndex;
+    
     
     // this method has to be adjusted if we create MHM meshes
     if(!gelinterface2.HasNeighbour(bcmatids)){
+      
         TPZGeoElBC gbc5(gelinterface2,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
-        mSubdomainIndexGel.resize(size + nBCCreated +1);
-        mSubdomainIndexGel[size + nBCCreated]=subDomainIndex;
+        if(mSimData.mTNumerics.m_mhm_mixed_Q){
+            mSubdomainIndexGel.resize(size + nBCCreated +1);
+            mSubdomainIndexGel[size + nBCCreated]=subDomainIndex;
+        }
+        
     }
  
 }
@@ -2701,7 +2738,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     }
     
     //Por agora colocarei as permeabilidades aqui, o certo é por no FastCondensed ou na celula de transporte
-    TPZMaterial * material1 = cmesh->FindMaterial(1); //matIdFractures;
+    TPZMaterial * material1 = cmesh->FindMaterial(2); //matIdFractures;
     if (!material) {
         DebugStop();
     }
@@ -2734,7 +2771,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     }
     
     
-    TPZMaterial * material2 = cmesh->FindMaterial(2); //K22;
+    TPZMaterial * material2 = cmesh->FindMaterial(1); //K22;
     if (!material) {
         DebugStop();
     }

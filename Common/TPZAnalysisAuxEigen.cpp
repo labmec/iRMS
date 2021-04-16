@@ -618,7 +618,7 @@ void TPZAnalysisAuxEigen::AnalyzePattern(){
 
 void TPZAnalysisAuxEigen::Solve(){
     m_transmissibility += m_mass;
-    std::cout<<"Matrix: "<<std::endl;
+//    std::cout<<"Matrix: "<<std::endl;
 //    std::cout<<m_transmissibility.toDense()<<std::endl;
     m_rhs *= -1.0;
 //    std::cout<<"RHS: "<<std::endl;

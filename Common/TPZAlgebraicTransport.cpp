@@ -349,6 +349,7 @@ void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<dou
    
     REAL s_inlet = 0.01;
     REAL fluxint  = fInterfaceData[inId].fIntegralFlux[index];
+//     fluxint  = -2.18415e-06;
     ef(0,0) = 1.0*s_inlet*fluxint* fdt;
 }
 void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int outID){
