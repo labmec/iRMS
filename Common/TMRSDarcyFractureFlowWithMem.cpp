@@ -98,6 +98,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     int pb = 1;
     int sb = 2;
     
+    
+//    datavec[qb].Print(std::cout);
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;
     TPZFNMatrix<300,REAL> dphi_qs      = datavec[qb].dphix;
@@ -133,6 +135,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
 //    // Total mobility
 //    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,memory.sw_n(),p);
    REAL lambda_v = 1.0;
+    REAL kappaNormal =20.0;
     int s_i, s_j;
     int v_i, v_j;
     for (int i = 0; i < 3; i++) {
@@ -143,39 +146,63 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     
     for (int iq = 0; iq < nphi_q; iq++)
     {
-        
+        int nvecs = datavec[qb].fDeformedDirections.Cols();
+//        datavec[qb].Print(std::cou        t);
         v_i = datavec[qb].fVecShapeIndex[iq].first;
         s_i = datavec[qb].fVecShapeIndex[iq].second;
     
         
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
-        for (int i = 0; i < 3; i++) {
-            phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
-            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
+        if(v_i< nvecs-2){
+            for (int i = 0; i < 3; i++) {
+                phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
+                kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
+            }
         }
-        
+        else{
+                for (int i = 0; i < 3; i++) {
+                    phi_q_i(i,0) = (1.0/kappaNormal) * phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
+//                    kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(s_i,0) *phi_q_i(i,0);
+                }
+        }
         ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
         
         for (int jq = 0; jq < nphi_q; jq++)
         {
            
-            
+            int nvecs = datavec[qb].fDeformedDirections.Cols();
             v_j = datavec[qb].fVecShapeIndex[jq].first;
             s_j = datavec[qb].fVecShapeIndex[jq].second;
-            
-            kappa_inv_phi_q_j.Zero();
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
-                }
+            if(v_j < nvecs-2){
+                    kappa_inv_phi_q_j.Zero();
+                    for (int i = 0; i < 3; i++) {
+                            for (int j = 0; j < 3; j++) {
+                                kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                            }
+                    }
+                
+                    STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
+                    for (int j = 0; j < 3; j++) {
+                        kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                    }
+                
+                    ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
             }
-            
-            STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
-            for (int j = 0; j < 3; j++) {
-                kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+            if(v_j >=  nvecs-2){
+                    kappa_inv_phi_q_j.Zero();
+
+                        for (int j = 0; j < 3; j++) {
+                            REAL KappaInvVal = (1.0/kappaNormal);
+                            kappa_inv_phi_q_j(j,0) += (KappaInvVal)* phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                    }
+
+                    STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
+                    for (int j = 0; j < 3; j++) {
+                        kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                    }
+                ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
             }
-            
-            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
+
         }
         
         for (int jp = 0; jp < nphi_p; jp++)

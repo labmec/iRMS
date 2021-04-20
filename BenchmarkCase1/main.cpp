@@ -40,15 +40,15 @@ void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh, TPZVec<int64_t> &
 
 TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 {
-//    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
-//    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
+    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
+    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
 //    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC1.msh");
 //    std::string fileFine("../../FracMeshes/flem_case1_Fine_BC1.msh");
 //
     
     
-    std::string fileCoarse("../../FracMeshes/jose6_coarse.msh");
-    std::string fileFine("../../FracMeshes/jose6_fine.msh");
+//    std::string fileCoarse("../../FracMeshes/jose6_coarse.msh");
+//    std::string fileFine("../../FracMeshes/jose6_fine.msh");
 //
     
     
@@ -70,7 +70,7 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
      2 2 "Fractures"
      3 1 "c1"
      */
-//    dim_name_and_physical_tagFine[2]["Fractures"] = 10;
+    dim_name_and_physical_tagFine[2]["Fractures"] = 10;
     dim_name_and_physical_tagFine[2]["Fracture2"] = 10;
     dim_name_and_physical_tagFine[1]["BCfrac0"] = -11;
     
@@ -571,9 +571,9 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_n_steps = 10;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
+    sim_data.mTNumerics.m_dt      = 1000.0;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -633,21 +633,21 @@ void LearningReadFracMesh()
      */
     // vector with subdomain index of the geometric elements
     TPZVec<int64_t> subdomain;
-    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
-//    TPZGeoMesh *gmesh = ReadFractureMesh();
+//    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingPaper3D();
     sim_data.mTGeometry.mSkeletonDiv =0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q = true;
+    sim_data.mTNumerics.m_mhm_mixed_Q = false;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
     aspace.SetSubdomainIndexes(subdomain);
-    std::ofstream name("fractureTest.vtk");
-    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, name, subdomain);
+//    std::ofstream name("fractureTest.vtk");
+//    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, name, subdomain);
    
     
     aspace.SetDataTransfer(sim_data);
@@ -693,6 +693,7 @@ void LearningReadFracMesh()
     REAL sim_time = 0.0;
     int pos =0;
     REAL current_report_time = reporting_times[pos];
+    int npos = reporting_times.size();
     
     sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
     REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
@@ -701,7 +702,7 @@ void LearningReadFracMesh()
     std::cout << "Mass integral :  " << initial_mass << std::endl;
     
     TPZFastCondensedElement::fSkipLoadSolution = false;
-    bool first=true;
+    bool first=false;
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
         if (sim_time >=  current_report_time) {
@@ -718,7 +719,10 @@ void LearningReadFracMesh()
                 sfi_analysis->PostProcessTimeStep(1);
                 first=false;
             }
-            sfi_analysis->PostProcessTimeStep(2);
+            if(pos >=npos-2){
+                sfi_analysis->PostProcessTimeStep(2);
+            }
+            
             pos++;
             current_report_time =reporting_times[pos];
             

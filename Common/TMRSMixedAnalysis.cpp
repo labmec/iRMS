@@ -93,8 +93,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
         x +=dx;
         cmesh->UpdatePreviousState(-1);
         fsoltransfer.TransferFromMultiphysics();
-        std::ofstream filesol("SolFlux.txt");
-        cmesh->MeshVector()[0]->Print(filesol);
+//        std::ofstream filesol("SolFlux.txt");
+//        cmesh->MeshVector()[0]->Print(filesol);
 //        cmesh->Print(filesol);
         
 #ifdef USING_BOOST

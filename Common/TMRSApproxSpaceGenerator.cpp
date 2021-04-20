@@ -2791,7 +2791,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             mem.m_sw = 0.0;
             mem.m_phi = 0.25;
             REAL kappa = 1.0e-5;
-//            REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
+//          REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
