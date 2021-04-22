@@ -702,7 +702,7 @@ void LearningReadFracMesh()
     std::cout << "Mass integral :  " << initial_mass << std::endl;
     
     TPZFastCondensedElement::fSkipLoadSolution = false;
-    bool first=false;
+    bool first=true;
     for (int it = 1; it <= n_steps; it++) {
         sim_time = it*dt;
         if (sim_time >=  current_report_time) {
