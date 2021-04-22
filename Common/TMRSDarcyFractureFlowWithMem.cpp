@@ -135,7 +135,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
 //    // Total mobility
 //    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,memory.sw_n(),p);
    REAL lambda_v = 1.0;
-    REAL kappaNormal =20.0;
+   REAL kappaNormal =20.0;
     int s_i, s_j;
     int v_i, v_j;
     for (int i = 0; i < 3; i++) {
@@ -153,18 +153,13 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     
         
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
-        if(v_i< nvecs-2){
-            for (int i = 0; i < 3; i++) {
-                phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
-                kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
-            }
+       
+        for (int i = 0; i < 3; i++) {
+            phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
+            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
         }
-        else{
-                for (int i = 0; i < 3; i++) {
-                    phi_q_i(i,0) = (1.0/kappaNormal) * phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
-//                    kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(s_i,0) *phi_q_i(i,0);
-                }
-        }
+    
+      
         ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
         
         for (int jq = 0; jq < nphi_q; jq++)
