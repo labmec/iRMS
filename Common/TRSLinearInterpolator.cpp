@@ -6,6 +6,7 @@
 //
 
 #include "TRSLinearInterpolator.h"
+#include <fstream>
 /**
  * @brief Default constructor
  */

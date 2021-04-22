@@ -211,24 +211,3 @@ void TPZPostProcessResProp::Read(TPZStream &buf, void *context){
     DebugStop();
 }
 
-void TPZPostProcessResProp::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, TPZVec<TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef){
-    
-    
-    
-}
-
-void TPZPostProcessResProp::ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, TPZVec<TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ef){
-    TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
-    this->ContributeInterface(data,datavecleft,datavecright, weight, ek_fake, ef);
-    
-}
-
-void TPZPostProcessResProp::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
- 
-    return;
-    
-}
-
-void TPZPostProcessResProp::ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
-    return;
-}

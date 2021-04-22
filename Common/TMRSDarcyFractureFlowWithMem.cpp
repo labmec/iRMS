@@ -99,7 +99,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     int sb = 2;
     
     
-//    datavec[qb].Print(std::cout);
+    //    datavec[qb].Print(std::cout);
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;
     TPZFNMatrix<300,REAL> dphi_qs      = datavec[qb].dphix;
@@ -113,6 +113,22 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     int nphi_p       = phi_ps.Rows();
     int first_q      = 0;
     int first_p      = nphi_q + first_q;
+    int nvecs = datavec[qb].fDeformedDirections.Cols();
+    
+    // first index in fVecShapeIndex corresponding to the first transverse flux
+    int first_transverse_q = 0;
+    // first index in fVecShapeIndex corresponding to the second transverse flux
+    int second_transverse_q = 0;
+    for(int i=0; i< nphi_q; i++)
+    {
+        if(first_transverse_q == 0 && datavec[qb].fVecShapeIndex[i].first == nvecs-2) first_transverse_q = i;
+        if(second_transverse_q == 0 && datavec[qb].fVecShapeIndex[i].first == nvecs-1) second_transverse_q = i;
+    }
+    if(first_transverse_q == 0 || second_transverse_q == 0 || first_transverse_q == second_transverse_q)
+    {
+        DebugStop();
+    }
+    
     
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     STATE p                  = datavec[pb].sol[0][0];
@@ -122,20 +138,20 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     long gp_index = datavec[qb].intGlobPtIndex;
     TMEM & memory = this->GetMemory().get()->operator[](gp_index);
     
-//    std::cout<<"Memory: "<<memory.m_kappa_inv<<std::endl;
+    //    std::cout<<"Memory: "<<memory.m_kappa_inv<<std::endl;
     
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
     
-//    TRSLinearInterpolator & Krw = mSimData.mTPetroPhysics.mLayer_Krw_RelPerModel[0];
-//    TRSLinearInterpolator & Kro = mSimData.mTPetroPhysics.mLayer_Kro_RelPerModel[0];
-//
-//    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & lambda = mSimData.mTMultiphaseFunctions.mLayer_lambda[0];
+    //    TRSLinearInterpolator & Krw = mSimData.mTPetroPhysics.mLayer_Krw_RelPerModel[0];
+    //    TRSLinearInterpolator & Kro = mSimData.mTPetroPhysics.mLayer_Kro_RelPerModel[0];
+    //
+    //    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & lambda = mSimData.mTMultiphaseFunctions.mLayer_lambda[0];
     
     
-//    // Total mobility
-//    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,memory.sw_n(),p);
-   REAL lambda_v = 1.0;
-   REAL kappaNormal =20.0;
+    //    // Total mobility
+    //    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,memory.sw_n(),p);
+    REAL lambda_v = 1.0;
+    REAL kappaNormal =20.0;
     int s_i, s_j;
     int v_i, v_j;
     for (int i = 0; i < 3; i++) {
@@ -144,62 +160,131 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
         }
     }
     
-    for (int iq = 0; iq < nphi_q; iq++)
+    for (int iq = 0; iq < first_transverse_q; iq++)
     {
-        int nvecs = datavec[qb].fDeformedDirections.Cols();
-//        datavec[qb].Print(std::cou        t);
+        //        datavec[qb].Print(std::cou        t);
         v_i = datavec[qb].fVecShapeIndex[iq].first;
         s_i = datavec[qb].fVecShapeIndex[iq].second;
-    
+        
         
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
-       
+        
         for (int i = 0; i < 3; i++) {
             phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
             kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
         }
-    
-      
+        
+        
         ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
         
-        for (int jq = 0; jq < nphi_q; jq++)
+        for (int jq = 0; jq < first_transverse_q; jq++)
         {
-           
-            int nvecs = datavec[qb].fDeformedDirections.Cols();
+            
             v_j = datavec[qb].fVecShapeIndex[jq].first;
             s_j = datavec[qb].fVecShapeIndex[jq].second;
             if(v_j < nvecs-2){
-                    kappa_inv_phi_q_j.Zero();
-                    for (int i = 0; i < 3; i++) {
-                            for (int j = 0; j < 3; j++) {
-                                kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
-                            }
-                    }
-                
-                    STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
+                kappa_inv_phi_q_j.Zero();
+                for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
-                        kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                        kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
                     }
+                }
                 
-                    ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
-            }
-            if(v_j >=  nvecs-2){
-                    kappa_inv_phi_q_j.Zero();
-
-                        for (int j = 0; j < 3; j++) {
-                            REAL KappaInvVal = (1.0/kappaNormal);
-                            kappa_inv_phi_q_j(j,0) += (KappaInvVal)* phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
-                    }
-
-                    STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
-                    for (int j = 0; j < 3; j++) {
-                        kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
-                    }
+                STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
+                for (int j = 0; j < 3; j++) {
+                    kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                }
+                
                 ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
             }
-
+            if(v_j >=  nvecs-2){
+                DebugStop();
+            }
+            
+        }
+        // compute the contribution of the hdivbound
+        for (int iq = first_transverse_q; iq < second_transverse_q; iq++)
+        {
+            //        datavec[qb].Print(std::cou        t);
+            v_i = datavec[qb].fVecShapeIndex[iq].first;
+            s_i = datavec[qb].fVecShapeIndex[iq].second;
+            STATE kappa_inv_q_dot_phi_q_i = 0.0;
+            
+            for (int i = 0; i < 3; i++) {
+                phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
+                kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
+            }
+            
+            
+            ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
+            for (int jq = first_transverse_q; jq < second_transverse_q; jq++)
+            {
+                
+                v_j = datavec[qb].fVecShapeIndex[jq].first;
+                s_j = datavec[qb].fVecShapeIndex[jq].second;
+                if(v_j != v_i) DebugStop();
+                kappa_inv_phi_q_j.Zero();
+                
+                // kappanormal is the orthogonal permeability
+                // phi_qs is the scalar function corresponding to jq (scalar)
+                // s_j is the index of the scalar function corresponding to jq
+                // v_j is the index of the vector corresponding to jq
+                // kappa_inv_phi_q_j = vector equal to 1/kappa phi_qs * phi_qs * vector(v_j)
+                for (int j = 0; j < 3; j++) {
+                    REAL KappaInvVal = (1.0/kappaNormal);
+                    kappa_inv_phi_q_j(j,0) += (KappaInvVal)* phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                }
+                // kappa_inv_phi_q_j_dot_phi_q_i is the dot product of both vectors
+                STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
+                for (int j = 0; j < 3; j++) {
+                    kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                }
+                ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
+                
+            }
         }
         
+        // compute the contribution of the hdivbound
+        for (int iq = second_transverse_q; iq < nphi_q; iq++)
+        {
+            //        datavec[qb].Print(std::cou        t);
+            v_i = datavec[qb].fVecShapeIndex[iq].first;
+            s_i = datavec[qb].fVecShapeIndex[iq].second;
+            STATE kappa_inv_q_dot_phi_q_i = 0.0;
+            
+            for (int i = 0; i < 3; i++) {
+                phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
+                kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
+            }
+            
+            
+            ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
+            for (int jq = second_transverse_q; jq < nphi_q; jq++)
+            {
+                v_j = datavec[qb].fVecShapeIndex[jq].first;
+                s_j = datavec[qb].fVecShapeIndex[jq].second;
+                if(v_j != v_i) DebugStop();
+                kappa_inv_phi_q_j.Zero();
+                
+                // kappanormal is the orthogonal permeability
+                // phi_qs is the scalar function corresponding to jq (scalar)
+                // s_j is the index of the scalar function corresponding to jq
+                // v_j is the index of the vector corresponding to jq
+                // kappa_inv_phi_q_j = vector equal to 1/kappa phi_qs * phi_qs * vector(v_j)
+                for (int j = 0; j < 3; j++) {
+                    REAL KappaInvVal = (1.0/kappaNormal);
+                    kappa_inv_phi_q_j(j,0) += (KappaInvVal)* phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                }
+                // kappa_inv_phi_q_j_dot_phi_q_i is the dot product of both vectors
+                STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
+                for (int j = 0; j < 3; j++) {
+                    kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                }
+                ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
+                
+            }
+        }
+
         for (int jp = 0; jp < nphi_p; jp++)
         {
             ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
@@ -291,9 +376,9 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &d
 template <class TMEM>
 void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
     
-
+    
     REAL gBigNumber = 1.0e20; //TPZMaterial::gBigNumber;
-
+    
     int qb = 0;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     
@@ -324,7 +409,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &d
                 REAL qn_N = bc_data[0];
                 REAL qn = 0.0;
                 qn = q[0];
-
+                
                 ef(iq + first_q) += weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++)
                 {

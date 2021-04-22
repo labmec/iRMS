@@ -30,7 +30,7 @@ class TPZMFSolutionTransfer
         /**
          * @brief Block pointer and block index in the target atomic mesh
          */
-        std::pair<TPZBlock<STATE> *, int64_t> fblockTarget;// block target
+        std::pair<TPZBlock*, int64_t> fblockTarget;// block target
         
         /**
          * @brief Empty Constructor

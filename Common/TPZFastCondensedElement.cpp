@@ -94,6 +94,7 @@ void TPZFastCondensedElement::GetSolutionVector(TPZFMatrix<STATE> &solvec)
 {
     int nc = fEK.fConnect.size();
     TPZCompMesh *cmesh = Mesh();
+    TPZFMatrix<STATE> &meshsol = cmesh->Solution();
     int64_t vecsize = fEK.fMat.Rows();
     int count = 0;
     for(int ic=0; ic<nc; ic++)
@@ -104,7 +105,8 @@ void TPZFastCondensedElement::GetSolutionVector(TPZFMatrix<STATE> &solvec)
         int blsize = c.NShape()*c.NState();
         for(int dof=0; dof<blsize; dof++)
         {
-            solvec(count+dof,0) = cmesh->Block()(seqnum,0,dof,0);
+            int ind = cmesh->Block().Index(seqnum, dof);
+            solvec(count+dof,0) = meshsol(ind,0);
         }
         count += blsize;
     }
@@ -208,7 +210,7 @@ void TPZFastCondensedElement::PressureEquations(TPZVec<int64_t> &eqs)
         int neq = c.NShape()*c.NState();
         numpressure_equations += neq;
     }
-    TPZBlock<STATE> &block = cmesh->Block();
+    TPZBlock &block = cmesh->Block();
     eqs.Resize(numpressure_equations, 0);
     int count = 0;
     for(int ic = 0; ic < nconnects; ic++)
@@ -239,7 +241,7 @@ void TPZFastCondensedElement::InternalFluxEquations(TPZVec<int64_t> &eqs)
         int neq = c.NShape()*c.NState();
         numflux_equations += neq;
     }
-    TPZBlock<STATE> &block = cmesh->Block();
+    TPZBlock &block = cmesh->Block();
     eqs.Resize(numflux_equations, 0);
     int count = 0;
     for(int ic = 0; ic < nconnects; ic++)
@@ -293,7 +295,7 @@ void TPZFastCondensedElement::BoundaryFluxEquations(TPZVec<int64_t> &eqs)
 //            numflux_equations += neq;
 //        }
     }
-    TPZBlock<STATE> &block = cmesh->Block();
+    TPZBlock &block = cmesh->Block();
     eqs.Resize(numflux_equations, 0);
     int count = 0;
     for(int ic = 0; ic < nconnects-1; ic++)
@@ -329,7 +331,7 @@ void TPZFastCondensedElement::AdjustPressureCoefficients()
     PressureEquations(pressureqs);
     BoundaryFluxEquations(fluxeqs);
     int64_t averagepressureq = AveragePressureEquation();
-    TPZMatrix<STATE> &solution = *(Mesh()->Block().Matrix());
+    TPZFMatrix<STATE> &solution = *(Mesh()->Block().Matrix<STATE>());
     int npres = pressureqs.size();
     int nflux = fluxeqs.size();
     TPZManVector<STATE> gravity_pressure(npres,0.);

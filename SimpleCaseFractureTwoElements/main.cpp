@@ -23,6 +23,8 @@ TMRSDataTransfer SettingSimpleFracCase();
 TPZGeoMesh *ReadFractureMesh();
 TMRSDataTransfer SettingSimple2DHdiv();
 
+#include "pzlog.h"
+
 int main(){
     TPZLogger::InitializePZLOG();
     LearningReadFracMesh();
@@ -85,7 +87,7 @@ void LearningReadFracMesh()
         
         mixedAnal->Assemble();
         mixedAnal->Solve();
-        mixed_operator->UpdatePreviousState(-1);
+        mixed_operator->UpdatePreviousState(-1.);
         
         TPZFastCondensedElement::fSkipLoadSolution = false;
         mixed_operator->LoadSolution(mixed_operator->Solution());

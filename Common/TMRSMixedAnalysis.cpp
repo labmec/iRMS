@@ -91,7 +91,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
         x +=dx;
-        cmesh->UpdatePreviousState(-1);
+        cmesh->UpdatePreviousState(-1.);
         fsoltransfer.TransferFromMultiphysics();
 //        std::ofstream filesol("SolFlux.txt");
 //        cmesh->MeshVector()[0]->Print(filesol);

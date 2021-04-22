@@ -10,8 +10,10 @@
 
 void TPZMFSolutionTransfer::Match::TransferFromMultiphysics(TPZCompMesh * cmesh){
     
-    TPZBlock<STATE> &blockMF = cmesh->Block();
-    TPZBlock<STATE>* blockAtomic = fblockTarget.first;
+    TPZBlock &blockMF = cmesh->Block();
+    TPZBlock* blockAtomic = fblockTarget.first;
+    TPZFMatrix<STATE> &matMF = *blockMF.Matrix<STATE>();
+    TPZFMatrix<STATE> &matAT = *blockAtomic->Matrix<STATE>();
     int64_t seqMF = fblocknumber;
     int64_t seqAto = fblockTarget.second;
     int blocksizeAto = blockAtomic->Size(seqAto);
@@ -20,13 +22,18 @@ void TPZMFSolutionTransfer::Match::TransferFromMultiphysics(TPZCompMesh * cmesh)
         DebugStop();
     }
     for (int idf=0; idf<blocksizeAto; idf++) {
-        blockAtomic->Put(seqAto, idf, 0, blockMF.Get(seqMF, idf, 0));
+        int indAT = blockAtomic->Index(seqAto, idf);
+        int indMF = blockMF.Index(seqMF, idf);
+        matAT(indAT,0) = matMF(indMF,0);
+//        blockAtomic->Put(seqAto, idf, 0, blockMF.Get(seqMF, idf, 0));
     }
 }
 void TPZMFSolutionTransfer::Match::TransferToMultiphysics(TPZCompMesh * cmesh){
 //    cmesh->InitializeBlock();
-    TPZBlock<STATE> &blockMF = cmesh->Block();
-    TPZBlock<STATE>* blockAtomic = fblockTarget.first;
+    TPZBlock &blockMF = cmesh->Block();
+    TPZBlock* blockAtomic = fblockTarget.first;
+    TPZFMatrix<STATE> &matMF = *blockMF.Matrix<STATE>();
+    TPZFMatrix<STATE> &matAT = *blockAtomic->Matrix<STATE>();
     int seqMF = fblocknumber;
     int seqAto = fblockTarget.second;
     
@@ -36,7 +43,11 @@ void TPZMFSolutionTransfer::Match::TransferToMultiphysics(TPZCompMesh * cmesh){
         DebugStop();
     }
     for (int idf=0; idf<blocksizeAto; idf++) {
-        blockMF.Put(seqMF, idf, 0, blockAtomic->Get(seqAto, idf, 0));
+        int indAT = blockAtomic->Index(seqAto, idf);
+        int indMF = blockMF.Index(seqMF, idf);
+        matMF(indMF,0) = matAT(indAT,0);
+
+//        blockMF.Put(seqMF, idf, 0, blockAtomic->Get(seqAto, idf, 0));
     }
 }
 
@@ -89,8 +100,8 @@ void TPZMFSolutionTransfer::MeshTransferData::InsertMatches(TPZMultiphysicsEleme
             int64_t seqnumberMF = connectMF.SequenceNumber();
             Match currentmatch;
             currentmatch.fblocknumber = seqnumberMF;
-            TPZBlock<STATE> *blockAto = &Atomic_celfrom->Mesh()->Block();
-            std::pair<TPZBlock<STATE> *, int64_t> target = std::make_pair(blockAto,seqnumberAtomic);
+            TPZBlock *blockAto = &Atomic_celfrom->Mesh()->Block();
+            std::pair<TPZBlock *, int64_t> target = std::make_pair(blockAto,seqnumberAtomic);
             currentmatch.fblockTarget = target;
             fconnecttransfer.insert(currentmatch);
         }

@@ -570,6 +570,7 @@ void TMRSSFIAnalysis::SetMixedMeshElementSolution(TPZCompMesh *cmesh)
 {
     int64_t nel = cmesh->NElements();
     cmesh->ElementSolution().Redim(nel, 4);
+    TPZFMatrix<STATE> &elsol = cmesh->ElementSolution();
     int64_t count = 0;
     for (int64_t el=0; el<nel; el++) {
         TPZCompEl *cel = cmesh->Element(el);
@@ -582,10 +583,10 @@ void TMRSSFIAnalysis::SetMixedMeshElementSolution(TPZCompMesh *cmesh)
         TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(cel);
         if(!fast) continue;
         count++;
-        cmesh->ElementSolution()(el,0) = fast->GetPermTensor()(0,0);
-        cmesh->ElementSolution()(el,1) = fast->GetPermTensor()(1,1);
-        cmesh->ElementSolution()(el,2) = fast->GetPermTensor()(2,2);
-        cmesh->ElementSolution()(el,3) = fast->GetLambda();
+        elsol(el,0) = fast->GetPermTensor()(0,0);
+        elsol(el,1) = fast->GetPermTensor()(1,1);
+        elsol(el,2) = fast->GetPermTensor()(2,2);
+        elsol(el,3) = fast->GetLambda();
     }
 }
 void TMRSSFIAnalysis::ReadProperties(std::string name, bool print_table_Q, std::vector<REAL> &Kx, std::vector<REAL> &Ky, std::vector<REAL> &Kz, std::vector<REAL> &Phi){

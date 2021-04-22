@@ -78,6 +78,7 @@ void TPZFastestCondensedElement::GetSolutionVector(TPZFMatrix<STATE> &solvec)
 {
     int nc = fEK.fConnect.size();
     TPZCompMesh *cmesh = Mesh();
+    TPZFMatrix<STATE> &meshsol = cmesh->Solution();
     int64_t vecsize = fEK.fMat.Rows();
     int count = 0;
     for(int ic=0; ic<nc; ic++)
@@ -88,7 +89,8 @@ void TPZFastestCondensedElement::GetSolutionVector(TPZFMatrix<STATE> &solvec)
         int blsize = c.NShape()*c.NState();
         for(int dof=0; dof<blsize; dof++)
         {
-            solvec(count+dof,0) = cmesh->Block()(seqnum,0,dof,0);
+            auto ind = cmesh->Block().Index(seqnum,dof);
+            solvec(count+dof,0) = meshsol(ind,0);
         }
         count += blsize;
     }

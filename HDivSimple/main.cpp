@@ -83,7 +83,7 @@ void SimpleTest2DHDiv(){
     
     
     mixedAnal->Assemble();
-    size_t n_dof = mixedAnal->Solver().Matrix()->Rows();
+    size_t n_dof = mixedAnal->MatrixSolver<STATE>().Matrix()->Rows();
     
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
@@ -96,7 +96,7 @@ void SimpleTest2DHDiv(){
 #endif
     std::cout << "Number of dof = " << n_dof << std::endl;
     
-    mixed_operator->UpdatePreviousState(-1);
+    mixed_operator->UpdatePreviousState(-1.);
     
     TPZFastCondensedElement::fSkipLoadSolution = false;
 //    mixed_operator->LoadSolution(mixed_operator->Solution());
@@ -114,7 +114,7 @@ void SimpleTest2DHDiv(){
     //Test to verify the pressure gradient
     mixedAnal->Assemble();
     mixedAnal->Solve();
-    mixed_operator->UpdatePreviousState(-1);
+    mixed_operator->UpdatePreviousState(-1.);
     TPZFastCondensedElement::fSkipLoadSolution = false;
     mixed_operator->LoadSolution(mixed_operator->Solution());
     mixedAnal->fsoltransfer.TransferFromMultiphysics();
@@ -792,7 +792,7 @@ void LearningReadFracMesh()
     mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
     mixedAnal->SetDataTransfer(&sim_data);
     mixedAnal->Assemble();
-    size_t n_dof = mixedAnal->Solver().Matrix()->Rows();
+    size_t n_dof = mixedAnal->MatrixSolver<STATE>().Matrix()->Rows();
     
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
@@ -804,7 +804,7 @@ void LearningReadFracMesh()
     std::cout << "Overal solve calling time " << deltat << std::endl;
 #endif
     std::cout << "Number of dof = " << n_dof << std::endl;
-    mixed_operator->UpdatePreviousState(-1);
+    mixed_operator->UpdatePreviousState(-1.);
     mixedAnal->fsoltransfer.TransferFromMultiphysics();
     
     mixedAnal->PostProcessTimeStep();

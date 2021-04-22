@@ -86,20 +86,26 @@ void TMRSTransportAnalysis::Assemble_serial(){
         DebugStop();
     }
     TPZMatrix<STATE> *mat = 0;
-    if(!fSolver->Matrix())
+    TPZMatrixSolver<STATE> *matsol = dynamic_cast<TPZMatrixSolver<STATE> *>(fSolver);
+    if(matsol && !matsol->Matrix())
     {
         mat = fStructMatrix->Create();
     
-        fSolver->SetMatrix(mat);
+        matsol->SetMatrix(mat);
+    }
+    else if(matsol)
+    {
+        mat = matsol->Matrix().operator->();
     }
     else
     {
-        mat = fSolver->Matrix().operator->();
+        DebugStop();
     }
 //    mat->Redim(ncells, ncells);
 //    fRhs.Redim(ncells,1);
     mat->Zero();
     fRhs.Zero();
+    TPZFMatrix<STATE> &rhs = fRhs;
     //Volumetric Elements
     for (int ivol = 0; ivol<ncells; ivol++) {
         int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
@@ -108,7 +114,7 @@ void TMRSTransportAnalysis::Assemble_serial(){
         ef.Resize(1,1);
         fAlgebraicTransport.Contribute(ivol, elmat, ef);
         mat->AddSub(eqindex, eqindex, elmat);
-        fRhs.AddSub(eqindex, 0,ef);
+        rhs.AddSub(eqindex, 0,ef);
     }
    
     //Interface Elements
@@ -131,7 +137,7 @@ void TMRSTransportAnalysis::Assemble_serial(){
         ef.Resize(2, 1);
         fAlgebraicTransport.ContributeInterface(interf,elmat, ef);
         mat->AddKel(elmat, destinationindex);
-        fRhs.AddFel(ef, destinationindex);
+        rhs.AddFel(ef, destinationindex);
     }
     
     int inlet_mat_id = -2;
@@ -147,7 +153,7 @@ void TMRSTransportAnalysis::Assemble_serial(){
         TPZFMatrix<double> elmat, ef;
         ef.Resize(1, 1);
         fAlgebraicTransport.ContributeBCInletInterface(interf,ef);
-        fRhs.AddFel(ef, destinationindex);
+        rhs.AddFel(ef, destinationindex);
     }
     
     int outlet_mat_id = -4;
@@ -164,7 +170,7 @@ void TMRSTransportAnalysis::Assemble_serial(){
         ef.Resize(1, 1);
         fAlgebraicTransport.ContributeBCOutletInterface(interf,elmat,ef);
         mat->AddKel(elmat, destinationindex);
-        fRhs.AddFel(ef, destinationindex);
+        rhs.AddFel(ef, destinationindex);
     }
 }
 
@@ -416,16 +422,16 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
     
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = fTransportSpMatrix->Solution();
     assert(Solution().Rows() == ds.rows());
-    
+    TPZFMatrix<STATE> &sol = Solution();
 #ifdef USING_TBB
     tbb::parallel_for(size_t(0), size_t(ds.rows()), size_t(1),
         [this,&ds] (size_t & i){
-        Solution()(i,0) = ds(i,0);
+        sol(i,0) = ds(i,0);
         }
     );
 #else
     for (int i = 0; i < ds.rows(); i++) {
-        Solution()(i,0) = ds(i,0);
+        sol(i,0) = ds(i,0);
     }
 #endif
 #ifdef PZDEBUG
@@ -443,6 +449,7 @@ void TMRSTransportAnalysis::AssembleResidual_serial(){
      }
      fRhs.Resize(ncells,1);
      fRhs.Zero();
+    TPZFMatrix<STATE> &rhs = fRhs;
      
      //Volumetric Elements
      for (int ivol = 0; ivol<ncells; ivol++) {
@@ -450,7 +457,7 @@ void TMRSTransportAnalysis::AssembleResidual_serial(){
          TPZFMatrix<double> ef;
          ef.Resize(1,1);
          fAlgebraicTransport.ContributeResidual(ivol, ef);
-         fRhs.AddSub(eqindex, 0,ef);
+         rhs.AddSub(eqindex, 0,ef);
      }
     
      //Interface Elements
@@ -471,7 +478,7 @@ void TMRSTransportAnalysis::AssembleResidual_serial(){
          TPZFMatrix<double> ef;
          ef.Resize(2, 1);
          fAlgebraicTransport.ContributeInterfaceResidual(interf, ef);
-         fRhs.AddFel(ef, destinationindex);
+         rhs.AddFel(ef, destinationindex);
      }
      
      int inlet_mat_id = -2;
@@ -486,7 +493,7 @@ void TMRSTransportAnalysis::AssembleResidual_serial(){
          TPZFMatrix<double> ef;
          ef.Resize(1, 1);
          fAlgebraicTransport.ContributeBCInletInterface(interf,ef);
-         fRhs.AddFel(ef, destinationindex);
+         rhs.AddFel(ef, destinationindex);
      }
      
      int outlet_mat_id = -4;
@@ -501,24 +508,25 @@ void TMRSTransportAnalysis::AssembleResidual_serial(){
          TPZFMatrix<double> ef;
          ef.Resize(1, 1);
          fAlgebraicTransport.ContributeBCOutletInterfaceResidual(interf,ef);
-         fRhs.AddFel(ef, destinationindex);
+         rhs.AddFel(ef, destinationindex);
      }
 }
 
 void TMRSTransportAnalysis::AssembleResidual_Eigen(){
  
     fTransportSpMatrix->AssembleResidual();
+    TPZFMatrix<STATE> &rhs = fRhs;
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> r = fTransportSpMatrix->Rhs().toDense();
     assert(Rhs().Rows() == r.rows());
     #ifdef USING_TBB2
         tbb::parallel_for(size_t(0), size_t(r.rows()), size_t(1),
             [this,&r] (size_t & i){
-             Rhs()(i,0) = r(i,0);
+             rhs(i,0) = r(i,0);
             }
         );
     #else
         for (int i = 0; i < r.rows(); i++) {
-            Rhs()(i,0) = r(i,0);
+            rhs(i,0) = r(i,0);
         }
 //    std::cout<<"RHS= "<<Rhs()<<std::endl;
     #endif

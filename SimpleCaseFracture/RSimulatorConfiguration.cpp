@@ -1023,7 +1023,7 @@ TPZFMatrix<STATE> RSimulatorConfiguration::TimeForward(TPZAnalysis * tracer_anal
         std::cout << "Computing Mass Matrix." << std::endl;
         tracer_analysis->Assemble();
         std::cout << "Mass Matrix is computed." << std::endl;
-        M = tracer_analysis->Solver().Matrix()->Clone();
+        M = tracer_analysis->MatrixSolver<STATE>().Matrix()->Clone();
     }
     
 //    M->Print("M = ",std::cout,EMathematicaInput);
@@ -1071,15 +1071,15 @@ TPZFMatrix<STATE> RSimulatorConfiguration::TimeForward(TPZAnalysis * tracer_anal
         TPZFMatrix<REAL> s_n(n_eq,1,0.0);
         TPZFMatrix<REAL> last_state_mass(n_eq,1,0.0);
         TPZFMatrix<REAL> s_np1;
-        
+        TPZFMatrix<STATE> &rhs = tracer_analysis->Rhs();
         for (int it = 0; it < n_steps; it++) {
             
             for (int64_t i = 0; i < n_eq; i++) {
                 last_state_mass(i,0) = M_diag(i,0)*s_n(i,0);
             }
             
-            tracer_analysis->Rhs() = F_inlet - last_state_mass;
-            tracer_analysis->Rhs() *= -1.0;
+            rhs = F_inlet - last_state_mass;
+            rhs *= -1.0;
             
             tracer_analysis->Solve(); /// (LU decomposition)
             
@@ -1127,8 +1127,9 @@ TPZFMatrix<STATE> RSimulatorConfiguration::TimeForward(TPZAnalysis * tracer_anal
             
             // configuring next time step
             s_n = s_np1;
+            TPZFMatrix<STATE> &sol = cmesh_transport->Solution();
             for (int64_t i = 0; i < n_eq; i++) {
-                saturations(i,it) = cmesh_transport->Solution()(i,0);
+                saturations(i,it) = sol(i,0);
             }
             
         }
