@@ -377,6 +377,8 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     int dimension = mGeometry->Dimension();
     int nstate = 1;
     GetMaterialIds(dimension, matids, bcmatids);
+//    bcmatids.insert(-11);
+    
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
     cmesh->SetName("FluxMortarMesh");
     cmesh->SetAllCreateFunctionsHDiv();
@@ -668,6 +670,11 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
              cmesh->ConnectVec().SetFree(cindex2);
         }
     }
+    
+//    TPZNullMaterial* volume = new TPZNullMaterial(-11,1,1);
+//    cmesh->InsertMaterialObject(volume);
+//    bcmatids.insert(-11);
+    
     cmesh->CleanUpUnconnectedNodes();
     // insert the fracture hdiv elements
     cmesh->SetDefaultOrder(1);
@@ -751,7 +758,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepre
     // create discontinous elements of dimension-1
     cmesh->SetDimModel(dimension-1);
     std::set<int> mortarids = {mSimData.mTGeometry.m_MortarMatId};
-    cmesh->SetDefaultOrder(0);
+    cmesh->SetDefaultOrder(1);
     cmesh->ApproxSpace().SetAllCreateFunctionsDiscontinuous();
     cmesh->AutoBuild(mortarids);
     int64_t ncon_new = cmesh->NConnects();
@@ -891,6 +898,10 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     cmesh->InsertMaterialObject(volume);
     volIds.insert(10);
     
+   
+   
+    
+    
     if (!volume) {
         DebugStop();
     }
@@ -906,9 +917,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
         boundaryId.insert(bc_id);
         cmesh->InsertMaterialObject(face);
     }
-    boundaryId.insert(-11);
-    TPZMaterial * face = volume->CreateBC(volume,-11,1,val1,val2);
-    cmesh->InsertMaterialObject(face);
+
     
     //
     cmesh->InitializeBlock();
@@ -1210,6 +1219,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             mMixedOperator->InsertMaterialObject(face);
         }
     }
+    
     {
         TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
         TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue;
@@ -1221,6 +1231,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             TPZMaterial * face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
             mMixedOperator->InsertMaterialObject(face);
         }
+        
+
     }
 
     {
@@ -2725,7 +2737,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
 //            REAL kappa = mSimData.mTFracProperties.m_Permeability;
-            REAL kappa = 1.0e-3; // Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
+            REAL kappa = 1.0; // Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
@@ -2757,7 +2769,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             TMRSMemory &mem = memory_vector1.get()->operator [](i);
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
-            REAL kappa = 1.0e-6;
+            REAL kappa = 1.0;
 //            REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
@@ -2790,7 +2802,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             TMRSMemory &mem = memory_vector2.get()->operator [](i);
             mem.m_sw = 0.0;
             mem.m_phi = 0.25;
-            REAL kappa = 1.0e-5;
+            REAL kappa = 1.0;
 //          REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();

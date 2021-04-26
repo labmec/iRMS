@@ -141,8 +141,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0),kappa_inv_qFrac(3,1,0.0) ;
     
     
-    REAL kappaNormal = 20.00;
-    REAL factor = 2.0/0.01;
+    REAL kappaNormal = 1.00e-5;
+    REAL factor = 1.0;
     int s_i, s_j;
     int v_i, v_j;
     for (int i = 0; i < 3; i++) {
