@@ -218,7 +218,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
        
         NewtonIteration();
         dx = Solution();
-        std::cout<<"Sol Correct: "<<std::endl;
+//        std::cout<<"Sol Correct: "<<std::endl;
         x += dx;
         std::cout<<x<<std::endl;
 
