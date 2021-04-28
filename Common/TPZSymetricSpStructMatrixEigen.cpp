@@ -244,8 +244,11 @@ TPZMatrix<STATE> * TPZSymetricSpStructMatrixEigen::SetupMatrixData(TPZStack<int6
 }
 
 
-void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
+void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZBaseMatrix & stiffnessB, TPZBaseMatrix & rhsB, TPZAutoPointer<TPZGuiInterface> guiInterface) {
     
+    
+    TPZMatrix<STATE> &stiffness = dynamic_cast<TPZMatrix<STATE>&>(stiffnessB);
+    TPZFMatrix<STATE> &rhs = dynamic_cast<TPZFMatrix<STATE>&>(rhsB);
     TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
     TPZMatRed<STATE, TPZFMatrix<STATE> > *matRed = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE> > *> (&stiffness);
     if (mat) {
