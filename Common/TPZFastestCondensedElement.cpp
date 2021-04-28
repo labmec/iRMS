@@ -19,7 +19,7 @@
  * @param ek element stiffness matrix
  * @param ef element load vector
  */
-void TPZFastestCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &ef)
+void TPZFastestCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementMatrixT<STATE> &ef)
 {
     
     if(this->fMatrixComputed == false)
@@ -101,9 +101,9 @@ void TPZFastestCondensedElement::GetSolutionVector(TPZFMatrix<STATE> &solvec)
  * @brief Computes the element right hand side
  * @param ef element load vector(s)
  */
-void TPZFastestCondensedElement::CalcResidual(TPZElementMatrix &ef)
+void TPZFastestCondensedElement::CalcResidual(TPZElementMatrixT<STATE> &ef)
 {
-      TPZElementMatrix ek;
+      TPZElementMatrixT<STATE> ek;
       CalcStiff(ek, ef);
 
 }

@@ -657,7 +657,7 @@ TPZAnalysis * RSimulatorConfiguration::CreateAnalysis(TPZMultiphysicsCompMesh * 
     
     if (fsim_case.UsePardisoQ) {
         
-        TPZSymetricSpStructMatrix matrix(cmesh_mult);
+        TPZSSpStructMatrix matrix(cmesh_mult);
       
         //        TPZSkylineStructMatrix matrix(cmesh);
         matrix.SetNumThreads(fsim_case.n_threads);

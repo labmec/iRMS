@@ -39,7 +39,7 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q,bool UsePZ){
     
     if (UsePardiso_Q) {
         if(UsePZ){
-            TPZSymetricSpStructMatrix matrix(Mesh());
+            TPZSSpStructMatrix<STATE> matrix(Mesh());
             matrix.SetNumThreads(n_threads);
             SetStructuralMatrix(matrix);
             TPZStepSolver<STATE> step;
@@ -57,7 +57,7 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q,bool UsePZ){
 
 
     }else{
-        TPZSkylineStructMatrix matrix(Mesh());
+        TPZSkylineStructMatrix<STATE> matrix(Mesh());
         matrix.SetNumThreads(n_threads);
         TPZStepSolver<STATE> step;
         step.SetDirect(ELDLt);

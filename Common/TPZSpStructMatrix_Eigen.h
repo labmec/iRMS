@@ -9,7 +9,6 @@
 #define TPZSpStructMatrix_Eeigen_h
 
 #include <stdio.h>
-#include "pzstrmatrix.h"
 #include "pzysmp.h"
 
 #include "pzcmesh.h"
@@ -18,20 +17,29 @@
 
 #include "pzmatrix.h"
 #include "pzfmatrix.h"
+#include "TPZStructMatrixT.h"
+#include "pzstrmatrixor.h"
+//#include "pzstrmatrix.h"
+
 
 /**
  * @brief Implements Sparse Structural Matrices. \ref structural "Structural Matrix"
  * @ingroup structural
  */
-class TPZSpStructMatrixEigen : public TPZStructMatrix {
+class TPZSpStructMatrixEigen : public TPZStructMatrixT<STATE>,
+        public TPZStructMatrixOR<STATE>
+{
 public:
-    
-    TPZSpStructMatrixEigen(TPZCompMesh *);
+    using TPZStructMatrixT<STATE>::TPZStructMatrixT;
     virtual TPZStructMatrix * Clone() override;
     virtual TPZMatrix<STATE> * Create() override;
     
-    using TPZStructMatrix::CreateAssemble;
-    virtual TPZMatrix<STATE> * CreateAssemble(TPZFMatrix<STATE> &rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) override;
+    void Read(TPZStream& buf, void* context) override;
+
+    void Write(TPZStream& buf, int withclassid) const override;
+
+//using TPZStructMatrix::CreateAssemble;
+//    virtual TPZMatrix<STATE> * CreateAssemble(TPZFMatrix<STATE> &rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) override;
     
 //    virtual TPZStructMatrix * Clone() override;
     

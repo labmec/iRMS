@@ -2,7 +2,6 @@
 #include "TPZMHMixedMesh4SpacesControl.h"
 #include "pzelementgroup.h"
 #include "pzelmat.h"
-#include "pzstrmatrix.h"
 #include "TPZFastCondensedElement.h"
 #include "TMRSApproxSpaceGenerator.h"
 #include "TPZReservoirTools.h"
@@ -519,8 +518,8 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElementsEigen()
 //            DebugStop();
             continue;
         }
-        TPZElementMatrix ek;
-        TPZElementMatrix ef;
+        TPZElementMatrixT<STATE> ek;
+        TPZElementMatrixT<STATE> ef;
        
 //        TPZCompMeshTools::GroupElements(subcmesh);
         subcmesh->ComputeNodElCon();
@@ -573,8 +572,8 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElementsEigen()
         
         subcmesh->SaddlePermute();
         subcmesh->PermuteExternalConnects();
-        
-        TPZAutoPointer<TPZSymetricSpStructMatrixEigen> str = new TPZSymetricSpStructMatrixEigen(subcmesh);
+        TPZSymetricSpStructMatrixEigen *strloc = new TPZSymetricSpStructMatrixEigen(subcmesh);
+        TPZAutoPointer<TPZStructMatrix> str(strloc);
         str->SetNumThreads(0);
         
         int64_t numinternal = subcmesh->NumInternalEquations();
@@ -613,8 +612,8 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElements()
 //            DebugStop();
             continue;
         }
-        TPZElementMatrix ek;
-        TPZElementMatrix ef;
+        TPZElementMatrixT<STATE> ek;
+        TPZElementMatrixT<STATE> ef;
        
 //        TPZCompMeshTools::GroupElements(subcmesh);
         subcmesh->ComputeNodElCon();

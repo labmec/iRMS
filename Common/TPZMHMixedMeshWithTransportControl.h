@@ -44,7 +44,6 @@ public:
     
     TPZMHMixedMeshWithTransportControl() : TPZMHMixedMeshControl()
     {
-        fcmeshTransport = new TPZCompMesh;
       
     }
     void SetApproxSpaceGenerator(TMRSApproxSpaceGenerator *aproxspace){

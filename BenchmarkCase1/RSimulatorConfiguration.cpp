@@ -657,7 +657,7 @@ TPZAnalysis * RSimulatorConfiguration::CreateAnalysis(TPZMultiphysicsCompMesh * 
     
     if (fsim_case.UsePardisoQ) {
         
-        TPZSymetricSpStructMatrix matrix(cmesh_mult);
+        TPZSSpStructMatrix<STATE> matrix(cmesh_mult);
       
         //        TPZSkylineStructMatrix matrix(cmesh);
         matrix.SetNumThreads(fsim_case.n_threads);
@@ -685,7 +685,7 @@ TPZAnalysis * RSimulatorConfiguration::CreateAnalysis(TPZMultiphysicsCompMesh * 
 //    }
     else{
         
-        TPZSkylineStructMatrix matrix(cmesh_mult);
+        TPZSkylineStructMatrix<STATE> matrix(cmesh_mult);
         matrix.SetNumThreads(fsim_case.n_threads);
         TPZStepSolver<STATE> step;
         step.SetDirect(ECholesky);
@@ -972,7 +972,7 @@ TPZAnalysis * RSimulatorConfiguration::CreateTransportAnalysis(TPZCompMesh * cme
     
     if (sim_data.UsePardisoQ) {
         
-        TPZSpStructMatrix matrix(cmesh);
+        TPZSpStructMatrix<STATE> matrix(cmesh);
         matrix.SetNumThreads(sim_data.n_threads);
         analysis->SetStructuralMatrix(matrix);
         TPZStepSolver<STATE> step;

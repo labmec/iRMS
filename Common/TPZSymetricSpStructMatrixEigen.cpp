@@ -9,7 +9,6 @@
 // #include "pz_config.h"
 // #include "threads.h"
 
-#include "pzstrmatrix.h"
 
 #include "pzgeoelbc.h"
 #include "pzgmesh.h"
@@ -47,48 +46,6 @@ using namespace std;
 
 TPZStructMatrix * TPZSymetricSpStructMatrixEigen::Clone(){
     return new TPZSymetricSpStructMatrixEigen(*this);
-}
-TPZMatrix<STATE> * TPZSymetricSpStructMatrixEigen::CreateAssemble(TPZFMatrix<STATE> &rhs,
-                                                             TPZAutoPointer<TPZGuiInterface> guiInterface){
-    
-#ifdef LOG4CXX
-    if (logger->isDebugEnabled())
-    {
-        LOGPZ_DEBUG(logger,"TPZSymetricSpStructMatrixEigen::CreateAssemble starting");
-    }
-#endif
-    
-    int64_t neq = fMesh->NEquations();
-    
-    if(fMesh->FatherMesh()) {
-        cout << "TPZSymetricSpStructMatrixEigen should not be called with CreateAssemble for a substructure mesh\n";
-        return new TPZSYsmpMatrixEigen<STATE>(0,0);
-    }
-    //    std::cout << "Creating\n";
-    TPZMatrix<STATE> *stiff = Create();//new TPZFYsmpMatrix(neq,neq);
-    
-    TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (stiff);
-    rhs.Redim(neq,1);
-    //stiff->Print("Stiffness TPZFYsmpMatrix :: CreateAssemble()");
-    TPZTimer before("Assembly of a sparse matrix");
-    //    std::cout << "Assembling\n";
-    before.start();
-#ifdef LOG4CXX
-    if(logger->isDebugEnabled()) LOGPZ_DEBUG(logger,"TPZSymetricSpStructMatrixEigen::CreateAssemble calling Assemble()");
-#endif
-    Assemble(*stiff,rhs,guiInterface);
-    mat->ComputeDiagonal();
-    
-    //    std::cout << "Rhs norm " << Norm(rhs) << std::endl;
-    
-    before.stop();
-    //std::cout << __PRETTY_FUNCTION__ << " " << before << std::endl;
-    //    mat->ComputeDiagonal();
-    //stiff->Print("Stiffness TPZFYsmpMatrix :: CreateAssemble()");
-#ifdef LOG4CXX
-    if(logger->isDebugEnabled()) LOGPZ_DEBUG(logger,"TPZSymetricSpStructMatrixEigen::CreateAssemble exiting");
-#endif
-    return stiff;
 }
 TPZMatrix<STATE> * TPZSymetricSpStructMatrixEigen::Create(){
     
@@ -286,12 +243,6 @@ TPZMatrix<STATE> * TPZSymetricSpStructMatrixEigen::SetupMatrixData(TPZStack<int6
     return mat;
 }
 
-TPZSymetricSpStructMatrixEigen::TPZSymetricSpStructMatrixEigen() : TPZStructMatrix(){
-    
-}
-
-TPZSymetricSpStructMatrixEigen::TPZSymetricSpStructMatrixEigen(TPZCompMesh *mesh) : TPZStructMatrix(mesh)
-{}
 
 void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
     
@@ -329,7 +280,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
 //    matRed->Zero();
     int64_t iel;
     int64_t nelem = fMesh->NElements();
-    TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
+    TPZElementMatrixT<STATE> ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
     
     TPZTimer calcstiff("Computing the stiffness matrices");
     TPZTimer assemble("Assembling the stiffness matrices");
@@ -527,7 +478,7 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
 
     int64_t iel;
     int64_t nelem = fMesh->NElements();
-    TPZElementMatrix ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
+    TPZElementMatrixT<STATE> ek(fMesh, TPZElementMatrix::EK), ef(fMesh, TPZElementMatrix::EF);
     boost::posix_time::ptime actime = boost::posix_time::microsec_clock::local_time();
     fAsTotalAdkelsSub =actime-actime;
     fAsTotalCalcStifSub =actime-actime;
@@ -626,6 +577,24 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
 //    std::cout<<"SubCalcStiffTime: "<<fAsTotalCalcStifSub<<std::endl;
 //    std::cout<<"SubAddKelTime: "<<fAsTotalAdkelsSub<<std::endl;
 }
+
+
+int TPZSymetricSpStructMatrixEigen::ClassId() const{
+    return Hash("TPZSymetricSpStructMatrixEigen") ^
+        TPZStructMatrixT<STATE>::ClassId() << 1 ^
+        TPZStructMatrixOR<STATE>::ClassId() << 2;
+}
+
+void TPZSymetricSpStructMatrixEigen::Read(TPZStream& buf, void* context){
+    TPZStructMatrixT<STATE>::Read(buf,context);
+    TPZStructMatrixOR<STATE>::Read(buf,context);
+}
+
+void TPZSymetricSpStructMatrixEigen::Write(TPZStream& buf, int withclassid) const{
+    TPZStructMatrixT<STATE>::Write(buf,withclassid);
+    TPZStructMatrixOR<STATE>::Write(buf,withclassid);
+}
+
 #ifndef STATE_COMPLEX
 #include "pzmat2dlin.h"
 

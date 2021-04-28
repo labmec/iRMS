@@ -9,7 +9,6 @@
 #define TPZSymetricSpStructMatrixEigenEigen_h
 
 #include <stdio.h>
-#include "pzstrmatrix.h"
 #include "pzysmp.h"
 
 #include "pzcmesh.h"
@@ -24,16 +23,26 @@
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include "TPZStructMatrixT.h"
+#include "pzstrmatrixor.h"
+
 /**
  * @brief Implements Sparse Structural Matrices. \ref structural "Structural Matrix"
  * @ingroup structural
  */
-class TPZSymetricSpStructMatrixEigen : public TPZStructMatrix {
+class TPZSymetricSpStructMatrixEigen : public TPZStructMatrixT<STATE>,
+       public TPZStructMatrixOR<STATE> {
     
+           
+    using TPZStructMatrixT<STATE>::TPZStructMatrixT;
     std::vector<Triplet3<REAL> > m_triplets;
     
 public:
 
+    TPZSymetricSpStructMatrixEigen(TPZCompMesh *cmesh) : TPZStructMatrixT<STATE>(cmesh)
+       {
+           
+       }
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::time_duration fAsTotalCalcStifSub = tsim2-tsim2;
     boost::posix_time::time_duration fAsTotalAdkelsSub = tsim2-tsim2;
@@ -42,16 +51,12 @@ public:
 //    std::cout << "Mixed:: Assembly time Global " << deltat << std::endl;
 
     
-    TPZSymetricSpStructMatrixEigen(TPZCompMesh *);
     
-    virtual TPZMatrix<STATE> * Create();
+    virtual TPZMatrix<STATE> * Create() override;
     
     virtual TPZMatrix<STATE> * SetupMatrixData(TPZStack<int64_t> & elgraph, TPZVec<int64_t> &elgraphindex);
-    
-    using TPZStructMatrix::CreateAssemble;
-    virtual TPZMatrix<STATE> * CreateAssemble(TPZFMatrix<STATE> &rhs, TPZAutoPointer<TPZGuiInterface> guiInterface);
-    
-    virtual TPZStructMatrix * Clone();
+        
+    virtual TPZStructMatrix * Clone() override;
     void Serial_Assemble(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface);
     void Serial_AssembleSub(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface);
     void Serial_AssembleGlob(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface);
@@ -59,9 +64,17 @@ public:
     /** Used only for testing */
     static int main();
     
+   //@{
+   //!Read and Write methods
+   int ClassId() const override;
+
+   void Read(TPZStream& buf, void* context) override;
+
+   void Write(TPZStream& buf, int withclassid) const override;
+   //@}
+
     private :
     
-    TPZSymetricSpStructMatrixEigen();
  
     void Swap(int64_t *a, int64_t *b)
     {

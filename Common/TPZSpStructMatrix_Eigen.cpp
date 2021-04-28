@@ -6,7 +6,7 @@
 #include "TPZSpStructMatrix_Eigen.h"
 #include "TPZSpMatrixEigen.h"
 #include "TPZSpStructMatrix.h"
-#include "pzstrmatrix.h"
+//#include "pzstrmatrix.h"
 
 #include "pzgeoelbc.h"
 #include "pzgmesh.h"
@@ -36,44 +36,6 @@ TPZStructMatrix * TPZSpStructMatrixEigen::Clone(){
     return new TPZSpStructMatrixEigen(*this);
 }
 
-TPZMatrix<STATE> * TPZSpStructMatrixEigen::CreateAssemble(TPZFMatrix<STATE> &rhs,
-                                                     TPZAutoPointer<TPZGuiInterface> guiInterface){
-    
-#ifdef LOG4CXX
-    if(logger->isDebugEnabled())
-    {
-        LOGPZ_DEBUG(logger,"TPZSpStructMatrixEigen::CreateAssemble starting")
-    }
-#endif
-    
-    int64_t neq = fMesh->NEquations();
-    if(fMesh->FatherMesh()) {
-        cout << "TPZSpStructMatrixEigen should not be called with CreateAssemble for a substructure mesh\n";
-        return new TPZSpMatrixEigen<STATE>(0,0);
-    }
-    TPZMatrix<STATE> *stiff = Create();//new TPZSpMatrixEigen(neq,neq);
-
-    rhs.Redim(neq,1);
-    //stiff->Print("Stiffness TPZSpMatrixEigen :: CreateAssemble()");
-    TPZTimer before("Assembly of a sparse matrix");
-    before.start();
-#ifdef LOG4CXX
-    if (logger->isDebugEnabled())
-    {
-        LOGPZ_DEBUG(logger,"TPZSpStructMatrixEigen::CreateAssemble calling Assemble()");
-    }
-#endif
-    Assemble(*stiff,rhs,guiInterface);
-    before.stop();
-    std::cout << __PRETTY_FUNCTION__ << " " << before << std::endl;
-    //    mat->ComputeDiagonal();
-    //    mat->ComputeDiagonal();
-    //stiff->Print("Stiffness TPZSpMatrixEigen :: CreateAssemble()");
-#ifdef LOG4CXX
-    if(logger->isDebugEnabled()) LOGPZ_DEBUG(logger,"TPZSpStructMatrixEigen::CreateAssemble exiting");
-#endif
-    return stiff;
-}
 TPZMatrix<STATE> * TPZSpStructMatrixEigen::Create(){
     int64_t neq = fEquationFilter.NActiveEquations();
     /*    if(fMesh->FatherMesh()) {
@@ -256,11 +218,6 @@ TPZMatrix<STATE> * TPZSpStructMatrixEigen::Create(){
     return mat;
 }
 
-TPZSpStructMatrixEigen::TPZSpStructMatrixEigen() : TPZStructMatrix(){
-}
-
-TPZSpStructMatrixEigen::TPZSpStructMatrixEigen(TPZCompMesh *mesh) : TPZStructMatrix(mesh)
-{}
 
 int TPZSpStructMatrixEigen::ClassId() const{
     return Hash("TPZSpStructMatrixEigen") ^ TPZStructMatrix::ClassId() << 1;

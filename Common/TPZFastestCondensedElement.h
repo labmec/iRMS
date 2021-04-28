@@ -77,14 +77,14 @@ public:
      * @param ek element stiffness matrix
      * @param ef element load vector
      */
-    virtual void CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &ef) override;
+    virtual void CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementMatrixT<STATE> &ef) override;
     
     
     /**
      * @brief Computes the element right hand side
      * @param ef element load vector(s)
      */
-    virtual void CalcResidual(TPZElementMatrix &ef) override;
+    virtual void CalcResidual(TPZElementMatrixT<STATE> &ef) override;
     
     
 };

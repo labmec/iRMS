@@ -39,7 +39,7 @@ TPZFastCondensedElement::TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix
  * @param ek element stiffness matrix
  * @param ef element load vector
  */
-void TPZFastCondensedElement::CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &ef)
+void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementMatrixT<STATE> &ef)
 {
     if(this->fMatrixComputed == false)
     {
@@ -117,9 +117,9 @@ void TPZFastCondensedElement::GetSolutionVector(TPZFMatrix<STATE> &solvec)
  * @brief Computes the element right hand side
  * @param ef element load vector(s)
  */
-void TPZFastCondensedElement::CalcResidual(TPZElementMatrix &ef)
+void TPZFastCondensedElement::CalcResidual(TPZElementMatrixT<STATE> &ef)
 {
-      TPZElementMatrix ek;
+      TPZElementMatrixT<STATE> ek;
       CalcStiff(ek, ef);
 
 }

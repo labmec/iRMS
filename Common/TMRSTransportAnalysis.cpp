@@ -46,7 +46,7 @@ int TMRSTransportAnalysis::GetNumberOfIterations(){
 void TMRSTransportAnalysis::Configure(int n_threads, bool UsePardiso_Q){
     
     if (UsePardiso_Q) {
-        TPZSpStructMatrix matrix(Mesh());
+        TPZSpStructMatrix<> matrix(Mesh());
         matrix.SetNumThreads(n_threads);
         SetStructuralMatrix(matrix);
 //        TPZStepSolver<STATE> step;
@@ -89,8 +89,8 @@ void TMRSTransportAnalysis::Assemble_serial(){
     TPZMatrixSolver<STATE> *matsol = dynamic_cast<TPZMatrixSolver<STATE> *>(fSolver);
     if(matsol && !matsol->Matrix())
     {
-        mat = fStructMatrix->Create();
-    
+        TPZBaseMatrix *othermat = fStructMatrix->Create();
+        mat = dynamic_cast<TPZMatrix<STATE> *>(othermat);
         matsol->SetMatrix(mat);
     }
     else if(matsol)

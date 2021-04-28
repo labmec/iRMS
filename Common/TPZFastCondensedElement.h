@@ -11,6 +11,7 @@
 
 #include "pzcondensedcompel.h"
 #include "pzelmat.h"
+#include "TPZElementMatrixT.h"
 
 class TPZFastCondensedElement : public TPZCondensedCompEl
 {
@@ -34,7 +35,7 @@ protected:
     bool fMatrixComputed = false;
     
     // reference stifness matrix and rhs
-    TPZElementMatrix fEK, fEF;
+    TPZElementMatrixT<STATE> fEK, fEF;
     
     // vector of pressure connects
     TPZManVector<int64_t> fPressureConnects;
@@ -144,14 +145,14 @@ public:
      * @param ek element stiffness matrix
      * @param ef element load vector
      */
-    virtual void CalcStiff(TPZElementMatrix &ek,TPZElementMatrix &ef) override;
+    virtual void CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementMatrixT<STATE> &ef) override;
     
     
     /**
      * @brief Computes the element right hand side
      * @param ef element load vector(s)
      */
-    virtual void CalcResidual(TPZElementMatrix &ef) override;
+    virtual void CalcResidual(TPZElementMatrixT<STATE> &ef) override;
     
     /** @brief Loads the solution within the internal data structure of the element */
     /**

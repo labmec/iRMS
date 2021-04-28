@@ -10,7 +10,6 @@
 
 #include <stdio.h>
 #include "TPZSpStructMatrix.h"
-#include "pzstrmatrix.h"
 
 #include "pzgeoelbc.h"
 #include "pzgmesh.h"
