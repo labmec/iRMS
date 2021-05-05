@@ -162,11 +162,11 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
                 }
             }
             if (verif==1) {
-                TPZFastCondensedElement *cond = new TPZFastCondensedElement(cel, keepmatrix);
-                cond->SetLambda(1.0);
+//                TPZFastCondensedElement *cond = new TPZFastCondensedElement(cel, keepmatrix);
+//                cond->SetLambda(1.0);
             }
             else{
-                TPZCondensedCompEl *cond = new TPZCondensedCompEl(cel, keepmatrix);
+//                TPZCondensedCompEl *cond = new TPZCondensedCompEl(cel, keepmatrix);
             }
         }
         

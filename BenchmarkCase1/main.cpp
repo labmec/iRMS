@@ -40,16 +40,16 @@ void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh, TPZVec<int64_t> &
 
 TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 {
-    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
-    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
-//    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC1.msh");
-//    std::string fileFine("../../FracMeshes/flem_case1_Fine_BC1.msh");
+        std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
+        std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
+//    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
+//    std::string fileFine("../../FracMeshes/flem_case1_Fine_BC.msh");
 //
     
     
-//    std::string fileCoarse("../../FracMeshes/jose6_coarse.msh");
-//    std::string fileFine("../../FracMeshes/jose6_fine.msh");
-//
+//    std::string fileCoarse("../../FracMeshes/jose10_coarse.msh");
+//    std::string fileFine("../../FracMeshes/jose10_fine.msh");
+
     
     
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
@@ -117,8 +117,10 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 
 TPZGeoMesh *ReadFractureMesh(){
     std::string fileFine("../../FracMeshes/jose_simple0.msh");
-//    std::string fileFine("../../FracMeshes/flem_case1_Coarse_BC.msh");
 
+//    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
+//    std::string fileFine("../../FracMeshes/case_1.msh");
+//    std::string fileFine("../../FracMeshes/case_1.msh");
 //    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
     /*
@@ -136,6 +138,7 @@ TPZGeoMesh *ReadFractureMesh(){
     dim_name_and_physical_tagFine[2]["outlet"] = -4;
     dim_name_and_physical_tagFine[2]["noflux"] = -1;
     
+    dim_name_and_physical_tagFine[2]["Fractures"] = 10;
     dim_name_and_physical_tagFine[2]["Fracture2"] = 10;
     dim_name_and_physical_tagFine[1]["BCfrac0"] = -11;
     /*
@@ -571,7 +574,7 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 1;
+    sim_data.mTNumerics.m_n_steps = 101 ;
     REAL day = 86400.0;
     sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -645,6 +648,7 @@ void LearningReadFracMesh()
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
+  
     aspace.SetSubdomainIndexes(subdomain);
 //    std::ofstream name("fractureTest.vtk");
 //    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, name, subdomain);
@@ -657,7 +661,7 @@ void LearningReadFracMesh()
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
 
     
-   bool must_opt_band_width_Q = true;
+   bool must_opt_band_width_Q = false;
     int n_threads = 0;
     
     //This parameter should be always "true"
@@ -713,8 +717,7 @@ void LearningReadFracMesh()
         sfi_analysis->RunTimeStep();
         mixed_operator->LoadSolution(mixed_operator->Solution());
 
-        std::ofstream file("solFlux.txt");
-        mixed_operator->Print(file);
+       
         if (sim_time >=  current_report_time) {
             std::cout << "Time step number:  " << it << std::endl;
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;

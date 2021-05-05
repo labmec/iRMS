@@ -448,7 +448,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     }
     buildmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
     buildmatids.insert(bcmatids.begin(),bcmatids.end());
-    cmesh->SetDefaultOrder(0);
+    cmesh->SetDefaultOrder(1);
     cmesh->ApproxSpace().CreateDisconnectedElements(true);
 
     // create all flux elements as discontinuous elements
@@ -1294,7 +1294,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         if(gel->Dimension() == dim) seed.insert(el);
     }
     // this will only group volumetric elements
-    TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
+//    TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
     mMixedOperator->ComputeNodElCon();
     {
 //        std::ofstream out("FluxGrouped.txt");
@@ -1313,7 +1313,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
     std::set<int> volmatId;
     volmatId.insert(10);
-    
+//    
     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false,volmatId);
 #ifdef PZDEBUG
     {
@@ -1326,12 +1326,16 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     std::set<int64_t> groups2;
 
     // this will act only on volumetric elements
-    TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
-    mMixedOperator->ComputeNodElCon();
+    
+    //jv
+//    TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
+//    mMixedOperator->ComputeNodElCon();
     // this shouldn't affect the fracture elements as they won't have condensable connects
     // we should create fast condensed elements at this point...
 //    TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
-    TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
+    
+    //jv
+//    TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
 #ifdef PZDEBUG
     {
         std::stringstream file_name;
@@ -2737,7 +2741,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
 //            REAL kappa = mSimData.mTFracProperties.m_Permeability;
-            REAL kappa = 1.0; // Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
+            REAL kappa = 1.0e-3; // Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
             mem.m_kappa_inv.Resize(3, 3);
@@ -2750,7 +2754,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     }
     
     //Por agora colocarei as permeabilidades aqui, o certo é por no FastCondensed ou na celula de transporte
-    TPZMaterial * material1 = cmesh->FindMaterial(2); //matIdFractures;
+    TPZMaterial * material1 = cmesh->FindMaterial(1); //matIdFractures;
     if (!material) {
         DebugStop();
     }
@@ -2769,7 +2773,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             TMRSMemory &mem = memory_vector1.get()->operator [](i);
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
-            REAL kappa = 1.0;
+            REAL kappa = 1.0e-6;
 //            REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
@@ -2783,7 +2787,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     }
     
     
-    TPZMaterial * material2 = cmesh->FindMaterial(1); //K22;
+    TPZMaterial * material2 = cmesh->FindMaterial(2); //K22;
     if (!material) {
         DebugStop();
     }
@@ -2802,7 +2806,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             TMRSMemory &mem = memory_vector2.get()->operator [](i);
             mem.m_sw = 0.0;
             mem.m_phi = 0.25;
-            REAL kappa = 1.0;
+            REAL kappa = 1.0e-5;
 //          REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();

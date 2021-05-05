@@ -496,12 +496,25 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
     mat->Zero();
         for (iel = 0; iel < nelem; iel++) {
             TPZCompEl *el = elementvec[iel];
+//            TPZFastCondensedElement *cond = dynamic_cast<TPZFastCondensedElement *>(el);
+//            if(cond){
+//                TPZCompEl *celm = cond->GetMultiphysics();
+//                calcstiff.start();
+//                ek.Reset();
+//                ef.Reset();
+//                celm->CalcStiff(ek, ef);
+//            }
             TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(el);
             if (!el) continue;
             int matid = 0;
             TPZGeoEl *gel = el->Reference();
+            
+            
             if (gel) {
                 matid = gel->MaterialId();
+                if(matid==1){
+                    int ok=1;
+                }
             }
             int matidsize = fMaterialIds.size();
             if(matidsize){
@@ -520,6 +533,9 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
             ek.Reset();
             ef.Reset();
             el->CalcStiff(ek, ef);
+            
+            
+            
             if (guiInterface) if (guiInterface->AmIKilled()) {
                 return;
             }

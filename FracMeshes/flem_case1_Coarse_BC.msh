@@ -6,8 +6,8 @@ $PhysicalNames
 2 4 "inlet"
 2 5 "outlet"
 2 6 "noflux"
-3 3 "k33"
-3 10 "k31"
+3 3 "k31"
+3 10 "k33"
 $EndPhysicalNames
 $Entities
 60 128 89 20

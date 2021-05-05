@@ -173,7 +173,11 @@ void TMRSMixedAnalysis::NewtonIteration(){
     boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
 #endif
 
-   Assemble();
+    Assemble();
+    std::ofstream fileprint("Matrix.txt");
+    TPZMatrixSolver<STATE> *matsol = dynamic_cast<TPZMatrixSolver<STATE> *>(this->fSolver);
+    matsol->Matrix().operator->()->Print("Ek=", std::cout, EMathematicaInput);
+    
 
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
