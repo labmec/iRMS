@@ -494,6 +494,7 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
     int64_t count = 0;
     TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
     mat->Zero();
+    std::ofstream filep("Mats.txt");
         for (iel = 0; iel < nelem; iel++) {
             TPZCompEl *el = elementvec[iel];
 //            TPZFastCondensedElement *cond = dynamic_cast<TPZFastCondensedElement *>(el);
@@ -512,9 +513,7 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
             
             if (gel) {
                 matid = gel->MaterialId();
-                if(matid==1){
-                    int ok=1;
-                }
+              
             }
             int matidsize = fMaterialIds.size();
             if(matidsize){
@@ -533,6 +532,10 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
             ek.Reset();
             ef.Reset();
             el->CalcStiff(ek, ef);
+            
+            
+                filep<<"iel: "<<iel<<std::endl;
+                ek.fMat.Print("Ekmat= ", filep, EMathematicaInput);
             
             
             
