@@ -495,6 +495,7 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
     TPZSYsmpMatrixEigen<STATE> *mat = dynamic_cast<TPZSYsmpMatrixEigen<STATE> *> (&stiffness);
     mat->Zero();
     std::ofstream filep("Mats.txt");
+    std::ofstream filep2("DestIndexes.txt");
         for (iel = 0; iel < nelem; iel++) {
             TPZCompEl *el = elementvec[iel];
 //            TPZFastCondensedElement *cond = dynamic_cast<TPZFastCondensedElement *>(el);
@@ -531,10 +532,12 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
             calcstiff.start();
             ek.Reset();
             ef.Reset();
+            
+            if(gel->Index()==61){
+                int ok=0;
+            }
             el->CalcStiff(ek, ef);
-            
-            
-                filep<<"iel: "<<iel<<std::endl;
+            filep<<"iel: "<<gel->Index()<< " MatId: "<<gel->MaterialId()<<std::endl;
                 ek.fMat.Print("Ekmat= ", filep, EMathematicaInput);
             
             
@@ -544,8 +547,12 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
             }
             calcstiff.stop();
             assemble.start();
+            
             if (!ek.HasDependency()) {
                 ek.ComputeDestinationIndices();
+                filep2<<"iel: "<< gel->Index()<<" "<<ek.fDestinationIndex<<std::endl;
+                
+                
                 fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
                         int64_t nelem = ek.fSourceIndex.NElements();
                         int64_t icoef,jcoef,ieq,jeq,ieqs,jeqs;
@@ -559,6 +566,8 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
                                 prevval = mat->GetVal(ieq,jeq);
                                 prevval += ek.fMat(ieqs,jeqs);
                                 mat->PutVal(ieq,jeq,prevval);
+                                
+                                
                             }
                         }
                  rhs.AddFel(ef.fMat, ek.fSourceIndex, ek.fDestinationIndex);
@@ -598,6 +607,9 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
 //    std::cout<<"SubCondensedTime: "<<fAsTotaCondensedSub<<std::endl;
 //    std::cout<<"SubCalcStiffTime: "<<fAsTotalCalcStifSub<<std::endl;
 //    std::cout<<"SubAddKelTime: "<<fAsTotalAdkelsSub<<std::endl;
+    
+    std::ofstream fileg("kg.txt");
+    stiffness.Print(fileg);
 }
 
 

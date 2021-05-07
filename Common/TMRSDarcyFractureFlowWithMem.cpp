@@ -140,7 +140,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
     
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0),kappa_inv_qFrac(3,1,0.0) ;
     
-    REAL kappaNormal = 1.0e-6;
+    REAL kappaNormal = 20.0;
     REAL ad =0.01;
     REAL eps = ad;
     REAL factor = 1.0;
@@ -195,6 +195,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
             for (int jp = 0; jp < nphi_p; jp++)
             {
                 ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
+                ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
                
             }
         
@@ -233,7 +234,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
             // kappa_inv_phi_q_j = vector equal to 1/kappa phi_qs * phi_qs * vector(v_j)
             for (int j = 0; j < 3; j++) {
                 REAL KappaInvVal = (1.0/kappaNormal);
-                kappa_inv_phi_q_j(j,0) = (ad*KappaInvVal/2)* factor * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                kappa_inv_phi_q_j(j,0) = (ad*KappaInvVal/2.0)* factor * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
             }
             
 
@@ -246,8 +247,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
         }
         for (int jp = 0; jp < nphi_p; jp++)
         {
-            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
-        
+            ek(iq + first_q, jp + first_p) += weight * ( + div_phi(iq,0) ) * phi_ps(jp,0);
+            ek(jp + first_p, iq + first_q) += weight * ( + div_phi(iq,0) ) * phi_ps(jp,0);
 
         }
     }
@@ -296,22 +297,23 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
         }
         for (int jp = 0; jp < nphi_p; jp++)
         {
-            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
+            ek(iq + first_q, jp + first_p) += weight * ( + div_phi(iq,0) ) * phi_ps(jp,0);
+            ek(jp + first_p, iq + first_q) += weight * ( + div_phi(iq,0) ) * phi_ps(jp,0);
 
         }
     }
     
-    for (int ip = 0; ip < nphi_p; ip++)
-    {
-        
-        ef(ip + first_p) += -1.0 * weight * (div_q) * phi_ps(ip,0);
-        
-        for (int jq = 0; jq < nphi_q; jq++)
-        {
-            ek(ip + first_p, jq + first_q) += -1.0 * weight * div_phi(jq,0) * phi_ps(ip,0);
-        }
-        
-    }
+//    for (int ip = 0; ip < nphi_p; ip++)
+//    {
+//
+//        ef(ip + first_p) += -1.0 * weight * (div_q) * phi_ps(ip,0);
+//
+//        for (int jq = 0; jq < nphi_q; jq++)
+//        {
+//            ek(ip + first_p, jq + first_q) += -1.0 * weight * div_phi(jq,0) * phi_ps(ip,0);
+//        }
+//
+//    }
     
     if(this->mSimData.mTNumerics.m_four_approx_spaces_Q){
         ContributeFourSpaces(datavec,weight,ek,ef);
