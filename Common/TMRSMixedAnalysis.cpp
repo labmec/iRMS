@@ -176,7 +176,6 @@ void TMRSMixedAnalysis::NewtonIteration(){
     Assemble();
     std::ofstream fileprint("Matrix.txt");
     TPZMatrixSolver<STATE> *matsol = dynamic_cast<TPZMatrixSolver<STATE> *>(this->fSolver);
-    matsol->Matrix().operator->()->Print("Ek=", std::cout, EMathematicaInput);
     
 
 #ifdef USING_BOOST
