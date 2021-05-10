@@ -1327,15 +1327,15 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 
     // this will act only on volumetric elements
     
-    //jv
-//    TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
-//    mMixedOperator->ComputeNodElCon();
+//    jv
+    TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
+    mMixedOperator->ComputeNodElCon();
     // this shouldn't affect the fracture elements as they won't have condensable connects
     // we should create fast condensed elements at this point...
 //    TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
     
     //jv
-//    TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
+    TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
 #ifdef PZDEBUG
     {
         std::stringstream file_name;
@@ -2773,7 +2773,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             TMRSMemory &mem = memory_vector1.get()->operator [](i);
             mem.m_sw = 0.0;
             mem.m_phi = 0.1;
-            REAL kappa = 1.0e-6;
+            REAL kappa = 1.0e-5;
 //            REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();
@@ -2806,7 +2806,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             TMRSMemory &mem = memory_vector2.get()->operator [](i);
             mem.m_sw = 0.0;
             mem.m_phi = 0.25;
-            REAL kappa = 1.0e-5;
+            REAL kappa = 1.0e-6;
 //          REAL kappa = 1.0;// Por em quanto, para fazer o test, depois pega as permeabilidades da celula de transporte
             mem.m_kappa.Resize(3, 3);
             mem.m_kappa.Zero();

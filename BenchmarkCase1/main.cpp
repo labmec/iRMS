@@ -116,9 +116,9 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 }
 
 TPZGeoMesh *ReadFractureMesh(){
-//    std::string fileFine("../../FracMeshes/jose_simple0.msh");
+//    std::string fileFine("../../FracMeshes/jose_simple5.msh");
 //    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
-    std::string fileFine("../../FracMeshes/case_1.msh");
+    std::string fileFine("../../FracMeshes/jose_simple_inc.msh");
 //    std::string fileFine("../../FracMeshes/case_1.msh");
 //    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
@@ -660,7 +660,7 @@ void LearningReadFracMesh()
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
 
     
-   bool must_opt_band_width_Q = false;
+   bool must_opt_band_width_Q = true;
     int n_threads = 0;
     
     //This parameter should be always "true"
