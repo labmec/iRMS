@@ -22,18 +22,18 @@ void FracSimpleCase();
 void TransferLamdasToCondensedCompel(TPZMultiphysicsCompMesh *mixed_operator);
 
 
-TMRSDataTransfer SettingPaper3D();
+
 TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain);
 TPZGeoMesh *ReadFractureMesh();
+void BenchmarkCase1();
+TMRSDataTransfer SettingBenchmarkCase1();
 
-TMRSDataTransfer SettingSimple2DHdiv();
 void  ForcingFunction (const TPZVec<REAL> &pt, TPZVec<STATE> &disp);
-void CaseSimple2Frac();
 
 int main(){
     TPZLogger::InitializePZLOG();
-//    LearningReadFracMesh();
-    CaseSimple2Frac();
+    BenchmarkCase1();
+
 
 }
 
@@ -529,7 +529,7 @@ void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh, TPZVec<int64_t> &
 #endif
 }
 
-TMRSDataTransfer SettingPaper3D(){
+TMRSDataTransfer SettingBenchmarkCase1(){
     
     TMRSDataTransfer sim_data;
     
@@ -628,119 +628,7 @@ TMRSDataTransfer SettingPaper3D(){
     sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
     return sim_data;
 }
-TMRSDataTransfer Setting2Fractures(){
-    
-    TMRSDataTransfer sim_data;
-    
-    //    dim_name_and_physical_tagCoarse[3]["k33"] = 1;
-    //    dim_name_and_physical_tagCoarse[3]["k31"] = 2;
-    //    dim_name_and_physical_tagCoarse[2]["inlet"] = -2;
-    //    dim_name_and_physical_tagCoarse[2]["outlet"] = -4;
-    //    dim_name_and_physical_tagCoarse[2]["noflux"] = -1;
-    
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["k33"] = 1;
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["k31"] = 2;
-    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = 10;
-    sim_data.mTGeometry.mInterface_material_id = 100;
-    sim_data.mTGeometry.mInterface_material_idFracInf = 101;
-    sim_data.mTGeometry.mInterface_material_idFracSup = 102;
-    sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
-    sim_data.mTGeometry.mIterface_material_idFracBound = 104;
-    
-    int D_Type = 0;
-    int N_Type = 1;
-    int zero_flux=0.0;
-    REAL pressure_in = 4.0 ;
-    REAL pressure_out = 1.0 ;
-    
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-4,D_Type,pressure_out);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-5,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(3);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] =
-    std::make_tuple(-11,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[1] =
-    std::make_tuple(-12,D_Type,pressure_in);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[2] =
-    std::make_tuple(-13,D_Type,pressure_out);
-    //Transport boundary Conditions
-    int bc_inlet = 0;
-    int bc_outlet = 1;
-    REAL sat_in = 1.0;
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(3);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(-1,bc_outlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(-2,bc_inlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(-4,bc_outlet,0.0);
-    
-    //Fluid Properties
-    sim_data.mTFluidProperties.mWaterViscosity = 0.1;
-    sim_data.mTFluidProperties.mOilViscosity = 0.1;
-    sim_data.mTFluidProperties.mWaterDensityRef = 1000.0;
-    sim_data.mTFluidProperties.mOilDensityRef = 1000.0;
-    
-    // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 1;
-    sim_data.mTNumerics.m_max_iter_transport = 1;
-    sim_data.mTNumerics.m_max_iter_sfi = 1;
-    //BorderElementOrder
-    sim_data.mTNumerics.m_BorderElementPresOrder=1;
-    sim_data.mTNumerics.m_BorderElementFluxOrder=1;
-    
-    sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 101 ;
-    REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
-    std::vector<REAL> grav(3,0.0);
-    grav[1] = 0.0;//-9.8*(1.0e-6); // hor
-    sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
-    
-    //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 1.0;
-    REAL kappa=1.0;
-    int  id1=1;
-    int  id2=2;
-    std::vector<std::pair<int, REAL>> idPerm(2);
-    idPerm[0]= std::make_pair(id1,kappa);
-    idPerm[1]= std::make_pair(id2,kappa);
-    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
-    
-    
-    // PostProcess controls
-    sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
-    sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
-    TPZStack<std::string,10> scalnames, vecnames;
-    vecnames.Push("Flux");
-    scalnames.Push("Pressure");
-    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
-        scalnames.Push("p_average");
-    }
-    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
-    sim_data.mTPostProcess.m_vecnames = vecnames;
-    sim_data.mTPostProcess.m_scalnames = scalnames;
-    
-    int n_steps = sim_data.mTNumerics.m_n_steps;
-    REAL dt = sim_data.mTNumerics.m_dt;
-    TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
-    int n_reporting_times =(n_steps)/(time/dt) + 1;
-    REAL r_time =0.0;
-    for (int i =1; i<= n_reporting_times; i++) {
-        r_time += dt*(time/dt);
-        reporting_times.push_back(r_time);
-    }
-    sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
-    return sim_data;
-}
+
 
 void IdentifySubDomain()
 {
@@ -748,151 +636,9 @@ void IdentifySubDomain()
 }
 
 
-void CaseSimple2Frac()
-{
-    /*
-     the different lagrange levels for this mesh layout
-     char fluxmortar = 5;
-     char firstpressurelagrange = 1;
-     char pressurelagrange = 3;
-     char pressuremortar = 4;
-     char distfluxlagrange = 2;
-     char avpressurelagrange = 6;
-     
-     */
-    // vector with subdomain index of the geometric elements
-    TPZVec<int64_t> subdomain;
-    //    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
-    TPZGeoMesh *gmesh = ReadFractureMesh();
-    
-    TMRSApproxSpaceGenerator aspace;
-    TMRSDataTransfer sim_data  = Setting2Fractures();
-    sim_data.mTGeometry.mSkeletonDiv =0;
-    sim_data.mTGeometry.m_skeletonMatId = 19;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q = false;
-    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
-    //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
-    aspace.SetGeometry(gmesh);
-    aspace.SetSubdomainIndexes(subdomain);
-    //    std::ofstream name("fractureTest.vtk");
-    //    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, name, subdomain);
-    
-    
-    aspace.SetDataTransfer(sim_data);
-    
-    int order = 1;
-    aspace.BuildMixedMultiPhysicsCompMesh(order);
-    TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    
-    
-    bool must_opt_band_width_Q = true;
-    int n_threads = 0;
-    
-    //This parameter should be always "true"
-    bool UsingPzSparse = false;
-    bool UsePardiso_Q = true;
-    
-    TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
-    mixAnalisys->SetDataTransfer(&sim_data);
-    mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-    mixAnalisys->Assemble();
-    mixAnalisys->Solve();
-    mixed_operator->UpdatePreviousState(-1.);
-    TPZFastCondensedElement::fSkipLoadSolution = false;
-    mixed_operator->LoadSolution(mixed_operator->Solution());
-    mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-    mixAnalisys->PostProcessTimeStep();
-    
-    return 0;
-    
-
-    
-//    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
-//    sfi_analysis->SetDataTransfer(&sim_data);
-//
-//    bool usingpzSparse = false;
-//    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
-//
-//
-//    //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
-//    //    bool usingpzSparse = false;
-//
-//    //The parallelism is just implemented for the "UsingPzSparse=True" case, with eigen for now is running in serial (the next task to do)
-//    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
-//    int n_steps = sim_data.mTNumerics.m_n_steps;
-//    REAL dt = sim_data.mTNumerics.m_dt;
-//
-//
-//    TPZStack<REAL,100> reporting_times;
-//    reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
-//
-//    REAL sim_time = 0.0;
-//    int pos =0;
-//    REAL current_report_time = reporting_times[pos];
-//    int npos = reporting_times.size();
-//
-//    sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
-//    REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-//
-//    std::cout << "Mass report at time : " << 0.0 << std::endl;
-//    std::cout << "Mass integral :  " << initial_mass << std::endl;
-//
-//    TPZFastCondensedElement::fSkipLoadSolution = false;
-//    bool first=true;
-//    for (int it = 1; it <= n_steps; it++) {
-//        sim_time = it*dt;
-//        if (sim_time >=  current_report_time) {
-//            TPZFastCondensedElement::fSkipLoadSolution = false;
-//        }
-//
-//        sfi_analysis->m_transport_module->SetCurrentTime(dt);
-//        sfi_analysis->RunTimeStep();
-//        mixed_operator->LoadSolution(mixed_operator->Solution());
-//
-//
-//        if (sim_time >=  current_report_time) {
-//            std::cout << "Time step number:  " << it << std::endl;
-//            std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
-//            if(first==true){
-//                sfi_analysis->PostProcessTimeStep(1);
-//                first=false;
-//            }
-//            //            if(pos >=npos-2){
-//            sfi_analysis->PostProcessTimeStep(2);
-//            //            }
-//
-//            pos++;
-//            current_report_time =reporting_times[pos];
-//
-//            REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-//            std::cout << "Mass report at time : " << sim_time << std::endl;
-//            std::cout << "Mass integral :  " << mass << std::endl;
-//            TPZFastCondensedElement::fSkipLoadSolution = true;
-//
-//        }
-//    }
-//
-//    std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
-//
-//
-//
-//
-//    //
-//    //    TPZAlgebraicDataTransfer transfer;
-//    //    transfer.SetMeshes(*mixed_operator, *transport_operator);
-//    //    TPZAlgebraicTransport transport;
-//    //    transfer.BuildTransportDataStructure(transport);
-//    //
-//    //    TMRSTransportAnalysis *anal = new TMRSTransportAnalysis(transport_operator, true);
-//
-//
-//
-//    delete gmesh;
-}
 
 
-void LearningReadFracMesh()
+void BenchmarkCase1()
 {
     /*
       the different lagrange levels for this mesh layout
@@ -906,11 +652,11 @@ void LearningReadFracMesh()
      */
     // vector with subdomain index of the geometric elements
     TPZVec<int64_t> subdomain;
-//    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
-    TPZGeoMesh *gmesh = ReadFractureMesh();
+    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+//    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
-    TMRSDataTransfer sim_data  = SettingPaper3D();
+    TMRSDataTransfer sim_data  = SettingBenchmarkCase1();
     sim_data.mTGeometry.mSkeletonDiv =0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;

@@ -156,14 +156,14 @@ TMRSDataTransfer Setting2Fractures(){
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 0.00001;
-    REAL kappa=1.0;
-    int  id1=1;
-    int  id2=2;
-    std::vector<std::pair<int, REAL>> idPerm(2);
-    idPerm[0]= std::make_pair(id1,kappa);
-    idPerm[1]= std::make_pair(id2,kappa);
-    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
+        sim_data.mTFracProperties.m_Permeability = 0.00001;
+        REAL kappa=1.0;
+        int  id1=1;
+        int  id2=2;
+        std::vector<std::pair<int, REAL>> idPerm(2);
+        idPerm[0]= std::make_pair(id1,kappa);
+        idPerm[1]= std::make_pair(id2,kappa);
+        sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     
     

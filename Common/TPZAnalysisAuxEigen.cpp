@@ -229,7 +229,7 @@ void TPZAnalysisAuxEigen::Assemble(){
         m_trans_triplets[i_begin+1] = (Triplet2<REAL>(indexes[0],indexes[1], elmat(0,1)));
         m_trans_triplets[i_begin+2] = (Triplet2<REAL>(indexes[1],indexes[0], elmat(1,0)));
         m_trans_triplets[i_begin+3] = (Triplet2<REAL>(indexes[1],indexes[1], elmat(1,1)));
-        elmat.Print(std::cout);
+        
         
         
         size_t i_rhs_begin = 2*(iface) + n_cells + 2*(n_internal_faces);
