@@ -156,8 +156,8 @@ void TMRSSFIAnalysis::FillProperties(){
         }
         else{
             std::vector<REAL> kappa_phi(4,1.0);
-            kappa_phi[3]=1.0;
-            FillProperties(&m_transport_module->fAlgebraicTransport, kappa_phi);
+//            kappa_phi[3]=1.0;
+                FillProperties(&m_transport_module->fAlgebraicTransport, kappa_phi);
         }
         
     }
@@ -270,7 +270,7 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport, 
         algebraicTransport->fCellsData.fKx[icell]  = kappa_phi[0];
         algebraicTransport->fCellsData.fKy[icell]  = kappa_phi[1];
         algebraicTransport->fCellsData.fKz[icell]  = kappa_phi[2];
-        algebraicTransport->fCellsData.fporosity[icell] = kappa_phi[3] ;
+//        algebraicTransport->fCellsData.fporosity[icell] = kappa_phi[3] ;
     }
     
    

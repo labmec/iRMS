@@ -129,7 +129,6 @@ public:
             /// material id for a zero order H(div) boundary flux
             m_zeroOrderHdivFluxMatId = other.m_zeroOrderHdivFluxMatId;
 
-
             mGmeshFileName = other.mGmeshFileName;
             
         }
@@ -317,6 +316,8 @@ public:
         REAL mPorosity;
         bool fPropsFromPreProcess = false;
         std::function<std::vector<REAL>(const TPZVec<REAL> & )> kappa_phi;
+        std::vector<std::pair<int, REAL>> m_permeabilitiesbyId;
+        
         std::function<REAL(const TPZVec<REAL> & )> s0;
         std::string mPropsFileName="";
         /** @brief Default constructor */
@@ -337,6 +338,7 @@ public:
             kappa_phi = other.kappa_phi;
             s0=other.s0;
             mPropsFileName=other.mPropsFileName;
+            m_permeabilitiesbyId = other.m_permeabilitiesbyId;
         }
         
         /** @brief Copy assignment operator*/
@@ -346,6 +348,7 @@ public:
             kappa_phi = other.kappa_phi;
             s0=other.s0;
             mPropsFileName=other.mPropsFileName;
+            m_permeabilitiesbyId = other.m_permeabilitiesbyId;
             return *this;
         }
         
@@ -533,6 +536,8 @@ public:
          */
         int m_n_steps;
         
+        int m_BorderElementPresOrder;
+        int m_BorderElementFluxOrder;
         /**
          * @brief Directive for the use of four spaces
          */
@@ -575,6 +580,8 @@ public:
             m_gravity[2] = -10.0;
             m_ISLinearKrModelQ = true;
             m_nThreadsMixedProblem  =0;
+            m_BorderElementPresOrder = 0;
+            m_BorderElementFluxOrder = 0;
             
         }
          /** @brief Destructor */
@@ -601,6 +608,8 @@ public:
             m_gravity               = other.m_gravity;
             m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
+            m_BorderElementPresOrder = other.m_BorderElementPresOrder;
+            m_BorderElementFluxOrder = other.m_BorderElementFluxOrder;
         }
         
         /** @brief Copy assignment operator*/
@@ -627,6 +636,8 @@ public:
             m_gravity               = other.m_gravity;
             m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
+            m_BorderElementPresOrder = other.m_BorderElementPresOrder;
+            m_BorderElementFluxOrder = other.m_BorderElementFluxOrder;
             return *this;
         }
         
@@ -653,7 +664,9 @@ public:
             m_SpaceType             == other.m_SpaceType&&
             m_gravity               == other.m_gravity&&
             m_ISLinearKrModelQ      == other.m_ISLinearKrModelQ&&
-            m_nThreadsMixedProblem  == other.m_nThreadsMixedProblem;
+            m_nThreadsMixedProblem  == other.m_nThreadsMixedProblem&&
+            m_BorderElementPresOrder == other.m_BorderElementPresOrder&&
+            m_BorderElementFluxOrder == other.m_BorderElementFluxOrder;
         }
         
         void Write(TPZStream &buf, int withclassid) const{ //ok

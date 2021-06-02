@@ -1032,11 +1032,11 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         TPZGeoEl *gel = cel->Reference();
         int geldim = gel->Dimension();
         int matId = gel->MaterialId();
-        if(matId==1){
-            transport.fCellsData.fporosity[i]=0.20;
-        }
         if(matId==2){
             transport.fCellsData.fporosity[i]=0.25;
+        }
+        if(matId==1){
+            transport.fCellsData.fporosity[i]=0.20;
         }
         if(matId==10){
             transport.fCellsData.fporosity[i]=0.4;

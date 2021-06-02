@@ -533,13 +533,13 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
             ek.Reset();
             ef.Reset();
             
-            if(gel->Index()==61){
-                int ok=0;
-            }
+//            if(gel->Index()==61){
+//                int ok=0;
+//            }
             el->CalcStiff(ek, ef);
-            filep<<"iel: "<<gel->Index()<< " MatId: "<<gel->MaterialId()<<std::endl;
-                ek.fMat.Print("Ekmat= ", filep, EMathematicaInput);
-            
+//            filep<<"iel: "<<gel->Index()<< " MatId: "<<gel->MaterialId()<<std::endl;
+//                ek.fMat.Print("Ekmat= ", filep, EMathematicaInput);
+//            
             
             
             if (guiInterface) if (guiInterface->AmIKilled()) {
@@ -550,7 +550,7 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
             
             if (!ek.HasDependency()) {
                 ek.ComputeDestinationIndices();
-                filep2<<"iel: "<< gel->Index()<<" "<<ek.fDestinationIndex<<std::endl;
+//                filep2<<"iel: "<< gel->Index()<<" "<<ek.fDestinationIndex<<std::endl;
                 
                 
                 fEquationFilter.Filter(ek.fSourceIndex, ek.fDestinationIndex);
@@ -608,8 +608,8 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
 //    std::cout<<"SubCalcStiffTime: "<<fAsTotalCalcStifSub<<std::endl;
 //    std::cout<<"SubAddKelTime: "<<fAsTotalAdkelsSub<<std::endl;
     
-    std::ofstream fileg("kg.txt");
-    stiffness.Print(fileg);
+//    std::ofstream fileg("kg.txt");
+//    stiffness.Print(fileg);
 }
 
 
