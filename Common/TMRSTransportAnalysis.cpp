@@ -220,7 +220,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
         dx = Solution();
 //        std::cout<<"Sol Correct: "<<std::endl;
         x += dx;
-        std::cout<<x<<std::endl;
+        
 
         LoadSolution(x);
         cmesh->LoadSolutionFromMultiPhysics();
@@ -266,7 +266,6 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     
     LoadSolution(x);
     cmesh->LoadSolutionFromMultiPhysics();
-    
     NewtonIteration();
     x += Solution();
     LoadSolution(x);

@@ -1033,10 +1033,10 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int geldim = gel->Dimension();
         int matId = gel->MaterialId();
         if(matId==2){
-            transport.fCellsData.fporosity[i]=0.2;
+            transport.fCellsData.fporosity[i]=0.25;
         }
         if(matId==1){
-            transport.fCellsData.fporosity[i]=0.25;
+            transport.fCellsData.fporosity[i]=0.20;
         }
         if(matId==10){
             transport.fCellsData.fporosity[i]=0.4;
@@ -1044,8 +1044,10 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         //@TODO crear metodo de acceso
         REAL fracFactor = 0.01;
         REAL volume = gel->Volume();
+        int matid = gel->MaterialId();
         int side = gel->NSides()-1;
-        if (geldim==2) {
+        if (matid==10) {
+            volume = gel->SideArea(gel->NSides()-1);
             volume=volume*fracFactor;
         }
         transport.fCellsData.fVolume[i]=volume;

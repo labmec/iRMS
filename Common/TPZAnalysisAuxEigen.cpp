@@ -229,7 +229,7 @@ void TPZAnalysisAuxEigen::Assemble(){
         m_trans_triplets[i_begin+1] = (Triplet2<REAL>(indexes[0],indexes[1], elmat(0,1)));
         m_trans_triplets[i_begin+2] = (Triplet2<REAL>(indexes[1],indexes[0], elmat(1,0)));
         m_trans_triplets[i_begin+3] = (Triplet2<REAL>(indexes[1],indexes[1], elmat(1,1)));
-//        elmat.Print(std::cout);
+        elmat.Print(std::cout);
         
         
         size_t i_rhs_begin = 2*(iface) + n_cells + 2*(n_internal_faces);
@@ -249,6 +249,9 @@ void TPZAnalysisAuxEigen::Assemble(){
         TPZVec<int64_t> indexes(2);
         indexes[0]=lefteq;
         indexes[1]=righteq;
+        
+//        indexes[0]=righteq;
+//        indexes[1]=lefteq;
         
         TPZFMatrix<double> elmat, ef;
         elmat.Resize(2, 2);
@@ -618,14 +621,44 @@ void TPZAnalysisAuxEigen::AnalyzePattern(){
 
 void TPZAnalysisAuxEigen::Solve(){
     m_transmissibility += m_mass;
+    
+//     TPZFMatrix<REAL> gmatrixmass(m_transmissibility.rows(),m_transmissibility.rows(),0.0);
+//     TPZFMatrix<REAL> gmatrix(m_transmissibility.rows(),m_transmissibility.rows(),0.0);
+//    
+//    for(int i=0; i< m_mass.rows(); i++){
+//        for(int j=0; j< m_mass.rows(); j++){
+//            gmatrixmass(i,j) =m_mass.coeffRef(i, j);
+//        }
+//    }
+    
 //    std::cout<<"Matrix: "<<std::endl;
 //    std::cout<<m_transmissibility.toDense()<<std::endl;
     m_rhs *= -1.0;
 //    std::cout<<"RHS: "<<std::endl;
 //    std::cout<<m_rhs.toDense()<<std::endl;
+    
+
+    
+    
     m_analysis.factorize(m_transmissibility);
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
     m_ds=ds;
+    
+   
+//    TPZFMatrix<REAL> vectorm(m_transmissibility.rows(),1,0.0);
+//    for(int i=0; i< m_transmissibility.rows(); i++){
+//        for(int j=0; j< m_transmissibility.rows(); j++){
+//            gmatrix(i,j) =m_transmissibility.coeffRef(i, j);
+//        }
+//        vectorm(i,0) = ds.coeffRef(i, 0);
+//    }
+//    std::cout<<"MatrixTransportMortar"<<std::endl;
+//    std::ofstream filemortar("matrixmortar.txt");
+//    gmatrixmass.Print("MassMotar=", filemortar, EMathematicaInput);
+//    gmatrix.Print("KgMotar=", filemortar, EMathematicaInput);
+//    vectorm.Print("vector=", filemortar, EMathematicaInput);
+    
+    
 //    std::cout<<"Solution"<<std::endl;
 //    std::cout<<ds<<std::endl;
 }

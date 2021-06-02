@@ -224,7 +224,8 @@ add_subdirectory(HDivSimple)
 # add_subdirectory(Paper2D)
 add_subdirectory(BenchmarkCase1)
 add_subdirectory(SimpleCaseFracture)
-add_subdirectory(SimpleCaseFractureTwoElements)
+add_subdirectory(SimpleCaseTwoFractures)
+add_subdirectory(SimpleCaseThreeFractures)
 
 
 enable_testing()

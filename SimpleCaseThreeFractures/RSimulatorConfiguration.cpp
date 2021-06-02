@@ -655,45 +655,45 @@ TPZAnalysis * RSimulatorConfiguration::CreateAnalysis(TPZMultiphysicsCompMesh * 
     
     TPZAnalysis * analysis = new TPZAnalysis(cmesh_mult, true);
     
-    if (fsim_case.UsePardisoQ) {
-        
-        TPZSymetricSpStructMatrix matrix(cmesh_mult);
-      
-        //        TPZSkylineStructMatrix matrix(cmesh);
-        matrix.SetNumThreads(fsim_case.n_threads);
-        
-        analysis->SetStructuralMatrix(matrix);
-        TPZStepSolver<STATE> step;
-        step.SetDirect(ELDLt);
-        analysis->SetSolver(step);
-        
-        return analysis;
-    }
-    
-//    if (fsim_case.UseFrontalQ) {
-//        
-//        TPZParFrontStructMatrix<TPZFrontSym<STATE> > matrix(cmesh_mult);
-//        matrix.SetDecomposeType(ELDLt);
+//    if (fsim_case.UsePardisoQ) {
+//
+//        TPZSymetricSpStructMatrix matrix(cmesh_mult);
+//
+//        //        TPZSkylineStructMatrix matrix(cmesh);
 //        matrix.SetNumThreads(fsim_case.n_threads);
-//     
+//
 //        analysis->SetStructuralMatrix(matrix);
 //        TPZStepSolver<STATE> step;
 //        step.SetDirect(ELDLt);
 //        analysis->SetSolver(step);
-//        
+//
 //        return analysis;
 //    }
-    else{
-        
-        TPZSkylineStructMatrix matrix(cmesh_mult);
-        matrix.SetNumThreads(fsim_case.n_threads);
-        TPZStepSolver<STATE> step;
-        step.SetDirect(ECholesky);
-        analysis->SetSolver(step);
-        analysis->SetStructuralMatrix(matrix);
-        return analysis;
-    }
-    
+//
+////    if (fsim_case.UseFrontalQ) {
+////
+////        TPZParFrontStructMatrix<TPZFrontSym<STATE> > matrix(cmesh_mult);
+////        matrix.SetDecomposeType(ELDLt);
+////        matrix.SetNumThreads(fsim_case.n_threads);
+////
+////        analysis->SetStructuralMatrix(matrix);
+////        TPZStepSolver<STATE> step;
+////        step.SetDirect(ELDLt);
+////        analysis->SetSolver(step);
+////
+////        return analysis;
+////    }
+//    else{
+//
+//        TPZSkylineStructMatrix matrix(cmesh_mult);
+//        matrix.SetNumThreads(fsim_case.n_threads);
+//        TPZStepSolver<STATE> step;
+//        step.SetDirect(ECholesky);
+//        analysis->SetSolver(step);
+//        analysis->SetStructuralMatrix(matrix);
+//        return analysis;
+//    }
+//
     return analysis;
     
 }
@@ -968,29 +968,29 @@ void RSimulatorConfiguration::InsertInterfacesBetweenElements(int transport_mati
 
 TPZAnalysis * RSimulatorConfiguration::CreateTransportAnalysis(TPZCompMesh * cmesh, SimulationCase & sim_data){
     
-    TPZAnalysis * analysis = new TPZAnalysis(cmesh, true);
-    
-    if (sim_data.UsePardisoQ) {
-        
-        TPZSpStructMatrix matrix(cmesh);
-        matrix.SetNumThreads(sim_data.n_threads);
-        analysis->SetStructuralMatrix(matrix);
-        TPZStepSolver<STATE> step;
-        step.SetDirect(ELU);
-        analysis->SetSolver(step);
-        
-        return analysis;
-    }else{
-        
-        TPZSkylineNSymStructMatrix matrix(cmesh);
-        matrix.SetNumThreads(sim_data.n_threads);
-        TPZStepSolver<STATE> step;
-        step.SetDirect(ELU);
-        analysis->SetSolver(step);
-        analysis->SetStructuralMatrix(matrix);
-        return analysis;
-        
-    }
+//    TPZAnalysis * analysis = new TPZAnalysis(cmesh, true);
+//    
+//    if (sim_data.UsePardisoQ) {
+//        
+//        TPZSpStructMatrix matrix(cmesh);
+//        matrix.SetNumThreads(sim_data.n_threads);
+//        analysis->SetStructuralMatrix(matrix);
+//        TPZStepSolver<STATE> step;
+//        step.SetDirect(ELU);
+//        analysis->SetSolver(step);
+//        
+//        return analysis;
+//    }else{
+//        
+//        TPZSkylineNSymStructMatrix matrix(cmesh);
+//        matrix.SetNumThreads(sim_data.n_threads);
+//        TPZStepSolver<STATE> step;
+//        step.SetDirect(ELU);
+//        analysis->SetSolver(step);
+//        analysis->SetStructuralMatrix(matrix);
+//        return analysis;
+//        
+//    }
     
 }
 TPZFMatrix<STATE> RSimulatorConfiguration::TimeForward(TPZAnalysis * tracer_analysis, int & n_steps, REAL & dt, TPZFMatrix<STATE> & M_diag){
