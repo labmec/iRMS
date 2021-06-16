@@ -638,8 +638,6 @@ void TPZAnalysisAuxEigen::Solve(){
 //    std::cout<<m_rhs.toDense()<<std::endl;
     
 
-    
-    
     m_analysis.factorize(m_transmissibility);
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
     m_ds=ds;

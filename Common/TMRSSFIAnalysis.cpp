@@ -448,7 +448,7 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
     
-    
+    m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
     
 //    fAlgebraicDataTransfer.TransferPressures();
 //    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();

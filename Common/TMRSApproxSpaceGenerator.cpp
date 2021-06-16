@@ -447,7 +447,8 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     }
     buildmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
     buildmatids.insert(bcmatids.begin(),bcmatids.end());
-    cmesh->SetDefaultOrder(mSimData.mTNumerics.m_BorderElementPresOrder);
+    int borderOrder =mSimData.mTNumerics.m_BorderElementFluxOrder;
+    cmesh->SetDefaultOrder(borderOrder);
     cmesh->ApproxSpace().CreateDisconnectedElements(true);
 
     // create all flux elements as discontinuous elements
@@ -757,7 +758,8 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepre
     // create discontinous elements of dimension-1
     cmesh->SetDimModel(dimension-1);
     std::set<int> mortarids = {mSimData.mTGeometry.m_MortarMatId};
-    cmesh->SetDefaultOrder(mSimData.mTNumerics.m_BorderElementPresOrder);
+    int borderOrder = mSimData.mTNumerics.m_BorderElementPresOrder;
+    cmesh->SetDefaultOrder(borderOrder);
     cmesh->ApproxSpace().SetAllCreateFunctionsDiscontinuous();
     cmesh->AutoBuild(mortarids);
     int64_t ncon_new = cmesh->NConnects();
@@ -2752,7 +2754,6 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     if (!material) {
         return;
     }
-    
     TPZMatWithMem<TMRSMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material);
     if (!mat_with_memory) {
         DebugStop();

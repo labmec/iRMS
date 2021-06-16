@@ -118,11 +118,20 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 }
 
 TPZGeoMesh *ReadFractureMesh(){
-    std::string fileFine("../../FracMeshes/Case2Frac.msh");
-//    std::string fileFine("../../FracMeshes/jose_simple0.msh");
+    std::string fileFine("../../FracMeshes/case1_Tetra.msh");
+//    std::string fileFine("../../FracMeshes/jose_simple3.msh");
+    
+    
+//    std::string fileFine("../../FracMeshes/case1_simple_matchnew.msh");
 //    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
-//    std::string fileFine("../../FracMeshes/jose_simple_inc.msh");
 //    std::string fileFine("../../FracMeshes/case_1bas.msh");
+//    std::string fileFine("../../FracMeshes/case1_withoutFrac.msh");
+// std::string fileFine("../../FracMeshes/case1_withFrac.msh");
+    
+    
+    
+//    std::string fileFine("../../FracMeshes/case1_simple_p1q0.msh");
+    
 //    std::string fileFine("../../FracMeshes/case1_simple_5elem.msh");
     
     
@@ -147,10 +156,10 @@ TPZGeoMesh *ReadFractureMesh(){
     dim_name_and_physical_tagFine[2]["Fractures"] = 10;
     dim_name_and_physical_tagFine[2]["Fracture2"] = 10;
     dim_name_and_physical_tagFine[1]["BCfrac0"] = -11;
-    
-    dim_name_and_physical_tagFine[1]["BCFracInlet"] = -12;
-    dim_name_and_physical_tagFine[1]["BCFracOutlet"] = -13;
-    dim_name_and_physical_tagFine[1]["FracIntersection"] = -14;
+//
+//    dim_name_and_physical_tagFine[1]["BCFracInlet"] = -12;
+//    dim_name_and_physical_tagFine[1]["BCFracOutlet"] = -13;
+//    dim_name_and_physical_tagFine[1]["FracIntersection"] = -14;
     
  
     /*
@@ -581,14 +590,17 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTNumerics.m_max_iter_mixed = 1;
     sim_data.mTNumerics.m_max_iter_transport = 1;
     sim_data.mTNumerics.m_max_iter_sfi = 1;
+    //BorderElementOrder
+    sim_data.mTNumerics.m_BorderElementPresOrder=1;
+    sim_data.mTNumerics.m_BorderElementFluxOrder=0;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 101 ;
+    sim_data.mTNumerics.m_n_steps = 1 ;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
+    sim_data.mTNumerics.m_dt      = 1.0;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -598,7 +610,16 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     //FracProperties
-    sim_data.mTFracProperties.m_Permeability = 1.0;
+    //FracAndReservoirProperties
+    sim_data.mTFracProperties.m_Permeability = 0.0001;
+    REAL kappa1=1;
+    REAL kappa2=1;
+    int  id1=1;
+    int  id2=2;
+    std::vector<std::pair<int, REAL>> idPerm(2);
+    idPerm[0]= std::make_pair(id1,kappa1);
+    idPerm[1]= std::make_pair(id2,kappa2);
+    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     
     // PostProcess controls
@@ -652,8 +673,8 @@ void BenchmarkCase1()
      */
     // vector with subdomain index of the geometric elements
     TPZVec<int64_t> subdomain;
-    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
-//    TPZGeoMesh *gmesh = ReadFractureMesh();
+//    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingBenchmarkCase1();
@@ -675,13 +696,17 @@ void BenchmarkCase1()
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-
     
-   bool must_opt_band_width_Q = true;
+    std::ofstream fileinform("Infomation.txt");
+    int neq = mixed_operator->NEquations();
+    int nels = mixed_operator->NElements();
+    fileinform<<"NeqMixed: "<<neq<<std::endl;
+    fileinform<<"NeElements: "<<nels<<std::endl;
+    
+    bool must_opt_band_width_Q = true;
     int n_threads = 0;
     
     //This parameter should be always "true"
-    bool UsingPzSparse = false;
     bool UsePardiso_Q = true;
     
 //    mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
@@ -696,8 +721,7 @@ void BenchmarkCase1()
     
     bool usingpzSparse = false;
     sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
-    
-    
+
     //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
 //    bool usingpzSparse = false;
     
@@ -732,8 +756,6 @@ void BenchmarkCase1()
         sfi_analysis->m_transport_module->SetCurrentTime(dt);
         sfi_analysis->RunTimeStep();
         mixed_operator->LoadSolution(mixed_operator->Solution());
-
-       
         if (sim_time >=  current_report_time) {
             std::cout << "Time step number:  " << it << std::endl;
             std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
@@ -752,14 +774,8 @@ void BenchmarkCase1()
             std::cout << "Mass report at time : " << sim_time << std::endl;
             std::cout << "Mass integral :  " << mass << std::endl;
             TPZFastCondensedElement::fSkipLoadSolution = true;
-            
         }
     }
-    
-    std::cout  << "Number of transport equations = " << sfi_analysis->m_transport_module->Solution().Rows() << std::endl;
-    
-    
-    
     
 //
 //    TPZAlgebraicDataTransfer transfer;
@@ -768,8 +784,6 @@ void BenchmarkCase1()
 //    transfer.BuildTransportDataStructure(transport);
 //
 //    TMRSTransportAnalysis *anal = new TMRSTransportAnalysis(transport_operator, true);
-    
-    
     
     delete gmesh;
 }

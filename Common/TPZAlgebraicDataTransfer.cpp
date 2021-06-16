@@ -1500,8 +1500,6 @@ void TPZAlgebraicDataTransfer::TestSideOrient(TPZCompMesh *MultFlux){
                 std::cout<<"Mult= "<<lag->Multiplier()<<std::endl;
                 int nconects = cmulint->NConnects();
                 for (int icon = 0; icon< nconects; icon++){
-                    //TPZLagrangeMultiplier.()
-                    
                     int lagrange = cmulint->Connect(icon).LagrangeMultiplier();
                     std::cout<<"LagrangeMult= "<<lagrange<<std::endl;
                 }
@@ -1514,9 +1512,5 @@ void TPZAlgebraicDataTransfer::TestSideOrient(TPZCompMesh *MultFlux){
             count++;
         }
     }
-    
-    
-        
-        
 //    }
 }

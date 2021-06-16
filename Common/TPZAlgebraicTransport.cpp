@@ -645,6 +645,7 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
     
     int nels = fCellsData.fVolume.size();
     std::vector<int> nInterfacesByElement(nels);
+    std::vector<int> numZeroFluxByElement(nels);
     std::vector<REAL> SumFluxByElement(nels);
     for( auto interdata: fInterfaceData){
      
@@ -653,21 +654,34 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
         for(int iel = 0; iel<neles; iel++){
             int leftIndex = transport.fLeftRightVolIndex[iel].first;
             int rightIndex = transport.fLeftRightVolIndex[iel].second;
-            int leftIndexeq = fCellsData.fEqNumber[leftIndex];
-            int rightIndeeq = fCellsData.fEqNumber[rightIndex];
-        
-            SumFluxByElement[leftIndexeq] += transport.fIntegralFlux[iel];
-            std::cout<<transport.fIntegralFlux[iel]<<std::endl;
+            REAL fluxInt =transport.fIntegralFlux[iel];
+            if(abs(fluxInt)<1.0e-10){
+                numZeroFluxByElement[leftIndex]++;
+                numZeroFluxByElement[rightIndex]++;
+            }
+            
+            SumFluxByElement[leftIndex] += fluxInt;
+//            std::cout<<transport.fIntegralFlux[iel]<<std::endl;
             nInterfacesByElement[leftIndex] ++;
             if(rightIndex<0){
                 continue;
             }
             nInterfacesByElement[rightIndex] ++;
-            SumFluxByElement[rightIndeeq] += transport.fIntegralFlux[iel];
+            SumFluxByElement[rightIndex] += -1.0*fluxInt;
         }
     }
     for(int iel = 0; iel<nInterfacesByElement.size(); iel++){
-        std::cout<<"Iel: "<<iel<<" nInterfaces: "<<nInterfacesByElement[iel]<<std::endl;
-        std::cout<<"Integral Flux: "<<SumFluxByElement[iel]<<std::endl;
+//        std::cout<<"Iel: "<<iel<<" nInterfaces: "<<nInterfacesByElement[iel]<<std::endl;
+//        std::cout<<"Integral Flux: "<<SumFluxByElement[iel]<<std::endl;
+        if(abs(SumFluxByElement[iel])>1.0e-10){
+            std::cout<<"The sum of the flows on each element must be zero. Element:  "<<iel<<" has a value of"<<SumFluxByElement[iel]<<std::endl;
+            DebugStop();
+        }
+        
+        if(nInterfacesByElement[iel]==numZeroFluxByElement[iel]){
+            std::cout<<"Error: The sum of the flows over the elements is zero because all the flows on the interfaces are zero."<<std::endl;
+            DebugStop();
+        }
     }
+    std::cout<<"The sum of the flows over the elements is zero. ¡This is correct!"<<std::endl;
 }

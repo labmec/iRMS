@@ -68,6 +68,7 @@ public:
     
     /// Perform a Newton iteration
     void NewtonIteration();
+   
     
 };
 

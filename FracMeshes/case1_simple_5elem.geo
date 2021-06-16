@@ -7,7 +7,7 @@
 
 // POINTS DEFINITION 
 
-h = 0;
+h = 100000;
 
 Point(1) = {0,0,0, h};
 Point(2) = {100,0,0, h};
@@ -134,9 +134,9 @@ Volume(6) = {6};
 
 Physical Volume("k31",10) = {4,5,6};
 Physical Volume("k33",3) = {2};
+
+
 // Physical Volume("c17",17) = {4};
-
-
 
  // FRACTURES
 
@@ -156,14 +156,38 @@ Physical Surface("noflux",6) = {1,3,4,5,10,11,12,14,56,57,58,59,60,61,62,63};
 BCfrac0[] = {64,67,66,65};
 Physical Curve("BCfrac0", 10) = {BCfrac0[]};
 
+// //HdivAntigo
+// Physical Volume("RockMatrix_1",10) = {4,5,6};
+// Physical Volume("RockMatrix_2",3) = {2};
+//
+//
+// // Physical Volume("c17",17) = {4};
+//
+//  // FRACTURES
+//
+// frac1[] = {68};
+//
+// Physical Surface("Fractures",2) = {frac1[]};
+//
+//
+//
+// // BOUNDARY CONDITIONS
+//
+// Physical Surface("BCInlet",4) = {13};
+// Physical Surface("BCOutlet",5) = {2};
+// Physical Surface("BCImpervious",6) = {1,3,4,5,10,11,12,14,56,57,58,59,60,61,62,63};
+
+
+// BCfrac0[] = {64,67,66,65};
+// Physical Curve("BCfrac0", 10) = {BCfrac0[]};
+
 // OPTIONS
-
 Coherence Mesh;
-Transfinite Surface{:};
-Transfinite Volume{:};
-Recombine Surface{:};
-Recombine Volume{:};
+// Transfinite Surface{:};
+// Transfinite Volume{:};
+// Recombine Surface{:};
+// Recombine Volume{:};
 
 
-Transfinite Curve{:} = 2;
-Transfinite Curve{48,22,49,38, 24,50,51,40, 26,52,53,42, 28,54,55,44} = 2;
+// Transfinite Curve{:} = 3;
+// Transfinite Curve{48,22,49,38, 24,50,51,40, 26,52,53,42, 28,54,55,44} = 3;

@@ -188,6 +188,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
        
     Solve();
     
+    
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
     auto deltat2 = tsim3-tsim2;
@@ -207,12 +208,11 @@ void TMRSMixedAnalysis::PostProcessTimeStep(){
     
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();
-    std::set<int> mat_id_2D;
-    mat_id_2D.insert(10);
-    std::string file_frac("fractureFlux_s.vtk");
-    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
-    PostProcess(div,2);
-    
+//    std::set<int> mat_id_2D;
+//    mat_id_2D.insert(10);
+//    std::string file_frac("fractureFlux_s.vtk");
+//    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
+//    PostProcess(div,2);
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
     DefineGraphMesh(dim,scalnames,vecnames,file);
     PostProcess(div,dim);
