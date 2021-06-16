@@ -1311,9 +1311,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, fileprint);
     
     std::set<int> volmatId;
+    
     volmatId.insert(10);
-//    
     TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false,volmatId);
+    
 #ifdef PZDEBUG
     {
         std::stringstream file_name;

@@ -94,8 +94,10 @@ void TMRSMixedAnalysis::RunTimeStep(){
         cmesh->UpdatePreviousState(-1.);
         fsoltransfer.TransferFromMultiphysics();
 //        std::ofstream filesol("SolFlux.txt");
+//        std::ofstream filesolRhs("Rhs.txt");
 //        cmesh->MeshVector()[0]->Print(filesol);
 //        cmesh->Print(filesol);
+//        Rhs().Print("jose.txt");
         
 #ifdef USING_BOOST
         boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();

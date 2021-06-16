@@ -118,7 +118,9 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 }
 
 TPZGeoMesh *ReadFractureMesh(){
-    std::string fileFine("../../FracMeshes/case1_Tetra.msh");
+//    std::string fileFine("../../FracMeshes/case1_Tetra.msh");
+    std::string fileFine("../../FracMeshes/simple_tetra.msh");
+    
 //    std::string fileFine("../../FracMeshes/jose_simple3.msh");
     
     
@@ -587,7 +589,7 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTFluidProperties.mOilDensityRef = 1000.0;
     
     // Numerical controls
-    sim_data.mTNumerics.m_max_iter_mixed = 1;
+    sim_data.mTNumerics.m_max_iter_mixed = 5;
     sim_data.mTNumerics.m_max_iter_transport = 1;
     sim_data.mTNumerics.m_max_iter_sfi = 1;
     //BorderElementOrder
