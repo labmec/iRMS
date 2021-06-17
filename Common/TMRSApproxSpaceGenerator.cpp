@@ -760,7 +760,15 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepre
     std::set<int> mortarids = {mSimData.mTGeometry.m_MortarMatId};
     int borderOrder = mSimData.mTNumerics.m_BorderElementPresOrder;
     cmesh->SetDefaultOrder(borderOrder);
-    cmesh->ApproxSpace().SetAllCreateFunctionsDiscontinuous();
+    if(borderOrder == 0)
+    {
+        cmesh->ApproxSpace().SetAllCreateFunctionsDiscontinuous();
+    }
+    else
+    {
+        cmesh->ApproxSpace().SetAllCreateFunctionsContinuous();
+        cmesh->ApproxSpace().CreateDisconnectedElements(true);
+    }
     cmesh->AutoBuild(mortarids);
     int64_t ncon_new = cmesh->NConnects();
     for (int64_t ic = nconnects; ic<ncon_new; ic++) {
