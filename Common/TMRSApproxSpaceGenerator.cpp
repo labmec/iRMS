@@ -3066,7 +3066,6 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     if (true) {
         KeepOneLagrangian = false;
     }
-    
     typedef std::set<int64_t> TCompIndexes;
     std::map<int64_t, TCompIndexes> ElementGroups;
     TPZGeoMesh *gmesh = cmesh->Reference();
@@ -3080,7 +3079,8 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         if(!gel){
             continue;
         }
-        TPZCompEl *cel =gel->Reference();;
+        TPZCompEl *cel =gel->Reference();
+        if(!cel){continue;}
         int indexel = cel->Index();
      
 //        TPZCompEl *cel2 = cmesh->ElementVec()[indexel];
