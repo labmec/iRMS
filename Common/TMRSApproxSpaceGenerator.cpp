@@ -1301,6 +1301,11 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         TPZGeoEl *gel = cel->Reference();
         if(gel->Dimension() == dim) seed.insert(el);
     }
+
+
+    HideTheElements(mMixedOperator);
+    
+
     // this will only group volumetric elements
     TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
     mMixedOperator->ComputeNodElCon();
@@ -1315,6 +1320,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
 //    TPZCompMeshTools::CondenseElements(mMixedOperator, pressuremortar, false);
 //     only fracture elements
+
 
     std::ofstream fileprint("mixedMortar.vtk");
     TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, fileprint);
@@ -1355,8 +1361,6 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 //        mMixedOperator->Print(sout);
     }
 #endif
-    
-    HideTheElements(mMixedOperator);
     
 }
 
