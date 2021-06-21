@@ -34,6 +34,7 @@ TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator()
     mGeometry = nullptr;
     mMixedOperator = nullptr;
     mTransportOperator = nullptr;
+   
     
 }
 
@@ -1344,6 +1345,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
     //jv
     TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
+    std::ofstream file("mixed.vtk");
+    TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
 #ifdef PZDEBUG
     {
         std::stringstream file_name;
@@ -1353,7 +1356,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     }
 #endif
     
-
+    HideTheElements(mMixedOperator);
     
 }
 
@@ -3054,4 +3057,68 @@ void TMRSApproxSpaceGenerator::CreateTransportElement(int p_order, TPZCompMesh *
         DebugStop();
     }
     gel->ResetReference();
+}
+void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
+    int KeepOneLagrangian = 3;
+//    if (fHybridize) {
+//        KeepOneLagrangian = false;
+//    }
+    if (true) {
+        KeepOneLagrangian = false;
+    }
+    
+    typedef std::set<int64_t> TCompIndexes;
+    std::map<int64_t, TCompIndexes> ElementGroups;
+    TPZGeoMesh *gmesh = cmesh->Reference();
+    gmesh->ResetReference();
+    cmesh->LoadReferences();
+//    TPZGeoMesh *gmesh = fCMesh->Reference();
+//    gmesh->ResetReference();
+    int64_t nel = mSubdomainIndexGel.size();
+    for (int64_t el=0; el<nel; el++) {
+        TPZGeoEl *gel = gmesh->Element(el);
+        if(!gel){
+            continue;
+        }
+        TPZCompEl *cel =gel->Reference();;
+        int indexel = cel->Index();
+     
+//        TPZCompEl *cel2 = cmesh->ElementVec()[indexel];
+//        if(!cel2){
+//            DebugStop();
+//        }
+        int64_t domain = mSubdomainIndexGel[el];
+        if (domain == -1) {
+            continue;
+        }
+        ElementGroups[domain].insert(indexel);
+    }
+    if (ElementGroups.size() <= 5)
+    {
+        std::cout << "Number of element groups " << ElementGroups.size() << std::endl;
+        std::map<int64_t,TCompIndexes>::iterator it;
+        for (it=ElementGroups.begin(); it != ElementGroups.end(); it++) {
+            std::cout << "Group " << it->first << " group size " << it->second.size() << std::endl;
+            std::cout << " elements ";
+            std::set<int64_t>::iterator its;
+            for (its = it->second.begin(); its != it->second.end(); its++) {
+                std::cout << *its << "|" << cmesh->Element(*its)->Reference()->Index() << " ";
+            }
+            std::cout << std::endl;
+        }
+    }
+    
+    std::map<int64_t,int64_t> submeshindices;
+    TPZCompMeshTools::PutinSubmeshes(cmesh, ElementGroups, submeshindices, KeepOneLagrangian);
+    
+    
+    std::cout << "After putting in substructures\n";
+//    fMHMtoSubCMesh = submeshindices;
+    cmesh->ComputeNodElCon();
+    cmesh->CleanUpUnconnectedNodes();
+    
+//    GroupandCondenseElements();
+    //    GroupandCondenseElementsEigen();
+    
+    std::cout << "Finished substructuring\n";
 }

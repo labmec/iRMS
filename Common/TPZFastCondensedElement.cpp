@@ -639,3 +639,10 @@ void TPZFastCondensedElement::ComputeConstantPressureValues()
 }
 
 
+void TPZFastCondensedElement::SetConnectIndex(int inode, int64_t index){
+    TPZCompEl *candidate = this->ReferenceCompEl();
+    TPZMultiphysicsElement * mphys = dynamic_cast<TPZMultiphysicsElement *>(candidate);
+    this->SetMultiphysics(mphys);
+    mphys->SetConnectIndex(inode, index);
+    int ok=0;
+}

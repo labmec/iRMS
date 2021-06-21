@@ -181,6 +181,7 @@ public:
     
     void SetPermTensorAndInv(TPZFNMatrix<9, REAL> &PermeabilityTensor, TPZFNMatrix<9, REAL> &InvPerm);
     TPZFMatrix<REAL> &GetPermTensor();
+    void SetConnectIndex(int inode, int64_t index);
     
 };
 #endif /* TPZFASTCONDENSEDELEMENT_h */

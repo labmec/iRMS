@@ -74,7 +74,7 @@ public:
     
     void SetGeometry(TPZGeoMesh * geometry);
     
-    void SetSubdomainIndexes(TPZVec<int64_t> subIndexes){
+    void SetSubdomainIndexes(TPZVec<int64_t> &subIndexes){
         mSubdomainIndexGel =subIndexes;
     }
     TPZVec<int64_t> GetSubdomainIndexes(){
@@ -183,6 +183,7 @@ public:
     void TestSideOrient(TPZCompMesh *MultFlux);
     void TakeElementsbyID(std::map<int, std::vector<TPZGeoEl* >> &, std::vector<int> & );
     void VerifySideOrientsCoarseFine(TPZCompMesh *fluxCmesh);
+    void HideTheElements(TPZCompMesh *cmesh);
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

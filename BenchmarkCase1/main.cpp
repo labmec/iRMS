@@ -42,8 +42,13 @@ void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh, TPZVec<int64_t> &
 
 TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 {
-        std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
-        std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
+//        std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
+//        std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
+    
+    std::string fileFine("../../FracMeshes/jose6_fine.msh");
+    std::string fileCoarse("../../FracMeshes/jose6_coarse.msh");
+    
+    
 //    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
 //    std::string fileFine("../../FracMeshes/flem_case1_Fine_BC.msh");
 //
@@ -119,9 +124,9 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 
 TPZGeoMesh *ReadFractureMesh(){
 //    std::string fileFine("../../FracMeshes/case1_Tetra.msh");
-    std::string fileFine("../../FracMeshes/simple_tetra.msh");
+//    std::string fileFine("../../FracMeshes/simple_tetra.msh");
     
-//    std::string fileFine("../../FracMeshes/jose_simple3.msh");
+    std::string fileFine("../../FracMeshes/CaseCube.msh");
     
     
 //    std::string fileFine("../../FracMeshes/case1_simple_matchnew.msh");
@@ -564,15 +569,18 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     int zero_flux=0.0;
     REAL pressure_in = 4.0 ;
     REAL pressure_out = 1.0 ;
+    REAL flux_int = -1.5;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,N_Type,flux_int);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-4,D_Type,pressure_out);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-5,N_Type,zero_flux);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] =
         std::make_tuple(-11,N_Type,zero_flux);
+    
+    
     //Transport boundary Conditions
     int bc_inlet = 0;
     int bc_outlet = 1;
@@ -594,15 +602,15 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTNumerics.m_max_iter_sfi = 1;
     //BorderElementOrder
     sim_data.mTNumerics.m_BorderElementPresOrder=1;
-    sim_data.mTNumerics.m_BorderElementFluxOrder=0;
+    sim_data.mTNumerics.m_BorderElementFluxOrder=1;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 1 ;
+    sim_data.mTNumerics.m_n_steps = 3;
     REAL day = 86400.0;
-    sim_data.mTNumerics.m_dt      = 1.0;//*day;
+    sim_data.mTNumerics.m_dt      = 0.05;//*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -613,9 +621,9 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     
     //FracProperties
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 0.0001;
-    REAL kappa1=1;
-    REAL kappa2=1;
+    sim_data.mTFracProperties.m_Permeability = 1.0;
+    REAL kappa1=1.0;
+    REAL kappa2=1.0;
     int  id1=1;
     int  id2=2;
     std::vector<std::pair<int, REAL>> idPerm(2);
@@ -675,15 +683,15 @@ void BenchmarkCase1()
      */
     // vector with subdomain index of the geometric elements
     TPZVec<int64_t> subdomain;
-//    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
-    TPZGeoMesh *gmesh = ReadFractureMesh();
+    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
+//    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingBenchmarkCase1();
     sim_data.mTGeometry.mSkeletonDiv =0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q = false;
+    sim_data.mTNumerics.m_mhm_mixed_Q = true;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
@@ -698,86 +706,112 @@ void BenchmarkCase1()
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    
-    std::ofstream fileinform("Infomation.txt");
-    int neq = mixed_operator->NEquations();
-    int nels = mixed_operator->NElements();
-    fileinform<<"NeqMixed: "<<neq<<std::endl;
-    fileinform<<"NeElements: "<<nels<<std::endl;
-    
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
     
     //This parameter should be always "true"
     bool UsePardiso_Q = true;
     
-//    mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-//    mixedAnal->SetDataTransfer(&sim_data);
-    aspace.BuildTransportMultiPhysicsCompMesh();
-    TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
-    std::ofstream file("transportyMult.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
-    
-    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
-    sfi_analysis->SetDataTransfer(&sim_data);
-    
-    bool usingpzSparse = false;
-    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
-
-    //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
-//    bool usingpzSparse = false;
-    
-    //The parallelism is just implemented for the "UsingPzSparse=True" case, with eigen for now is running in serial (the next task to do)
-    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
-    int n_steps = sim_data.mTNumerics.m_n_steps;
-    REAL dt = sim_data.mTNumerics.m_dt;
-    
-    
-    TPZStack<REAL,100> reporting_times;
-    reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
-    
-    REAL sim_time = 0.0;
-    int pos =0;
-    REAL current_report_time = reporting_times[pos];
-    int npos = reporting_times.size();
-    
-    sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
-    REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-    
-    std::cout << "Mass report at time : " << 0.0 << std::endl;
-    std::cout << "Mass integral :  " << initial_mass << std::endl;
-    
-    TPZFastCondensedElement::fSkipLoadSolution = false;
-    bool first=true;
-    for (int it = 1; it <= n_steps; it++) {
-        sim_time = it*dt;
-        if (sim_time >=  current_report_time) {
-            TPZFastCondensedElement::fSkipLoadSolution = false;
-        }
+    //
+    {
         
-        sfi_analysis->m_transport_module->SetCurrentTime(dt);
-        sfi_analysis->RunTimeStep();
+        TMRSMixedAnalysis *mixedAnal = new TMRSMixedAnalysis(mixed_operator,must_opt_band_width_Q);
+        //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
+        bool UsingPzSparse = false;
+        mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+        mixedAnal->SetDataTransfer(&sim_data);
+        
+        mixedAnal->Assemble();
+        mixedAnal->Solve();
+        mixed_operator->UpdatePreviousState(-1.);
+        TPZFastCondensedElement::fSkipLoadSolution = false;
         mixed_operator->LoadSolution(mixed_operator->Solution());
-        if (sim_time >=  current_report_time) {
-            std::cout << "Time step number:  " << it << std::endl;
-            std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
-            if(first==true){
-                sfi_analysis->PostProcessTimeStep(1);
-                first=false;
-            }
-//            if(pos >=npos-2){
-                sfi_analysis->PostProcessTimeStep(2);
-//            }
-            
-            pos++;
-            current_report_time =reporting_times[pos];
-            
-            REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-            std::cout << "Mass report at time : " << sim_time << std::endl;
-            std::cout << "Mass integral :  " << mass << std::endl;
-            TPZFastCondensedElement::fSkipLoadSolution = true;
-        }
+        mixedAnal->fsoltransfer.TransferFromMultiphysics();
+        mixedAnal->PostProcessTimeStep();
     }
+    
+    return;
+    
+//    
+//    std::ofstream fileinform("Infomation.txt");
+//    int neq = mixed_operator->NEquations();
+//    int nels = mixed_operator->NElements();
+//    fileinform<<"NeqMixed: "<<neq<<std::endl;
+//    fileinform<<"NeElements: "<<nels<<std::endl;
+//    
+//    bool must_opt_band_width_Q = true;
+//    int n_threads = 0;
+//    
+//    //This parameter should be always "true"
+//    bool UsePardiso_Q = true;
+//    
+////    mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+////    mixedAnal->SetDataTransfer(&sim_data);
+//    aspace.BuildTransportMultiPhysicsCompMesh();
+//    TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
+//    std::ofstream file("transportyMult.vtk");
+//    TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
+//    
+//    TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+//    sfi_analysis->SetDataTransfer(&sim_data);
+//    
+//    bool usingpzSparse = false;
+//    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
+//
+//    //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
+////    bool usingpzSparse = false;
+//    
+//    //The parallelism is just implemented for the "UsingPzSparse=True" case, with eigen for now is running in serial (the next task to do)
+//    sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);
+//    int n_steps = sim_data.mTNumerics.m_n_steps;
+//    REAL dt = sim_data.mTNumerics.m_dt;
+//    
+//    
+//    TPZStack<REAL,100> reporting_times;
+//    reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
+//    
+//    REAL sim_time = 0.0;
+//    int pos =0;
+//    REAL current_report_time = reporting_times[pos];
+//    int npos = reporting_times.size();
+//    
+//    sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
+//    REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+//    
+//    std::cout << "Mass report at time : " << 0.0 << std::endl;
+//    std::cout << "Mass integral :  " << initial_mass << std::endl;
+//    
+//    TPZFastCondensedElement::fSkipLoadSolution = false;
+//    bool first=true;
+//    for (int it = 1; it <= n_steps; it++) {
+//        sim_time = it*dt;
+//        if (sim_time >=  current_report_time) {
+//            TPZFastCondensedElement::fSkipLoadSolution = false;
+//        }
+//        
+//        sfi_analysis->m_transport_module->SetCurrentTime(dt);
+//        sfi_analysis->RunTimeStep();
+//        mixed_operator->LoadSolution(mixed_operator->Solution());
+//        if (sim_time >=  current_report_time) {
+//            std::cout << "Time step number:  " << it << std::endl;
+//            std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
+//            if(first==true){
+//                sfi_analysis->PostProcessTimeStep(1);
+//                first=false;
+//            }
+//            if(pos >=npos-2){
+//                sfi_analysis->PostProcessTimeStep(2);
+//            }
+//            
+//            pos++;
+//            current_report_time =reporting_times[pos];
+//            
+//            REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+//            std::cout << "Mass report at time : " << sim_time << std::endl;
+//            std::cout << "Mass integral :  " << mass << std::endl;
+//            TPZFastCondensedElement::fSkipLoadSolution = true;
+//        }
+//    }
     
 //
 //    TPZAlgebraicDataTransfer transfer;

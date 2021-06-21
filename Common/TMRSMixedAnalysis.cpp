@@ -162,7 +162,8 @@ void TMRSMixedAnalysis::NewtonIteration(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-//            sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+//            int numthreads = 0;
+//                sub->SetAnalysisSparse(0); sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
 //                TPZSymetricSpStructMatrixEigen matrix(sub);
 //                //matrix.SetNumThreads(n_threads);
 //                sub->Analysis()->SetStructuralMatrix(matrix);

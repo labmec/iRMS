@@ -76,6 +76,7 @@ void TPZMFSolutionTransfer::MeshTransferData::InsertMatches(TPZCompEl *cel)
     if(cond) return InsertMatches(cond);
     TPZMultiphysicsInterfaceElement *intf = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
     if(intf) return;
+    return;
     DebugStop();
 }
 
