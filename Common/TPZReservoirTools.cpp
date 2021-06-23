@@ -284,3 +284,67 @@ void TPZReservoirTools::TakeElementsbyID(TPZGeoMesh *mGeometry, std::map<int, st
         }
     }
 }
+/// group elements that share a connect with the basis elements
+void TPZReservoirTools::GroupNeighbourElements(TPZCompMesh *cmesh, const std::set<int64_t> &seed_elements, std::set<int64_t> &groupindexes)
+{
+    TPZVec<int64_t> connectgroup(cmesh->NConnects(),-1);
+    int64_t nel = cmesh->NElements();
+    TPZVec<int64_t> elhandled(nel,0);
+    for(auto el : seed_elements)
+    {
+        elhandled[el] = 1;
+        int64_t index;
+        TPZElementGroup *elgr = new TPZElementGroup(*cmesh,index);
+        if(index < nel) elhandled[index] = 1;
+        groupindexes.insert(index);
+        TPZCompEl *cel = cmesh->Element(el);
+        int nc = cel->NConnects();
+        for(int ic=0; ic<nc; ic++)
+        {
+            int64_t cindex = cel->ConnectIndex(ic);
+#ifdef PZDEBUG
+            // the elements in seed_elements should not share any connect
+            if(connectgroup[cindex] != -1) DebugStop();
+#endif
+            connectgroup[cindex] = index;
+        }
+        elgr->AddElement(cel);
+    }
+    for(int64_t el = 0; el < nel; el++)
+    {
+        if(elhandled[el]) continue;
+        TPZCompEl *cel = cmesh->Element(el);
+        if(!cel) continue;
+        std::set<int64_t> groups;
+        int nc = cel->NConnects();
+        for(int ic=0; ic<nc; ic++)
+        {
+            int64_t cindex = cel->ConnectIndex(ic);
+            int64_t group = connectgroup[cindex];
+            if(group != -1) groups.insert(group);
+        }
+        if(groups.size()>1) DebugStop();
+        if(groups.size())
+        {
+            int64_t group = *groups.begin();
+            TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *>(cmesh->Element(group));
+            elgr->AddElement(cel);
+        }
+    }
+}
+void TPZReservoirTools::TakeSeedElements(TPZCompMesh *cmesh, std::set<int64_t> &seed_elements){
+    
+    int64_t nel = cmesh->NElements();
+    int dim = cmesh->Dimension();
+    for (int64_t el = 0; el<nel; el++) {
+        TPZCompEl *cel = cmesh->Element(el);
+        if(!cel){
+            continue;
+        }
+        TPZGeoEl *gel = cel->Reference();
+        if(gel->Dimension() == dim) {
+            std::set<int64_t> seed;
+            seed_elements.insert(el);
+        }
+    }
+}

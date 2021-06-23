@@ -17,7 +17,7 @@
 #include "TPZMeshSolution.h"
 #include "TPZFastCondensedElement.h"
 #include "TPZMultiphysicsCompMesh.h"
-
+#include "TPZCompMeshTools.h"
 #ifndef ReservoirTools_hpp
 #define ReservoirTools_hpp
 
@@ -33,6 +33,9 @@ public:
     static void TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh,  std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons);
     static void TakeElementsbyID(TPZGeoMesh *mGeometry, std::map<int, std::vector<TPZGeoEl* >> &interfaces, std::vector<int> &matIds);
     static void FindCondensed(TPZCompEl *cel, TPZStack<TPZFastCondensedElement *> &condensedelements);
+    static void GroupNeighbourElements(TPZCompMesh *cmesh, const std::set<int64_t> &seed_elements, std::set<int64_t> &groupindexes);
+    static void TakeSeedElements(TPZCompMesh *cmesh,  std::set<int64_t> &seed_elements);
+    
 };
 
 

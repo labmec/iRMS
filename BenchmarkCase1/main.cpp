@@ -45,8 +45,11 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 //        std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
 //        std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
     
-    std::string fileFine("../../FracMeshes/jose6_fine.msh");
-    std::string fileCoarse("../../FracMeshes/jose6_coarse.msh");
+//    std::string fileFine("../../FracMeshes/jose6_fine.msh");
+//    std::string fileCoarse("../../FracMeshes/jose6_coarse.msh");
+//
+    std::string fileFine("../../FracMeshes/embedFrac_subWithFrac.msh");
+    std::string fileCoarse("../../FracMeshes/embedFrac_coarse.msh");
     
     
 //    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
@@ -79,8 +82,13 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
      */
     dim_name_and_physical_tagFine[2]["Fractures"] = 10;
     dim_name_and_physical_tagFine[2]["Fracture2"] = 10;
+    dim_name_and_physical_tagFine[2]["frac0"] = 10;
     dim_name_and_physical_tagFine[1]["BCfrac0"] = -11;
     
+    
+    dim_name_and_physical_tagFine[1]["nofluxFrac"] = -11;
+    dim_name_and_physical_tagFine[1]["outletFrac"] = -11;
+    dim_name_and_physical_tagFine[1]["inletFrac"] = -11;
     for(int i=1; i<=100; i++)
     {
         std::stringstream sout;

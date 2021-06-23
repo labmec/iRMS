@@ -43,6 +43,11 @@ public:
        {
            
        }
+    ~TPZSymetricSpStructMatrixEigen()
+    {
+        std::cout<<"Des"<<std::endl;
+        int o=0;
+    }
     boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
     boost::posix_time::time_duration fAsTotalCalcStifSub = tsim2-tsim2;
     boost::posix_time::time_duration fAsTotalAdkelsSub = tsim2-tsim2;

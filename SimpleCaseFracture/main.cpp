@@ -93,8 +93,6 @@ void LearningReadFracMesh()
         mixedAnal->PostProcessTimeStep();
     }
     
-    
-    
 }
 
 TMRSDataTransfer SettingSimpleFracCase(){
