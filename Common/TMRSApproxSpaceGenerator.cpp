@@ -1331,7 +1331,12 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
                 TPZReservoirTools::CondenseElements(subcmesh, fluxmortar, false);
                 std::ofstream file("mixed.vtk");
                 TPZVTKGeoMesh::PrintCMeshVTK(subcmesh, file);
-                 subcmesh->SetAnalysisSparse(0);
+//                 subcmesh->SetAnalysisSparse(0);
+//                void SetAnalysisSkyline(int numThreads, int preconditioned, TPZAutoPointer<TPZGuiInterface> guiInterface);
+//                int numthreads = 0;
+//                int preconditioned = 0;
+                TPZAutoPointer<TPZGuiInterface> zero;
+                subcmesh->SetAnalysisSkyline(numthreads,preconditioned,zero);
             }
         }
     }
@@ -1383,7 +1388,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         std::stringstream file_name;
         file_name  << "mixed_cmesh_four_space_mortar_two_condense" << ".txt";
         std::ofstream sout(file_name.str().c_str());
-//        mMixedOperator->Print(sout);
+        mMixedOperator->Print(sout);
     }
 #endif
     
