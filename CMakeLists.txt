@@ -10,6 +10,7 @@ IF (WIN32)
 	# Prevents timespec redefinition problem with Visual Studio 2015
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DHAVE_STRUCT_TIMESPEC")
 ELSE (WIN32)
+	add_definitions(-DPZDEBUG)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-narrowing")#this flag is for preventing errors when casting from double to float
 ENDIF()
@@ -226,6 +227,7 @@ add_subdirectory(BenchmarkCase1)
 add_subdirectory(SimpleCaseFracture)
 add_subdirectory(SimpleCaseTwoFractures)
 add_subdirectory(SimpleCaseThreeFractures)
+add_subdirectory(OnlyTwoFractures)
 
 
 enable_testing()
