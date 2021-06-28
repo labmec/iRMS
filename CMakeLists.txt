@@ -228,6 +228,7 @@ add_subdirectory(SimpleCaseFracture)
 add_subdirectory(SimpleCaseTwoFractures)
 add_subdirectory(SimpleCaseThreeFractures)
 add_subdirectory(OnlyTwoFractures)
+add_subdirectory(2Elements2Spaces2D)
 
 
 enable_testing()

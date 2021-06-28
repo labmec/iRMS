@@ -16,12 +16,21 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
 
+#include "TPZHybridizeHDiv.h"
+
 #include "pzlog.h"
+
+using namespace std;
 
 void CaseSimple2Frac();
 TMRSDataTransfer Setting2Fractures();
 TPZGeoMesh *ReadFractureMesh();
 
+void identifyElementSidesOnIntersection(TPZGeoMesh *gmesh);
+void HybridizeIntersection(TPZMultiphysicsCompMesh*& mmesh);
+TPZCompElSide RightElement(TPZInterpolatedElement *intel, int side);
+
+std::tuple<int64_t, int> SplitConnects(const TPZCompElSide &left, const TPZCompElSide &right, TPZVec<TPZCompMesh *> &meshvec_Hybrid);
 
 
 int main(){
@@ -46,14 +55,18 @@ void CaseSimple2Frac()
     TPZVec<int64_t> subdomain;
     //    TPZGeoMesh *gmesh = ReadFractureMesh(subdomain);
     TPZGeoMesh *gmesh = ReadFractureMesh();
+  
+    identifyElementSidesOnIntersection(gmesh);
+    
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = Setting2Fractures();
-    sim_data.mTGeometry.mSkeletonDiv =0;
+    sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q = false;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
+//    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E2Space;
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
     aspace.SetSubdomainIndexes(subdomain);
@@ -67,6 +80,13 @@ void CaseSimple2Frac()
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     
+    
+    // ------ Hybridizing fracture intersection -------
+    TPZHybridizeHDiv hybridizer(mixed_operator->MeshVector());
+    hybridizer.DimToHybridize() = 2; // fracture dimension
+    hybridizer.MatIDToHybridize() = -14; // hardcoded for now
+    hybridizer.Hybridize(mixed_operator);
+    // ------ End of hybridizing fracture intersection -------
     
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
@@ -86,6 +106,265 @@ void CaseSimple2Frac()
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
     mixAnalisys->PostProcessTimeStep();
     delete gmesh;
+}
+
+void HybridizeIntersection(TPZMultiphysicsCompMesh*& mmesh){
+    TPZCompMesh* fluxmesh = mmesh->MeshVector()[0];
+    TPZGeoMesh* gmesh = fluxmesh->Reference();
+    gmesh->ResetReference();
+    fluxmesh->LoadReferences();
+    int dim = gmesh->Dimension();
+    
+    int64_t nel = fluxmesh->NElements();
+    std::list<std::tuple<int64_t, int> > pressures;
+    for (int64_t el = 0; el < nel; el++) {
+        TPZCompEl *cel = fluxmesh->Element(el);
+        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *> (cel);
+        
+        // We only want 2d fracture, thus dim-1
+        if (!intel || intel->Reference()->Dimension() != dim-1) {
+            continue;
+        }
+        // loop over the side of dimension dim-2 (edges of fracture)
+        TPZGeoEl *gel = intel->Reference();
+        for (int side = gel->NCornerNodes(); side < gel->NSides() - 1; side++) {
+            if (gel->SideDimension(side) != dim - 2) {
+                continue;
+            }
+            
+            TPZGeoElSide gelside(gel,side);
+            TPZGeoElSide neigh = gelside.Neighbour();
+            while(neigh != gelside){
+                int neighmatid = neigh.Element()->MaterialId();
+                int neighdim = neigh.Dimension();
+                
+                if (neighmatid == -14 && neighdim == 1) {
+                    cout << "\nElement with ID " << gel->Id() << " and index " << gel->Index() << " has side number " << side << " with dim = " << neigh.Dimension() << " touching the intersection" << endl;
+                    cout << "===> Splitting its connects" << endl;
+                    TPZCompElSide celside(intel, side);
+                    TPZCompElSide neighcomp = RightElement(intel, side);
+                    if (neighcomp) {
+                        // SplitConnects returns the geometric element index and interpolation order
+                        pressures.push_back(SplitConnects(celside, neighcomp, mmesh->MeshVector()));
+                    }
+                }
+                neigh = neigh.Neighbour();
+            } // while
+            
+        }
+    }
+    fluxmesh->InitializeBlock();
+    fluxmesh->ComputeNodElCon();
+    
+    TPZCompMesh *pressuremesh = mmesh->MeshVector()[1];
+    gmesh->ResetReference();
+    pressuremesh->SetDimModel(gmesh->Dimension()-1);
+    for (auto pindex : pressures) {
+        int64_t elindex;
+        int order;
+        std::tie(elindex, order) = pindex;
+        TPZGeoEl *gel = gmesh->Element(elindex);
+        int64_t celindex;
+        TPZCompEl *cel = pressuremesh->ApproxSpace().CreateCompEl(gel, *pressuremesh, celindex);
+        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *> (cel);
+        TPZCompElDisc *intelDisc = dynamic_cast<TPZCompElDisc *> (cel);
+        if (intel){
+            intel->PRefine(order);
+            //            intel->SetSideOrder(gel->NSides() - 1, order);
+        } else if (intelDisc) {
+            intelDisc->SetDegree(order);
+            intelDisc->SetTrueUseQsiEta();
+        } else {
+            DebugStop();
+        }
+        int n_connects = cel->NConnects();
+        for (int i = 0; i < n_connects; ++i) {
+            cel->Connect(i).SetLagrangeMultiplier(2);
+        }
+        gel->ResetReference();
+    }
+    pressuremesh->InitializeBlock();
+    pressuremesh->SetDimModel(gmesh->Dimension());
+}
+
+std::tuple<int64_t, int> SplitConnects(const TPZCompElSide &left, const TPZCompElSide &right, TPZVec<TPZCompMesh *> &meshvec_Hybrid) {
+
+    const int matIdDivWrap = -100, matIdLagrage = -101;
+    
+    TPZCompMesh *fluxmesh = meshvec_Hybrid[0];
+    //TPZCompMesh *pressuremesh = meshvec[1];
+    //TPZGeoMesh *gmesh = fluxmesh->Reference();
+    TPZGeoElSide gleft(left.Reference());
+    TPZGeoElSide gright(right.Reference());
+    TPZInterpolatedElement *intelleft = dynamic_cast<TPZInterpolatedElement *> (left.Element());
+    TPZInterpolatedElement *intelright = dynamic_cast<TPZInterpolatedElement *> (right.Element());
+    intelleft->SetSideOrient(left.Side(), 1);
+    intelright->SetSideOrient(right.Side(), 1);
+    TPZStack<TPZCompElSide> equalright;
+    TPZConnect &cleft = intelleft->SideConnect(0, left.Side());
+
+    if (cleft.HasDependency()) {
+        // check whether the wrap of the large element was already created
+        gright.EqualLevelCompElementList(equalright,1,0);
+        // only one wrap element should exist
+#ifdef PZDEBUG
+        if(equalright.size() > 1)
+        {
+            DebugStop();
+        }
+        if(equalright.size()==1)
+        {
+            TPZGeoEl *equalgel = equalright[0].Element()->Reference();
+            if(equalgel->Dimension() != fluxmesh->Dimension()-1)
+            {
+                DebugStop();
+            }
+        }
+#endif
+        // reset the reference of the wrap element
+        if(equalright.size()) equalright[0].Element()->Reference()->ResetReference();
+        cleft.RemoveDepend();
+    }
+    else
+    {
+        int64_t index = fluxmesh->AllocateNewConnect(cleft);
+        TPZConnect &newcon = fluxmesh->ConnectVec()[index];
+        cleft.DecrementElConnected();
+        newcon.ResetElConnected();
+        newcon.IncrementElConnected();
+        newcon.SetSequenceNumber(fluxmesh->NConnects() - 1);
+
+        int rightlocindex = intelright->SideConnectLocId(0, right.Side());
+        intelright->SetConnectIndex(rightlocindex, index);
+    }
+    int sideorder = cleft.Order();
+    fluxmesh->SetDefaultOrder(sideorder);
+    // create HDivBound on the sides of the elements
+    TPZCompEl *wrap1, *wrap2;
+    {
+        intelright->Reference()->ResetReference();
+        intelleft->LoadElementReference();
+        intelleft->SetPreferredOrder(sideorder);
+        TPZGeoElBC gbc(gleft, matIdDivWrap);
+        int64_t index;
+        wrap1 = fluxmesh->ApproxSpace().CreateCompEl(gbc.CreatedElement(), *fluxmesh, index);
+        if(cleft.Order() != sideorder)
+        {
+            DebugStop();
+        }
+        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *> (wrap1);
+        int wrapside = gbc.CreatedElement()->NSides() - 1;
+        intel->SetSideOrient(wrapside, 1);
+        intelleft->Reference()->ResetReference();
+        wrap1->Reference()->ResetReference();
+    }
+    // if the wrap of the large element was not created...
+    if(equalright.size() == 0)
+    {
+        intelleft->Reference()->ResetReference();
+        intelright->LoadElementReference();
+        TPZConnect &cright = intelright->SideConnect(0,right.Side());
+        int rightprevorder = cright.Order();
+        intelright->SetPreferredOrder(cright.Order());
+        TPZGeoElBC gbc(gright, matIdDivWrap);
+        int64_t index;
+        wrap2 = fluxmesh->ApproxSpace().CreateCompEl(gbc.CreatedElement(), *fluxmesh, index);
+        if(cright.Order() != rightprevorder)
+        {
+            DebugStop();
+        }
+        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *> (wrap2);
+        int wrapside = gbc.CreatedElement()->NSides() - 1;
+        intel->SetSideOrient(wrapside, 1);
+        intelright->Reference()->ResetReference();
+        wrap2->Reference()->ResetReference();
+    }
+    else
+    {
+        wrap2 = equalright[0].Element();
+    }
+    wrap1->LoadElementReference();
+    wrap2->LoadElementReference();
+    int64_t pressureindex;
+    int pressureorder;
+    {
+        TPZGeoElBC gbc(gleft, matIdLagrage);
+        pressureindex = gbc.CreatedElement()->Index();
+        pressureorder = sideorder;
+    }
+    intelleft->LoadElementReference();
+    intelright->LoadElementReference();
+    return std::make_tuple(pressureindex, pressureorder);
+}
+
+TPZCompElSide RightElement(TPZInterpolatedElement *intel, int side) {
+    bool isrestrained = false;
+    {
+        TPZConnect &c = intel->SideConnect(0, side);
+        if (c.HasDependency()) {
+            isrestrained = true;
+        }
+    }
+    TPZGeoEl *gel = intel->Reference();
+    TPZGeoElSide gelside(gel, side);
+
+    if (isrestrained == true) {
+        /// if the side is restrained we will hybridize between the element and the larger element
+        TPZCompElSide celside = gelside.LowerLevelCompElementList2(1);
+        if (!celside) DebugStop();
+        TPZGeoEl *neigh = celside.Element()->Reference();
+        /// we assume that a larger element should not be a boundary element
+        if (neigh->Dimension() != gel->Dimension()) {
+            DebugStop();
+        }
+        return celside;
+    } else {
+        // if the connect is not restrained
+        // - there should be only one neighbour
+        //   if there is more than one neighbour the element side has already been hybridized
+        // - the neighbour should be of the same dimension
+        //   if the neighbour is of lower dimension it is a boundary element
+        TPZStack<TPZCompElSide> celstack;
+        gelside.EqualLevelCompElementList(celstack, 1, 0);
+        if (celstack.size() == 1) {
+            TPZGeoEl *neigh = celstack[0].Element()->Reference();
+            if (neigh->Dimension() == gel->Dimension()) {
+                return celstack[0];
+            }
+        }
+    }
+    return TPZCompElSide();
+}
+
+
+void identifyElementSidesOnIntersection(TPZGeoMesh *gmesh) {
+  
+  TPZAdmChunkVector<TPZGeoEl *>::iterator it = gmesh->ElementVec().begin();
+  for (; it != gmesh->ElementVec().end(); it++) {
+    TPZGeoEl* gel = (*it);
+    if (!gel)
+      continue;
+    
+    int matid = gel->MaterialId();
+    if (matid == -14) {
+      continue; // this is the intersection
+    }
+    
+    const int nsides = gel->NSides();
+    for (int i = 0; i < nsides; i++) {
+      TPZGeoElSide gelside(gel,i);
+      TPZGeoElSide neigh = gelside.Neighbour();
+      while(neigh!= gelside){
+        int neighmatid = neigh.Element()->MaterialId();
+        if (neighmatid == -14) {
+          if (neigh.Dimension() == 1){
+            cout << "\nElement with ID " << gel->Id() << " and index " << gel->Index() << " has side number " << i << " with dim = " << neigh.Dimension() << " touching the intersection" << endl;
+          }
+        }
+        neigh = neigh.Neighbour();
+      } // while
+    } // for i
+  } // for it
 }
 
 TMRSDataTransfer Setting2Fractures(){
@@ -188,6 +467,7 @@ TMRSDataTransfer Setting2Fractures(){
 
 TPZGeoMesh *ReadFractureMesh(){
     std::string fileFine("../../FracMeshes/Case2Frac.msh");
+//    std::string fileFine("../../FracMeshes/dfnExport.msh");
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
     /*
      2 4 "inlet"
@@ -207,6 +487,7 @@ TPZGeoMesh *ReadFractureMesh(){
     dim_name_and_physical_tagFine[2]["Fractures"] = 10;
     dim_name_and_physical_tagFine[2]["Fracture2"] = 10;
     dim_name_and_physical_tagFine[1]["BCfrac0"] = -11;
+    dim_name_and_physical_tagFine[1]["BCfrac1"] = -15;
     
     dim_name_and_physical_tagFine[1]["BCFracInlet"] = -12;
     dim_name_and_physical_tagFine[1]["BCFracOutlet"] = -13;
