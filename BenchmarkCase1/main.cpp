@@ -237,7 +237,7 @@ void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh, TPZVec<int64_t> &
                 }
             }
         }
-#ifdef PZDEBUG2
+#ifdef PZDEBUG
         for (auto it : num_created) {
             std::cout << "For matid " << it.first << " number of elements created " << it.second << std::endl;
         }
@@ -298,7 +298,7 @@ void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh, TPZVec<int64_t> &
             MatFinetoCoarseElIndex[matid] = matid-10+first3DCoarse;
 #endif
         }
-#ifdef PZDEBUG2
+#ifdef PZDEBUG
         for(auto it : MatFinetoCoarseElIndex)
         {
             std::cout << "Fine mat id " << it.first << " coarse element index " << it.second << std::endl;

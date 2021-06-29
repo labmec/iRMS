@@ -44,6 +44,8 @@ void TMRSMemory::Read(TPZStream &buf, void *context){
 
 void TMRSMemory::Print(std::ostream &out) const{
     out << "TMRSMemory " << std::endl;
+    TMRSDarcyMemory::Print(out);
+    TMRSTransportMemory::Print(out);
 }
 
 int TMRSMemory::ClassId() const{

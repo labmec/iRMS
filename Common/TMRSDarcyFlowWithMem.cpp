@@ -81,6 +81,7 @@ void TMRSDarcyFlowWithMem<TMEM>::SetDataTransfer(TMRSDataTransfer & SimData){
 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::Print(std::ostream &out) {
+    TPZMatWithMem<TMEM>::Print(out);
     out << m_dimension << std::endl;
     out << m_scale_pressure << std::endl;
     out << m_scale_flux << std::endl;
