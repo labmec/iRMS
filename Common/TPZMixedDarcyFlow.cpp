@@ -6,8 +6,10 @@
 //
 
 #include "TPZMixedDarcyFlow.h"
+#include "TPZMaterialDataT.h"
+#include "TPZMaterialData.h"
 
-TPZMixedDarcyFlow::TPZMixedDarcyFlow() : TPZMaterial(){
+TPZMixedDarcyFlow::TPZMixedDarcyFlow() : TBase(){
     
     m_kappa.Resize(0, 0);
     m_kappa_inv.Resize(0, 0);
@@ -22,7 +24,7 @@ TPZMixedDarcyFlow::~TPZMixedDarcyFlow(){
     
 }
 
-TPZMixedDarcyFlow::TPZMixedDarcyFlow(int mat_id, int dim) :  TPZMaterial(mat_id){
+TPZMixedDarcyFlow::TPZMixedDarcyFlow(int mat_id, int dim) :  TBase(mat_id){
     m_kappa.Resize(3, 3);
     m_kappa_inv.Resize(3, 3);
     m_gravity.resize(3);
@@ -32,7 +34,7 @@ TPZMixedDarcyFlow::TPZMixedDarcyFlow(int mat_id, int dim) :  TPZMaterial(mat_id)
 }
 
 
-TPZMixedDarcyFlow::TPZMixedDarcyFlow(const TPZMixedDarcyFlow &other) : TPZMaterial(other){
+TPZMixedDarcyFlow::TPZMixedDarcyFlow(const TPZMixedDarcyFlow &other) : TBase(other){
     
     m_kappa         = other.m_kappa;
     m_kappa_inv     = other.m_kappa_inv;
@@ -41,7 +43,7 @@ TPZMixedDarcyFlow::TPZMixedDarcyFlow(const TPZMixedDarcyFlow &other) : TPZMateri
     m_gravity       = other.m_gravity;
 }
 
-TPZMaterial * TPZMixedDarcyFlow::NewMaterial(){
+TPZMaterial * TPZMixedDarcyFlow::NewMaterial()const{
     return new TPZMixedDarcyFlow(*this);
 }
 
@@ -66,7 +68,7 @@ int TPZMixedDarcyFlow::NStateVariables() const{
     return 1;
 }
 
-void TPZMixedDarcyFlow::Print(std::ostream & out){
+void TPZMixedDarcyFlow::Print(std::ostream & out) const{
     m_kappa.Print(out);
     m_kappa_inv.Print(out);
     out << m_d << std::endl;
@@ -77,11 +79,11 @@ void TPZMixedDarcyFlow::Print(std::ostream & out){
         
 }
 
-std::string TPZMixedDarcyFlow::Name(){
+std::string TPZMixedDarcyFlow::Name() const{
     return "TPZMixedDarcyFlow";
 }
 
-void TPZMixedDarcyFlow::FillDataRequirements(TPZVec<TPZMaterialData> &datavec){
+void TPZMixedDarcyFlow::FillDataRequirements(TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -89,7 +91,7 @@ void TPZMixedDarcyFlow::FillDataRequirements(TPZVec<TPZMaterialData> &datavec){
     }
 }
 
-void TPZMixedDarcyFlow::FillBoundaryConditionDataRequirement(int type, TPZVec<TPZMaterialData> &datavec){
+void TPZMixedDarcyFlow::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -109,7 +111,7 @@ void TPZMixedDarcyFlow::Read(TPZStream &buf, void *context){
     DebugStop();
 }
 
-void TPZMixedDarcyFlow::Contribute(TPZVec<TPZMaterialData> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef){
+void TPZMixedDarcyFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef){
     
     int qb = 0;
     int pb = 1;
@@ -211,7 +213,7 @@ void TPZMixedDarcyFlow::Contribute(TPZVec<TPZMaterialData> &datavec,REAL weight,
         STATE force = 0.0;
         if(fForcingFunction) {
             TPZManVector<STATE> res(1);
-            fForcingFunction->Execute(datavec[0].x,res);
+            fForcingFunction(datavec[0].x,res);
             force = res[0];
         }
         
@@ -227,19 +229,19 @@ void TPZMixedDarcyFlow::Contribute(TPZVec<TPZMaterialData> &datavec,REAL weight,
     
 }
 
-void TPZMixedDarcyFlow::Contribute(TPZVec<TPZMaterialData> &datavec,REAL weight,TPZFMatrix<STATE> &ef){
+void TPZMixedDarcyFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     this->Contribute(datavec, weight, ekfake, ef);
 }
 
-void TPZMixedDarcyFlow::ContributeBC(TPZVec<TPZMaterialData> &datavec,REAL weight,TPZFMatrix<STATE> &ef,TPZBndCond &bc){
+void TPZMixedDarcyFlow::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ef,TPZBndCondT<STATE> &bc){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     this->ContributeBC(datavec, weight, ekfake, ef, bc);
 }
 
-void TPZMixedDarcyFlow::ContributeBC(TPZVec<TPZMaterialData> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef,TPZBndCond &bc){
+void TPZMixedDarcyFlow::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef,TPZBndCondT<STATE> &bc){
     
-    gBigNumber = 1.0e20;
+    SetBigNumber(1.0e20);
     int qb = 0;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     
@@ -273,7 +275,7 @@ void TPZMixedDarcyFlow::ContributeBC(TPZVec<TPZMaterialData> &datavec,REAL weigh
     
     
     TPZManVector<STATE,1> bc_data(1,0.0);
-    bc_data[0] = bc.Val2()(0,0);
+    bc_data[0] = bc.Val2()[0];
     
     switch (bc.Type()) {
         case 0 :    // Dirichlet BC  PD
@@ -292,12 +294,12 @@ void TPZMixedDarcyFlow::ContributeBC(TPZVec<TPZMaterialData> &datavec,REAL weigh
             for (int iq = 0; iq < nphi_q; iq++)
             {
                 REAL qn_N = bc_data[0], qn = q[0];
-                ef(iq + first_q) += -1.0 * weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0);
+                ef(iq + first_q) += -1.0 * weight * BigNumber() * (qn - qn_N) * phi_qs(iq,0);
                 
                 for (int jq = 0; jq < nphi_q; jq++)
                 {
                     
-                    ek(iq + first_q,jq + first_q) += -1.0 * weight * gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
+                    ek(iq + first_q,jq + first_q) += -1.0 * weight * BigNumber() * phi_qs(jq,0) * phi_qs(iq,0);
                 }
                 
             }
@@ -317,7 +319,7 @@ void TPZMixedDarcyFlow::ContributeBC(TPZVec<TPZMaterialData> &datavec,REAL weigh
     
 }
 
-int TPZMixedDarcyFlow::VariableIndex(const std::string &name){
+int TPZMixedDarcyFlow::VariableIndex(const std::string &name) const{
     if(!strcmp("q",name.c_str()))               return  1;
     if(!strcmp("p",name.c_str()))               return  2;
     if(!strcmp("div_q",name.c_str()))           return  3;
@@ -325,7 +327,7 @@ int TPZMixedDarcyFlow::VariableIndex(const std::string &name){
     return TPZMaterial::VariableIndex(name);
 }
 
-int TPZMixedDarcyFlow::NSolutionVariables(int var){
+int TPZMixedDarcyFlow::NSolutionVariables(int var)const{
     if(var == 1) return 3;
     if(var == 2) return 1;
     if(var == 3) return 1;
@@ -334,7 +336,7 @@ int TPZMixedDarcyFlow::NSolutionVariables(int var){
     return TPZMaterial::NSolutionVariables(var);
 }
 
-void TPZMixedDarcyFlow::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<STATE> &Solout){
+void TPZMixedDarcyFlow::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<STATE> &Solout){
     
     int qb = 0;
     int pb = 1;
