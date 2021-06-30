@@ -26,8 +26,7 @@
 template <class TMEM>
 class TMRSMultiphaseFlow : public TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatWithMem<TMEM> > {
     
-    using TBase = TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>,
-    TPZMatErrorCombinedSpaces<STATE>>;
+    using TBase = TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatWithMem<TMEM> >;
 private:
     
     /// Dimension
@@ -53,7 +52,7 @@ public:
     ~TMRSMultiphaseFlow();
     
     /// Set the required data at each integration point
-    virtual void FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) const override ;
+    virtual void FillDataRequirements( TPZVec<TPZMaterialDataT<STATE>> &datavec) const override ;
     
     /// Set the required data at each integration point
     virtual void FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const override;
@@ -114,6 +113,13 @@ public:
     void ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialDataT<STATE>> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc) ;
     
     void ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialDataT<STATE>> &datavecleft, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc);
+    
+    virtual void ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,
+                              REAL weight, TPZFMatrix<STATE> &ek,
+                              TPZFMatrix<STATE> &ef,
+                              TPZBndCondT<STATE> &bc){
+        DebugStop();
+    }
     
     /// Unique identifier for serialization purposes
     int ClassId() const override;

@@ -7,7 +7,7 @@ TPZTracerFlow::TPZTracerFlow(){
 }
 
 /** @brief Constructor based on a material id */
-TPZTracerFlow::TPZTracerFlow(int matid, int dimension) : TPZMaterial(matid) {
+TPZTracerFlow::TPZTracerFlow(int matid, int dimension) : TBase(matid) {
 
     m_mat_id = matid;
     m_dimension = dimension;
@@ -19,7 +19,7 @@ TPZTracerFlow::TPZTracerFlow(int matid, int dimension) : TPZMaterial(matid) {
 }
 
 /** @brief Constructor based on a TRMMultiphase object */
-TPZTracerFlow::TPZTracerFlow(const TPZTracerFlow &other) : TPZMaterial(other) {
+TPZTracerFlow::TPZTracerFlow(const TPZTracerFlow &other) : TBase(other) {
     m_mat_id = other.m_mat_id;
     m_dimension = other.m_dimension;
     m_mass_matrix_Q = other.m_mass_matrix_Q;
@@ -47,7 +47,7 @@ TPZTracerFlow::~TPZTracerFlow(){
 }
 
 /** @brief Set the required data at each integration point */
-void TPZTracerFlow::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec){
+void TPZTracerFlow::FillDataRequirements( TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -56,7 +56,7 @@ void TPZTracerFlow::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &
 }
 
 /** @brief Set the required data at each integration point */
-void TPZTracerFlow::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec){
+void TPZTracerFlow::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -65,16 +65,18 @@ void TPZTracerFlow::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMa
     }
 }
 
-void TPZTracerFlow::FillDataRequirementsInterface(TPZMaterialData &data){
+void TPZTracerFlow::FillDataRequirementsInterface(TPZMaterialData &data) const{
     data.SetAllRequirements(false);
     data.fNeedsSol = true;
     data.fNeedsNormal = true;
-    if(fLinearContext == false){
-        data.fNeedsNeighborSol = true;
-    }
+//    if(fLinearContext == false){
+//        data.fNeedsNeighborSol = true;
+//    }
 }
 
-void TPZTracerFlow::FillDataRequirementsInterface(TPZMaterialData &data, TPZVec<TPZMaterialData > &datavec_left, TPZVec<TPZMaterialData > &datavec_right)
+void TPZTracerFlow::FillDataRequirementsInterface(TPZMaterialDataT<STATE> &data,
+                                                  std::map<int, TPZMaterialDataT<STATE>> &datavec_left,
+                                                  std::map<int, TPZMaterialDataT<STATE>> &datavec_right)
 {
     
     data.SetAllRequirements(false);
@@ -96,14 +98,14 @@ void TPZTracerFlow::FillDataRequirementsInterface(TPZMaterialData &data, TPZVec<
 
 
 /** @brief Print out the data associated with the material */
-void TPZTracerFlow::Print(std::ostream &out){
+void TPZTracerFlow::Print(std::ostream &out) const{
     out << "\t Base class print:\n";
     out << " name of material : " << this->Name() << "\n";
     TPZMaterial::Print(out);
 }
 
 /** @brief Returns the variable index associated with the name */
-int TPZTracerFlow::VariableIndex(const std::string &name){
+int TPZTracerFlow::VariableIndex(const std::string &name) const{
 
     if (!strcmp("Sw", name.c_str())) return 0;
     if (!strcmp("So", name.c_str())) return 1;
@@ -112,7 +114,7 @@ int TPZTracerFlow::VariableIndex(const std::string &name){
 }
 
 /** @brief Returns the number of variables associated with varindex */
-int TPZTracerFlow::NSolutionVariables(int var){
+int TPZTracerFlow::NSolutionVariables(int var) const{
     switch(var) {
         case 0:
             return 1; // Scalar
@@ -127,7 +129,7 @@ int TPZTracerFlow::NSolutionVariables(int var){
 
 // Contribute Methods being used
 /** @brief Returns the solution associated with the var index */
-void TPZTracerFlow::Solution(TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout){
+void TPZTracerFlow::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout){
 
     int s_b    = 2;
     if (datavec.size() == 5) {
@@ -173,7 +175,7 @@ REAL TPZTracerFlow::FractureFactor(TPZMaterialData & data){
     return alpha;
 }
 
-void TPZTracerFlow::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
+void TPZTracerFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
 
     int nref =  datavec.size();
 #ifdef PZDEBUG
@@ -209,7 +211,7 @@ void TPZTracerFlow::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL we
 
 }
 
-void TPZTracerFlow::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
+void TPZTracerFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
     this->Contribute(datavec, weight, ek_fake, ef);
     
@@ -238,7 +240,7 @@ void TPZTracerFlow::Read(TPZStream &buf, void *context){
     DebugStop();
 }
 
-void TPZTracerFlow::ContributeInterface(TPZMaterialData &data, std::map<int, TPZMaterialData> &datavecleft, std::map<int, TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef){
+void TPZTracerFlow::ContributeInterface(const TPZMaterialDataT<STATE> &data, const std::map<int, TPZMaterialDataT<STATE>> &datavecleft, const std::map<int, TPZMaterialDataT<STATE>> &datavecright, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef){
     
     if (m_mass_matrix_Q) {
         return;
@@ -253,19 +255,19 @@ void TPZTracerFlow::ContributeInterface(TPZMaterialData &data, std::map<int, TPZ
     }
     
     // Getting phis and solution for left material data
-    TPZFMatrix<REAL>  &phiS_l =  datavecleft[s_b].phi;
+    const TPZFMatrix<REAL>  &phiS_l =  datavecleft.find(s_b)->second.phi;
     int n_phi_s_l = phiS_l.Rows();
-    REAL s_l = datavecleft[s_b].sol[0][0];
+    REAL s_l = datavecleft.find(s_b)->second.sol[0][0];
     int firsts_s_l    = 0;
 
     // Getting phis and solution for right material data
-    TPZFMatrix<REAL>  &phiS_r =  datavecright[s_b].phi;
+    const TPZFMatrix<REAL>  &phiS_r =  datavecright.find(s_b)->second.phi;
     int n_phi_s_r = phiS_r.Rows();
-    REAL s_r = datavecright[s_b].sol[0][0];
+    REAL s_r = datavecright.find(s_b)->second.sol[0][0];
     int firsts_s_r    = n_phi_s_l;
     
     TPZManVector<REAL,3> n = data.normal;
-    TPZManVector<REAL,3> q_l =  datavecleft[q_b].sol[0];
+    TPZManVector<REAL,3> q_l =  datavecleft.find(q_b)->second.sol[0];
     REAL qn = 0.0;
     for (int i = 0; i < 3; i++) {
         qn += q_l[i]*n[i];
@@ -318,7 +320,7 @@ void TPZTracerFlow::ContributeInterface(TPZMaterialData &data, std::map<int, TPZ
 }
 
 
-void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, std::map<int, TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
+void TPZTracerFlow::ContributeBCInterface(const TPZMaterialDataT<STATE> &data, const std::map<int, TPZMaterialDataT<STATE>> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     
     if (m_mass_matrix_Q) {
         return;
@@ -335,14 +337,14 @@ void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, std::map<int, T
     if(datavecleft.find(0) == datavecleft.end()) DebugStop();
     
     // Getting phis and solution for left material data
-    TPZFMatrix<REAL>  &phiS_l =  datavecleft[s_b].phi;
+    const TPZFMatrix<REAL>  &phiS_l =  datavecleft.find(s_b)->second.phi;
     int n_phi_s_l = phiS_l.Rows();
-    REAL s_l = datavecleft[s_b].sol[0][0];
+    REAL s_l = datavecleft.find(s_b)->second.sol[0][0];
     int firsts_s_l    = 0;
     
 
     TPZManVector<REAL,3> n = data.normal;
-    TPZManVector<REAL,3> q_l =  datavecleft[q_b].sol[0];
+    TPZManVector<REAL,3> q_l =  datavecleft.find(q_b)->second.sol[0];
     REAL qn = 0.0;
     REAL tol = 10e-10;
     for (int i = 0; i < 3; i++) {
@@ -354,7 +356,7 @@ void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, std::map<int, T
         case 0 :    // BC inlet
         {
             
-            REAL s_inlet = bc.Val2()(0,0);
+            REAL s_inlet = bc.Val2()[0];
 //            if (qn > 0.0 || IsZero(qn)) {
 //                std::cout << "TPZTracerFlow:: Outlet flux in inlet boundary condition qn = " << qn << std::endl;
 //            }
@@ -396,4 +398,3 @@ void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, std::map<int, T
     return;
     
 }
-

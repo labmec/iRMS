@@ -137,7 +137,7 @@ TPZSpMatrixEigen<TVar>::~TPZSpMatrixEigen() {
 
 
 template<class TVar>
-const TVar & TPZSpMatrixEigen<TVar>::GetVal(const int64_t row,const int64_t col ) const {
+const TVar  TPZSpMatrixEigen<TVar>::GetVal(const int64_t row,const int64_t col ) const {
     TVar val = fsparse_eigen.coeff(row, col);
     return val;
 

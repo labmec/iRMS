@@ -12,7 +12,7 @@
 #include "pzgeoel.h"
 #include "pzgnode.h"
 #include "pzgmesh.h"
-#include "pzbiharmonic.h"
+//#include "pzbiharmonic.h"
 #include "pzcmesh.h"
 #include "pzintel.h"
 #include "pzcompel.h"
@@ -32,7 +32,7 @@
 #include <TPZRefPattern.h>
 
 #include "TPZMaterial.h"
-#include "pzelasmat.h"
+//#include "pzelasmat.h"
 #include "pzlog.h"
 
 #include "TPZGenGrid2D.h"
@@ -56,9 +56,9 @@
 #include "TPZExtendGridDimension.h"
 
 #include "TRSLinearInterpolator.h"
-#include "TPZMatLaplacian.h"
-#include "pzpoisson3d.h"
-#include "mixedpoisson.h"
+//#include "TPZMatLaplacian.h"
+//#include "pzpoisson3d.h"
+//#include "mixedpoisson.h"
 #include "TPZBndCondT.h"
 #include "TPZSSpStructMatrix.h"
 #include "pzskylstrmatrix.h"
@@ -79,7 +79,7 @@
 #include "pzfstrmatrix.h"
 #include "pzskylstrmatrix.h"
 #include "pzstepsolver.h"
-#include "pzsolve.h"
+//#include "pzsolve.h"
 #include "TPZPersistenceManager.h"
 #include "pzbuildmultiphysicsmesh.h"
 #include "TPZMultiphysicsCompMesh.h"
@@ -93,6 +93,6 @@
 //#include "TPZParFrontStructMatrix.h"
 #include "TPZSSpStructMatrix.h"
 #include "TPZSpStructMatrix.h"
-#include "pzl2projection.h"
+#include "Projection/TPZL2Projection.h"
 #include "TPZTracerFlow.h"
 #endif /* includes_h */

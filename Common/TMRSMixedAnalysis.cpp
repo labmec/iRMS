@@ -18,7 +18,7 @@ TMRSMixedAnalysis::~TMRSMixedAnalysis(){
     
 }
 
-TMRSMixedAnalysis::TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZAnalysis(cmesh_mult, must_opt_band_width_Q){
+TMRSMixedAnalysis::TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZLinearAnalysis(cmesh_mult, must_opt_band_width_Q){
     fsoltransfer.BuildTransferData(cmesh_mult);
 }
 

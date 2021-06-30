@@ -17,7 +17,7 @@
 
 #include "TPZLinearAnalysis.h"
 
-//#include "pzsolve.h"
+////#include "pzsolve.h"
 #include "pzstepsolver.h"
 
 #include "pzdxmesh.h"

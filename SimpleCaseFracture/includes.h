@@ -79,7 +79,7 @@
 #include "pzfstrmatrix.h"
 #include "pzskylstrmatrix.h"
 #include "pzstepsolver.h"
-#include "pzsolve.h"
+//#include "pzsolve.h"
 #include "TPZPersistenceManager.h"
 #include "pzbuildmultiphysicsmesh.h"
 #include "TPZMultiphysicsCompMesh.h"
@@ -93,6 +93,6 @@
 //#include "TPZParFrontStructMatrix.h"
 #include "TPZSSpStructMatrix.h"
 #include "TPZSpStructMatrix.h"
-#include "pzl2projection.h"
+#include "Projection/TPZL2Projection.h"
 #include "TPZTracerFlow.h"
 #endif /* includes_h */

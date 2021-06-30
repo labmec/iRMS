@@ -71,7 +71,7 @@ TPZSYsmpMatrixEigen<TVar> &TPZSYsmpMatrixEigen<TVar>::operator=(const TPZSYsmpMa
 
 
 template<class TVar>
-const TVar &TPZSYsmpMatrixEigen<TVar>::GetVal(const int64_t r,const int64_t c ) const {
+const TVar TPZSYsmpMatrixEigen<TVar>::GetVal(const int64_t r,const int64_t c ) const {
     // Get the matrix entry at (row,col) without bound checking
     
     int64_t row(r),col(c);

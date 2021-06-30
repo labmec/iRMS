@@ -66,14 +66,18 @@ protected:
         
         virtual ~TPZSpMatrixEigen();
         
+       
+        
         /** @brief Fill matrix storage with randomic values */
         /** This method use GetVal and PutVal which are implemented by each type matrices */
-//        void AutoFill(int64_t nrow, int64_t ncol, int symmetric);
+        void AutoFill(int64_t nrow, int64_t ncol, int symmetric);
         
-        
+        inline TPZSpMatrixEigen<TVar>* NewMatrix() const override{
+            return new TPZSpMatrixEigen<TVar>();
+        }
         
         /** @brief Get the matrix entry at (row,col) without bound checking */
-        virtual const TVar &GetVal(const int64_t row,const int64_t col ) const override;
+        virtual const TVar GetVal(const int64_t row,const int64_t col ) const override;
         
         
         bool isNull( Eigen::SparseMatrix<REAL>& mat, int row, int col);
@@ -144,6 +148,22 @@ protected:
         int   fSymmetric;
     
         void InitializeData();
+        
+        /** @brief Number of entries storaged in the Matrix*/
+        virtual int64_t Size() const override{
+            DebugStop();
+        }
+        /** @{ */
+        /** @brief Pointer to the beginning of the storage of the matrix*/
+        virtual TVar* &Elem() override{
+            DebugStop();
+        }
+        virtual const TVar* Elem() const override{
+            DebugStop();
+        }
+        virtual void CopyFrom(const TPZMatrix<TVar> *mat){
+            DebugStop();
+        }
     };
     
 

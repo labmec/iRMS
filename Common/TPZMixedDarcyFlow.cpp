@@ -83,15 +83,9 @@ std::string TPZMixedDarcyFlow::Name() const{
     return "TPZMixedDarcyFlow";
 }
 
-<<<<<<< Updated upstream
-void TPZMixedDarcyFlow::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
-=======
-<<<<<<< HEAD
-void TPZMixedDarcyFlow::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec){
-=======
-void TPZMixedDarcyFlow::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
->>>>>>> 8b839d704486f826ebe9f1a2ca0ae7482e863633
->>>>>>> Stashed changes
+
+void TPZMixedDarcyFlow::FillDataRequirements( TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
+
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -99,15 +93,9 @@ void TPZMixedDarcyFlow::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE
     }
 }
 
-<<<<<<< Updated upstream
+
 void TPZMixedDarcyFlow::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
-=======
-<<<<<<< HEAD
-void TPZMixedDarcyFlow::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec){
-=======
-void TPZMixedDarcyFlow::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
->>>>>>> 8b839d704486f826ebe9f1a2ca0ae7482e863633
->>>>>>> Stashed changes
+
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -127,15 +115,9 @@ void TPZMixedDarcyFlow::Read(TPZStream &buf, void *context){
     DebugStop();
 }
 
-<<<<<<< Updated upstream
+
 void TPZMixedDarcyFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef){
-=======
-<<<<<<< HEAD
-void TPZMixedDarcyFlow::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef){
-=======
-void TPZMixedDarcyFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef){
->>>>>>> 8b839d704486f826ebe9f1a2ca0ae7482e863633
->>>>>>> Stashed changes
+
     
     int qb = 0;
     int pb = 1;
@@ -253,41 +235,23 @@ void TPZMixedDarcyFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datave
     
 }
 
-<<<<<<< Updated upstream
+
 void TPZMixedDarcyFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ef){
-=======
-<<<<<<< HEAD
-void TPZMixedDarcyFlow::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ef){
-=======
-void TPZMixedDarcyFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ef){
->>>>>>> 8b839d704486f826ebe9f1a2ca0ae7482e863633
->>>>>>> Stashed changes
+
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     this->Contribute(datavec, weight, ekfake, ef);
 }
 
-<<<<<<< Updated upstream
+
 void TPZMixedDarcyFlow::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ef,TPZBndCondT<STATE> &bc){
-=======
-<<<<<<< HEAD
-void TPZMixedDarcyFlow::ContributeBC(TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ef,TPZBndCondT<STATE> &bc){
-=======
-void TPZMixedDarcyFlow::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ef,TPZBndCondT<STATE> &bc){
->>>>>>> 8b839d704486f826ebe9f1a2ca0ae7482e863633
->>>>>>> Stashed changes
+
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     this->ContributeBC(datavec, weight, ekfake, ef, bc);
 }
 
-<<<<<<< Updated upstream
+
 void TPZMixedDarcyFlow::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef,TPZBndCondT<STATE> &bc){
-=======
-<<<<<<< HEAD
-void TPZMixedDarcyFlow::ContributeBC(TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef,TPZBndCondT<STATE> &bc){
-=======
-void TPZMixedDarcyFlow::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef,TPZBndCondT<STATE> &bc){
->>>>>>> 8b839d704486f826ebe9f1a2ca0ae7482e863633
->>>>>>> Stashed changes
+
     
     SetBigNumber(1.0e20);
     int qb = 0;
@@ -384,15 +348,9 @@ int TPZMixedDarcyFlow::NSolutionVariables(int var)const{
     return TPZMaterial::NSolutionVariables(var);
 }
 
-<<<<<<< Updated upstream
+
 void TPZMixedDarcyFlow::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<STATE> &Solout){
-=======
-<<<<<<< HEAD
-void TPZMixedDarcyFlow::Solution(TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<STATE> &Solout){
-=======
-void TPZMixedDarcyFlow::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<STATE> &Solout){
->>>>>>> 8b839d704486f826ebe9f1a2ca0ae7482e863633
->>>>>>> Stashed changes
+
     
     int qb = 0;
     int pb = 1;

@@ -33,8 +33,7 @@
 #include<Eigen/SparseCholesky>
 
 #ifdef PZ_USING_MKL
-
-#include "TPZPardisoControl.h"
+#include "TPZPardisoSolver.h"
 #endif
 /**
  * @brief Implements a symmetric sparse matrix. \ref matrix "Matrix"
@@ -46,7 +45,7 @@ template<class TVar>
 class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
     
 #ifdef PZ_USING_MKL
-    friend class TPZPardisoControl<TVar>;
+    friend class TPZPardisoSolver<TVar>;
 #endif
     
     public :
@@ -73,9 +72,31 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
     virtual ~TPZSYsmpMatrixEigen();
     
     /** @brief Checks if the current matrix is symmetric */
-    virtual int IsSimetric() const  override { return 1; }
+//    virtual int IsSimetric() const  override { return 1; }
     /** @brief Checks if current matrix is square */
     inline int IsSquare() const { return 1;}
+    
+    /** @brief To create a matrix of the same type */
+    inline TPZSYsmpMatrixEigen<TVar>* NewMatrix() const override{
+        return new TPZSYsmpMatrixEigen<TVar>{};
+    }
+    
+    /** @brief Creates a copy from a given matrix of arbitrary storage format.
+     Every implementation should check for type compatibility */
+    virtual void CopyFrom(const TPZMatrix<TVar> *mat){
+        DebugStop();
+    }
+    /** @brief Number of entries storaged in the Matrix*/
+    virtual int64_t Size() const{
+        DebugStop();
+    }
+    
+    virtual TVar* &Elem(){
+        DebugStop();
+    }
+    virtual const TVar* Elem() const{
+        DebugStop();
+    }
     
     /** @brief Zeroes the matrix */
     virtual int Zero() override {
@@ -113,7 +134,7 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
     void AutoFill(int64_t nrow, int64_t ncol, int symmetric);
     
     /** @brief Get the matrix entry at (row,col) without bound checking */
-    virtual const TVar &GetVal(const int64_t row, const int64_t col ) const override;
+    virtual const TVar GetVal(const int64_t row, const int64_t col ) const override;
     
     /** @brief Put values without bounds checking \n
      *  This method is faster than "Put" if DEBUG is defined.
@@ -299,6 +320,8 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
     fA  =  A;
     
     ComputeDiagonal();
+    
+   
 }
 
 #endif /* TPZSSpMatrixEigen_hpp */

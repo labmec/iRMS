@@ -8,6 +8,7 @@
 #ifndef TMRSApproxSpaceGenerator_h
 #define TMRSApproxSpaceGenerator_h
 
+#include "Projection/TPZL2Projection.h"
 #include <stdio.h>
 #include "TMRSSavable.h"
 #include "TPZGmshReader.h"
@@ -20,7 +21,6 @@
 #include "TMRSMemory.h"
 #include "TMRSDataTransfer.h"
 #include "TPZTracerFlow.h"
-#include "pzl2projection.h"
 #include "TPZCompMeshTools.h"
 #include "TPZGenGrid2D.h"
 #include "TPZExtendGridDimension.h"

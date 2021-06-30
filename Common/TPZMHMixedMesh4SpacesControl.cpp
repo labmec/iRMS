@@ -187,9 +187,9 @@ void TPZMHMixedMesh4SpacesControl::CreateAverageFlux()
 //    generate elements for all material ids of mesh dim
     std::set<int> matids;
 
-    TPZNullMaterial * volume = new TPZNullMaterial(1);
+    TPZNullMaterial<STATE> * volume = new TPZNullMaterial(1);
     cmeshfluxavg->InsertMaterialObject(volume);
-    TPZNullMaterial * volume2 = new TPZNullMaterial(2);
+    TPZNullMaterial<STATE> * volume2 = new TPZNullMaterial(2);
     cmeshfluxavg->InsertMaterialObject(volume2);
     matids.insert(1);
     matids.insert(2);
@@ -289,9 +289,9 @@ void TPZMHMixedMesh4SpacesControl::CreateAveragePressure()
     //            cmeshfluxavg->InsertMaterialObject(mat);
     //        }
     //    }
-    TPZNullMaterial * volume = new TPZNullMaterial(1);
+    TPZNullMaterial<STATE> * volume = new TPZNullMaterial(1);
     cmeshpressureavr->InsertMaterialObject(volume);
-    TPZNullMaterial * volume2 = new TPZNullMaterial(2);
+    TPZNullMaterial<STATE> * volume2 = new TPZNullMaterial(2);
     cmeshpressureavr->InsertMaterialObject(volume2);
     matids.insert(1);
     matids.insert(2);
@@ -578,7 +578,7 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElementsEigen()
         
         int64_t numinternal = subcmesh->NumInternalEquations();
         str->EquationFilter().SetMinMaxEq(0, numinternal);
-        TPZAutoPointer<TPZMatrix<STATE> > mat = str->Create();
+        TPZAutoPointer<TPZMatrix<STATE>> mat = dynamic_cast<TPZMatrix<STATE>*>(str->Create());
         str->EquationFilter().Reset();
         
         

@@ -7,7 +7,7 @@ TPZPostProcessResProp::TPZPostProcessResProp(){
 }
 
 /** @brief Constructor based on a material id */
-TPZPostProcessResProp::TPZPostProcessResProp(int matid, int dimension) : TPZMaterial(matid) {
+TPZPostProcessResProp::TPZPostProcessResProp(int matid, int dimension) : TBase(matid) {
 
     m_mat_id = matid;
     m_dimension = dimension;
@@ -19,7 +19,7 @@ TPZPostProcessResProp::TPZPostProcessResProp(int matid, int dimension) : TPZMate
 }
 
 /** @brief Constructor based on a TRMMultiphase object */
-TPZPostProcessResProp::TPZPostProcessResProp(const TPZPostProcessResProp &other) : TPZMaterial(other) {
+TPZPostProcessResProp::TPZPostProcessResProp(const TPZPostProcessResProp &other) : TBase(other) {
     m_mat_id = other.m_mat_id;
     m_dimension = other.m_dimension;
     m_mass_matrix_Q = other.m_mass_matrix_Q;
@@ -47,7 +47,7 @@ TPZPostProcessResProp::~TPZPostProcessResProp(){
 }
 
 /** @brief Set the required data at each integration point */
-void TPZPostProcessResProp::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec){
+void TPZPostProcessResProp::FillDataRequirements( TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -56,7 +56,7 @@ void TPZPostProcessResProp::FillDataRequirements(const TPZVec<TPZMaterialDataT<S
 }
 
 /** @brief Set the required data at each integration point */
-void TPZPostProcessResProp::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec){
+void TPZPostProcessResProp::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec)const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -65,13 +65,13 @@ void TPZPostProcessResProp::FillBoundaryConditionDataRequirements(int type, TPZV
     }
 }
 
-void TPZPostProcessResProp::FillDataRequirementsInterface(TPZMaterialData &data){
+void TPZPostProcessResProp::FillDataRequirementsInterface(TPZMaterialData &data)const{
     data.SetAllRequirements(false);
     data.fNeedsSol = true;
     data.fNeedsNormal = true;
-    if(fLinearContext == false){
-        data.fNeedsNeighborSol = true;
-    }
+//    if(fLinearContext == false){
+//        data.fNeedsNeighborSol = true;
+//    }
 }
 
 void TPZPostProcessResProp::FillDataRequirementsInterface(TPZMaterialData &data, TPZVec<TPZMaterialData > &datavec_left, TPZVec<TPZMaterialData > &datavec_right)
@@ -96,14 +96,14 @@ void TPZPostProcessResProp::FillDataRequirementsInterface(TPZMaterialData &data,
 
 
 /** @brief Print out the data associated with the material */
-void TPZPostProcessResProp::Print(std::ostream &out){
+void TPZPostProcessResProp::Print(std::ostream &out) const{
     out << "\t Base class print:\n";
     out << " name of material : " << this->Name() << "\n";
     TPZMaterial::Print(out);
 }
 
 /** @brief Returns the variable index associated with the name */
-int TPZPostProcessResProp::VariableIndex(const std::string &name){
+int TPZPostProcessResProp::VariableIndex(const std::string &name)const{
 
     if (!strcmp("Porosity", name.c_str())) return 0;
     if (!strcmp("Permeability_x", name.c_str())) return 1;
@@ -114,7 +114,7 @@ int TPZPostProcessResProp::VariableIndex(const std::string &name){
 }
 
 /** @brief Returns the number of variables associated with varindex */
-int TPZPostProcessResProp::NSolutionVariables(int var){
+int TPZPostProcessResProp::NSolutionVariables(int var)const{
     switch(var) {
         case 0:
             return 1; // Scalar
@@ -134,7 +134,7 @@ int TPZPostProcessResProp::NSolutionVariables(int var){
 
 // Contribute Methods being used
 /** @brief Returns the solution associated with the var index */
-void TPZPostProcessResProp::Solution(TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout){
+void TPZPostProcessResProp::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout){
 
     int phiBlock    = 0;
     int KxBlock    = 1;
@@ -178,11 +178,11 @@ REAL TPZPostProcessResProp::FractureFactor(TPZMaterialData & data){
     return 0.;
 }
 
-void TPZPostProcessResProp::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
+void TPZPostProcessResProp::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
     return;
 }
 
-void TPZPostProcessResProp::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
+void TPZPostProcessResProp::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
     this->Contribute(datavec, weight, ek_fake, ef);
     

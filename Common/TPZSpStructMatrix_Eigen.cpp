@@ -13,7 +13,7 @@
 #include "pzcmesh.h"
 
 #include "TPZLinearAnalysis.h"
-#include "pzsolve.h"
+////#include "pzsolve.h"
 #include "pzstepsolver.h"
 #include "pzdxmesh.h"
 #include <fstream>

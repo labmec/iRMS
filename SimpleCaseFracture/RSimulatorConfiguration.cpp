@@ -101,7 +101,7 @@ TPZCompMesh * RSimulatorConfiguration::CreateFluxCmesh(TPZGeoMesh * gmesh, int o
 
                 val2(0,0)=fsim_case.vals[ibound];
                 int condType=fsim_case.type[ibound];
-                TPZMaterial * face = volume->CreateBC(volume,fsim_case.gamma_ids[ibound],condType,val1,val2);
+                TPZBndCond * face = volume->CreateBC(volume,fsim_case.gamma_ids[ibound],condType,val1,val2);
                 cmesh->InsertMaterialObject(face);
             }
         }
@@ -605,7 +605,7 @@ TPZMultiphysicsCompMesh *RSimulatorConfiguration::CreateMultiPhysicsCompMesh(TPZ
             for (int ibound=0; ibound<nbound; ibound++) {
                 val2(0,0)=fsim_case.vals[ibound];
                 int condType=fsim_case.type[ibound];
-                TPZMaterial * face = volume->CreateBC(volume,fsim_case.gamma_ids[ibound],condType,val1,val2);
+                TPZBndCond * face = volume->CreateBC(volume,fsim_case.gamma_ids[ibound],condType,val1,val2);
                 cmesh->InsertMaterialObject(face);
             }
         }

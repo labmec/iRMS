@@ -25,7 +25,7 @@ TMRSTransportAnalysis::~TMRSTransportAnalysis(){
     
 }
 
-TMRSTransportAnalysis::TMRSTransportAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZAnalysis(cmesh_mult, must_opt_band_width_Q){
+TMRSTransportAnalysis::TMRSTransportAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZLinearAnalysis(cmesh_mult, must_opt_band_width_Q){
     
     m_soltransportTransfer.BuildTransferData(cmesh_mult);
     
@@ -102,10 +102,10 @@ void TMRSTransportAnalysis::Assemble_serial(){
         DebugStop();
     }
 //    mat->Redim(ncells, ncells);
-//    fRhs.Redim(ncells,1);
+//    Rhs().Redim(ncells,1);
     mat->Zero();
-    fRhs.Zero();
-    TPZFMatrix<STATE> &rhs = fRhs;
+    Rhs().Zero();
+    TPZFMatrix<STATE> &rhs = Rhs();
     //Volumetric Elements
     for (int ivol = 0; ivol<ncells; ivol++) {
         int eqindex = fAlgebraicTransport.fCellsData.fEqNumber[ivol];
@@ -446,9 +446,9 @@ void TMRSTransportAnalysis::AssembleResidual_serial(){
      if(!this->fSolver){
          DebugStop();
      }
-     fRhs.Resize(ncells,1);
-     fRhs.Zero();
-    TPZFMatrix<STATE> &rhs = fRhs;
+     Rhs().Resize(ncells,1);
+     Rhs().Zero();
+    TPZFMatrix<STATE> &rhs = Rhs();
      
      //Volumetric Elements
      for (int ivol = 0; ivol<ncells; ivol++) {

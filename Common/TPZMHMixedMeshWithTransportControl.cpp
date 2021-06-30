@@ -143,9 +143,9 @@ void TPZMHMixedMeshWithTransportControl::CreateTransport()
     //            cmeshfluxavg->InsertMaterialObject(mat);
     //        }
     //    }
-    TPZNullMaterial * volume = new TPZNullMaterial(1);
+    TPZNullMaterial<STATE> * volume = new TPZNullMaterial(1);
     cmeshTransport->InsertMaterialObject(volume);
-    TPZNullMaterial * volume2 = new TPZNullMaterial(2);
+    TPZNullMaterial<STATE> * volume2 = new TPZNullMaterial(2);
     cmeshTransport->InsertMaterialObject(volume2);
     matids.insert(1);
     matids.insert(2);

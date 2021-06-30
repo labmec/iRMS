@@ -19,7 +19,7 @@
 #include "TPZSymetricSpStructMatrixEigen.h"
 #include "TPZSSpMatrixEigen.h"
 
-class TMRSMixedAnalysis : public TPZAnalysis {
+class TMRSMixedAnalysis : public TPZLinearAnalysis {
     
     
 

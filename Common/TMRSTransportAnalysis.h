@@ -47,7 +47,7 @@ protected:
   REAL m_value;
 };
 
-class TMRSTransportAnalysis : public TPZAnalysis {
+class TMRSTransportAnalysis : public TPZLinearAnalysis {
     
 private:
     

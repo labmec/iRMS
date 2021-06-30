@@ -16,7 +16,7 @@
 #include "pzgmesh.h"
 #include "tpzhierarquicalgrid.h"
 #include "pzcmesh.h"
-#include "pzl2projection.h"
+#include "Projection/TPZL2Projection.h"
 #include "TPZVTKGeoMesh.h"
 #include "pzgeopoint.h"
 #include "tpzgeoelrefpattern.h"

@@ -37,7 +37,7 @@ TMRSDarcyFractureFlowWithMem<TMEM>::~TMRSDarcyFractureFlowWithMem(){
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
+void TMRSDarcyFractureFlowWithMem<TMEM>::FillDataRequirements( TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -85,7 +85,7 @@ int TMRSDarcyFractureFlowWithMem<TMEM>::NSolutionVariables(int var) const{
     if(var == 4) return 1;
     if(var == 5) return 1;
     if(var == 6) return 1;
-    return TPZMaterial::NSolutionVariables(var);
+    return TBase::NSolutionVariables(var);
 }
 
 template <class TMEM>
@@ -94,7 +94,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
+void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
     
     int qb = 0;
     int pb = 1;
@@ -314,7 +314,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialDataT<STAT
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeFourSpaces(TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
+void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeFourSpaces(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
     
     int qb = 0;
     int pb = 1;
@@ -353,7 +353,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeFourSpaces(TPZVec<TPZMaterial
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
+void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     
 //    this->Contribute(datavec, weight, ekfake, ef);
@@ -374,13 +374,13 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialDataT<STAT
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
+void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     this->ContributeBC(datavec, weight, ekfake, ef, bc);
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
+void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     
     
     REAL gBigNumber = 1.0e12; //TPZMaterial::gBigNumber;

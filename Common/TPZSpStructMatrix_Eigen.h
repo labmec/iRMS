@@ -47,7 +47,9 @@ public:
     int ClassId() const override;
     
     
-
+    virtual TPZSpStructMatrixEigen *NewMatrix() const{
+        return new TPZSpStructMatrixEigen();
+    }
     private :
     TPZSpStructMatrixEigen();
     

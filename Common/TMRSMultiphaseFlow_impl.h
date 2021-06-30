@@ -13,7 +13,7 @@ TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow() : TPZMatWithMem<TMEM>(), mSimData
 }
 
 template <class TMEM>
-TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow(int matid, int dimension) : TPZMatWithMem<TMEM>(matid), mSimData(){
+TMRSMultiphaseFlow<TMEM>::TMRSMultiphaseFlow(int matid, int dimension) : TBase(matid), mSimData(){
     m_dimension = dimension;
 }
 
@@ -40,7 +40,7 @@ TMRSMultiphaseFlow<TMEM>::~TMRSMultiphaseFlow(){
 }
 
 template <class TMEM>
-void TMRSMultiphaseFlow<TMEM>::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
+void TMRSMultiphaseFlow<TMEM>::FillDataRequirements( TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -106,7 +106,7 @@ int TMRSMultiphaseFlow<TMEM>::VariableIndex(const std::string &name) const{
     if (!strcmp("So", name.c_str())) return 1;
   
     
-    return TPZMatWithMem<TMEM>::VariableIndex(name);
+    return TBase::VariableIndex(name);
 }
 
 template <class TMEM>
@@ -119,7 +119,7 @@ int TMRSMultiphaseFlow<TMEM>::NSolutionVariables(int var) const{
       
             
     }
-    return TPZMatWithMem<TMEM>::NSolutionVariables(var);
+    return TBase::NSolutionVariables(var);
 }
 
 template <class TMEM>
@@ -453,4 +453,10 @@ template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::Read(TPZStream &buf, void *context) {
     DebugStop();
 }
- 
+
+ void ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,
+                          REAL weight, TPZFMatrix<STATE> &ek,
+                          TPZFMatrix<STATE> &ef,
+                          TPZBndCondT<STATE> &bc){
+    
+}

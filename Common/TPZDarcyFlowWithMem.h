@@ -72,7 +72,7 @@ public:
         return m_gravity;
     }
     /// Set the required data at each integration point
-    void FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) const override;
+    void FillDataRequirements( TPZVec<TPZMaterialDataT<STATE>> &datavec) const override;
     
     /// Set the required data at each integration point
     void FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const override;

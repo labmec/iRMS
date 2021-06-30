@@ -14,8 +14,13 @@
 // #include "pzdiscgal.h"
 #include "TPZBndCondT.h"
 
-class TPZPostProcessResProp : public TPZMaterial {
+#include "TPZMatBase.h"
+#include "TPZMaterialDataT.h"
+#include "TPZMatCombinedSpaces.h"
+#include "TPZMatInterfaceSingleSpace.h"
+class TPZPostProcessResProp : public TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatInterfaceSingleSpace<STATE>> {
     
+    using TBase =TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatInterfaceSingleSpace<STATE>>;
 private:
     
     /** @brief material dimension */ // TODO:: Candidate for deletion
@@ -53,17 +58,17 @@ public:
     ~TPZPostProcessResProp();
     
     /** @brief Set the required data at each integration point */
-    virtual void FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) override ;
+    virtual void FillDataRequirements( TPZVec<TPZMaterialDataT<STATE>> &datavec) const override ;
     
     /** @brief Set the required data at each integration point */
-    virtual void FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) override;
+    virtual void FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const override;
     
-    virtual void FillDataRequirementsInterface(TPZMaterialData &data) override;
+    virtual void FillDataRequirementsInterface(TPZMaterialData &data) const override;
     
     virtual void FillDataRequirementsInterface(TPZMaterialData &data, TPZVec<TPZMaterialData > &datavec_left, TPZVec<TPZMaterialData > &datavec_right) ;
     
     /** @brief Returns the name of the material */
-    virtual std::string Name() override{
+    virtual std::string Name() const override{
         return "TPZPostProcessResProp";
     }
     
@@ -77,7 +82,7 @@ public:
     int NStateVariables() const {return 1;} // Deprecated, must to be removed
     
     /** @brief Returns material copied form this object */
-    virtual TPZMaterial *NewMaterial() override
+    virtual TPZMaterial *NewMaterial() const override
     {
         return new TPZPostProcessResProp(*this);
     }
@@ -92,11 +97,6 @@ public:
     int NSolutionVariables(int var) const override;
     
     /** @brief Not used contribute methods */
-    
-    
-    
-    
-    
     
     
     // Contribute Methods being used
@@ -165,6 +165,37 @@ public:
     }
     
     REAL FractureFactor(TPZMaterialData & data);
+    
+    virtual void ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,
+                              REAL weight, TPZFMatrix<STATE> &ek,
+                              TPZFMatrix<STATE> &ef,
+                              TPZBndCondT<STATE> &bc)override{
+        DebugStop();
+        
+    }
+    virtual void
+    SolutionInterface(const TPZMaterialDataT<STATE> &data,
+                      const TPZMaterialDataT<STATE> &dataleft,
+                      const TPZMaterialDataT<STATE> &dataright,
+                      const int var,
+                      TPZVec<STATE> &Solout)override{
+        DebugStop();
+    }
+    virtual void
+    ContributeInterface(const TPZMaterialDataT<STATE> &data,
+                        const TPZMaterialDataT<STATE> &dataleft,
+                        const TPZMaterialDataT<STATE> &dataright,
+                        REAL weight, TPZFMatrix<STATE> &ek,
+                        TPZFMatrix<STATE> &ef)override{
+        DebugStop();
+    }
+    virtual void
+    ContributeBCInterface(const TPZMaterialDataT<STATE> &data,
+                          const TPZMaterialDataT<STATE> &dataleft, REAL weight,
+                          TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef,
+                          TPZBndCondT<STATE> &bc) override{
+        DebugStop();
+    }
 
 };
 

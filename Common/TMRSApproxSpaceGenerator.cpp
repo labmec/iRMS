@@ -344,13 +344,14 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     // PHIL : as malhas atomicas nao precisam ser BndCond
     // poderiam ser null material...
     
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZFMatrix<STATE> val1(1,1,0.0);
+    TPZVec<STATE> val2(1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        val2[0]   = get<2>(chunk);
+        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         cmesh->InsertMaterialObject(face);
     }
     
@@ -385,15 +386,15 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     cmesh->SetDefaultOrder(1);
     cmesh->ApproxSpace().CreateDisconnectedElements(true);
     for (auto it:matids) {
-        TPZNullMaterial *nullmat = new TPZNullMaterial(it,dimension,nstate);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(it,dimension,nstate);
         cmesh->InsertMaterialObject(nullmat);
     }
     for (auto it:bcmatids) {
-        TPZNullMaterial *nullmat = new TPZNullMaterial(it,dimension-1,nstate);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(it,dimension-1,nstate);
         cmesh->InsertMaterialObject(nullmat);
     }
     {
-        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dimension-1,nstate);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dimension-1,nstate);
         cmesh->InsertMaterialObject(nullmat);
     }
     
@@ -404,7 +405,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     // add the Hdiv wrapper elements as boundary of the volumetric elements
     mGeometry->ResetReference();
     {
-        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_HdivWrapMatId,dimension-1,nstate);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_HdivWrapMatId,dimension-1,nstate);
         cmesh->InsertMaterialObject(nullmat);
     }
 #ifdef PZDEBUG
@@ -443,7 +444,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
         buildmatids.insert(19);
-        TPZNullMaterial *nullmat = new TPZNullMaterial(19,2,1);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(19,2,1);
         cmesh->InsertMaterialObject(nullmat);
     }
     buildmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
@@ -735,7 +736,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepre
     cmesh->ApproxSpace().SetAllCreateFunctionsContinuous();
     cmesh->ApproxSpace().CreateDisconnectedElements(true);
     for (auto it:matids) {
-        TPZNullMaterial *nullmat = new TPZNullMaterial(it,dimension,nstate);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(it,dimension,nstate);
         cmesh->InsertMaterialObject(nullmat);
     }
     cmesh->AutoBuild(matids);
@@ -753,7 +754,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepre
         }
     }
     {
-        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_MortarMatId,dimension,nstate);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_MortarMatId,dimension,nstate);
         cmesh->InsertMaterialObject(nullmat);
     }
     // create discontinous elements of dimension-1
@@ -808,7 +809,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagra
     }
     
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
-    TPZNullMaterial * volume = nullptr;
+    TPZNullMaterial<STATE> * volume = nullptr;
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
     for(int dim = 0; dim <= dimension; dim++)
@@ -856,7 +857,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     }
     
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
-    TPZNullMaterial * volume = nullptr;
+    TPZNullMaterial<STATE> * volume = nullptr;
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(0);
     
@@ -917,13 +918,14 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     }
     
     std::set<int> boundaryId;
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZFMatrix<STATE> val1(1,1,0.0);
+    TPZVec<STATE> val2(1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        val2[0]   = get<2>(chunk);
+        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         boundaryId.insert(bc_id);
         cmesh->InsertMaterialObject(face);
     }
@@ -971,7 +973,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTrans
     }
     int order = 0;
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
-    TPZL2Projection * volume = nullptr;
+    TPZL2Projection<STATE> * volume = nullptr;
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
     
@@ -1100,13 +1102,13 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
         DebugStop();
     }
     
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        val2[0]  = get<2>(chunk);
+        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         mMixedOperator->InsertMaterialObject(face);
     }
     
@@ -1219,26 +1221,26 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     }
     
     {
-        TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+        TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
         TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
         for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
             int bc_id   = get<0>(chunk);
             int bc_type = get<1>(chunk);
-            val2(0,0)   = get<2>(chunk);
-            TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+            val2[0]  = get<2>(chunk);
+            TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
             mMixedOperator->InsertMaterialObject(face);
         }
     }
     
     {
-        TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+        TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
         TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue;
         for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
             if(!fracmat) DebugStop();
             int bc_id   = get<0>(chunk);
             int bc_type = get<1>(chunk);
-            val2(0,0)   = get<2>(chunk);
-            TPZMaterial * face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
+            val2[0]  = get<2>(chunk);
+            TPZBndCond * face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
             mMixedOperator->InsertMaterialObject(face);
         }
     }
@@ -1246,19 +1248,19 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     {
         int dim = 1;
         int nstate = 1;
-        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_HdivWrapMatId,dim,nstate);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_HdivWrapMatId,dim,nstate);
         mMixedOperator->InsertMaterialObject(nullmat);
     }
     {
         int dim = 1;
         int nstate = 1;
-        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_MortarMatId,dim,nstate);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_MortarMatId,dim,nstate);
         mMixedOperator->InsertMaterialObject(nullmat);
     }
     {
         int dim = 1;
         int nstate = 1;
-        TPZNullMaterial *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dim,nstate);
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dim,nstate);
         mMixedOperator->InsertMaterialObject(nullmat);
     }
 //    mGeometry->ResetReference();
@@ -1267,7 +1269,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 //    TMRSDarcyFlowWithMem<TMRSMemory>*volume2 = new TMRSDarcyFlowWithMem<TMRSMemory>(19,2);
     
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
-        TPZNullMaterial*volume2 = new TPZNullMaterial(19,2,1);
+        TPZNullMaterial<STATE> *volume2 = new TPZNullMaterial(19,2,1);
         mMixedOperator->InsertMaterialObject(volume2);
     }
    
@@ -1402,9 +1404,9 @@ void TMRSApproxSpaceGenerator::InsertInterfaceElements()
     GetMaterialIds(dim, matids, bcmatids);
     GetMaterialIds(dim-1, fracmatids, fracbcmatids);
 //    bcmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
-    TPZLagrangeMultiplier *mat1 = new TPZLagrangeMultiplier(mSimData.mTGeometry.m_posLagrangeMatId,dim,1);
+    TPZLagrangeMultiplier<STATE> *mat1 = new TPZLagrangeMultiplier<STATE>(mSimData.mTGeometry.m_posLagrangeMatId,dim,1);
     mMixedOperator->InsertMaterialObject(mat1);
-    TPZLagrangeMultiplier *mat2 = new TPZLagrangeMultiplier(mSimData.mTGeometry.m_negLagrangeMatId,dim,1);
+    TPZLagrangeMultiplier<STATE> *mat2 = new TPZLagrangeMultiplier<STATE>(mSimData.mTGeometry.m_negLagrangeMatId,dim,1);
     mat2->SetMultiplier(-1.);
     mMixedOperator->InsertMaterialObject(mat2);
     mGeometry->ResetReference();
@@ -1692,14 +1694,14 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
         DebugStop();
     }
     
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
         REAL val = get<2>(chunk);
-        val2(0,0) =val;
-        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        val2[0] =val;
+        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         mMixedOperator->InsertMaterialObject(face);
     }
     
@@ -1793,14 +1795,14 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
                 DebugStop();
             }
             
-            TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+            TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
             TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
             for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
                 int bc_id   = get<0>(chunk);
                 int bc_type = get<1>(chunk);
-                val2(0,0)   = get<2>(chunk);
+                val2[0]  = get<2>(chunk);
                 matids.insert(bc_id);
-                TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+                TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
                 mhm->CMesh()->InsertMaterialObject(face);
             }
             mhm->fMaterialBCIds = matids;
@@ -1981,13 +1983,13 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
         DebugStop();
     }
     
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        val2[0]  = get<2>(chunk);
+        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         mTransportOperator->InsertMaterialObject(face);
         
     }
@@ -2162,18 +2164,18 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
         DebugStop();
     }
     
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        val2[0]  = get<2>(chunk);
+        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         mTransportOperator->InsertMaterialObject(face);
         
     }
     //crear controle no simdata
-    TPZMaterial * face3 = volume->CreateBC(volume,-11,1,val1,val2);
+    TPZBndCond * face3 = volume->CreateBC(volume,-11,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face3);
     
     int fracvol1ID = mSimData.mTGeometry.mInterface_material_idFracInf;
@@ -2181,16 +2183,16 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     int fracFracID = mSimData.mTGeometry.mInterface_material_idFracFrac;
     int fracbounId = mSimData.mTGeometry.mIterface_material_idFracBound;
     
-    TPZMaterial * face = volume->CreateBC(volume,fracvol1ID,1,val1,val2);
+    TPZBndCond * face = volume->CreateBC(volume,fracvol1ID,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face);
 
-    TPZMaterial * face4 = volume->CreateBC(volume,fracvol2ID,1,val1,val2);
+    TPZBndCond * face4 = volume->CreateBC(volume,fracvol2ID,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face4);
     
-    TPZMaterial * face2 = volume->CreateBC(volume,fracFracID,1,val1,val2);
+    TPZBndCond * face2 = volume->CreateBC(volume,fracFracID,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face2);
 //
-    TPZMaterial * face5 = volume->CreateBC(volume,fracbounId,1,val1,val2);
+    TPZBndCond * face5 = volume->CreateBC(volume,fracbounId,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face5);
     
     
@@ -2268,13 +2270,13 @@ TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(TPZAl
         DebugStop();
     }
     
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        val2[0]  = get<2>(chunk);
+        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         auxmesh->InsertMaterialObject(face);
     }
     
@@ -2451,7 +2453,7 @@ void TMRSApproxSpaceGenerator::UnifyMaterialMemory(int material_id, TPZMultiphys
     }
     
     TPZMatWithMem<TMRSMemory> * mat_with_memory_o = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material_o);
-    TPZMatWithMem<TMRSMemory,TPZMaterial> * mat_with_memory_d = dynamic_cast<TPZMatWithMem<TMRSMemory,TPZMaterial> * >(material_d);
+    TPZMatWithMem<TMRSMemory> * mat_with_memory_d = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material_d);
     if (!mat_with_memory_o || !mat_with_memory_d) {
         DebugStop();
     }
@@ -2637,7 +2639,7 @@ void TMRSApproxSpaceGenerator::SetUpdateMaterialMemory(int material_id, TPZMulti
         return;
     }
     
-    TPZMatWithMem<TMRSMemory,TPZMaterial> * mat_with_memory_trans = dynamic_cast<TPZMatWithMem<TMRSMemory,TPZMaterial> * >(material);
+    TPZMatWithMem<TMRSMemory> * mat_with_memory_trans = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material);
     if (mat_with_memory_trans) {
         mat_with_memory_trans->SetUpdateMem(update_memory_Q);
         return;
@@ -2699,13 +2701,13 @@ void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
 //        DebugStop();
 //    }
 //    
-//    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+//    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
 //    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
 //    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
 //        int bc_id   = get<0>(chunk);
 //        int bc_type = get<1>(chunk);
-//        val2(0,0)   = get<2>(chunk);
-//        TPZMaterial * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+//        val2[0]  = get<2>(chunk);
+//        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
 //        MixedFluxPressureCmesh->InsertMaterialObject(face);
 //    }
 //    
@@ -2746,13 +2748,13 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
         DebugStop();
     }
     
-    TPZFMatrix<STATE> val1(1,1,0.0),val2(1,1,0.0);
+    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
     TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
-        val2(0,0)   = get<2>(chunk);
-        std::cout<<"val: "<<val2(0,0)<<std::endl;
+        val2[0]  = get<2>(chunk);
+//        std::cout<<"val: "<<val2(0,0)<<std::endl;
         TPZBndCondT<STATE> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         MixedFluxPressureCmesh->InsertMaterialObject(face);
     }

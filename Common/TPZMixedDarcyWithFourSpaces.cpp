@@ -24,7 +24,7 @@ TPZMixedDarcyWithFourSpaces::TPZMixedDarcyWithFourSpaces(const TPZMixedDarcyWith
     
 }
 
-void TPZMixedDarcyWithFourSpaces::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
+void TPZMixedDarcyWithFourSpaces::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
     
     TPZMixedDarcyFlow::Contribute(datavec, weight, ek, ef);
     
@@ -45,7 +45,7 @@ void TPZMixedDarcyWithFourSpaces::Contribute(TPZVec<TPZMaterialDataT<STATE>> &da
     }
     TPZManVector<STATE> force(1,0.);
     if(fForcingFunction) {
-        fForcingFunction->Execute(datavec[qb].x,force);
+        fForcingFunction(datavec[qb].x,force);
     }
     
     for(int ip=0; ip<nphi_p; ip++)
@@ -59,13 +59,13 @@ void TPZMixedDarcyWithFourSpaces::Contribute(TPZVec<TPZMaterialDataT<STATE>> &da
     
 }
 
-void TPZMixedDarcyWithFourSpaces::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight, TPZFMatrix<STATE> &ef) {
+void TPZMixedDarcyWithFourSpaces::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight, TPZFMatrix<STATE> &ef) {
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     this->Contribute(datavec, weight, ekfake, ef);
 }
 
 
-int TPZMixedDarcyWithFourSpaces::VariableIndex(const std::string &name) {
+int TPZMixedDarcyWithFourSpaces::VariableIndex(const std::string &name) const{
     if(!strcmp("g_average",name.c_str()))        return  5;
     if(!strcmp("p_average",name.c_str()))        return  6;
     if(!strcmp("kxx",name.c_str()))        return  100;
@@ -75,7 +75,7 @@ int TPZMixedDarcyWithFourSpaces::VariableIndex(const std::string &name) {
     return TPZMixedDarcyFlow::VariableIndex(name);
 }
 
-int TPZMixedDarcyWithFourSpaces::NSolutionVariables(int var) {
+int TPZMixedDarcyWithFourSpaces::NSolutionVariables(int var)const {
     if(var == 5) return 1;
     if(var == 6) return 1;
     if(var == 7) return 100;
@@ -85,7 +85,7 @@ int TPZMixedDarcyWithFourSpaces::NSolutionVariables(int var) {
     return TPZMixedDarcyFlow::NSolutionVariables(var);
 }
 
-void TPZMixedDarcyWithFourSpaces::Solution(TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<STATE> &Solout){
+void TPZMixedDarcyWithFourSpaces::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<STATE> &Solout){
 
     if(var >= 100 && var <= 103) DebugStop();
     int g_avgb = 2;
