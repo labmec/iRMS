@@ -21,7 +21,7 @@
 #include "pzgeopoint.h"
 #include "tpzgeoelrefpattern.h"
 #include "TPZRefPatternTools.h"
-#include "pzanalysis.h"
+#include "TPZLinearAnalysis.h"
 #include "pzinterpolationspace.h"
 
 class TRMSpatialPropertiesMap{

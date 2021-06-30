@@ -22,7 +22,7 @@
 #include "pzmanvector.h"
 #include "pzstack.h"
 
-#include "pzanalysis.h"
+#include "TPZLinearAnalysis.h"
 #include "pzfstrmatrix.h"
 #include "pzskylstrmatrix.h"
 #include "pzstepsolver.h"
@@ -59,7 +59,7 @@
 #include "TPZMatLaplacian.h"
 #include "pzpoisson3d.h"
 #include "mixedpoisson.h"
-#include "pzbndcond.h"
+#include "TPZBndCondT.h"
 #include "TPZSSpStructMatrix.h"
 #include "pzskylstrmatrix.h"
 #include "TPZSkylineNSymStructMatrix.h"
@@ -75,7 +75,7 @@
 //#include "TPZPointCloud.h"
 //#include "bicgstab.h"
 
-#include "pzanalysis.h"
+#include "TPZLinearAnalysis.h"
 #include "pzfstrmatrix.h"
 #include "pzskylstrmatrix.h"
 #include "pzstepsolver.h"
@@ -86,7 +86,7 @@
 #include  "RSimulationCase.h"
 #include "TPZMixedDarcyFlow.h"
 
-#include "pzanalysis.h"
+#include "TPZLinearAnalysis.h"
 #include "pzstepsolver.h"
 #include "pzskylstrmatrix.h"
 #include "TPZSkylineNSymStructMatrix.h"

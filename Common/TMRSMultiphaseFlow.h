@@ -10,16 +10,24 @@
 
 #include <stdio.h>
 #include "TPZMatWithMem.h"
-#include "pzbndcond.h"
+#include "TPZBndCondT.h"
 #include "pzaxestools.h"
 // #include "pzdiscgal.h"
 #include "TMRSDataTransfer.h"
 #include <tuple>
 #include <functional>
 
+#include "TPZMatBase.h"
+#include "TPZMatCombinedSpaces.h"
+#include "TPZMatErrorCombinedSpaces.h"
+#include "TPZMaterialDataT.h"
+#include "TPZMatWithMem.h"
+
 template <class TMEM>
-class TMRSMultiphaseFlow : public TPZMatWithMem<TMEM,TPZMaterial> {
-  
+class TMRSMultiphaseFlow : public TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatWithMem<TMEM> > {
+    
+    using TBase = TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>,
+    TPZMatErrorCombinedSpaces<STATE>>;
 private:
     
     /// Dimension
@@ -45,17 +53,17 @@ public:
     ~TMRSMultiphaseFlow();
     
     /// Set the required data at each integration point
-    virtual void FillDataRequirements(TPZVec<TPZMaterialData> &datavec) override ;
+    virtual void FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) const override ;
     
     /// Set the required data at each integration point
-    virtual void FillBoundaryConditionDataRequirement(int type, TPZVec<TPZMaterialData> &datavec) override;
+    virtual void FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const override;
     
-    virtual void FillDataRequirementsInterface(TPZMaterialData &data) override;
+//    virtual void FillDataRequirementsInterface(TPZMaterialDataT<STATE> &data) const override;
     
     virtual void FillDataRequirementsInterface(TPZMaterialData &data, TPZVec<TPZMaterialData > &datavec_left, TPZVec<TPZMaterialData > &datavec_right) ;
     
     /// Returns the name of the material
-    virtual std::string Name() override{
+    virtual std::string Name() const override{
         return "TMRSMultiphaseFlow";
     }
     
@@ -72,45 +80,40 @@ public:
     int NStateVariables() const override {return 1;} // Deprecated, must to be removed
     
     /// Returns material copied form this object
-    virtual TPZMaterial *NewMaterial() override
+    virtual TPZMaterial *NewMaterial() const override
     {
         return new TMRSMultiphaseFlow(*this);
     }
     
     /// Print out the data associated with the material
-    void Print(std::ostream &out = std::cout) override;
+    void Print(std::ostream &out = std::cout) const override;
     
     /// Returns the variable index associated with the name
-    int VariableIndex(const std::string &name) override;
+    int VariableIndex(const std::string &name) const override;
     
     /// Returns the number of variables associated with varindex
-    int NSolutionVariables(int var) override;
+    int NSolutionVariables(int var) const override;
     
-    /// Not used contribute methods
-    void Contribute(TPZMaterialData &data, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef)  override { DebugStop();}
-    void ContributeBC(TPZMaterialData &data, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc)  override{DebugStop();}
-    void ContributeInterface(TPZMaterialData &data, TPZMaterialData &dataleft, TPZMaterialData &dataright, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef)  {DebugStop();}
-    void ContributeBCInterface(TPZMaterialData &data, TPZMaterialData &dataleft, REAL weight, TPZFMatrix<STATE> &ef,TPZBndCond &bc) {DebugStop();}
-    void ContributeBCInterface(TPZMaterialData &data, TPZMaterialData &dataleft, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef,TPZBndCond &bc)  {DebugStop();}
-    void ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc) override {DebugStop();}
+    
+ 
     
     
     // Contribute Methods being used
     
     /// Returns the solution associated with the var index
-    void Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout) override;
+    void Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout)  override;
     
-    void Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef) override;
+    void Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef) override;
     
-    void Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef) override;
+    void Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef) override;
     
-    void ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, TPZVec<TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) ;
+    void ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialDataT<STATE>> &datavecleft, TPZVec<TPZMaterialDataT<STATE>> &datavecright, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) ;
     
-    void ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, TPZVec<TPZMaterialData> &datavecright, REAL weight, TPZFMatrix<STATE> &ef) ;
+    void ContributeInterface(TPZMaterialData &data, TPZVec<TPZMaterialDataT<STATE>> &datavecleft, TPZVec<TPZMaterialDataT<STATE>> &datavecright, REAL weight, TPZFMatrix<STATE> &ef) ;
     
-    void ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc) ;
+    void ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialDataT<STATE>> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc) ;
     
-    void ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCond &bc);
+    void ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialDataT<STATE>> &datavecleft, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc);
     
     /// Unique identifier for serialization purposes
     int ClassId() const override;

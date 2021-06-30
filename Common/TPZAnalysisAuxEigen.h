@@ -15,8 +15,9 @@
 #include "pzgmesh.h"
 #include "pzcmesh.h"
 
-#include "pzanalysis.h"
-#include "pzsolve.h"
+#include "TPZLinearAnalysis.h"
+
+//#include "pzsolve.h"
 #include "pzstepsolver.h"
 
 #include "pzdxmesh.h"
@@ -25,7 +26,7 @@
 #include "pzelmat.h"
 
 #include "pzysmp.h"
-#include "pzbndcond.h"
+#include "TPZBndCondT.h"
 #include "TPZAlgebraicTransport.h"
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>

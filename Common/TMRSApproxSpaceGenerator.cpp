@@ -2753,7 +2753,7 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
         int bc_type = get<1>(chunk);
         val2(0,0)   = get<2>(chunk);
         std::cout<<"val: "<<val2(0,0)<<std::endl;
-        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        TPZBndCondT<STATE> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         MixedFluxPressureCmesh->InsertMaterialObject(face);
     }
     

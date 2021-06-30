@@ -8,7 +8,8 @@
 #define TMRSTransportAnalysis_h
 
 #include <stdio.h>
-#include "pzanalysis.h"
+#include "TPZLinearAnalysis.h"
+
 #include "TPZMultiphysicsCompMesh.h"
 #include "TPZSpStructMatrix.h"
 #include "pzskylstrmatrix.h"

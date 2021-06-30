@@ -47,7 +47,7 @@ TPZPostProcessResProp::~TPZPostProcessResProp(){
 }
 
 /** @brief Set the required data at each integration point */
-void TPZPostProcessResProp::FillDataRequirements(TPZVec<TPZMaterialData> &datavec){
+void TPZPostProcessResProp::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec){
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -56,7 +56,7 @@ void TPZPostProcessResProp::FillDataRequirements(TPZVec<TPZMaterialData> &datave
 }
 
 /** @brief Set the required data at each integration point */
-void TPZPostProcessResProp::FillBoundaryConditionDataRequirement(int type, TPZVec<TPZMaterialData> &datavec){
+void TPZPostProcessResProp::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec){
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -134,7 +134,7 @@ int TPZPostProcessResProp::NSolutionVariables(int var){
 
 // Contribute Methods being used
 /** @brief Returns the solution associated with the var index */
-void TPZPostProcessResProp::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout){
+void TPZPostProcessResProp::Solution(TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout){
 
     int phiBlock    = 0;
     int KxBlock    = 1;
@@ -178,11 +178,11 @@ REAL TPZPostProcessResProp::FractureFactor(TPZMaterialData & data){
     return 0.;
 }
 
-void TPZPostProcessResProp::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
+void TPZPostProcessResProp::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
     return;
 }
 
-void TPZPostProcessResProp::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
+void TPZPostProcessResProp::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
     this->Contribute(datavec, weight, ek_fake, ef);
     

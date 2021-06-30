@@ -14,7 +14,7 @@
 #include "pzgmesh.h"
 #include "pzcmesh.h"
 
-#include "pzanalysis.h"
+#include "TPZLinearAnalysis.h"
 #include "pzsolve.h"
 #include "pzstepsolver.h"
 
@@ -24,7 +24,7 @@
 #include "pzelmat.h"
 
 #include "pzsysmp.h"
-#include "pzbndcond.h"
+#include "TPZBndCondT.h"
 #include "TPZTimer.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>

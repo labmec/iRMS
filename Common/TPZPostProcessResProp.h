@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 // #include "pzdiscgal.h"
-#include "pzbndcond.h"
+#include "TPZBndCondT.h"
 
 class TPZPostProcessResProp : public TPZMaterial {
     
@@ -53,10 +53,10 @@ public:
     ~TPZPostProcessResProp();
     
     /** @brief Set the required data at each integration point */
-    virtual void FillDataRequirements(TPZVec<TPZMaterialData> &datavec) override ;
+    virtual void FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) override ;
     
     /** @brief Set the required data at each integration point */
-    virtual void FillBoundaryConditionDataRequirement(int type, TPZVec<TPZMaterialData> &datavec) override;
+    virtual void FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) override;
     
     virtual void FillDataRequirementsInterface(TPZMaterialData &data) override;
     
@@ -83,30 +83,30 @@ public:
     }
     
     /** @brief Print out the data associated with the material */
-    void Print(std::ostream &out = std::cout) override;
+    void Print(std::ostream &out = std::cout) const override;
     
     /** @brief Returns the variable index associated with the name */
-    int VariableIndex(const std::string &name) override;
+    int VariableIndex(const std::string &name) const override;
     
     /** @brief Returns the number of variables associated with varindex */
-    int NSolutionVariables(int var) override;
+    int NSolutionVariables(int var) const override;
     
     /** @brief Not used contribute methods */
-    void Contribute(TPZMaterialData &data, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef)  override { DebugStop();}
-    void ContributeBC(TPZMaterialData &data, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc)  override{DebugStop();}
-    void ContributeInterface(TPZMaterialData &data, TPZMaterialData &dataleft, TPZMaterialData &dataright, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef)  override{DebugStop();}
-    void ContributeBCInterface(TPZMaterialData &data, TPZMaterialData &dataleft, REAL weight, TPZFMatrix<STATE> &ef,TPZBndCond &bc) override {DebugStop();}
-    void ContributeBCInterface(TPZMaterialData &data, TPZMaterialData &dataleft, REAL weight, TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef,TPZBndCond &bc)  override {DebugStop();}
-    void ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc) override {DebugStop();}
+    
+    
+    
+    
+    
+    
     
     // Contribute Methods being used
     
     /** @brief Returns the solution associated with the var index */
-    void Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout) override;
+    void Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout) override;
     
-    void Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef) override;
+    void Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef) override;
     
-    void Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef) override;
+    void Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef) override;
     
     
     /**

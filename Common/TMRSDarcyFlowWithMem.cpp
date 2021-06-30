@@ -10,7 +10,7 @@
 
 
 template <class TMEM>
-TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TPZMatWithMem<TMEM>(), mSimData() {
+TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TBase(), mSimData() {
     m_dimension = 0;
     m_is_four_spaces_Q = false;
     m_scale_pressure = 1;
@@ -18,7 +18,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TPZMatWithMem<TMEM>(), mSim
 }
 
 template <class TMEM>
-TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension) : TPZMatWithMem<TMEM>(mat_id), mSimData(){
+TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension) : TBase(mat_id), mSimData(){
 //    DebugStop();
     m_dimension = dimension;
     m_is_four_spaces_Q = false;
@@ -27,7 +27,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension) : TP
 }
 
 template <class TMEM>
-TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(const TMRSDarcyFlowWithMem & other) : TPZMatWithMem<TMEM>(other){
+TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(const TMRSDarcyFlowWithMem & other) : TBase(other){
     m_dimension         = other.m_dimension;
     m_scale_pressure    = other.m_scale_pressure;
     m_scale_flux        = other.m_scale_flux;
@@ -55,7 +55,7 @@ TMRSDarcyFlowWithMem<TMEM>::~TMRSDarcyFlowWithMem(){
 }
 
 template <class TMEM>
-void TMRSDarcyFlowWithMem<TMEM>::FillDataRequirements(TPZVec<TPZMaterialData> &datavec) {
+void TMRSDarcyFlowWithMem<TMEM>::FillDataRequirements( TPZVec<TPZMaterialDataT<STATE>> &datavec) const {
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -65,7 +65,7 @@ void TMRSDarcyFlowWithMem<TMEM>::FillDataRequirements(TPZVec<TPZMaterialData> &d
 }
 
 template <class TMEM>
-void TMRSDarcyFlowWithMem<TMEM>::FillBoundaryConditionDataRequirement(int type, TPZVec<TPZMaterialData> &datavec) {
+void TMRSDarcyFlowWithMem<TMEM>::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec)const {
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -80,7 +80,7 @@ void TMRSDarcyFlowWithMem<TMEM>::SetDataTransfer(TMRSDataTransfer & SimData){
 }
 
 template <class TMEM>
-void TMRSDarcyFlowWithMem<TMEM>::Print(std::ostream &out) {
+void TMRSDarcyFlowWithMem<TMEM>::Print(std::ostream &out) const{
     TPZMatWithMem<TMEM>::Print(out);
     out << m_dimension << std::endl;
     out << m_scale_pressure << std::endl;
@@ -89,29 +89,29 @@ void TMRSDarcyFlowWithMem<TMEM>::Print(std::ostream &out) {
 }
 
 template <class TMEM>
-int TMRSDarcyFlowWithMem<TMEM>::VariableIndex(const std::string &name) {
+int TMRSDarcyFlowWithMem<TMEM>::VariableIndex(const std::string &name) const {
     if(!strcmp("Flux",name.c_str()))            return  1;
     if(!strcmp("Pressure",name.c_str()))        return  2;
     if(!strcmp("div_q",name.c_str()))           return  3;
     if(!strcmp("kappa",name.c_str()))           return  4;
     if(!strcmp("g_average",name.c_str()))        return  5;
     if(!strcmp("p_average",name.c_str()))        return  6;
-    return TPZMatWithMem<TMEM>::VariableIndex(name);
+    return TPZMaterial::VariableIndex(name);
 }
 
 template <class TMEM>
-int TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(int var) {
+int TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(int var) const{
     if(var == 1) return 3;
     if(var == 2) return 1;
     if(var == 3) return 1;
     if(var == 4) return 1;
     if(var == 5) return 1;
     if(var == 6) return 1;
-    return TPZMatWithMem<TMEM>::NSolutionVariables(var);
+    return TPZMaterial::NSolutionVariables(var);
 }
 
 template <class TMEM>
-void TMRSDarcyFlowWithMem<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout) {
+void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout) {
     
     int qb = 0;
     int pb = 1;
@@ -184,7 +184,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int 
 }
 
 template <class TMEM>
-void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
+void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
     
     int qb = 0;
     int pb = 1;
@@ -296,7 +296,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
 }
 
 template <class TMEM>
-void TMRSDarcyFlowWithMem<TMEM>::ContributeFourSpaces(TPZVec<TPZMaterialData> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
+void TMRSDarcyFlowWithMem<TMEM>::ContributeFourSpaces(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
     
     int qb = 0;
     int pb = 1;
@@ -335,18 +335,18 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeFourSpaces(TPZVec<TPZMaterialData> &d
 }
 
 template <class TMEM>
-void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
+void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
-    this->Contribute(datavec, weight, ekfake, ef);
+//    this->Contribute(datavec, weight, ekfake, ef);
+    this->Contribute(datavec, weight, ef);
     
-    if(TMRSDarcyFlowWithMem<TMEM>::fUpdateMem){
+    if(TPZMatWithMem<TMEM>::fUpdateMem){
         int qb = 0;
         int pb = 1;
         long gp_index = datavec[pb].intGlobPtIndex;
         TMEM & memory = this->GetMemory().get()->operator[](gp_index);
         TPZVec<REAL> q_n = datavec[qb].sol[0][0];
         memory.m_flux = q_n;
-        
         REAL p_n = datavec[pb].sol[0][0];
         memory.m_p = p_n;
     }
@@ -354,13 +354,13 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, RE
 }
 
 template <class TMEM>
-void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
+void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     this->ContributeBC(datavec, weight, ekfake, ef, bc);
 }
 
 template <class TMEM>
-void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
+void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     
 
     REAL gBigNumber = 1.0e12; //TPZMaterial::gBigNumber;
@@ -374,7 +374,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, 
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     
     TPZManVector<STATE,1> bc_data(1,0.0);
-    bc_data[0] = bc.Val2()(0,0);
+    bc_data[0] = bc.Val2()[0];
     
     switch (bc.Type()) {
         case 0 :    // Dirichlet BC  PD

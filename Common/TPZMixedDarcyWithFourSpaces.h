@@ -28,19 +28,19 @@ public:
     TPZMixedDarcyWithFourSpaces(const TPZMixedDarcyWithFourSpaces &other);
     
     /** @brief Volumetric contribute with jacobian matrix */
-    void Contribute(TPZVec<TPZMaterialData> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) override;
+    void Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) override;
     
     /** @brief Volumetric contribute without jacobian matrix */
-    void Contribute(TPZVec<TPZMaterialData> &datavec,REAL weight, TPZFMatrix<STATE> &ef) override;
+    void Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight, TPZFMatrix<STATE> &ef) override;
     
     /** @brief Variable index based on variable naming */
-    int VariableIndex(const std::string &name) override;
+    int VariableIndex(const std::string &name) const override;
     
     /** @brief size of the current variable (1 -> scalar, 3-> vector, 9 ->  Tensor ) */
-    int NSolutionVariables(int var) override;
+    int NSolutionVariables(int var) const override;
     
     /** @brief Postprocess required variables multiphysics */
-    void Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<STATE> &Solout) override;
+    void Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<STATE> &Solout) override;
     
 };
 

@@ -8,7 +8,7 @@
 #define TMRSMixedAnalysis_h
 
 #include <stdio.h>
-#include "pzanalysis.h"
+#include "TPZLinearAnalysis.h"
 #include "TPZMultiphysicsCompMesh.h"
 #include "TPZSSpStructMatrix.h"
 #include "pzskylstrmatrix.h"

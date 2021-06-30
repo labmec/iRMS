@@ -1495,7 +1495,7 @@ void TPZAlgebraicDataTransfer::TestSideOrient(TPZCompMesh *MultFlux){
                 TPZMultiphysicsInterfaceElement *cmulint = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
                 
                 TPZMaterial *mat = cmulint->Material();
-//                TPZBndCond *bc = dynamic_cast<TPZBndCond *> (mat);
+//                TPZBndCondT<STATE> *bc = dynamic_cast<TPZBndCondT<STATE> *> (mat);
                 TPZLagrangeMultiplier *lag = dynamic_cast<TPZLagrangeMultiplier *> (mat);
                 std::cout<<"Mult= "<<lag->Multiplier()<<std::endl;
                 int nconects = cmulint->NConnects();

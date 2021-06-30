@@ -18,7 +18,7 @@
 #include <TPZNullMaterial.h>
 #include "TPZMixedDarcyFlow.h"
 //#include "TPZLinearAnalysis.h"
-#include "pzanalysis.h"
+#include "TPZLinearAnalysis.h"
 #include <pzskylstrmatrix.h> //symmetric skyline matrix storage
 #include <pzstepsolver.h> //for TPZStepSolver
 #include "TPZMultiphysicsCompMesh.h"

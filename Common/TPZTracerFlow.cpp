@@ -47,7 +47,7 @@ TPZTracerFlow::~TPZTracerFlow(){
 }
 
 /** @brief Set the required data at each integration point */
-void TPZTracerFlow::FillDataRequirements(TPZVec<TPZMaterialData> &datavec){
+void TPZTracerFlow::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec){
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -56,7 +56,7 @@ void TPZTracerFlow::FillDataRequirements(TPZVec<TPZMaterialData> &datavec){
 }
 
 /** @brief Set the required data at each integration point */
-void TPZTracerFlow::FillBoundaryConditionDataRequirement(int type, TPZVec<TPZMaterialData> &datavec){
+void TPZTracerFlow::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec){
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -127,7 +127,7 @@ int TPZTracerFlow::NSolutionVariables(int var){
 
 // Contribute Methods being used
 /** @brief Returns the solution associated with the var index */
-void TPZTracerFlow::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout){
+void TPZTracerFlow::Solution(TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout){
 
     int s_b    = 2;
     if (datavec.size() == 5) {
@@ -173,7 +173,7 @@ REAL TPZTracerFlow::FractureFactor(TPZMaterialData & data){
     return alpha;
 }
 
-void TPZTracerFlow::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
+void TPZTracerFlow::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
 
     int nref =  datavec.size();
 #ifdef PZDEBUG
@@ -209,7 +209,7 @@ void TPZTracerFlow::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TP
 
 }
 
-void TPZTracerFlow::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
+void TPZTracerFlow::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ek_fake(ef.Rows(),ef.Rows());
     this->Contribute(datavec, weight, ek_fake, ef);
     
@@ -318,7 +318,7 @@ void TPZTracerFlow::ContributeInterface(TPZMaterialData &data, std::map<int, TPZ
 }
 
 
-void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, std::map<int, TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
+void TPZTracerFlow::ContributeBCInterface(TPZMaterialData &data, std::map<int, TPZMaterialData> &datavecleft, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     
     if (m_mass_matrix_Q) {
         return;

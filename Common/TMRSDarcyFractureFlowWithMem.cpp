@@ -9,11 +9,13 @@
 #include "TMRSDarcyFractureFlowWithMem.h"
 
 template <class TMEM>
-TMRSDarcyFractureFlowWithMem<TMEM>::TMRSDarcyFractureFlowWithMem() : TMRSDarcyFlowWithMem<TMEM>() {
+TMRSDarcyFractureFlowWithMem<TMEM>::TMRSDarcyFractureFlowWithMem() : TBase() {
 }
 
 template <class TMEM>
-TMRSDarcyFractureFlowWithMem<TMEM>::TMRSDarcyFractureFlowWithMem(int mat_id, int dimension) : TMRSDarcyFlowWithMem<TMEM>(mat_id, dimension){
+TMRSDarcyFractureFlowWithMem<TMEM>::TMRSDarcyFractureFlowWithMem(int mat_id, int dimension) : TBase(mat_id, dimension) {
+    
+    
 }
 
 template <class TMEM>
@@ -35,7 +37,7 @@ TMRSDarcyFractureFlowWithMem<TMEM>::~TMRSDarcyFractureFlowWithMem(){
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::FillDataRequirements(TPZVec<TPZMaterialData> &datavec) {
+void TMRSDarcyFractureFlowWithMem<TMEM>::FillDataRequirements(const TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -45,7 +47,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::FillDataRequirements(TPZVec<TPZMaterial
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::FillBoundaryConditionDataRequirement(int type, TPZVec<TPZMaterialData> &datavec) {
+void TMRSDarcyFractureFlowWithMem<TMEM>::FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const{
     int ndata = datavec.size();
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
@@ -60,39 +62,39 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::SetDataTransfer(TMRSDataTransfer & SimD
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::Print(std::ostream &out) {
-    TMRSDarcyFlowWithMem<TMEM>::Print(out);
+void TMRSDarcyFractureFlowWithMem<TMEM>::Print(std::ostream &out) const{
+    TPZMaterial::Print(out);
 }
 
 template <class TMEM>
-int TMRSDarcyFractureFlowWithMem<TMEM>::VariableIndex(const std::string &name) {
+int TMRSDarcyFractureFlowWithMem<TMEM>::VariableIndex(const std::string &name) const{
     if(!strcmp("Flux",name.c_str()))            return  1;
     if(!strcmp("Pressure",name.c_str()))        return  2;
     if(!strcmp("div_q",name.c_str()))           return  3;
     if(!strcmp("kappa",name.c_str()))           return  4;
     if(!strcmp("g_average",name.c_str()))        return  5;
     if(!strcmp("p_average",name.c_str()))        return  6;
-    return TMRSDarcyFlowWithMem<TMEM>::VariableIndex(name);
+    return TPZMaterial::VariableIndex(name);
 }
 
 template <class TMEM>
-int TMRSDarcyFractureFlowWithMem<TMEM>::NSolutionVariables(int var) {
+int TMRSDarcyFractureFlowWithMem<TMEM>::NSolutionVariables(int var) const{
     if(var == 1) return 3;
     if(var == 2) return 1;
     if(var == 3) return 1;
     if(var == 4) return 1;
     if(var == 5) return 1;
     if(var == 6) return 1;
-    return TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(var);
+    return TPZMaterial::NSolutionVariables(var);
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::Solution(TPZVec<TPZMaterialData> &datavec, int var, TPZVec<REAL> &Solout) {
+void TMRSDarcyFractureFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout) {
     TMRSDarcyFlowWithMem<TMEM>::Solution(datavec,var,Solout);
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
+void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
     
     int qb = 0;
     int pb = 1;
@@ -312,7 +314,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeFourSpaces(TPZVec<TPZMaterialData> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
+void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeFourSpaces(TPZVec<TPZMaterialDataT<STATE>> &datavec,REAL weight,TPZFMatrix<STATE> &ek,TPZFMatrix<STATE> &ef) {
     
     int qb = 0;
     int pb = 1;
@@ -351,9 +353,11 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeFourSpaces(TPZVec<TPZMaterial
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
+void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
-    this->Contribute(datavec, weight, ekfake, ef);
+    
+//    this->Contribute(datavec, weight, ekfake, ef);
+    this->Contribute(datavec, weight, ef);
     
     if(TMRSDarcyFractureFlowWithMem<TMEM>::fUpdateMem){
         int qb = 0;
@@ -370,13 +374,13 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(TPZVec<TPZMaterialData> &dat
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
+void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
     this->ContributeBC(datavec, weight, ekfake, ef, bc);
 }
 
 template <class TMEM>
-void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCond &bc){
+void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     
     
     REAL gBigNumber = 1.0e12; //TPZMaterial::gBigNumber;
@@ -390,7 +394,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(TPZVec<TPZMaterialData> &d
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     
     TPZManVector<STATE,1> bc_data(1,0.0);
-    bc_data[0] = bc.Val2()(0,0);
+    bc_data[0] = bc.Val2()[0];
     
     switch (bc.Type()) {
         case 0 :    // Dirichlet BC  PD
