@@ -453,10 +453,3 @@ template <class TMEM>
 void TMRSMultiphaseFlow<TMEM>::Read(TPZStream &buf, void *context) {
     DebugStop();
 }
-
- void ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,
-                          REAL weight, TPZFMatrix<STATE> &ek,
-                          TPZFMatrix<STATE> &ef,
-                          TPZBndCondT<STATE> &bc){
-    
-}
