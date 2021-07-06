@@ -30,7 +30,7 @@
 #include "TPZMultiphysicsInterfaceEl.h"
 
 #include "TPZVTKGeoMesh.h"
-#include "TPZNullMaterial.h"
+//#include "TPZNullMaterial.h"
 #include "TMRSApproxSpaceGenerator.h"
 
 /// class for creating TPZMHMM with Mixed Meshes

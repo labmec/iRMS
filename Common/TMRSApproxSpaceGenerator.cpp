@@ -16,10 +16,11 @@
 #include "TPZDarcyMemory.h"
 #include "TPZDarcyFlowWithMem.h"
 #include "TMRSDarcyFractureFlowWithMem.h"
-#include "TPZLagrangeMultiplier.h"
+#include "TPZLagrangeMultiplierCS.h"
 #include "TPZCompElHDivCollapsed.h"
 #include "TMRSDarcyMemory.h"
 #include "TMRSTransportMemory.h"
+#include "TPZNullMaterialCS.h"
 #include "pzsmanal.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
@@ -1248,19 +1249,19 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     {
         int dim = 1;
         int nstate = 1;
-        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_HdivWrapMatId,dim,nstate);
+        TPZNullMaterialCS<STATE> *nullmat = new TPZNullMaterialCS(mSimData.mTGeometry.m_HdivWrapMatId,dim,nstate);
         mMixedOperator->InsertMaterialObject(nullmat);
     }
     {
         int dim = 1;
         int nstate = 1;
-        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_MortarMatId,dim,nstate);
+        TPZNullMaterialCS<STATE> *nullmat = new TPZNullMaterialCS(mSimData.mTGeometry.m_MortarMatId,dim,nstate);
         mMixedOperator->InsertMaterialObject(nullmat);
     }
     {
         int dim = 1;
         int nstate = 1;
-        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dim,nstate);
+        TPZNullMaterialCS<STATE> *nullmat = new TPZNullMaterialCS(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId,dim,nstate);
         mMixedOperator->InsertMaterialObject(nullmat);
     }
 //    mGeometry->ResetReference();
@@ -1269,7 +1270,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 //    TMRSDarcyFlowWithMem<TMRSMemory>*volume2 = new TMRSDarcyFlowWithMem<TMRSMemory>(19,2);
     
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
-        TPZNullMaterial<STATE> *volume2 = new TPZNullMaterial(19,2,1);
+        TPZNullMaterialCS<STATE> *volume2 = new TPZNullMaterialCS(19,2,1);
         mMixedOperator->InsertMaterialObject(volume2);
     }
    
@@ -1404,9 +1405,9 @@ void TMRSApproxSpaceGenerator::InsertInterfaceElements()
     GetMaterialIds(dim, matids, bcmatids);
     GetMaterialIds(dim-1, fracmatids, fracbcmatids);
 //    bcmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
-    TPZLagrangeMultiplier<STATE> *mat1 = new TPZLagrangeMultiplier<STATE>(mSimData.mTGeometry.m_posLagrangeMatId,dim,1);
+    TPZLagrangeMultiplierCS<STATE> *mat1 = new TPZLagrangeMultiplierCS<STATE>(mSimData.mTGeometry.m_posLagrangeMatId,dim,1);
     mMixedOperator->InsertMaterialObject(mat1);
-    TPZLagrangeMultiplier<STATE> *mat2 = new TPZLagrangeMultiplier<STATE>(mSimData.mTGeometry.m_negLagrangeMatId,dim,1);
+    TPZLagrangeMultiplierCS<STATE> *mat2 = new TPZLagrangeMultiplierCS<STATE>(mSimData.mTGeometry.m_negLagrangeMatId,dim,1);
     mat2->SetMultiplier(-1.);
     mMixedOperator->InsertMaterialObject(mat2);
     mGeometry->ResetReference();
