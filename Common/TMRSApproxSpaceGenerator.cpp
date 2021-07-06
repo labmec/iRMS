@@ -21,6 +21,7 @@
 #include "TMRSDarcyMemory.h"
 #include "TMRSTransportMemory.h"
 #include "TPZNullMaterialCS.h"
+#include "pzcompelwithmem.h"
 #include "pzsmanal.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
@@ -1279,7 +1280,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     TPZManVector<int> active_approx_spaces(4,1);
 //    active_approx_spaces[4] = 0;
     mMixedOperator->SetDimModel(3);
-    
+    gSinglePointMemory = true;
+
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
 
     //Insert fractures properties
