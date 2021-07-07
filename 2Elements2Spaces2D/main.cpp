@@ -188,7 +188,7 @@ TMRSDataTransfer Setting2Fractures(){
 
 
 TPZGeoMesh *ReadFractureMesh(){
-    std::string fileFine("../mesh/sim.msh");
+    std::string fileFine("../../FracMeshes/2DMeshes/sim.msh");
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
     /*
      2 4 "inlet"
