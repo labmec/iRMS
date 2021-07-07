@@ -1,5 +1,6 @@
 
 #include "TPZMHMixedMeshWithTransportControl.h"
+#include "TPZNullMaterial.h"
 
 #ifdef LOG4CXX
 static LoggerPtr logger(Logger::getLogger("iRMS.TPZMHMixedMeshWithTransportControl"));

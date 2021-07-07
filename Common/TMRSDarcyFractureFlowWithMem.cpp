@@ -138,6 +138,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
     // Get the data at integrations points
     long gp_index = datavec[qb].intGlobPtIndex;
+    if(gp_index < 0) DebugStop();
     TMEM & memory = this->GetMemory().get()->operator[](gp_index);
     
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0),kappa_inv_qFrac(3,1,0.0) ;
