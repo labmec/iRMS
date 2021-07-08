@@ -87,8 +87,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     
     
     dim_name_and_physical_tagFine[1]["nofluxFrac"] = -11;
-    dim_name_and_physical_tagFine[1]["outletFrac"] = -11;
-    dim_name_and_physical_tagFine[1]["inletFrac"] = -11;
+    dim_name_and_physical_tagFine[1]["outletFrac"] = -13;
+    dim_name_and_physical_tagFine[1]["inletFrac"] = -12;
     for(int i=1; i<=100; i++)
     {
         std::stringstream sout;
@@ -575,18 +575,22 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 4.0 ;
+    REAL pressure_in = 1.0 ;
     REAL pressure_out = 1.0 ;
     REAL flux_int = -1.5;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,N_Type,flux_int);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-4,D_Type,pressure_out);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-5,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
+    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(3);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] =
         std::make_tuple(-11,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[1] =
+    std::make_tuple(-12,D_Type,pressure_in);
+    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[2] =
+    std::make_tuple(-13,D_Type,pressure_out);
     
     
     //Transport boundary Conditions
@@ -700,6 +704,7 @@ void BenchmarkCase1()
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q = true;
+    sim_data.mTNumerics.m_UseSubstructures_Q = true; //Com true é o problema.
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
@@ -731,9 +736,10 @@ void BenchmarkCase1()
         
         mixedAnal->Assemble();
         mixedAnal->Solve();
-        mixed_operator->UpdatePreviousState(-1.);
+        
         TPZFastCondensedElement::fSkipLoadSolution = false;
         mixed_operator->LoadSolution(mixed_operator->Solution());
+        mixed_operator->UpdatePreviousState(-1.);
         mixedAnal->fsoltransfer.TransferFromMultiphysics();
         mixedAnal->PostProcessTimeStep();
     }

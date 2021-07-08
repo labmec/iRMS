@@ -1300,6 +1300,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 
 
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
+        if(mSimData.mTNumerics.m_UseSubstructures_Q){
         HideTheElements(mMixedOperator);
         int nels = mMixedOperator->NElements();
         for(int iel =0; iel<nels; iel++){
@@ -1307,47 +1308,63 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             if(!cel){continue;}
             TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
             if(subcmesh){
-                
-                //
-                int numthreads = 0;
-                int preconditioned = 0;
-                TPZAutoPointer<TPZGuiInterface> guiInterface;
-                subcmesh->SetAnalysisSkyline(numthreads, preconditioned, guiInterface);
-                //
                 std::set<int64_t> seed, groups;
                 TPZReservoirTools::TakeSeedElements(subcmesh, seed);
                 TPZReservoirTools::GroupNeighbourElements(subcmesh,seed,groups );
                 subcmesh->ComputeNodElCon();
-    
+
                 std::set<int> volmatId;
                 volmatId.insert(10);
                 TPZReservoirTools::CondenseElements(subcmesh, pressuremortar, false,volmatId);
-                
+
                 std::set<int64_t> groups2;
-                
+
                 // this will act only on volumetric elements
-                
-                //    jv
                 TPZReservoirTools::GroupNeighbourElements(subcmesh, groups, groups2);
                 subcmesh->ComputeNodElCon();
                 // this shouldn't affect the fracture elements as they won't have condensable connects
-                // we should create fast condensed elements at this point...
-                //    TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
                 TPZReservoirTools::CondenseElements(subcmesh, fluxmortar, false);
-                std::ofstream file("mixed.vtk");
-                TPZVTKGeoMesh::PrintCMeshVTK(subcmesh, file);
-//                 subcmesh->SetAnalysisSparse(0);
-//                void SetAnalysisSkyline(int numThreads, int preconditioned, TPZAutoPointer<TPZGuiInterface> guiInterface);
-//                int numthreads = 0;
-//                int preconditioned = 0;
+                int numthreads = 0;
+                int preconditioned = 0;
                 TPZAutoPointer<TPZGuiInterface> zero;
                 subcmesh->SetAnalysisSkyline(numthreads,preconditioned,zero);
             }
         }
+        }
+        else{
+            // group and condense the H(div) space (only dimension of the mesh)
+            std::set<int64_t> seed, groups;
+            int64_t nel = mMixedOperator->NElements();
+            int dim = mMixedOperator->Dimension();
+            for (int64_t el = 0; el<nel; el++) {
+                TPZCompEl *cel = mMixedOperator->Element(el);
+                if(!cel){
+                    continue;
+                }
+                TPZGeoEl *gel = cel->Reference();
+                if(gel->Dimension() == dim) seed.insert(el);
+            }
+            // this will only group volumetric elements
+            TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
+            mMixedOperator->ComputeNodElCon();
+            
+            std::set<int> volmatId;
+            volmatId.insert(10);
+            TPZReservoirTools::CondenseElements(mMixedOperator, pressuremortar, false,volmatId);
+            
+            
+            std::set<int64_t> groups2;
+            
+            // this will act only on volumetric elements
+            TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
+            mMixedOperator->ComputeNodElCon();
+            // this shouldn't affect the fracture elements as they won't have condensable connects
+            TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
+        }
     }
     else
     {
-        
+    
         // group and condense the H(div) space (only dimension of the mesh)
         std::set<int64_t> seed, groups;
         int64_t nel = mMixedOperator->NElements();
@@ -1363,8 +1380,6 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         // this will only group volumetric elements
         TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
         mMixedOperator->ComputeNodElCon();
-        std::ofstream fileprint("mixedMortar.vtk");
-        TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, fileprint);
         
         std::set<int> volmatId;
         volmatId.insert(10);
@@ -1375,17 +1390,13 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         
         // this will act only on volumetric elements
         
-        //    jv
+  
         TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
         mMixedOperator->ComputeNodElCon();
         // this shouldn't affect the fracture elements as they won't have condensable connects
-        // we should create fast condensed elements at this point...
-        //    TPZCompMeshTools::CondenseElements(mMixedOperator, fluxmortar, false);
         TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
-        std::ofstream file("mixed.vtk");
-        TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
     }
-    
+
     
   
 #ifdef PZDEBUG
@@ -1393,7 +1404,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         std::stringstream file_name;
         file_name  << "mixed_cmesh_four_space_mortar_two_condense" << ".txt";
         std::ofstream sout(file_name.str().c_str());
-        mMixedOperator->Print(sout);
+//        mMixedOperator->Print(sout);
     }
 #endif
     
@@ -1539,8 +1550,6 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
             DebugStop();
         }
     }
-    
-    
     int first_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
     int second_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
     bool cond1 = hdiv_orient < 0 ;
@@ -1555,6 +1564,7 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
         first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
         second_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
     }
+
     
     TPZGeoElBC gbc1(gelside,mSimData.mTGeometry.m_HdivWrapMatId);
     TPZGeoElSide gelwrapside(gbc1.CreatedElement());

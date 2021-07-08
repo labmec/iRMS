@@ -560,6 +560,8 @@ public:
         bool m_ISLinearKrModelQ;
         
         int m_nThreadsMixedProblem = 0;
+        
+        bool m_UseSubstructures_Q ;
         /** @brief Default constructor */
         TNumerics(){
             
@@ -582,6 +584,7 @@ public:
             m_nThreadsMixedProblem  =0;
             m_BorderElementPresOrder = 0;
             m_BorderElementFluxOrder = 0;
+            m_UseSubstructures_Q = false;
             
         }
          /** @brief Destructor */
@@ -610,6 +613,7 @@ public:
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
             m_BorderElementPresOrder = other.m_BorderElementPresOrder;
             m_BorderElementFluxOrder = other.m_BorderElementFluxOrder;
+            m_UseSubstructures_Q       = other.m_UseSubstructures_Q;
         }
         
         /** @brief Copy assignment operator*/
@@ -638,6 +642,7 @@ public:
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
             m_BorderElementPresOrder = other.m_BorderElementPresOrder;
             m_BorderElementFluxOrder = other.m_BorderElementFluxOrder;
+            m_UseSubstructures_Q       = other.m_UseSubstructures_Q;
             return *this;
         }
         
@@ -666,7 +671,8 @@ public:
             m_ISLinearKrModelQ      == other.m_ISLinearKrModelQ&&
             m_nThreadsMixedProblem  == other.m_nThreadsMixedProblem&&
             m_BorderElementPresOrder == other.m_BorderElementPresOrder&&
-            m_BorderElementFluxOrder == other.m_BorderElementFluxOrder;
+            m_BorderElementFluxOrder == other.m_BorderElementFluxOrder&&
+            m_UseSubstructures_Q       == other.m_UseSubstructures_Q;
         }
         
         void Write(TPZStream &buf, int withclassid) const{ //ok
@@ -688,6 +694,7 @@ public:
             buf.Write(m_gravity);
             buf.Write(m_ISLinearKrModelQ);
             buf.Write(m_nThreadsMixedProblem);
+            buf.Write(m_UseSubstructures_Q);
         }
         
         void Read(TPZStream &buf, void *context){ //ok
@@ -710,6 +717,7 @@ public:
             m_SpaceType = (MSpaceType) temp;
             buf.Read(m_ISLinearKrModelQ);
             buf.Read(&m_nThreadsMixedProblem);
+            buf.Read(m_UseSubstructures_Q);
            
         }
         
