@@ -403,10 +403,33 @@ void TPZReservoirTools::PutFluxElementsinSubdomain(TPZCompMesh *fluxCmesh, TPZVe
             if(!cel || cel->NConnects() != 1) DebugStop();
             int64_t index;
             TPZConnect &c = cel->Connect(0);
+            TPZStack<std::pair<TPZGeoElSide, TPZCompElSide>> loadstruct;
+            loadstruct.Push({gelside,gelside.Reference()});
+            gelside.Element()->ResetReference();
+            {
+                neighbour = gelside.Neighbour();
+                while(neighbour != gelside)
+                {
+                    loadstruct.Push({neighbour,neighbour.Reference()});
+                    neighbour.Element()->ResetReference();
+                    neighbour = neighbour.Neighbour();
+                }
+            }
             TPZCompEl *cel2 = fluxCmesh->ApproxSpace().CreateCompEl(gelbc.CreatedElement(), *fluxCmesh , index);
-            cel2->SetConnectIndex(0, cel->ConnectIndex(0));
+            int64_t c2index = cel2->ConnectIndex(0);
             TPZConnect &c2 = cel2->Connect(0);
+            c2.ResetElConnected();
+            c2.RemoveDepend();
+            c2.Reset();
+            fluxCmesh->ConnectVec().SetFree(c2index);
+            cel2->SetConnectIndex(0, cel->ConnectIndex(0));
             if(cel2->NConnects() != 1) DebugStop();
+            for(int64_t i = 0; i< loadstruct.size(); i++)
+            {
+                if (loadstruct[i].second) {
+                    loadstruct[i].second.Element()->LoadElementReference();
+                }
+            }
             int64_t gelindex1 = gelson->Index();
             int64_t gelindex2 = gelbc.CreatedElement()->Index();
             int64_t dom1 = *domains.begin();
