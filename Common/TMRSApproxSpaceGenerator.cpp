@@ -615,6 +615,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     }
     else // not so complicated
     {
+        // create the fracture elements and connect them to the volumetric elements
         int64_t nel = mGeometry->NElements();
         for(int64_t el = 0; el<nel; el++)
         {
@@ -632,9 +633,16 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
             zerofluxcomp.SetElement(fracsupport[zeroflux.Element()->Index()]);
             if(!zerofluxcomp) DebugStop();
             int zerofluxorder = zerofluxcomp.Element()->Connect(0).Order();
+            if(mSubdomainIndexGel.size() != mGeometry->NElements()) DebugStop();
+            int64_t domain = mSubdomainIndexGel[zeroflux.Element()->Index()];
             // create a second zero flux element and second connect (hybridizing the mesh
              TPZGeoElBC gbc(zeroflux,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
              TPZGeoElSide zeroflux2 = gbc.CreatedElement();
+            {
+                auto nel = mGeometry->NElements();
+                mSubdomainIndexGel.resize(nel);
+                mSubdomainIndexGel[gbc.CreatedElement()->Index()] = domain;
+            }
              zeroflux.Element()->ResetReference();
              int64_t index;
              cmesh->SetDefaultOrder(zerofluxorder);
@@ -1152,7 +1160,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
         std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> fatherAndSons;
-        TPZReservoirTools::TakeFatherSonsCorrespondence(meshvec[0], fatherAndSons);
+        TPZReservoirTools::TakeFatherSonsCorrespondence(meshvec[0], this->mSubdomainIndexGel, fatherAndSons);
+        TPZReservoirTools::PutFluxElementsinSubdomain(meshvec[0], this->mSubdomainIndexGel, fatherAndSons);
         TPZReservoirTools::AddDependency(fatherAndSons);
     }
     // pressure mesh
@@ -1300,36 +1309,37 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 
 
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
-        if(mSimData.mTNumerics.m_UseSubstructures_Q){
-        HideTheElements(mMixedOperator);
-        int nels = mMixedOperator->NElements();
-        for(int iel =0; iel<nels; iel++){
-            TPZCompEl *cel = mMixedOperator->Element(iel);
-            if(!cel){continue;}
-            TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
-            if(subcmesh){
-                std::set<int64_t> seed, groups;
-                TPZReservoirTools::TakeSeedElements(subcmesh, seed);
-                TPZReservoirTools::GroupNeighbourElements(subcmesh,seed,groups );
-                subcmesh->ComputeNodElCon();
+        if(mSimData.mTNumerics.m_UseSubstructures_Q)
+        {
+            HideTheElements(mMixedOperator);
+            int nels = mMixedOperator->NElements();
+            for(int iel =0; iel<nels; iel++){
+                TPZCompEl *cel = mMixedOperator->Element(iel);
+                if(!cel){continue;}
+                TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
+                if(subcmesh){
+                    std::set<int64_t> seed, groups;
+                    TPZReservoirTools::TakeSeedElements(subcmesh, seed);
+                    TPZReservoirTools::GroupNeighbourElements(subcmesh,seed,groups );
+                    subcmesh->ComputeNodElCon();
 
-                std::set<int> volmatId;
-                volmatId.insert(10);
-                TPZReservoirTools::CondenseElements(subcmesh, pressuremortar, false,volmatId);
+                    std::set<int> volmatId;
+                    volmatId.insert(10);
+                    TPZReservoirTools::CondenseElements(subcmesh, pressuremortar, false,volmatId);
 
-                std::set<int64_t> groups2;
+                    std::set<int64_t> groups2;
 
-                // this will act only on volumetric elements
-                TPZReservoirTools::GroupNeighbourElements(subcmesh, groups, groups2);
-                subcmesh->ComputeNodElCon();
-                // this shouldn't affect the fracture elements as they won't have condensable connects
-                TPZReservoirTools::CondenseElements(subcmesh, fluxmortar, false);
-                int numthreads = 0;
-                int preconditioned = 0;
-                TPZAutoPointer<TPZGuiInterface> zero;
-                subcmesh->SetAnalysisSkyline(numthreads,preconditioned,zero);
+                    // this will act only on volumetric elements
+                    TPZReservoirTools::GroupNeighbourElements(subcmesh, groups, groups2);
+                    subcmesh->ComputeNodElCon();
+                    // this shouldn't affect the fracture elements as they won't have condensable connects
+                    TPZReservoirTools::CondenseElements(subcmesh, fluxmortar, false);
+                    int numthreads = 0;
+                    int preconditioned = 0;
+                    TPZAutoPointer<TPZGuiInterface> zero;
+                    subcmesh->SetAnalysisSkyline(numthreads,preconditioned,zero);
+                }
             }
-        }
         }
         else{
             // group and condense the H(div) space (only dimension of the mesh)
@@ -1404,7 +1414,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         std::stringstream file_name;
         file_name  << "mixed_cmesh_four_space_mortar_two_condense" << ".txt";
         std::ofstream sout(file_name.str().c_str());
-//        mMixedOperator->Print(sout);
+        mMixedOperator->Print(sout);
     }
 #endif
     
@@ -1447,9 +1457,12 @@ void TMRSApproxSpaceGenerator::InsertInterfaceElements()
             // if the mortar element has a fracture neighbour, then there are two neighbouring
             // zero order flux elements. Depending on the interface matid we need to connect to either
             //  zero order flux element
+            int64_t domain = mSubdomainIndexGel[gel->Index()];
+            if(domain == -1) DebugStop();
             TPZGeoElSide BCGelside = gelside.HasNeighbour(bcmatids);
             TPZGeoElSide FracGelside = gelside.HasNeighbour(fracmatids);
             TPZGeoElSide Zerofluxside = gelside.HasNeighbour(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+            
             int intfacematid = IntfaceSide.Element()->MaterialId();
             if(BCGelside)
             {
@@ -1457,6 +1470,14 @@ void TMRSApproxSpaceGenerator::InsertInterfaceElements()
             }
             else if(Zerofluxside)
             {
+                int64_t zerodomain = mSubdomainIndexGel[Zerofluxside.Element()->Index()];
+                if(zerodomain != domain)
+                {
+                    Zerofluxside = Zerofluxside.Neighbour().HasNeighbour(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+                    if(!Zerofluxside) DebugStop();
+                    zerodomain = mSubdomainIndexGel[Zerofluxside.Element()->Index()];
+                    if(zerodomain != domain) DebugStop();
+                }
                 // if the lagrange multiplier is positive, the this is the top lagrange multiplier
                 // the top flux element is the second zero flux element
                 if(FracGelside && intfacematid == mSimData.mTGeometry.m_posLagrangeMatId)
@@ -1499,7 +1520,7 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
     int nElSubDomain = mSubdomainIndexGel.size();
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
         if(nel != nElSubDomain){
-        DebugStop();
+            DebugStop();
         }
     }
     
@@ -3164,6 +3185,16 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     std::cout << "After putting in substructures\n";
 //    fMHMtoSubCMesh = submeshindices;
     cmesh->ComputeNodElCon();
+    {
+        int64_t nc = cmesh->NConnects();
+        for (int64_t ic = 0; ic<nc; ic++) {
+            TPZConnect &c = cmesh->ConnectVec()[ic];
+            if(c.NElConnected() == 0 && c.HasDependency())
+            {
+                c.RemoveDepend();
+            }
+        }
+    }
     cmesh->CleanUpUnconnectedNodes();
     
 //    GroupandCondenseElements();
