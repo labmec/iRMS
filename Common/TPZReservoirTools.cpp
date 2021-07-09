@@ -1,5 +1,9 @@
 #include "TPZReservoirTools.h"
+#include "pzlog.h"
 
+#ifdef PZ_LOG
+static TPZLogger logger("imrs.reservoirtools");
+#endif
 
 void TPZReservoirTools::CreatedCondensedElements(TPZCompMesh *cmesh, bool KeepOneLagrangian, bool keepmatrix)
 {
@@ -215,7 +219,7 @@ void TPZReservoirTools::AddDependency( std::vector<std::pair<TPZGeoEl*, std::vec
         }
     }
 }
-void TPZReservoirTools::TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh,  std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons){
+void TPZReservoirTools::TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh, TPZVec<int64_t> &subdomain, std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons){
     
     int nels = fluxCmesh->NElements();
     TPZGeoMesh *gmesh = fluxCmesh->Reference();
@@ -225,11 +229,27 @@ void TPZReservoirTools::TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh,  st
     std::vector<int> matIds;
     int skeletonCoarseId = 19;
     matIds.push_back(skeletonCoarseId);
+    // the interfaces data structure will contain all geoelement pointers with skeletonCoarseId
     TakeElementsbyID(gmesh, interfaces, matIds);
     int count=-1;
+#ifdef PZ_LOG
+    if(logger.isDebugEnabled()){
+        LOGPZ_DEBUG(logger, "number of skeleton elements " << interfaces.size())
+    }
+#endif
     for(auto gel:interfaces[skeletonCoarseId] ){
         TPZStack<TPZGeoEl *> Sons;
+        // get the smallest partition of the skeleton element
         gel->YoungestChildren(Sons);
+#ifdef PZ_LOG
+        if(logger.isDebugEnabled()){
+            std::stringstream sout;
+            sout << "For skeleton element " << gel->Index() << " subdomain " << subdomain[gel->Index()] << " has comp element " << (void *)gel->Reference() << std::endl;
+            for(auto el : Sons) sout << "subel index " << el->Index() << " subdomain " <<
+                subdomain[el->Index()] <<std::endl;
+            LOGPZ_DEBUG(logger, sout.str())
+        }
+#endif
         TPZCompEl *celFat = gel->Reference();
         std::vector<TPZGeoEl*> sons;
         TPZGeoElSide fatside(gel, gel->NSides()-1);
@@ -249,6 +269,13 @@ void TPZReservoirTools::TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh,  st
             neigfatside = neigfatside.Neighbour();
         }
         for(auto songel: Sons){
+#ifdef PZ_LOG
+        if(logger.isDebugEnabled()){
+            std::stringstream sout;
+            sout << "For son element " << songel->Index() << " subdomain " << subdomain[songel->Index()] << " has comp element " << (void *)songel->Reference() << std::endl;
+            LOGPZ_DEBUG(logger, sout.str())
+        }
+#endif
             TPZGeoElSide gelside(songel, songel->NSides()-1);
             TPZGeoElSide neig = gelside.Neighbour();
             std::vector<TPZCompEl *> fluxEls;
@@ -345,6 +372,53 @@ void TPZReservoirTools::TakeSeedElements(TPZCompMesh *cmesh, std::set<int64_t> &
         if(gel->Dimension() == dim) {
             std::set<int64_t> seed;
             seed_elements.insert(el);
+        }
+    }
+}
+
+// duplicate the flux elements and put each of them in a separate subdomain
+void TPZReservoirTools::PutFluxElementsinSubdomain(TPZCompMesh *fluxCmesh, TPZVec<int64_t> &subdomain, std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons)
+{
+    fluxCmesh->SetAllCreateFunctionsHDiv();
+    fluxCmesh->ApproxSpace().CreateDisconnectedElements(false);
+    TPZGeoMesh *gmesh = fluxCmesh->Reference();
+    if(subdomain.size() != gmesh->NElements()) DebugStop();
+    for (auto skel : fatherAndSons) {
+        auto gelskel = skel.first;
+        auto &gelsons = skel.second;
+        for(auto gelson : gelsons)
+        {
+            int64_t sondomain = subdomain[gelson->Index()];
+            TPZGeoElSide gelside(gelson);
+            TPZGeoElSide neighbour = gelside.Neighbour();
+            std::set<int64_t> domains;
+            while (neighbour != gelside) {
+                auto neighdomain = subdomain[neighbour.Element()->Index()];
+                if(neighdomain != -1) domains.insert(neighdomain);
+                neighbour = neighbour.Neighbour();
+            }
+            if(domains.size() != 2) DebugStop();
+            TPZGeoElBC gelbc(gelside,gelson->MaterialId());
+            TPZCompEl *cel = gelson->Reference();
+            if(!cel || cel->NConnects() != 1) DebugStop();
+            int64_t index;
+            TPZConnect &c = cel->Connect(0);
+            TPZCompEl *cel2 = fluxCmesh->ApproxSpace().CreateCompEl(gelbc.CreatedElement(), *fluxCmesh , index);
+            cel2->SetConnectIndex(0, cel->ConnectIndex(0));
+            TPZConnect &c2 = cel2->Connect(0);
+            if(cel2->NConnects() != 1) DebugStop();
+            int64_t gelindex1 = gelson->Index();
+            int64_t gelindex2 = gelbc.CreatedElement()->Index();
+            int64_t dom1 = *domains.begin();
+            int64_t dom2 = *domains.rbegin();
+            {
+                auto nel = gmesh->NElements();
+                subdomain.resize(nel);
+            }
+
+            subdomain[gelindex1] = dom1;
+            subdomain[gelindex2] = dom2;
+            
         }
     }
 }
