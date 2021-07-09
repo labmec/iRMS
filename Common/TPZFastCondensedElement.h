@@ -38,7 +38,7 @@ protected:
     TPZElementMatrixT<STATE> fEK, fEF;
     
     // vector of pressure connects
-    TPZManVector<int64_t> fPressureConnects;
+    TPZManVector<int64_t,85> fPressureConnects;
     // vector of flux connects
     TPZManVector<int64_t> fFluxConnects;
     // connect index of the average pressure
