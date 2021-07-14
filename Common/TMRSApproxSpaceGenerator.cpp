@@ -325,7 +325,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     // este observacao vale para todos as malhas atomicas
     
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
-    TPZDarcyFlowWithMem * volume = nullptr;
+    TPZNullMaterial<> *volume = nullptr;
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
@@ -334,7 +334,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
             int materia_id = chunk.second;
-            volume = new TPZDarcyFlowWithMem(materia_id,d);
+            volume = new TPZNullMaterial<>(materia_id);
             cmesh->InsertMaterialObject(volume);
         }
     }

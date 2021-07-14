@@ -23,7 +23,7 @@
 
 void CaseOnlyFractures();
 TMRSDataTransfer SettingFractures();
-TPZGeoMesh *ReadFractureMesh();
+TPZGeoMesh *ReadFractureMesh(std::string &filename);
 
 // ----- End of Functions -----
 
@@ -47,7 +47,9 @@ int main(){
 void CaseOnlyFractures()
 {
     // Reading ONLY de fractures of mesh from DFN
-    TPZGeoMesh *gmesh = ReadFractureMesh();
+//    std::string filename("../../FracMeshes/2DMeshes/2fracFromDfn.msh");
+    std::string filename("../../FracMeshes/2DMeshes/1fracFromDfn.msh");
+    TPZGeoMesh *gmesh = ReadFractureMesh(filename);
     const bool printgmesh = true;
     if (printgmesh) {
         std::ofstream name("GeoMeshFractures.vtk");
@@ -189,8 +191,8 @@ TMRSDataTransfer SettingFractures(){
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-TPZGeoMesh *ReadFractureMesh(){
-    std::string filename("../../FracMeshes/2DMeshes/2fracFromDfn.msh");
+TPZGeoMesh *ReadFractureMesh(std::string &filename){
+    
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
 
     // Fractures
