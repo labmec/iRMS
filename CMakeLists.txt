@@ -227,7 +227,7 @@ add_subdirectory(BenchmarkCase1)
 add_subdirectory(SimpleCaseFracture)
 add_subdirectory(SimpleCaseTwoFractures)
 add_subdirectory(SimpleCaseThreeFractures)
-add_subdirectory(OnlyTwoFractures)
+add_subdirectory(OnlyFractures)
 add_subdirectory(2Elements2Spaces2D)
 
 
