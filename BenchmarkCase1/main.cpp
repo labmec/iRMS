@@ -11,8 +11,9 @@
 #include "TMRSTransportAnalysis.h"
 #include "TPZRefPatternTools.h"
 #include "TPZReservoirTools.h"
-
+#include "imrs_config.h"
 #include "pzlog.h"
+
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
@@ -48,8 +49,9 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 //    std::string fileFine("../../FracMeshes/jose6_fine.msh");
 //    std::string fileCoarse("../../FracMeshes/jose6_coarse.msh");
 //
-    std::string fileFine("../../FracMeshes/embedFrac_subWithFrac.msh");
-    std::string fileCoarse("../../FracMeshes/embedFrac_coarse.msh");
+    std::string basemeshpath(FRACMESHES);
+    std::string fileFine = basemeshpath + "/embedFrac_subWithFrac.msh";
+    std::string fileCoarse = basemeshpath + "/embedFrac_coarse.msh";
     
     
 //    std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
