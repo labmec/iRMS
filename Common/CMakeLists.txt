@@ -1,28 +1,39 @@
-########### next target ###############
+#this allow us to define custom FindXXX.cmake modules
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
-
+# This is not the best. Please create (the extense) list of needed files
 file(GLOB common_headers *.h)
 file(GLOB common_sources *.cpp)
 
+# This package is here because iMRS is the only one that uses it
+find_package(libInterpolate REQUIRED HINTS ${CMAKE_SOURCE_DIR}/../libinterpolate_install)
 
+# install eigen
+include(cmake/EnableEigen.cmake)
+enable_eigen()
 
-set(common_files ${common_headers} ${common_sources} PARENT_SCOPE)
-set(common_dir ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
-
-find_package(libInterpolate REQUIRED)
-find_package (Eigen3 3.3 REQUIRED)
-
-
-add_library(iMRS_library ${common_headers} ${common_sources})
-target_link_libraries(iMRS_library NeoPZ::pz libInterpolate::Interpolate)
-
+# Includes superLU using premaed .cmake files in folder Common/cmake
 if(USING_SUPERLU)
-    include(SuperLU.cmake)
-    target_link_libraries(iMRS_library ${SUPERLU_LIBRARIES})
+    find_package(SuperLU REQUIRED)
 endif(USING_SUPERLU)
-# if(USING_SUPERLU)
-#     include(SuperLU.cmake)
-#     target_link_libraries(iMRS_library NeoPZ::pz libInterpolate::Interpolate ${SUPERLU_LIBRARIES})
-# else(USING_SUPERLU)
-#     target_link_libraries(iMRS_library NeoPZ::pz libInterpolate::Interpolate)
-# endif(USING_SUPERLU)
+
+# Create the iMRS library statically!
+add_library(iMRS_library STATIC ${common_headers} ${common_sources})
+
+# Links the other libraries
+target_link_libraries(iMRS_library PUBLIC NeoPZ::pz libInterpolate::Interpolate)
+if(USING_SUPERLU)    
+    target_link_libraries(iMRS_library PUBLIC ${SUPERLU_LIBRARIES})
+endif(USING_SUPERLU)
+
+# Includes the directories
+target_include_directories(iMRS_library PUBLIC ${PZ_INCLUDE_DIRS} 
+    ${EIGEN3_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
+if(USING_SUPERLU)    
+    target_include_directories(iMRS_library PUBLIC ${SUPERLU_INCLUDES})
+endif(USING_SUPERLU)
+
+# create folder with meshes
+set(FRACMESHESDIR ${CMAKE_SOURCE_DIR}/FracMeshes)
+set (CONFIG_H "${CMAKE_SOURCE_DIR}/Common/imrs_config.h")
+configure_file ("${CMAKE_SOURCE_DIR}/Common/imrs_config.h.in" ${CONFIG_H})

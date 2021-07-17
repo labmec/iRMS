@@ -13,6 +13,7 @@
 #include "TPZRefPatternTools.h"
 #include "TPZReservoirTools.h"
 #include "pzlog.h"
+#include "imrs_config.h"
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
@@ -24,7 +25,7 @@
 void CaseOnlyFractures();
 TMRSDataTransfer SettingFractures();
 TPZGeoMesh *ReadFractureMesh(std::string &filename);
-
+using namespace std;
 // ----- End of Functions -----
 
 //-------------------------------------------------------------------------------------------------
@@ -46,9 +47,9 @@ int main(){
 
 void CaseOnlyFractures()
 {
-    // Reading ONLY de fractures of mesh from DFN
-//    std::string filename("../../FracMeshes/2DMeshes/2fracFromDfn.msh");
-    std::string filename("../../FracMeshes/2DMeshes/1fracFromDfn.msh");
+    // Reading ONLY the fractures of mesh from DFN
+    string basemeshpath(FRACMESHES);
+    std::string filename = basemeshpath + "/2DMeshes/1fracFromDfn.msh";
     TPZGeoMesh *gmesh = ReadFractureMesh(filename);
     const bool printgmesh = true;
     if (printgmesh) {

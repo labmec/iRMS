@@ -1,0 +1,3 @@
+#ifndef FRACMESHESDIR
+#define FRACMESHES "@FRACMESHESDIR@"
+#endif
