@@ -90,8 +90,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
         dx = Solution();
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
-        dx.Print("dx ", std::cout);
-        Rhs().Print("rhs ", std::cout);
+//        dx.Print("dx ", std::cout);
+//        Rhs().Print("rhs ", std::cout);
         
         x +=dx;
         cmesh->UpdatePreviousState(-1.);

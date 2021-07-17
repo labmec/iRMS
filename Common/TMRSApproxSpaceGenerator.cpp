@@ -633,22 +633,35 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
             zerofluxcomp.SetElement(fracsupport[zeroflux.Element()->Index()]);
             if(!zerofluxcomp) DebugStop();
             int zerofluxorder = zerofluxcomp.Element()->Connect(0).Order();
-            if(mSubdomainIndexGel.size() != mGeometry->NElements()) DebugStop();
-            int64_t domain = mSubdomainIndexGel[zeroflux.Element()->Index()];
-            // create a second zero flux element and second connect (hybridizing the mesh
-             TPZGeoElBC gbc(zeroflux,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
-             TPZGeoElSide zeroflux2 = gbc.CreatedElement();
-            {
-                auto nel = mGeometry->NElements();
-                mSubdomainIndexGel.resize(nel);
-                mSubdomainIndexGel[gbc.CreatedElement()->Index()] = domain;
+            
+            int domain=0;
+            TPZGeoElSide zeroflux2;
+            if(mSimData.mTNumerics.m_mhm_mixed_Q){
+                if(mSubdomainIndexGel.size() != mGeometry->NElements()) DebugStop();
+                domain = mSubdomainIndexGel[zeroflux.Element()->Index()];
+                // create a second zero flux element and second connect (hybridizing the mesh
+                TPZGeoElBC gbc(zeroflux,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+                zeroflux2 = gbc.CreatedElement();
+                {
+                    auto nel = mGeometry->NElements();
+                    mSubdomainIndexGel.resize(nel);
+                    mSubdomainIndexGel[gbc.CreatedElement()->Index()] = domain;
+                }
             }
+            else{
+                // create a second zero flux element and second connect (hybridizing the mesh
+                TPZGeoElBC gbc(zeroflux,mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+                zeroflux2 = gbc.CreatedElement();
+            }
+            
+            
+           
+          
              zeroflux.Element()->ResetReference();
              int64_t index;
              cmesh->SetDefaultOrder(zerofluxorder);
              TPZCompEl *celflux2 = cmesh->CreateCompEl(zeroflux2.Element(), index);
              TPZCompElSide zerofluxcomp2 = zeroflux2.Reference();
-             
              zeroflux2.Element()->ResetReference();
              cmesh->SetDefaultOrder(1);
              TPZInterpolationSpace *HDivCollapsed = 0;
@@ -1457,8 +1470,12 @@ void TMRSApproxSpaceGenerator::InsertInterfaceElements()
             // if the mortar element has a fracture neighbour, then there are two neighbouring
             // zero order flux elements. Depending on the interface matid we need to connect to either
             //  zero order flux element
-            int64_t domain = mSubdomainIndexGel[gel->Index()];
-            if(domain == -1) DebugStop();
+            int domain =0;
+            if(mSimData.mTNumerics.m_mhm_mixed_Q){
+                domain = mSubdomainIndexGel[gel->Index()];
+                if(domain == -1) DebugStop();
+            }
+         
             TPZGeoElSide BCGelside = gelside.HasNeighbour(bcmatids);
             TPZGeoElSide FracGelside = gelside.HasNeighbour(fracmatids);
             TPZGeoElSide Zerofluxside = gelside.HasNeighbour(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
@@ -1470,25 +1487,40 @@ void TMRSApproxSpaceGenerator::InsertInterfaceElements()
             }
             else if(Zerofluxside)
             {
-                int64_t zerodomain = mSubdomainIndexGel[Zerofluxside.Element()->Index()];
-                if(zerodomain != domain)
-                {
-                    Zerofluxside = Zerofluxside.Neighbour().HasNeighbour(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
-                    if(!Zerofluxside) DebugStop();
-                    zerodomain = mSubdomainIndexGel[Zerofluxside.Element()->Index()];
-                    if(zerodomain != domain) DebugStop();
-                }
-                // if the lagrange multiplier is positive, the this is the top lagrange multiplier
-                // the top flux element is the second zero flux element
-                if(FracGelside && intfacematid == mSimData.mTGeometry.m_posLagrangeMatId)
-                {
-                    Zerofluxside = Zerofluxside.Neighbour();
-                    if(Zerofluxside.Element()->MaterialId() != mSimData.mTGeometry.m_zeroOrderHdivFluxMatId)
+                if(mSimData.mTNumerics.m_mhm_mixed_Q){
+                    int64_t zerodomain = mSubdomainIndexGel[Zerofluxside.Element()->Index()];
+                    if(zerodomain != domain)
                     {
-                        DebugStop();
+                        Zerofluxside = Zerofluxside.Neighbour().HasNeighbour(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+                        if(!Zerofluxside) DebugStop();
+                        zerodomain = mSubdomainIndexGel[Zerofluxside.Element()->Index()];
+                        if(zerodomain != domain) DebugStop();
                     }
+                    // if the lagrange multiplier is positive, the this is the top lagrange multiplier
+                    // the top flux element is the second zero flux element
+                    if(FracGelside && intfacematid == mSimData.mTGeometry.m_posLagrangeMatId)
+                    {
+                        Zerofluxside = Zerofluxside.Neighbour();
+                        if(Zerofluxside.Element()->MaterialId() != mSimData.mTGeometry.m_zeroOrderHdivFluxMatId)
+                        {
+                            DebugStop();
+                        }
+                    }
+                    rightgel = Zerofluxside;
                 }
-                rightgel = Zerofluxside;
+                else{
+                    
+                    if(FracGelside && intfacematid == mSimData.mTGeometry.m_posLagrangeMatId)
+                    {
+                        Zerofluxside = Zerofluxside.Neighbour();
+                        if(Zerofluxside.Element()->MaterialId() != mSimData.mTGeometry.m_zeroOrderHdivFluxMatId)
+                        {
+                            DebugStop();
+                        }
+                    }
+                    rightgel = Zerofluxside;
+                }
+               
             }
             else
             {
