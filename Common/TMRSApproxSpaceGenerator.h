@@ -26,6 +26,7 @@
 #include "TPZExtendGridDimension.h"
 #include "TMRSSFIAnalysis.h"
 #include "TPZMHMixedMeshControl.h"
+#include "TPZHybridizeHDiv.h"
 
 class TPZAlgebraicDataTransfer;
 
@@ -45,6 +46,8 @@ public:
     TPZMultiphysicsCompMesh * mTransportOperator;
     
     TPZVec<int64_t> mSubdomainIndexGel;
+    
+    TPZHybridizeHDiv* mHybridizer;
  
     
 public:
@@ -80,6 +83,10 @@ public:
     TPZVec<int64_t> GetSubdomainIndexes(){
         return mSubdomainIndexGel;
     }
+    
+    const bool isThereFracIntersection() const;
+    void HybridizeIntersections(TPZManVector<TPZCompMesh *, 3>& mesh_vec);
+    void CreateIntersectionInterfaceElements(TPZManVector<TPZCompMesh *, 3>& meshvec_Hybrid);
     
     void LoadGeometry(std::string geometry_file);
     

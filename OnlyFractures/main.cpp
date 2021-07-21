@@ -25,8 +25,13 @@
 void CaseOnlyFractures();
 TMRSDataTransfer SettingFractures();
 TPZGeoMesh *ReadFractureMesh(std::string &filename);
-using namespace std;
+
 // ----- End of Functions -----
+
+// ----- Namespaces -----
+using namespace std;
+// ----- End of namespaces -----
+
 
 //-------------------------------------------------------------------------------------------------
 //   __  __      _      _   _   _
@@ -49,7 +54,8 @@ void CaseOnlyFractures()
 {
     // Reading ONLY the fractures of mesh from DFN
     string basemeshpath(FRACMESHES);
-    std::string filename = basemeshpath + "/2DMeshes/1fracFromDfn.msh";
+//    std::string filename = basemeshpath + "/2DMeshes/1fracFromDfn.msh";
+    std::string filename = basemeshpath + "/2DMeshes/2fracFromDfn.msh";
     TPZGeoMesh *gmesh = ReadFractureMesh(filename);
     const bool printgmesh = true;
     if (printgmesh) {
@@ -126,10 +132,12 @@ TMRSDataTransfer SettingFractures(){
     int D_Type = 0;
 //    int N_Type = 1;
     REAL pressure_in = 4.0 ;
+    int bcfracid = -1;
     
     // Boundary conditions
+    
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(1);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,D_Type,pressure_in);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(bcfracid,D_Type,pressure_in);
     
     // Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.1;
@@ -153,8 +161,6 @@ TMRSDataTransfer SettingFractures(){
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
     sim_data.mTNumerics.m_n_steps = 1 ;
     sim_data.mTNumerics.m_dt      = 1.0; //*day;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
     grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
