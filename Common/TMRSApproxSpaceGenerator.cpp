@@ -36,8 +36,7 @@ TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator()
     mGeometry = nullptr;
     mMixedOperator = nullptr;
     mTransportOperator = nullptr;
-   
-    
+    mHybridizer = nullptr;
 }
 
 TMRSApproxSpaceGenerator &TMRSApproxSpaceGenerator::operator=(const TMRSApproxSpaceGenerator &other){
@@ -45,6 +44,9 @@ TMRSApproxSpaceGenerator &TMRSApproxSpaceGenerator::operator=(const TMRSApproxSp
 }
 
 TMRSApproxSpaceGenerator::~TMRSApproxSpaceGenerator(){
+    if (mHybridizer){
+        delete mHybridizer;
+    }
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
@@ -1145,9 +1147,20 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
     active_approx_spaces[1] = 1;
     active_approx_spaces[2] = 0;
     mMixedOperator->SetDimModel(dimension);
+    
+    if (isThereFracIntersection()) {
+        mHybridizer = new TPZHybridizeHDiv(mesh_vec);
+        HybridizeIntersections(mesh_vec);
+        mHybridizer->InsertPeriferalMaterialObjects(mMixedOperator);
+    }
+    
 //    mMixedOperator->BuildMultiphysicsSpace(active_approx_spaces,mesh_vec);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
 
+    // Creates interface elements in case there is hybridization for fracture intersection
+    if (mHybridizer){
+        CreateIntersectionInterfaceElements(mesh_vec);
+    }
     
 #ifdef PZDEBUG
     std::stringstream file_name;
@@ -3243,4 +3256,90 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     //    GroupandCondenseElementsEigen();
     
     std::cout << "Finished substructuring\n";
+}
+
+const bool TMRSApproxSpaceGenerator::isThereFracIntersection() const {
+    
+    const int matidintersection = 13;
+    for (auto gel : mGeometry->ElementVec()){
+        const int matid = gel->MaterialId();
+        if (matid == 13) { // intersection matid
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZManVector<TPZCompMesh *, 3>& meshvec_Hybrid) {
+    
+    if (!mHybridizer){
+        DebugStop();
+    }
+
+    const int matidfrac = 1, matidintersection = 13;
+    
+    TPZCompMesh* fluxmesh = meshvec_Hybrid[0];
+    TPZGeoMesh* gmesh = fluxmesh->Reference();
+    fluxmesh->LoadReferences();
+    mHybridizer->InsertPeriferalMaterialObjects(meshvec_Hybrid);
+        
+    int dim = fluxmesh->Dimension();
+    for (auto gel : gmesh->ElementVec()) {
+        if (gel->MaterialId() != matidintersection) {
+            continue;
+        }
+        if (gel->Dimension() != dim - 1) {
+            DebugStop();
+        }
+        
+        // Search for first neighbor that that is domain
+        TPZGeoElSide gelside(gel,gel->NSides()-1);
+        TPZGeoElSide neigh = gelside.Neighbour();
+        
+        while(neigh != gelside){
+            TPZGeoEl* gelneigh = neigh.Element();
+            int neighmatid = gelneigh->MaterialId();
+            int neighdim = gelneigh->Dimension();
+            
+            if (neighmatid == matidfrac && neighdim == dim) {
+                cout << "\nElement with ID " << gel->Id() << " and index " << gel->Index() << " is an intersection element" << endl;
+                cout << "===> Trying to split the connects of the flux mesh and create pressure element..." << endl;
+                TPZCompEl* celneigh = gelneigh->Reference();
+                TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *> (celneigh);
+                if (!intel)
+                    DebugStop();
+                
+                const int side = neigh.Side();
+                TPZCompElSide celsideleft(intel, side);
+                bool isNewInterface = mHybridizer->HybridizeInterface(celsideleft,intel,side,meshvec_Hybrid);
+                if (isNewInterface) {
+                    break;
+                }
+                else{
+                    DebugStop();
+                }
+
+            }
+            neigh = neigh.Neighbour();
+        } // while
+        
+    }
+}
+
+void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZManVector<TPZCompMesh *, 3>& meshvec_Hybrid) {
+    TPZCompMesh* cmeshpressure = mMixedOperator->MeshVector()[1];
+    mMixedOperator->Reference()->ResetReference();
+    cmeshpressure->LoadReferences();
+    const int lagrangematid = mHybridizer->lagrangeInterfaceMatId();
+    for (auto cel : cmeshpressure->ElementVec()) {
+        const int celmatid = cel->Material()->Id();
+        if (!cel || celmatid != lagrangematid ) {
+            continue;
+        }
+        TPZGeoEl* gel = cel->Reference();
+        
+        mHybridizer->CreateInterfaceElementsForGeoEl(mMixedOperator, meshvec_Hybrid, gel);
+        
+    }
 }
