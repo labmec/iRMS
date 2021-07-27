@@ -303,7 +303,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         for (int jp = 0; jp < nphi_p; jp++)
         {
             ek(iq + first_q, jp + first_p) += weight * (-  div_phi(iq,0) ) * phi_ps(jp,0);
-            ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
+            ek(jp + first_p, iq + first_q) += weight * (-  div_phi(iq,0) ) * phi_ps(jp,0);
 
         }
     }

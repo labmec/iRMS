@@ -372,7 +372,7 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
     
     int nels = this->fVolume.size();
     for (int iel =0; iel< nels; iel++) {
-        out<<"Material_Id: "<<this->fMatId<<std::endl;
+//        out<<"Material_Id: "<<this->fMatId<<std::endl;
         out<<"Center Cord: ";
         for (int ic=0 ; ic<fCenterCoordinate[iel].size(); ic++) {
             out<<fCenterCoordinate[iel][ic]<<" ";
@@ -612,6 +612,22 @@ REAL TPZAlgebraicTransport::CalculateMass(){
         intMass += sat*phi*vol;
     }
     return intMass;
+}
+
+REAL TPZAlgebraicTransport::CalculateMassById(int matId){
+    int ncells = fCellsData.fVolume.size();
+    REAL intMass = 0.0;
+    for (int icel = 0; icel < ncells; icel++) {
+        int celId = fCellsData.fMatId[icel];
+        if(celId==matId){
+            REAL sat = fCellsData.fSaturation[icel];
+            REAL phi = fCellsData.fporosity[icel];
+            REAL vol = fCellsData.fVolume[icel];
+            intMass += sat*phi*vol;
+        }
+    }
+    return intMass;
+    
 }
 std::pair<REAL, REAL> TPZAlgebraicTransport::FLuxWaterOilIntegralbyID(int mat_id){
     

@@ -1162,8 +1162,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     int dimension = mGeometry->Dimension();
     std::cout << __PRETTY_FUNCTION__ << " on input nel geom " << mGeometry->NElements() << std::endl;
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
-    std::set<int> matids, bcmatids;
-    GetMaterialIds(dimension, matids, bcmatids);
+    std::set<int> matsWithMem, matsWithOutMem;
+    GetMaterialIds(dimension, matsWithMem, matsWithOutMem);
     
     InsertGeoWrappersForMortar();
     TPZManVector<TPZCompMesh *> meshvec(4,0);
@@ -1226,6 +1226,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         std::cout << "physical name = " << material_name <<
         " material id " << chunk.second << " dimension " << dimension-1 << std::endl;
         int materia_id = chunk.second;
+        matsWithMem.insert(materia_id);
         fracmat = new TMRSDarcyFractureFlowWithMem<TMRSMemory>(materia_id,dimension-1);
         TMRSMemory defaultmem;
         // neste ponto podemos inserir as propriedades de permeabilidade absoluta
@@ -1263,6 +1264,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             if(!fracmat) DebugStop();
             int bc_id   = get<0>(chunk);
             int bc_type = get<1>(chunk);
+            matsWithOutMem.insert(bc_id);
             val2[0]  = get<2>(chunk);
             TPZBndCond * face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
             mMixedOperator->InsertMaterialObject(face);
@@ -1293,18 +1295,22 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 //    TMRSDarcyFlowWithMem<TMRSMemory>*volume2 = new TMRSDarcyFlowWithMem<TMRSMemory>(19,2);
     
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
-        TPZNullMaterialCS<STATE> *volume2 = new TPZNullMaterialCS(19,2,1);
+        TPZNullMaterialCS<STATE> *volume2 = new TPZNullMaterialCS(mSimData.mTGeometry.m_skeletonMatId,2,1);
         mMixedOperator->InsertMaterialObject(volume2);
     }
    
     
+    matsWithOutMem.insert(mSimData.mTGeometry.m_HdivWrapMatId);
+    matsWithOutMem.insert(mSimData.mTGeometry.m_MortarMatId);
+    matsWithOutMem.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
+    matsWithOutMem.insert(mSimData.mTGeometry.m_skeletonMatId);
 
     TPZManVector<int> active_approx_spaces(4,1);
 //    active_approx_spaces[4] = 0;
     mMixedOperator->SetDimModel(3);
     gSinglePointMemory = true;
-
-    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
+    
+mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem,matsWithOutMem);
 
     //Insert fractures properties
     InitializeFracProperties(mMixedOperator);
@@ -1324,7 +1330,9 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
         if(mSimData.mTNumerics.m_UseSubstructures_Q)
         {
+            std::cout<<"Num Eq Mixed: "<<mMixedOperator->NEquations()<<std::endl;
             HideTheElements(mMixedOperator);
+            std::cout<<"Num Eq Mixed gLO: "<<mMixedOperator->NEquations()<<std::endl;
             int nels = mMixedOperator->NElements();
             for(int iel =0; iel<nels; iel++){
                 TPZCompEl *cel = mMixedOperator->Element(iel);
@@ -1335,13 +1343,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
                     TPZReservoirTools::TakeSeedElements(subcmesh, seed);
                     TPZReservoirTools::GroupNeighbourElements(subcmesh,seed,groups );
                     subcmesh->ComputeNodElCon();
-
                     std::set<int> volmatId;
                     volmatId.insert(10);
                     TPZReservoirTools::CondenseElements(subcmesh, pressuremortar, false,volmatId);
-
                     std::set<int64_t> groups2;
-
                     // this will act only on volumetric elements
                     TPZReservoirTools::GroupNeighbourElements(subcmesh, groups, groups2);
                     subcmesh->ComputeNodElCon();
@@ -1351,8 +1356,12 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
                     int preconditioned = 0;
                     TPZAutoPointer<TPZGuiInterface> zero;
                     subcmesh->SetAnalysisSkyline(numthreads,preconditioned,zero);
+//                    TPZSymetricSpStructMatrixEigen matrix(subcmesh);
+//                    matrix.SetNumThreads(0);
                 }
             }
+            std::cout<<"Num Eq Mixed MHM: "<<mMixedOperator->NEquations()<<std::endl;
+           mMixedOperator->ExpandSolution();
         }
         else{
             // group and condense the H(div) space (only dimension of the mesh)
@@ -3165,9 +3174,9 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
 //    if (fHybridize) {
 //        KeepOneLagrangian = false;
 //    }
-    if (true) {
-        KeepOneLagrangian = false;
-    }
+//    if (true) {
+//        KeepOneLagrangian = true;
+//    }
     typedef std::set<int64_t> TCompIndexes;
     std::map<int64_t, TCompIndexes> ElementGroups;
     TPZGeoMesh *gmesh = cmesh->Reference();
@@ -3227,6 +3236,7 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
             }
         }
     }
+//    cmesh->ComputeNodElCon();
     cmesh->CleanUpUnconnectedNodes();
     
 //    GroupandCondenseElements();

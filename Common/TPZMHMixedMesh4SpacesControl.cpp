@@ -575,15 +575,11 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElementsEigen()
         TPZSymetricSpStructMatrixEigen *strloc = new TPZSymetricSpStructMatrixEigen(subcmesh);
         TPZAutoPointer<TPZStructMatrix> str(strloc);
         str->SetNumThreads(0);
-        
         int64_t numinternal = subcmesh->NumInternalEquations();
         str->EquationFilter().SetMinMaxEq(0, numinternal);
         TPZAutoPointer<TPZMatrix<STATE>> mat = dynamic_cast<TPZMatrix<STATE>*>(str->Create());
         str->EquationFilter().Reset();
-        
-        
-        
-        TPZAutoPointer<TPZAnalysis> Analysis = new TPZSubMeshAnalysis(subcmesh);
+        TPZAutoPointer<TPZLinearAnalysis> Analysis = new TPZSubMeshAnalysis(subcmesh);
         Analysis->SetStructuralMatrix(str);
         TPZStepSolver<STATE> *step = new TPZStepSolver<STATE>(mat);
         step->SetDirect(ELDLt);

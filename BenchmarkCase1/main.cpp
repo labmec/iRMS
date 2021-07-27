@@ -43,16 +43,26 @@ void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh, TPZVec<int64_t> &
 
 TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 {
-        std::string fileCoarse("../../FracMeshes/flem_case1_Coarse_BC.msh");
-        std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
+      std::string basemeshpath(FRACMESHES);
+//        std::string fileCoarse=  basemeshpath + "/flem_case1_Coarse_BC.msh";
+//        std::string fileFine=  basemeshpath + "/flem_case1_Submesh_Fractures.msh";
     
-//    std::string fileFine("../../FracMeshes/jose6_fine.msh");
-//    std::string fileCoarse("../../FracMeshes/jose6_coarse.msh");
+    
+   
+    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine9000.msh";
+    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse.msh";
+    
+//    std::string fileCoarse("../../FracMeshes/Case1_Cilamce/case1_coarse.msh");
+//    std::string fileFine("../../FracMeshes/Case1_Cilamce/case1_fine1.msh");
+    
+    
+//    std::string fileFine = basemeshpath + "/jose6_fine.msh";
+//    std::string fileCoarse = basemeshpath +"/jose6_coarse.msh";
 //
 
-    std::string basemeshpath(FRACMESHES);
-    std::string fileFine = basemeshpath + "/embedFrac_subWithFrac.msh";
-    std::string fileCoarse = basemeshpath + "/embedFrac_coarse.msh";
+   
+//    std::string fileFine = basemeshpath + "/embedFrac_subWithFrac.msh";
+//    std::string fileCoarse = basemeshpath + "/embedFrac_coarse.msh";
 
     
     
@@ -75,8 +85,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
      3 3 "k33"
      3 10 "k31"
      */
-    dim_name_and_physical_tagCoarse[3]["k33"] = 1;
-    dim_name_and_physical_tagCoarse[3]["k31"] = 2;
+    dim_name_and_physical_tagCoarse[3]["k33"] = 2;
+    dim_name_and_physical_tagCoarse[3]["k31"] = 1;
     dim_name_and_physical_tagCoarse[2]["inlet"] = -2;
     dim_name_and_physical_tagCoarse[2]["outlet"] = -4;
     dim_name_and_physical_tagCoarse[2]["noflux"] = -1;
@@ -91,8 +101,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     
     
     dim_name_and_physical_tagFine[1]["nofluxFrac"] = -11;
-    dim_name_and_physical_tagFine[1]["outletFrac"] = -13;
-    dim_name_and_physical_tagFine[1]["inletFrac"] = -12;
+    dim_name_and_physical_tagFine[1]["outletFrac"] = -11;
+    dim_name_and_physical_tagFine[1]["inletFrac"] = -11;
     for(int i=1; i<=100; i++)
     {
         std::stringstream sout;
@@ -617,8 +627,8 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTNumerics.m_max_iter_transport = 1;
     sim_data.mTNumerics.m_max_iter_sfi = 1;
     //BorderElementOrder
-    sim_data.mTNumerics.m_BorderElementPresOrder=1;
-    sim_data.mTNumerics.m_BorderElementFluxOrder=1;
+    sim_data.mTNumerics.m_BorderElementPresOrder=0;
+    sim_data.mTNumerics.m_BorderElementFluxOrder=0;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
@@ -798,7 +808,7 @@ void BenchmarkCase1()
     
     std::cout << "Mass report at time : " << 0.0 << std::endl;
     std::cout << "Mass integral :  " << initial_mass << std::endl;
-    
+    std::ofstream fileCilamce("IntegratedSat.txt");
     TPZFastCondensedElement::fSkipLoadSolution = false;
     bool first=true;
     for (int it = 1; it <= n_steps; it++) {
@@ -823,7 +833,9 @@ void BenchmarkCase1()
             
             pos++;
             current_report_time =reporting_times[pos];
-            
+             REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
+            fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
+           
             REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
             std::cout << "Mass report at time : " << sim_time << std::endl;
             std::cout << "Mass integral :  " << mass << std::endl;

@@ -1051,7 +1051,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
             volume=volume*fracFactor;
         }
         transport.fCellsData.fVolume[i]=volume;
-        
+        transport.fCellsData.fMatId[i]=matid;
         if (cel->NConnects()!=1) {
             DebugStop();
         }
@@ -1079,7 +1079,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         for (int ic =0; ic<3; ic++) {center[ic]=coord[ic];};
         transport.fCellsData.fCenterCoordinate[i] = center;
     }
-    transport.fCellsData.fMatId = 1;
+//    transport.fCellsData.fMatId = 1;
 
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);

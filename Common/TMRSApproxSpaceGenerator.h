@@ -184,6 +184,7 @@ public:
     void TakeElementsbyID(std::map<int, std::vector<TPZGeoEl* >> &, std::vector<int> & );
     void VerifySideOrientsCoarseFine(TPZCompMesh *fluxCmesh);
     void HideTheElements(TPZCompMesh *cmesh);
+    void BuildMultiphysicsSpaceWithMemoryByMatId(TPZVec<int> & active_approx_spaces, TPZVec<TPZCompMesh * > & mesh_vector);
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */
