@@ -1324,6 +1324,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     gSinglePointMemory = true;
     
 mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem,matsWithOutMem);
+    
+//    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
 
     //Insert fractures properties
     InitializeFracProperties(mMixedOperator);
@@ -1365,12 +1367,11 @@ mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,ma
                     subcmesh->ComputeNodElCon();
                     // this shouldn't affect the fracture elements as they won't have condensable connects
                     TPZReservoirTools::CondenseElements(subcmesh, fluxmortar, false);
-                    int numthreads = 0;
-                    int preconditioned = 0;
-                    TPZAutoPointer<TPZGuiInterface> zero;
-                    subcmesh->SetAnalysisSkyline(numthreads,preconditioned,zero);
-//                    TPZSymetricSpStructMatrixEigen matrix(subcmesh);
-//                    matrix.SetNumThreads(0);
+                    int numThreads =0;
+                    int preconditioned =0;
+                    TPZAutoPointer<TPZGuiInterface> guiInterface;
+                    subcmesh->SetAnalysisSkyline(numThreads, preconditioned, guiInterface);
+                    
                 }
             }
             std::cout<<"Num Eq Mixed MHM: "<<mMixedOperator->NEquations()<<std::endl;
@@ -3213,6 +3214,7 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
 //        }
         int64_t domain = mSubdomainIndexGel[el];
         if (domain == -1) {
+            std::cout<<"matId: "<<gel->MaterialId()<<std::endl;
             continue;
         }
         ElementGroups[domain].insert(indexel);

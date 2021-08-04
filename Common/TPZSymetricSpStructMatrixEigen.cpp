@@ -278,7 +278,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
 #ifdef USING_BOOST
     boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
 #endif
-    
+
     TPZMatRed<STATE, TPZFMatrix<STATE> > *matRed = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE> > *> (&stiffness);
 //    matRed->Zero();
     int64_t iel;
@@ -326,8 +326,6 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         calcstiff.stop();
         boost::posix_time::ptime endtimeCalc = boost::posix_time::microsec_clock::local_time();
 //        subcmesh->fTimeTotalCalcStiff += endtimeCalc-initimeCalc;
-
-        
         
         TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
         TPZSYsmpMatrixEigen<STATE> *matk00eigen =dynamic_cast<TPZSYsmpMatrixEigen<STATE> *>(matpzmat);
@@ -469,6 +467,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         
         assemble.stop();
         
+//        ek.Print(std::cout);
         boost::posix_time::ptime endtimeAssem = boost::posix_time::microsec_clock::local_time();
 //        subcmesh->fTimeTotalAddKels += (endtimeAssem - endtimeCalc);
     }//fim for iel

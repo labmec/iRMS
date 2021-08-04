@@ -49,8 +49,11 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     
     
    
-    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine9000.msh";
-    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse.msh";
+    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine5400.msh";
+    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse5400.msh";
+    
+//    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine9000.msh";
+//    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse.msh";
     
 //    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine7000.msh";
 //    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse7000.msh";
@@ -88,7 +91,7 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
      3 3 "k33"
      3 10 "k31"
      */
-    dim_name_and_physical_tagCoarse[3]["k33"] = 2;
+    dim_name_and_physical_tagCoarse[3]["k33"] = 1;
     dim_name_and_physical_tagCoarse[3]["k31"] = 1;
     dim_name_and_physical_tagCoarse[2]["inlet"] = -2;
     dim_name_and_physical_tagCoarse[2]["outlet"] = -4;
@@ -98,7 +101,9 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
      3 1 "c1"
      */
     dim_name_and_physical_tagFine[2]["Fractures"] = 10;
+    dim_name_and_physical_tagFine[2]["Fracture"] = 10;
     dim_name_and_physical_tagFine[2]["Fracture2"] = 10;
+    dim_name_and_physical_tagFine[2]["Fracture10"] = 10;
     dim_name_and_physical_tagFine[2]["frac0"] = 10;
     dim_name_and_physical_tagFine[1]["BCfrac0"] = -11;
     
@@ -106,7 +111,7 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     dim_name_and_physical_tagFine[1]["nofluxFrac"] = -11;
     dim_name_and_physical_tagFine[1]["outletFrac"] = -11;
     dim_name_and_physical_tagFine[1]["inletFrac"] = -11;
-    for(int i=1; i<=100; i++)
+    for(int i=1; i<=200; i++)
     {
         std::stringstream sout;
         sout << "c" << i;
@@ -138,6 +143,23 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
         std::ofstream fileFine("mesh3dFine.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshFine, fileFine);
     }
+    int nels =gmeshFine->NElements();
+    for (int iel =0; iel<nels; iel++) {
+        TPZGeoEl *gel = gmeshFine->Element(iel);
+        TPZVec<REAL> qsi(3,0.0);
+        TPZFMatrix<REAL> jac;
+        TPZFMatrix<REAL> axes;
+        REAL detjac;
+        TPZFMatrix<REAL> jacinv;
+        gel->Jacobian(qsi, jac, axes, detjac, jacinv);
+        if(detjac<0.0){
+            DebugStop();
+        }
+        
+        
+    }
+    
+    
     MergeMeshes(gmeshFine, gmeshCoarse, subdomain);
     {
         std::ofstream fileFine("mesh3dFineMerge.vtk");
@@ -308,7 +330,7 @@ void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh, TPZVec<int64_t> &
                 int64_t coarse_index = 0;
                 
                 TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
-                if(coarse_index-first3DCoarse != matid-10) DebugStop();
+                if(coarse_index-first3DCoarse != matid -10) DebugStop();
                 MatFinetoCoarseElIndex[matid] = coarse_index;
             }
 #else
@@ -592,7 +614,7 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 4.0 ;
+    REAL pressure_in = 1.0 ;
     REAL pressure_out = 1.0 ;
     REAL flux_int = -1.5;
     
@@ -630,8 +652,8 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTNumerics.m_max_iter_transport = 1;
     sim_data.mTNumerics.m_max_iter_sfi = 1;
     //BorderElementOrder
-    sim_data.mTNumerics.m_BorderElementPresOrder=0;
-    sim_data.mTNumerics.m_BorderElementFluxOrder=0;
+    sim_data.mTNumerics.m_BorderElementPresOrder=1;
+    sim_data.mTNumerics.m_BorderElementFluxOrder=1;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
@@ -650,9 +672,9 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     
     //FracProperties
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
-    REAL kappa1=1.0e-6;
-    REAL kappa2=1.0e-5;
+    sim_data.mTFracProperties.m_Permeability = 1.0;
+    REAL kappa1=1.0;
+    REAL kappa2=1.0;
     int  id1=1;
     int  id2=2;
     std::vector<std::pair<int, REAL>> idPerm(2);
