@@ -61,10 +61,10 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 //    std::string fileCoarse("../../FracMeshes/Case1_Cilamce/case1_coarse.msh");
 //    std::string fileFine("../../FracMeshes/Case1_Cilamce/case1_fine1.msh");
     
-    
+
 //    std::string fileFine = basemeshpath + "/jose6_fine.msh";
 //    std::string fileCoarse = basemeshpath +"/jose6_coarse.msh";
-//
+////
 
    
 //    std::string fileFine = basemeshpath + "/embedFrac_subWithFrac.msh";
@@ -652,8 +652,8 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTNumerics.m_max_iter_transport = 1;
     sim_data.mTNumerics.m_max_iter_sfi = 1;
     //BorderElementOrder
-    sim_data.mTNumerics.m_BorderElementPresOrder=1;
-    sim_data.mTNumerics.m_BorderElementFluxOrder=1;
+    sim_data.mTNumerics.m_BorderElementPresOrder=0 ;
+    sim_data.mTNumerics.m_BorderElementFluxOrder=0;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
@@ -758,6 +758,9 @@ void BenchmarkCase1()
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
+    
+    std::ofstream filep("FluxCmeesh.txt");
+    mixed_operator->Print(filep);
 //    bool must_opt_band_width_Q = true;
 //    int n_threads = 0;
 //

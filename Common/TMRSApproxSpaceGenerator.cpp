@@ -1347,35 +1347,73 @@ mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,ma
         {
             std::cout<<"Num Eq Mixed: "<<mMixedOperator->NEquations()<<std::endl;
             HideTheElements(mMixedOperator);
-            std::cout<<"Num Eq Mixed gLO: "<<mMixedOperator->NEquations()<<std::endl;
             int nels = mMixedOperator->NElements();
+           
+            
             for(int iel =0; iel<nels; iel++){
                 TPZCompEl *cel = mMixedOperator->Element(iel);
                 if(!cel){continue;}
                 TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
                 if(subcmesh){
+                
                     std::set<int64_t> seed, groups;
+                    subcmesh->ComputeNodElCon();
+                  
+                    
+#ifdef LOG4CXX
+                    if(logger->isDebugEnabled())
+                    {
+                        std::stringstream sout;
+                        subcmesh->Print(sout);
+                        LOGPZ_DEBUG(logger, sout.str())
+                    }
+#endif
+                    
                     TPZReservoirTools::TakeSeedElements(subcmesh, seed);
                     TPZReservoirTools::GroupNeighbourElements(subcmesh,seed,groups );
                     subcmesh->ComputeNodElCon();
                     std::set<int> volmatId;
-                    volmatId.insert(10);
+                    
+                    int nel = subcmesh->NElements();
                     TPZReservoirTools::CondenseElements(subcmesh, pressuremortar, false,volmatId);
                     std::set<int64_t> groups2;
                     // this will act only on volumetric elements
                     TPZReservoirTools::GroupNeighbourElements(subcmesh, groups, groups2);
                     subcmesh->ComputeNodElCon();
                     // this shouldn't affect the fracture elements as they won't have condensable connects
+//                    int nel = subcmesh->NElements();
+                    for (int64_t el=0; el<nel; el++) {
+                        TPZCompEl *cel = subcmesh->Element(el);
+                        if (!cel) {
+                            continue;
+                        }
+                        int nconnects = cel->NConnects();
+                        for (int icon=0; icon<nconnects; icon++) {
+                            TPZConnect &connect = cel->Connect(icon);
+                            
+                            int lagrangemult = connect.LagrangeMultiplier();
+                            //Increment the number of connected elements for the avg pressure in order to not condense them
+                            if (lagrangemult==6) {
+                                connect.IncrementElConnected();
+                            }
+                        }
+                    }
                     TPZReservoirTools::CondenseElements(subcmesh, fluxmortar, false);
+                    subcmesh->ComputeNodElCon();
                     int numThreads =0;
                     int preconditioned =0;
                     TPZAutoPointer<TPZGuiInterface> guiInterface;
                     subcmesh->SetAnalysisSkyline(numThreads, preconditioned, guiInterface);
+                    TPZStepSolver<STATE> step;
+                    step.SetDirect(ELDLt);
+                    subcmesh->Analysis()->SetSolver(step);
+                    
                     
                 }
             }
+            mMixedOperator->ComputeNodElCon();
             std::cout<<"Num Eq Mixed MHM: "<<mMixedOperator->NEquations()<<std::endl;
-           mMixedOperator->ExpandSolution();
+
         }
         else{
             // group and condense the H(div) space (only dimension of the mesh)
@@ -1392,7 +1430,7 @@ mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,ma
             }
             // this will only group volumetric elements
             TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
-            mMixedOperator->ComputeNodElCon();
+//            mMixedOperator->ComputeNodElCon();
             
             std::set<int> volmatId;
             volmatId.insert(10);
@@ -1403,10 +1441,12 @@ mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,ma
             
             // this will act only on volumetric elements
             TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
-            mMixedOperator->ComputeNodElCon();
+//            mMixedOperator->ComputeNodElCon();
             // this shouldn't affect the fracture elements as they won't have condensable connects
             TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
+            mMixedOperator->ComputeNodElCon();
         }
+
     }
     else
     {
@@ -3189,8 +3229,10 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
 //        KeepOneLagrangian = false;
 //    }
 //    if (true) {
-//        KeepOneLagrangian = true;
+//        KeepOneLagrangian = false;
 //    }
+//
+    
     typedef std::set<int64_t> TCompIndexes;
     std::map<int64_t, TCompIndexes> ElementGroups;
     TPZGeoMesh *gmesh = cmesh->Reference();
@@ -3233,6 +3275,8 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
             std::cout << std::endl;
         }
     }
+    
+    
     
     std::map<int64_t,int64_t> submeshindices;
     TPZCompMeshTools::PutinSubmeshes(cmesh, ElementGroups, submeshindices, KeepOneLagrangian);
