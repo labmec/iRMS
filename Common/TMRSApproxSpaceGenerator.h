@@ -48,6 +48,8 @@ public:
     TPZVec<int64_t> mSubdomainIndexGel;
     
     TPZHybridizeHDiv* mHybridizer;
+    
+    int mMatIDIntersection;
  
     
 public:
@@ -192,6 +194,9 @@ public:
     void VerifySideOrientsCoarseFine(TPZCompMesh *fluxCmesh);
     void HideTheElements(TPZCompMesh *cmesh);
     void BuildMultiphysicsSpaceWithMemoryByMatId(TPZVec<int> & active_approx_spaces, TPZVec<TPZCompMesh * > & mesh_vector);
+    
+    const int MatIDFracIntesect() const {return mMatIDIntersection;} 
+    int& MatIDFracIntesect() {return mMatIDIntersection;}
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

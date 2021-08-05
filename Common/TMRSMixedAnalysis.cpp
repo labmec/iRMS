@@ -212,7 +212,7 @@ void TMRSMixedAnalysis::PostProcessTimeStep(){
     scalnames = m_sim_data->mTPostProcess.m_scalnames;
     vecnames = m_sim_data->mTPostProcess.m_vecnames;
     
-    int div = 1;
+    int div = 0;
     int dim = Mesh()->Reference()->Dimension();
 //    std::set<int> mat_id_2D;
 //    mat_id_2D.insert(10);
