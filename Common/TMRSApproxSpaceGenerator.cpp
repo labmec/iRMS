@@ -3307,11 +3307,10 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
 }
 
 const bool TMRSApproxSpaceGenerator::isThereFracIntersection() const {
-    
-    const int matidintersection = 13;
+        
     for (auto gel : mGeometry->ElementVec()){
         const int matid = gel->MaterialId();
-        if (matid == 13) { // intersection matid
+        if (matid == mMatIDIntersection) { // intersection matid
             return true;
         }
     }
@@ -3325,7 +3324,7 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZManVector<TPZCompMesh *
         DebugStop();
     }
 
-    const int matidfrac = 1, matidintersection = 13;
+    const int matidfrac = 1;
     
     TPZCompMesh* fluxmesh = meshvec_Hybrid[0];
     TPZGeoMesh* gmesh = fluxmesh->Reference();
@@ -3334,7 +3333,7 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZManVector<TPZCompMesh *
         
     int dim = fluxmesh->Dimension();
     for (auto gel : gmesh->ElementVec()) {
-        if (gel->MaterialId() != matidintersection) {
+        if (gel->MaterialId() != mMatIDIntersection) {
             continue;
         }
         if (gel->Dimension() != dim - 1) {

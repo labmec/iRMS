@@ -49,9 +49,16 @@ using namespace std;
 //-------------------------------------------------------------------------------------------------
 
 const bool GLOBALctePressureCase = 0;
+static TPZLogger mainlogger("onlyfractures");
 
 int main(){
-    TPZLogger::InitializePZLOG();
+    TPZLogger::InitializePZLOG("log4cxx.cfg");
+    if (mainlogger.isDebugEnabled()) {
+        std::stringstream sout;
+        sout << "\nLogger for OnlyFractures target\n" << endl;;
+        LOGPZ_DEBUG(mainlogger, sout.str())
+    }
+        
     const int caseToSim = 3;
     // 0: 2 perpendicular fractures, cte pressure
     // 1: 2 perpendicular fractures, 1D flow
@@ -214,8 +221,11 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     }
     else if (caseToSim == 3) {
         int bcfracid = EPressure;
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(1);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(bcfracid,D_Type,pressure_in);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EInlet,D_Type,pressure_in);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(EOutlet,D_Type,0.);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(ENoflux,N_Type,0.);
     }
     else {
         DebugStop();
@@ -364,18 +374,30 @@ TPZGeoMesh *ReadFractureMeshCase2(std::string &filename){
 
 TPZGeoMesh *ReadFractureMeshCase3(std::string &filename){
     
+    const bool isCtePressure = false;
+    
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
 
     // Fractures
     dim_name_and_physical_tagFine[2]["Fracture10"] = EDomain;
 
     // Fractures BCs
-    dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
-    dim_name_and_physical_tagFine[1]["BCfrac1"] = EPressure;
-    dim_name_and_physical_tagFine[1]["BCfrac2"] = EPressure;
-    dim_name_and_physical_tagFine[1]["BCfrac3"] = EPressure;
-    dim_name_and_physical_tagFine[1]["BCfrac4"] = EPressure;
-    dim_name_and_physical_tagFine[1]["BCfrac5"] = EPressure;
+    if (isCtePressure) {
+        dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
+        dim_name_and_physical_tagFine[1]["BCfrac1"] = EPressure;
+        dim_name_and_physical_tagFine[1]["BCfrac2"] = EPressure;
+        dim_name_and_physical_tagFine[1]["BCfrac3"] = EPressure;
+        dim_name_and_physical_tagFine[1]["BCfrac4"] = EPressure;
+        dim_name_and_physical_tagFine[1]["BCfrac5"] = EPressure;
+    }
+    else{
+        dim_name_and_physical_tagFine[1]["BCfrac0"] = ENoflux;
+        dim_name_and_physical_tagFine[1]["BCfrac1"] = ENoflux;
+        dim_name_and_physical_tagFine[1]["BCfrac2"] = ENoflux;
+        dim_name_and_physical_tagFine[1]["BCfrac3"] = ENoflux;
+        dim_name_and_physical_tagFine[1]["BCfrac4"] = ENoflux;
+        dim_name_and_physical_tagFine[1]["BCfrac5"] = ENoflux;
+    }
     
     // Intersections
     dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection;
@@ -412,8 +434,33 @@ TPZGeoMesh *ReadFractureMeshCase3(std::string &filename){
     dim_name_and_physical_tagFine[1]["fracIntersection_6_8"] = EIntersection;
     
     dim_name_and_physical_tagFine[1]["fracIntersection_7_8"] = EIntersection;
-
-    return generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
+    
+    TPZGeoMesh* gmesh = generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
+    
+    if (!isCtePressure) {
+        const int icoor = 0;
+        const REAL tol = 1.e-10, coor0 = 0., coor1 = 1.;
+        for (auto* gel : gmesh->ElementVec()){
+            const int geldim = gel->Dimension();
+            const int gelmatid = gel->MaterialId();
+            if (geldim == 1 and gelmatid == ENoflux) {
+                int count0 = 0, count1 = 0;
+                for (int i = 0; i < gel->NNodes(); i++) {
+                    TPZGeoNode* gnod = gel->NodePtr(i);
+                    const REAL dif0 = fabs(gnod->Coord(icoor) - coor0);
+                    const REAL dif1 = fabs(gnod->Coord(icoor) - coor1);
+                    if (dif0 < tol) count0++;
+                    if (dif1 < tol) count1++;
+                }
+                if (count0 == 2)
+                    gel->SetMaterialId(EInlet);
+                if (count1 == 2)
+                    gel->SetMaterialId(EOutlet);
+            }
+        }
+    }
+    
+    return gmesh;
 }
 
 // ---------------------------------------------------------------------
