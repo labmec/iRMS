@@ -1324,10 +1324,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     gSinglePointMemory = true;
     
     // NS to Jose: Should this method with these arguments be commited in PZ???
-    //    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem,
-    DebugStop(); // look up
+    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem, matsWithOutMem);
+//    DebugStop(); // look up
     // NS to Jose: Using this for now. Erase later
-    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
+//    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
 
     //Insert fractures properties
     InitializeFracProperties(mMixedOperator);
@@ -1401,19 +1401,43 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
                         }
                     }
                     TPZReservoirTools::CondenseElements(subcmesh, fluxmortar, false);
-                    subcmesh->ComputeNodElCon();
-                    int numThreads =0;
-                    int preconditioned =0;
-                    TPZAutoPointer<TPZGuiInterface> guiInterface;
-                    subcmesh->SetAnalysisSkyline(numThreads, preconditioned, guiInterface);
+//                    subcmesh->ComputeNodElCon();
+//                    int numThreads =0;
+//                    int preconditioned =0;
+//                    TPZAutoPointer<TPZGuiInterface> guiInterface;
+//                    subcmesh->SetAnalysisSkyline(numThreads, preconditioned, guiInterface);
+//                    subcmesh->SetAnalysisSparse(0);
+                   
+                    //BY JOSE
+                    
+                    TPZLinearAnalysis *analy = new TPZSubMeshAnalysis(subcmesh);
+                    
+                    subcmesh->SaddlePermute();
+#ifdef PZ_LOG
+                    if (logger.isDebugEnabled())
+                    {
+                        std::stringstream sout;
+                        Print(sout);
+                        LOGPZ_DEBUG(logger, sout.str())
+                    }
+#endif
+                    subcmesh->PermuteExternalConnects();
+                    
+                    TPZSSpStructMatrix<STATE> matrix(subcmesh);
+//                    TPZSkylineStructMatrix<STATE> matrix(subcmesh);
+                    matrix.SetNumThreads(0);
+                    analy->SetStructuralMatrix(matrix);
                     TPZStepSolver<STATE> step;
                     step.SetDirect(ELDLt);
-                    subcmesh->Analysis()->SetSolver(step);
-                    
+                    analy->SetSolver(step);
+                    subcmesh->SetAnalysis(analy);
+//                    subcmesh->Analysis() = analy;
+
+                    //
                     
                 }
             }
-            mMixedOperator->ComputeNodElCon();
+            mMixedOperator->ExpandSolution();
             std::cout<<"Num Eq Mixed MHM: "<<mMixedOperator->NEquations()<<std::endl;
 
         }

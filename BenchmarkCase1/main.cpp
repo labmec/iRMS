@@ -49,8 +49,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     
     
    
-    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine5400.msh";
-    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse5400.msh";
+//    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine5400.msh";
+//    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse5400.msh";
     
 //    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine9000.msh";
 //    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse.msh";
@@ -62,8 +62,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 //    std::string fileFine("../../FracMeshes/Case1_Cilamce/case1_fine1.msh");
     
 
-//    std::string fileFine = basemeshpath + "/jose6_fine.msh";
-//    std::string fileCoarse = basemeshpath +"/jose6_coarse.msh";
+    std::string fileFine = basemeshpath + "/jose6_fine.msh";
+    std::string fileCoarse = basemeshpath +"/jose6_coarse.msh";
 ////
 
    
@@ -614,7 +614,7 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     int D_Type = 0;
     int N_Type = 1;
     int zero_flux=0.0;
-    REAL pressure_in = 1.0 ;
+    REAL pressure_in = 4.0 ;
     REAL pressure_out = 1.0 ;
     REAL flux_int = -1.5;
     
@@ -652,8 +652,8 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTNumerics.m_max_iter_transport = 1;
     sim_data.mTNumerics.m_max_iter_sfi = 1;
     //BorderElementOrder
-    sim_data.mTNumerics.m_BorderElementPresOrder=0 ;
-    sim_data.mTNumerics.m_BorderElementFluxOrder=0;
+    sim_data.mTNumerics.m_BorderElementPresOrder=1;
+    sim_data.mTNumerics.m_BorderElementFluxOrder=1;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
@@ -672,9 +672,9 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     
     //FracProperties
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 1.0;
-    REAL kappa1=1.0;
-    REAL kappa2=1.0;
+    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
+    REAL kappa1=1.0e-6;
+    REAL kappa2=1.0e-5;
     int  id1=1;
     int  id2=2;
     std::vector<std::pair<int, REAL>> idPerm(2);
