@@ -309,9 +309,6 @@ void TMRSApproxSpaceGenerator::PrintGeometry(std::string name, bool vtkFile, boo
         mGeometry->Print(textfile);
         
     }
-   
-
-   
     
 }
 
@@ -1133,7 +1130,10 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
         val2[0]  = get<2>(chunk);
-        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        if (HasForcingFunctionBC()) {
+            face->SetForcingFunctionBC(mForcingFunctionBC);
+        }
         mMixedOperator->InsertMaterialObject(face);
     }
     
@@ -1147,6 +1147,8 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
     active_approx_spaces[1] = 1;
     active_approx_spaces[2] = 0;
     mMixedOperator->SetDimModel(dimension);
+    
+//    DeleteBCsThatAreOnIntersect(mesh_vec[0]);
     
     if (isThereFracIntersection()) {
         mHybridizer = new TPZHybridizeHDiv(mesh_vec);
@@ -1168,6 +1170,27 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
     std::ofstream sout(file_name.str().c_str());
     mMixedOperator->Print(sout);
 #endif
+    
+}
+
+void TMRSApproxSpaceGenerator::DeleteBCsThatAreOnIntersect(TPZCompMesh* hdivcmesh) {
+    hdivcmesh->LoadReferences();
+    
+    for (auto cel : hdivcmesh->ElementVec()) {
+        if (!cel)
+            continue;
+        TPZGeoEl *gel = cel->Reference();
+        if (gel->MaterialId() != 5)
+            continue;
+        
+        TPZGeoElSide gelside(gel,gel->NSides()-1);
+        TPZGeoElSide neigh = gelside.HasNeighbour(mMatIDIntersection);
+        if (neigh) {
+            delete cel;
+        }
+    
+    }
+    hdivcmesh->InitializeBlock();
     
 }
 
@@ -3310,7 +3333,7 @@ const bool TMRSApproxSpaceGenerator::isThereFracIntersection() const {
         
     for (auto gel : mGeometry->ElementVec()){
         const int matid = gel->MaterialId();
-        if (matid == mMatIDIntersection) { // intersection matid
+        if (matid == mMatIDIntersection || matid == mMatIDIntersection+1) { // intersection matid
             return true;
         }
     }
@@ -3333,13 +3356,14 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZManVector<TPZCompMesh *
         
     int dim = fluxmesh->Dimension();
     for (auto gel : gmesh->ElementVec()) {
-        if (gel->MaterialId() != mMatIDIntersection) {
+        const int gelmatid = gel->MaterialId();
+        if (gelmatid != mMatIDIntersection && gelmatid != mMatIDIntersection+1) {
             continue;
         }
         if (gel->Dimension() != dim - 1) {
             DebugStop();
         }
-        
+        const bool isIntersectEnd = gelmatid == mMatIDIntersection+1 ? true : false;
         // Search for first neighbor that that is domain
         TPZGeoElSide gelside(gel,gel->NSides()-1);
         TPZGeoElSide neigh = gelside.Neighbour();
@@ -3359,8 +3383,9 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZManVector<TPZCompMesh *
                 
                 const int side = neigh.Side();
                 TPZCompElSide celsideleft(intel, side);
-                bool isNewInterface = mHybridizer->HybridizeInterface(celsideleft,intel,side,meshvec_Hybrid);
+                bool isNewInterface = mHybridizer->HybridizeInterface(celsideleft,intel,side,meshvec_Hybrid,isIntersectEnd);
                 if (isNewInterface) {
+                    cout << "=====> Connects splitted succesfuly!" << endl;
                     break;
                 }
                 else{
@@ -3379,9 +3404,10 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZManVector<
     mMixedOperator->Reference()->ResetReference();
     cmeshpressure->LoadReferences();
     const int lagrangematid = mHybridizer->lagrangeInterfaceMatId();
+    const int lagrangematidend = mHybridizer->lagrangeInterfaceEndMatId();
     for (auto cel : cmeshpressure->ElementVec()) {
         const int celmatid = cel->Material()->Id();
-        if (!cel || celmatid != lagrangematid ) {
+        if (!cel && celmatid != lagrangematid && celmatid != lagrangematidend) {
             continue;
         }
         TPZGeoEl* gel = cel->Reference();

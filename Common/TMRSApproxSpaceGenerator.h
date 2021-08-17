@@ -51,6 +51,7 @@ public:
     
     int mMatIDIntersection;
  
+    ForcingFunctionBCType<STATE> mForcingFunctionBC;
     
 public:
     
@@ -86,9 +87,25 @@ public:
         return mSubdomainIndexGel;
     }
     
+    void SetForcingFunctionBC(ForcingFunctionBCType<STATE> f){
+        mForcingFunctionBC = f;
+    }
+    bool HasForcingFunctionBC() const {
+        return (bool)mForcingFunctionBC;
+    }
+    const ForcingFunctionBCType<STATE> &ForcingFunctionBC() const
+    {
+        return mForcingFunctionBC;
+    }
+    ForcingFunctionBCType<STATE> &ForcingFunctionBC()
+    {
+        return mForcingFunctionBC;
+    }
+    
     const bool isThereFracIntersection() const;
     void HybridizeIntersections(TPZManVector<TPZCompMesh *, 3>& mesh_vec);
     void CreateIntersectionInterfaceElements(TPZManVector<TPZCompMesh *, 3>& meshvec_Hybrid);
+    void DeleteBCsThatAreOnIntersect(TPZCompMesh* hdivcmesh);
     
     void LoadGeometry(std::string geometry_file);
     
@@ -106,6 +123,8 @@ public:
     
     TMRSDataTransfer & GetDataTransfer();
     
+    const TPZHybridizeHDiv* Hybridizer() const {return mHybridizer;}
+    TPZHybridizeHDiv* Hybridizer() {return mHybridizer;}
  
     /// create the HDiv computational mesh
     TPZCompMesh * HdivFluxCmesh(int order);

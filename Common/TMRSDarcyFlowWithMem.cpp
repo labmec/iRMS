@@ -5,9 +5,10 @@
 //  Created by Omar Durán on 10/10/19.
 
 #include "TMRSDarcyFlowWithMem.h"
+#include "TRMSpatialPropertiesMap.h"
 
 #include "TMRSMemory.h"
-
+#include "pzvec_extras.h"
 
 template <class TMEM>
 TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TBase(), mSimData() {
@@ -224,7 +225,28 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     
 //    // Total mobility
 //    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,memory.sw_n(),p);
-   REAL lambda_v = 1.0;
+    REAL lambda_v = 1.0;
+    
+    // Getting the permeability correction based on the angle between
+    // plane xy and the plane of the element axes
+    // Cosine of angle is calculated with the dot product of the normals
+    // Obs: unit normals are assumed
+    TPZManVector<REAL,3> x1(3,0.), x2(3,0.), n1(3,0.), n2(3,0.);
+    n1[2] = 1.;
+    for (int i = 0; i < 3; i++) {
+        x1[i] = datavec[0].axes(0,i);
+        x2[i] = datavec[0].axes(1,i);
+    }
+    Cross(x1,x2,n2);
+    const REAL permCorrec = fabs(Dot(n1, n2));
+    
+    TPZFNMatrix<9,REAL> kappa_inv_loc(3,3);
+    kappa_inv_loc.Zero();
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            kappa_inv_loc(i,j) = memory.m_kappa_inv(i,j)*permCorrec;
+        }
+    }
   
     
     int s_i, s_j;
@@ -232,7 +254,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
+            kappa_inv_q(i,0) += kappa_inv_loc(i,j)*(1.0/lambda_v)*q[j];
         }
     }
     
@@ -259,7 +281,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                    kappa_inv_phi_q_j(i,0) += kappa_inv_loc(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
                 }
             }
             
@@ -365,18 +387,38 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
 
     REAL gBigNumber = 1.0e12; //TPZMaterial::gBigNumber;
 
-    int qb = 0;
+    int qb = 0, pb = 1;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
+    TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;
+    int bctype = bc.Type();
+    if (phi_qs.Rows() == 0 && phi_ps.Rows() != 0) {
+        bctype = 10;
+    }
     
     int nphi_q       = phi_qs.Rows();
+    int nphi_p       = phi_ps.Rows();
     int first_q      = 0;
+    int first_p      = nphi_q + first_q;
     
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     
     TPZManVector<STATE,1> bc_data(1,0.0);
     bc_data[0] = bc.Val2()[0];
     
-    switch (bc.Type()) {
+    if (bc.HasForcingFunctionBC()) {
+        TPZFNMatrix<1, STATE> mat_val(1, 1);
+        if (bctype == 10) {
+            bc.ForcingFunctionBC()(datavec[1].x, bc_data, mat_val);
+        }
+        else{
+            bc.ForcingFunctionBC()(datavec[0].x, bc_data, mat_val);
+        }
+        
+    }
+    
+    
+    
+    switch (bctype) {
         case 0 :    // Dirichlet BC  PD
         {
             STATE p_D = bc_data[0];
@@ -404,6 +446,21 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
                 
             }
             
+        }
+            break;
+        case 10:
+        {
+            for (int ip = 0; ip < nphi_p; ip++)
+            {
+              STATE p_D = bc_data[0];
+
+              ef(ip + first_p) += - weight * gBigNumber * p_D * phi_ps(ip,0);
+              for (int jp = 0; jp < nphi_p; jp++)
+              {
+                  ek(ip + first_p,jp + first_p) += weight * gBigNumber * phi_ps(jp,0) * phi_ps(ip,0);
+              }
+              
+            }
         }
             break;
             
