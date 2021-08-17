@@ -57,6 +57,7 @@ protected:
 
 class TPZAnalysisAuxEigen {
 private:
+    
     TPZAlgebraicTransport *fAlgebraicTransport;
     Eigen::SparseMatrix<REAL> m_mass;
     Eigen::SparseMatrix<REAL> m_transmissibility;
@@ -76,6 +77,7 @@ public:
     }
     TPZAnalysisAuxEigen(TPZAlgebraicTransport *algebraicTransport){
         fAlgebraicTransport = algebraicTransport;
+
     }
     void SetAlgebraicTransport(TPZAlgebraicTransport *algebraicTransport){
         fAlgebraicTransport = algebraicTransport;

@@ -289,6 +289,7 @@ public:
     
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
     void VerifyElementFLuxes();
+    void PrintFluxes();
 };
 
 #endif /* AlgebraicTransport_h */

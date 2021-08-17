@@ -98,6 +98,10 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     if (fluxint>0.0) {
         beta = 1.0;
     }
+//    if(interfaceId==103){
+//        fluxint= 0.00;
+//
+//    }
     
     ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint * fdt;
     ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
@@ -700,4 +704,18 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
         }
     }
     std::cout<<"The sum of the flows over the elements is zero. ¡This is correct!"<<std::endl;
+}
+void TPZAlgebraicTransport::PrintFluxes(){
+    for (auto interfaID: fInterfaceData) {
+        std::cout<<std::endl;
+        std::cout<<"Id: "<<interfaID.first<<std::endl;
+        std::cout<<std::endl;
+        int nFLuxes = interfaID.second.fIntegralFlux.size();
+        for (int iflux =0; iflux<nFLuxes; iflux++) {
+            std::pair<int, int> lefrig= interfaID.second.fLeftRightVolIndex[iflux];
+            std::cout<<interfaID.second.fIntegralFlux[iflux]<<std::endl;
+            std::cout<<fCellsData.fEqNumber[lefrig.first]<<" ,"<<fCellsData.fEqNumber[lefrig.second]<<std::endl;
+//            interfaID.second.
+        }
+    }
 }

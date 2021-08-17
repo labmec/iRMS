@@ -121,26 +121,26 @@ void TMRSSFIAnalysis::FillMaterialMemoryDarcy(int material_id){
 #endif
         for (int icell = 0; icell < ncells; icell++)
         {
-            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
-            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
-            if(fastCond->Reference()->MaterialId()!=material_id){
-                continue;
-            }
-            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
-
-
-            TPZManVector<int64_t> indices;
-            celcomp->GetMemoryIndices(indices);
-            indices.Print();
-            for (int index = 0; index<indices.size(); index++) {
-                int valIndex = indices[index];
-                TPZDarcyMemory &mem = memory_vector.get()->operator [](valIndex);
-                mem.fTransportCellIndex = algbindex;
-                m_transport_module->fAlgebraicTransport.fCellsData.fKx[algbindex] = 1.0;
-                m_transport_module->fAlgebraicTransport.fCellsData.fKy[algbindex] = 1.0;
-                m_transport_module->fAlgebraicTransport.fCellsData.fKz[algbindex] = 1.0;
-                m_transport_module->fAlgebraicTransport.fCellsData.fporosity[algbindex] = 0.1;
-            }
+//            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
+//            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
+//            if(fastCond->Reference()->MaterialId()!=material_id){
+//                continue;
+//            }
+//            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
+//
+//
+//            TPZManVector<int64_t> indices;
+//            celcomp->GetMemoryIndices(indices);
+//            indices.Print();
+//            for (int index = 0; index<indices.size(); index++) {
+//                int valIndex = indices[index];
+//                TPZDarcyMemory &mem = memory_vector.get()->operator [](valIndex);
+//                mem.fTransportCellIndex = algbindex;
+//                m_transport_module->fAlgebraicTransport.fCellsData.fKx[algbindex] = 1.0;
+//                m_transport_module->fAlgebraicTransport.fCellsData.fKy[algbindex] = 1.0;
+//                m_transport_module->fAlgebraicTransport.fCellsData.fKz[algbindex] = 1.0;
+//                m_transport_module->fAlgebraicTransport.fCellsData.fporosity[algbindex] = 0.1;
+//            }
         }
     }
     
@@ -201,20 +201,20 @@ void TMRSSFIAnalysis::FillProperties(std::string fileprops, TPZAlgebraicTranspor
             DebugStop();
         }
 #endif
-        for (int icell = 0; icell < ncells; icell++)
-        {
-            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
-            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
-            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
-            int geoIndexMixed = celcomp->Reference()->Index();
-            if (Kx[geoIndexMixed] <0) {
-                DebugStop();
-            }
-            algebraicTransport->fCellsData.fKx[algbindex] = Kx[geoIndexMixed];
-            algebraicTransport->fCellsData.fKy[algbindex] = Ky[geoIndexMixed];
-            algebraicTransport->fCellsData.fKz[algbindex] = Kz[geoIndexMixed];
-            algebraicTransport->fCellsData.fporosity[algbindex] = Phi[geoIndexMixed];
-        }
+//        for (int icell = 0; icell < ncells; icell++)
+//        {
+//            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
+//            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
+//            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
+//            int geoIndexMixed = celcomp->Reference()->Index();
+//            if (Kx[geoIndexMixed] <0) {
+//                DebugStop();
+//            }
+//            algebraicTransport->fCellsData.fKx[algbindex] = Kx[geoIndexMixed];
+//            algebraicTransport->fCellsData.fKy[algbindex] = Ky[geoIndexMixed];
+//            algebraicTransport->fCellsData.fKz[algbindex] = Kz[geoIndexMixed];
+//            algebraicTransport->fCellsData.fporosity[algbindex] = Phi[geoIndexMixed];
+//        }
     }
     m_transport_module->fAlgebraicTransport.fHasPropQ=true;
     
@@ -237,25 +237,25 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport){
             DebugStop();
         }
 #endif
-        for (int icell = 0; icell < ncells; icell++)
-        {
-            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
-            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
-            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
-            TPZGeoEl *gel = celcomp->Reference();
-            int dim= gel->Dimension();
-            TPZVec<REAL> ximasscent(dim);
-            gel->CenterPoint(gel->NSides()-1, ximasscent);
-            std::vector<REAL> center(3,0.0);
-            TPZManVector<REAL,3> coord(3,0.0);
-            gel->X(ximasscent, coord);
-            
-            std::vector<REAL> kappa_phi = m_sim_data->mTReservoirProperties.kappa_phi(coord);
-                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[0];
-                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[1];
-                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[2];
-                algebraicTransport->fCellsData.fKx[algbindex] = kappa_phi[3] + 0.01;
-        }
+//        for (int icell = 0; icell < ncells; icell++)
+//        {
+//            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
+//            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
+//            TPZCompEl *celcomp = fastCond->ReferenceCompEl();
+//            TPZGeoEl *gel = celcomp->Reference();
+//            int dim= gel->Dimension();
+//            TPZVec<REAL> ximasscent(dim);
+//            gel->CenterPoint(gel->NSides()-1, ximasscent);
+//            std::vector<REAL> center(3,0.0);
+//            TPZManVector<REAL,3> coord(3,0.0);
+//            gel->X(ximasscent, coord);
+//            
+//            std::vector<REAL> kappa_phi = m_sim_data->mTReservoirProperties.kappa_phi(coord);
+//                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[0];
+//                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[1];
+//                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[2];
+//                algebraicTransport->fCellsData.fKx[algbindex] = kappa_phi[3] + 0.01;
+//        }
     }
     m_transport_module->fAlgebraicTransport.fHasPropQ=true;
 }
@@ -410,43 +410,43 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     if(isLinear){
         m_mixed_module->RunTimeStep();
         isLinear=false;
+        fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
+        //    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(101);
+        //    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(102);
+        
+        int fracvol1ID = m_sim_data->mTGeometry.mInterface_material_idFracInf;
+        int fracvol2ID = m_sim_data->mTGeometry.mInterface_material_idFracSup;
+        
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol1ID);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol2ID);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(103);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(104);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-1);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
+//        m_transport_module->fAlgebraicTransport.PrintFluxes();
+//        
+//        int ncells =m_transport_module->fAlgebraicTransport.fCellsData.fCenterCoordinate.size();
+//        
+//        for (int icell =0; icell<ncells; icell++) {
+//            std::vector<REAL> center = m_transport_module->fAlgebraicTransport.fCellsData.fCenterCoordinate[icell];
+//            std::cout<<"icell: "<<icell<<std::endl;
+//            std::cout<<"x: "<<center[0]<<std::endl;
+//            std::cout<<"y: "<<center[1]<<std::endl;
+//            std::cout<<"z: "<<center[2]<<std::endl;
+//            std::cout<<std::endl;
+//        }
+        
+        
+       
     }
     
-#ifdef USING_BOOST
-        boost::posix_time::ptime t3 = boost::posix_time::microsec_clock::local_time();
-        deltat = t3-t2;
-        std::cout << "Total mixed time: " << deltat << std::endl;
-#endif
-        
-#ifdef USING_BOOST2
-        boost::posix_time::ptime mixed_process_t1 = boost::posix_time::microsec_clock::local_time();
-#endif
-        
-#ifdef USING_BOOST2
-        boost::posix_time::ptime mixed_process_t2 = boost::posix_time::microsec_clock::local_time();
-        REAL mixed_process_time = boost::numeric_cast<double>((mixed_process_t2-mixed_process_t1).total_milliseconds());
-        std::cout << "Mixed approximation performed in :" << setw(10) <<  mixed_process_time/1000.0 << setw(5)   << " seconds." << std::endl;
-#endif
     
     
-    //   m_mixed_module->PostProcessTimeStep();
     
+  
     
-    fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
-//    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(101);
-//    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(102);
-    
-    int fracvol1ID = m_sim_data->mTGeometry.mInterface_material_idFracInf;
-    int fracvol2ID = m_sim_data->mTGeometry.mInterface_material_idFracSup;
-    
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol1ID);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol2ID);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(103);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(104);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-1);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
     
 //    m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
     

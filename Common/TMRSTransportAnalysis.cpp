@@ -208,7 +208,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
 
     //Linear problem Benchmark
    
-    if(Norm(Rhs()) < 1.0e-9){
+    if(Norm(Rhs()) < 1.0e-4){
         std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
         std::cout << "Number of iterations = " << 1 << std::endl;
         std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
