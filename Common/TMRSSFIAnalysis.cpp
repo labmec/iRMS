@@ -307,6 +307,14 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     }
     
     m_transport_module->fAlgebraicTransport.fdt = sim_data->mTNumerics.m_dt;
+    for (auto cond:sim_data->mTBoundaryConditions.mBCTransportPhysicalTagTypeValue){
+        REAL idVal = std::get<0>(cond);
+        REAL idType = std::get<1>(cond);
+        REAL idValue = std::get<2>(cond);
+        std::pair<int, REAL> bccond = std::make_pair(idType, idValue);
+        m_transport_module->fAlgebraicTransport.fboundaryCMatVal[idVal] =bccond;
+        
+    }
     
     m_transport_module->AnalyzePattern();
     

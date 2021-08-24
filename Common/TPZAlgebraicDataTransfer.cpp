@@ -57,9 +57,7 @@ void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport
     InitializeTransportDataStructure(transport);
     InitializeVectorPointersMixedToTransport(transport);
     InitializeVectorPointersTranportToMixed(transport);
-
-//    CheckDataTransferTransportToMixed();
-    
+    CheckDataTransferTransportToMixed();
 }
 
 // Identify the geometric elements corresponding to interface elements. Order them as
@@ -70,7 +68,6 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     // order them as a function of the number of corner nodes
     TPZGeoMesh *gmesh =  fTransportMesh->Reference();
     std::pair<int, int64_t> defpair(100,-1);
-    int nel_gmesh= gmesh->NElements();
     
     int64_t neltr = fTransportMesh->NElements();
     TPZVec<std::pair<int,int64_t>> interfaces(neltr,defpair);
@@ -189,13 +186,13 @@ int SideLowerIndexCollapsed(TPZGeoEl *gel, int side, int interfaceMatID)
     if (side>ncor-1 && side <nsides-1) {
         return side-ncor;
     }
+//@TODO: "Seleccionar los matids directamente del simdata"
     if (side==(nsides-1) && interfaceMatID==101) {
         return ncor;
     }
     if (side==(nsides-1) && interfaceMatID==102) {
         return ncor+1;
     }
-
     return -1;
 }
 
@@ -240,8 +237,6 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZCompEl *left = leftside.Element();
             if(left->NConnects() > 1) DebugStop();
             TPZGeoEl *leftgel = left->Reference();
-         
-            
             
             //TestCorrectNormalOrientation
             //FindMortar
@@ -1330,6 +1325,17 @@ void TPZAlgebraicDataTransfer::CheckDataTransferTransportToMixed()
             
 #ifdef PZDEBUG
             TPZFastCondensedElement *condensed = dynamic_cast<TPZFastCondensedElement*>(cel);
+            if(!condensed){
+                TPZCondensedCompEl *condcompel = dynamic_cast<TPZCondensedCompEl *>(cel);
+                if(condcompel){
+                    std::cout<<"Element "<<cel->Index()<<" is not FastCondensed"<<std::endl;
+                    continue;
+                }
+                else{
+                    DebugStop();
+                }
+            }
+            
             TPZCompEl *celaux = condensed->GetMultiphysics();
             TPZGeoEl *gel = celaux->Reference();
             if(!gel) DebugStop();

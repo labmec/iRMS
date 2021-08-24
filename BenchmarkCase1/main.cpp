@@ -49,8 +49,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     
     
    
-    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine5400.msh";
-    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse5400.msh";
+//    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine5400.msh";
+//    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse5400.msh";
     
 //    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine9000.msh";
 //    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse.msh";
@@ -62,8 +62,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 //    std::string fileFine("../../FracMeshes/Case1_Cilamce/case1_fine1.msh");
     
 
-//    std::string fileFine = basemeshpath + "/jose6_fine.msh";
-//    std::string fileCoarse = basemeshpath +"/jose6_coarse.msh";
+    std::string fileFine = basemeshpath + "/jose6_fine.msh";
+    std::string fileCoarse = basemeshpath +"/jose6_coarse.msh";
 ////
 
    
@@ -636,14 +636,12 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     //Transport boundary Conditions
     int bc_inlet = 0;
     int bc_outlet = 1;
-    REAL sat_in = 1.0;
+    REAL sat_in = 0.01;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(6);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(-1,bc_outlet,0.0);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(-2,bc_inlet,sat_in);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(-4,bc_outlet,0.0);
-    
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(-11,bc_outlet,sat_in);
-    
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(-13,bc_inlet,sat_in);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(-12,bc_outlet,0.0);
     

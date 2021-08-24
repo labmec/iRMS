@@ -229,6 +229,7 @@ public:
     
     
     REAL fdt =0.1;
+    std::map<int, std::pair<int ,REAL>> fboundaryCMatVal;
     std::vector<REAL> fgravity;
     int fNFluxCoefficients;
     int inletmatid;
