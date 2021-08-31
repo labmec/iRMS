@@ -288,7 +288,7 @@ void TPZSpMatrixEigen<TVar>::FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::Matr
 template<class TVar>
 inline void TPZSpMatrixEigen<TVar>::SetData( TPZVec<int64_t> &IA, TPZVec<int64_t> &JA, TPZVec<TVar> &A ){
     fsparse_eigen.setZero();
-    auto valores =fsparse_eigen.innerIndexPtr();
+//    auto valores =fsparse_eigen.innerIndexPtr();
   
     std::vector<Triplet3<REAL> > triplets(A.size());
     int nrows = IA.size()-1;

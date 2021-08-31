@@ -49,8 +49,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     
     
    
-//    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine5400.msh";
-//    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse5400.msh";
+    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine5400.msh";
+    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse5400.msh";
     
 //    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine9000.msh";
 //    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse.msh";
@@ -62,8 +62,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 //    std::string fileFine("../../FracMeshes/Case1_Cilamce/case1_fine1.msh");
     
 
-    std::string fileFine = basemeshpath + "/jose6_fine.msh";
-    std::string fileCoarse = basemeshpath +"/jose6_coarse.msh";
+//    std::string fileFine = basemeshpath + "/jose6_fine.msh";
+//    std::string fileCoarse = basemeshpath +"/jose6_coarse.msh";
 ////
 
    

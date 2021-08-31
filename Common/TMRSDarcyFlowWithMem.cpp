@@ -188,7 +188,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     
     int qb = 0;
     int pb = 1;
-    int sb = 2;
+ //   int sb = 2;
     
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
     TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;
@@ -206,7 +206,6 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     STATE p                  = datavec[pb].sol[0][0];
-    STATE sw                 = datavec[sb].sol[0][0];
     
     // Get the data at integrations points
     long gp_index = datavec[qb].intGlobPtIndex;

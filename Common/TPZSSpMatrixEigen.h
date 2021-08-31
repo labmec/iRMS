@@ -294,7 +294,6 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
 //        std::cout<<"*************"<<std::endl;
 //    std::cout<<JA<<std::endl;
     fsparse_eigen.setZero();
-    int nnoZeros =A.size();
     int ncols = IA.size()-1;
     fsparse_eigen.resize(ncols,ncols);
     std::vector<Triplet3<REAL> > triplets(2*(A.size()-ncols)+ncols);

@@ -16,12 +16,13 @@ ENDIF(APPLE)
 
 # ----- Find PZ. By default searches one directory up -----
 find_package(NeoPZ REQUIRED HINTS ${CMAKE_SOURCE_DIR}/../neopz_install/)
+ 
 
 # Check if PZ was installed with MKL 
 check_pz_opt(PZ_USING_MKL _PZ_HAS_MKL)
 # TBD: mkl message not working. Need fixing on PZ
 # message("mymessage = ${_PZ_HAS_MKL}")
-# if(NOT _PZ_HAS_MKL)
+#if(NOT _PZ_HAS_MKL)
 #     message(FATAL_ERROR "PZ NOT INSTALED WITH MKL. Please do so!")
 # endif()
 

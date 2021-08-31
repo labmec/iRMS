@@ -134,7 +134,7 @@ void TPZMHMixedMeshWithTransportControl::CreateTransport()
     cmeshTransport->SetAllCreateFunctionsDiscontinuous(); //AQUI
     cmeshTransport->ApproxSpace().CreateDisconnectedElements(true);
     cmeshTransport->SetDefaultOrder(0);
-    int meshdim = cmeshTransport->Dimension();
+   
     // generate elements for all material ids of meshdim
     std::set<int> matids;
     //    for (auto it:fMaterialIds) {

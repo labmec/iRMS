@@ -288,10 +288,8 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
     TPZTimer calcstiff("Computing the stiffness matrices");
     TPZTimer assemble("Assembling the stiffness matrices");
     TPZAdmChunkVector<TPZCompEl *> &elementvec = fMesh->ElementVec();
-    TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh*>(fMesh);
-    boost::posix_time::ptime acttime = boost::posix_time::microsec_clock::local_time();
-//    subcmesh->fTimeTotalCalcStiff = acttime -acttime;
-//    subcmesh->fTimeTotalAddKels = acttime - acttime;
+  //  TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh*>(fMesh);
+  
     int64_t count = 0;
     for (iel = 0; iel < nelem; iel++) {
         TPZCompEl *el = elementvec[iel];
@@ -315,7 +313,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         if (!(count % 20000)) {
             std::cout << "\n";
         }
-        boost::posix_time::ptime initimeCalc = boost::posix_time::microsec_clock::local_time();
+     
         calcstiff.start();
         ek.Reset();
         ef.Reset();
@@ -324,7 +322,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
             return;
         }
         calcstiff.stop();
-        boost::posix_time::ptime endtimeCalc = boost::posix_time::microsec_clock::local_time();
+      
 //        subcmesh->fTimeTotalCalcStiff += endtimeCalc-initimeCalc;
         
         TPZMatrix<STATE> * matpzmat=matRed->K00().operator->();
@@ -340,7 +338,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         
         
         assemble.start();
-        int countpos =0;
+     
         bool hasIndex=false;
         if (!ek.HasDependency()) {
             ek.ComputeDestinationIndices();
@@ -467,9 +465,7 @@ void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiff
         
         assemble.stop();
         
-//        ek.Print(std::cout);
-        boost::posix_time::ptime endtimeAssem = boost::posix_time::microsec_clock::local_time();
-//        subcmesh->fTimeTotalAddKels += (endtimeAssem - endtimeCalc);
+
     }//fim for iel
 }
 

@@ -20,6 +20,15 @@ endif(USING_SUPERLU)
 # Create the iMRS library statically!
 add_library(iMRS_library STATIC ${common_headers} ${common_sources})
 
+#enabling TBB library
+option(USING_TBB "Whether the TBB library will be linked in" OFF)
+if(USING_TBB)
+	find_package(Threads)
+	find_package(TBB)
+	target_compile_definitions(iMRS_library PRIVATE USING_TBB)
+	target_link_libraries(iMRS_library PUBLIC TBB::tbb)
+endif()
+
 # Links the other libraries
 target_link_libraries(iMRS_library PUBLIC NeoPZ::pz libInterpolate::Interpolate)
 if(USING_SUPERLU)    
@@ -32,6 +41,7 @@ target_include_directories(iMRS_library PUBLIC ${PZ_INCLUDE_DIRS}
 if(USING_SUPERLU)    
     target_include_directories(iMRS_library PUBLIC ${SUPERLU_INCLUDES})
 endif(USING_SUPERLU)
+
 
 # create folder with meshes
 set(FRACMESHESDIR ${CMAKE_SOURCE_DIR}/FracMeshes)

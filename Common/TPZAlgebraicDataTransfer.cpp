@@ -187,6 +187,7 @@ int SideLowerIndexCollapsed(TPZGeoEl *gel, int side, int interfaceMatID)
         return side-ncor;
     }
 //@TODO: "Seleccionar los matids directamente del simdata"
+    
     if (side==(nsides-1) && interfaceMatID==101) {
         return ncor;
     }
@@ -224,8 +225,6 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
     
     for(auto it = fInterfaceGelIndexes.begin(); it != fInterfaceGelIndexes.end(); it++)
     {
-        int matid =it->first;
-      
         TPZVec<TInterfaceWithVolume> &facevec = it->second;
         int64_t nfaces = facevec.size();
         for(int64_t iface = 0; iface<nfaces; iface++)
@@ -233,56 +232,16 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             int64_t celindex = facevec[iface].fInterface_celindex;
             TPZCompEl *cel = fTransportMesh->Element(celindex);
             TPZMultiphysicsInterfaceElement *intface = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
-            TPZCompElSide leftside = intface->Left();
-            TPZCompEl *left = leftside.Element();
-            if(left->NConnects() > 1) DebugStop();
-            TPZGeoEl *leftgel = left->Reference();
-            
-            //TestCorrectNormalOrientation
-            //FindMortar
-            //
-            
-            int SideL =leftside.Side();
-            int nsidesmL = leftgel->NSides();
-            int leftorient = 0;
-            if(SideL < nsidesmL-1){
-                leftorient = leftgel->NormalOrientation(leftside.Side());
-            }
-            
-            
-            TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(left);
-            TPZCompEl *hdivBound = celmult->Element(0);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBound);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundT = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBound);
-            
-            bool is_collapsed = false;
-            if (hdivbound  ) {
-                is_collapsed=true;
-                if(matid!=103){
-                    leftorient = hdivbound->GetSideOrient(8);
-                }
-                
-                
-            }
-            if(hdivboundT ){
-                is_collapsed=true;
-                if(matid!=103){
-                     leftorient = hdivboundT->GetSideOrient(6);
-                }
-            }
-          
-            TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
-            int lowerindex = -1;
-            if (is_collapsed) {
-                lowerindex = SideLowerIndexCollapsed(leftgel,leftside.Side(), it->first);
-            }
-            else{
-                lowerindex = SideLowerIndex(leftgel,leftside.Side());
-            }
-            
-            if(fInterfaceByGeom(leftgel->Index(),lowerindex)!=-1){
+            if(!intface){
                 DebugStop();
             }
+            TPZCompElSide leftside = intface->Left();
+            TPZCompEl *left = leftside.Element();
+            TPZGeoEl *leftgel = left->Reference();
+            int leftorient = 0;
+            int lowerindex=-1;
+            TakeOrientationAndLowerIndex(leftside,  leftorient,  lowerindex, it->first);
+            TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
             fInterfaceByGeom(leftgel->Index(),lowerindex) = iface;
             int64_t leftindex = left->Index();
             if(VolumeElementIndex[leftindex] == -1 && (left->NConnects() == 1 ))
@@ -294,55 +253,11 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZCompEl *right = rightside.Element();
             if(right->NConnects() > 1) DebugStop();
             TPZGeoEl *rightgel = right->Reference();
-            int matIDR = rightgel->MaterialId();
-            
-            //
-            TPZMultiphysicsElement *celmultR =dynamic_cast<TPZMultiphysicsElement *>(right);
-            TPZCompEl *hdivBoundR = celmultR->Element(0);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivboundR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBoundR);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundTR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBoundR);
-            
-            bool is_collapsedR = false;
-            
-            int SideR =rightside.Side();
-            int nsidesmR = rightgel->NSides();
-            
-            int right_orient = 0;
-            if(SideR < nsidesmR-1){
-                right_orient = rightgel->NormalOrientation(rightside.Side());
-            }
-            
-            
-            
-            if (hdivboundR  ) {
-                is_collapsedR=true;
-                if(matIDR!=103){
-                    right_orient = hdivboundR->GetSideOrient(8);
-                }
-            }
-           
-            if(hdivboundTR ){
-                is_collapsedR=true;
-                if(matIDR!=103){
-                right_orient = hdivboundTR->GetSideOrient(6);
-                }
-                
-            }
-//            else
-//            {
-//                right_orient = rightgel->NormalOrientation(rightside.Side());
-//            }
-//            
-            
-        
-            
-        
             TPZGeoElSideIndex rightgelside(rightgel->Index(),rightside.Side());
             int64_t rightindex = right->Index();
-            lowerindex = SideLowerIndex(rightgel,rightside.Side());
-            if(fInterfaceByGeom(rightgel->Index(),lowerindex)!=-1){
-                DebugStop();
-            }
+            int right_orient = -1;
+            lowerindex=-1;
+            TakeOrientationAndLowerIndex(rightside,  right_orient,  lowerindex, it->first);
             fInterfaceByGeom(rightgel->Index(),lowerindex) = iface;
             if(VolumeElementIndex[rightindex] == -1 && right->NConnects() == 1)
             {
@@ -358,16 +273,10 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                     facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
                
                 }
-                if(right_orient == -1){
-                    facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
-                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
-                    
-                }
-                if(right_orient == 0){
+                if(right_orient !=1){
                     facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
                     facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
                 }
-                
             }
             else
             {
@@ -389,7 +298,49 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
         fVolumeElements[cellindex] = el;
     }
 }
-
+void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndex(TPZCompElSide &celSide, int &orientation, int &lowerIndex, int matId){
+    TPZCompEl *cel = celSide.Element();
+    if(cel->NConnects() > 1) DebugStop();
+    TPZGeoEl *gel = cel->Reference();
+    int Side =celSide.Side();
+    int nsidesm = gel->NSides();
+    orientation = 0;
+    if(Side < nsidesm-1){
+        orientation = gel->NormalOrientation(celSide.Side());
+    }
+    TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(cel);
+    TPZCompEl *hdivBound = celmult->Element(0);
+    TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBound);
+    TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundT = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBound);
+    //
+    int matid=gel->MaterialId();
+    bool is_collapsed = false;
+    if (hdivbound) {
+        is_collapsed=true;
+        if(matid!=103){
+            orientation = hdivbound->GetSideOrient(8);
+        }
+    }
+    if(hdivboundT){
+        is_collapsed=true;
+        if(matid!=103){
+            orientation = hdivboundT->GetSideOrient(6);
+        }
+    }
+    
+    TPZGeoElSideIndex leftgelside(gel->Index(),celSide.Side());
+    lowerIndex = -1;
+    if (is_collapsed) {
+        lowerIndex = SideLowerIndexCollapsed(gel,celSide.Side(), matId);
+    }
+    else{
+        lowerIndex = SideLowerIndex(gel,celSide.Side());
+    }
+    
+    if(fInterfaceByGeom(gel->Index(),lowerIndex)!=-1){
+        DebugStop();
+    }
+}
 // identify material of a face which is connected to a given geometric element
 std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex gelindex, int64_t faceindex)
 {
@@ -413,18 +364,16 @@ std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex ge
     std::cout << __PRETTY_FUNCTION__ << "couldnt find a material corresponding to gelindex " << gelindex <<
     " and faceindex " << faceindex << std::endl;
     DebugStop();
-//    return -10000;
+    return vector;
 }
 
 // identify material of a face which is connected to a given geometric element
 std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &gelside, int delta)
 {
-    TPZGeoMesh *gmesh = fTransportMesh->Reference();
     int64_t el = gelside.Element()->Index();
     int i = SideLowerIndex(gelside.Element(), gelside.Side());
     int64_t interface = fInterfaceByGeom(el,i);
     int nsides = gelside.Element()->NSides();
-    int ncord = gelside.Element()->NCornerNodes();
     TPZGeoElSide refside;
     if (gelside.Side() >= nsides-1) {
         TPZGeoElSide gelsideaux(gelside.Element(), nsides-1);
@@ -459,7 +408,7 @@ std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &
 // find the neighbouring interface element
 TPZGeoElSide TPZAlgebraicDataTransfer::IdentifyInterfaceElement(const TPZGeoElSide &gelside)
 {
-    TPZGeoMesh *gmesh = fTransportMesh->Reference();
+    
     int64_t el = gelside.Element()->Index();
     int i = SideLowerIndex(gelside.Element(), gelside.Side());
     int64_t interface = fInterfaceByGeom(el,i);
@@ -489,13 +438,9 @@ static void ExtractElement(TPZCompEl *cel, std::list<TPZCompEl *> &ellist)
 {
     TPZFastCondensedElement *condF = dynamic_cast<TPZFastCondensedElement *>(cel);
     TPZCondensedCompEl *cond = dynamic_cast<TPZCondensedCompEl *>(cel);
-    TPZGeoEl *gel = cel->Reference();
-
     TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *> (cel);
     if(cond || condF)
     {
-//        TPZCompEl *celref = cond->ReferenceCompEl();
-//       ExtractElement(celref,ellist);
          ellist.push_back(cel);
     }
     if(elgr){
@@ -553,10 +498,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
     std::list<TPZCompEl *> cellist;
     std::list<TPZSubCompMesh *> submeshes;
     GetElementAndSubmeshPointers(*fluxmesh,cellist,submeshes);
-    //
-//    TestSideOrient(fluxmesh);
-    //
-
     TPZVec<int64_t> shouldtransfer(fluxmesh->NConnects(),0);
     TPZVec<int64_t> targetindex(fluxmesh->NConnects(),0);
     fluxmesh->LoadReferences();     
@@ -597,14 +538,11 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                 condensed->SetMultiphysics(mphys);
                 cel=mphys;
             }
-//            cel=condensed->GetMultiphysics();
             TPZGeoEl *gel = cel->Reference();
             TPZCompEl *hdiv = mphys->ReferredElement(0);
             if(!hdiv){
                 DebugStop();
             }
-            
-            
             TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *collapsedQuad = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>* >(hdiv);
             
              TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *collapsedTriangle = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>* >(hdiv);
@@ -614,27 +552,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                 // a boundary condition element
                 // boundary elements are not considered
                 continue;
-//                int64_t cindex = cel->ConnectIndex(0);
-//                if(shouldtransfer[cindex] != 0) continue;
-//                TPZGeoElSide gelside(gel,gel->NSides()-1);
-////                int matid = IdentifyMaterial(gelside);
-//                connectindexes[matid].Push(cindex);
-//                if(ncontransfer.find(matid) == ncontransfer.end())
-//                {
-//                    ncontransfer[matid].Resize(4, 0);
-//                }
-//                int nshape = cel->Connect(0).NShape();
-//                if(nshape > 4) DebugStop();
-//                for(int is = 0; is<nshape; is++)
-//                {
-//                    ncontransfer[matid][is]++;
-//                }
-//                shouldtransfer[cindex] = 1;
-//                TPZGeoElSide refside = IdentifyInterfaceElement(gelside);
-//                int side = refside.Side();
-//                int sidelower = SideLowerIndex(refside.Element(),side);
-//                targetindex[cindex] = fInterfaceByGeom(refside.Element()->Index(),sidelower);
-//                if(targetindex[cindex] < 0) DebugStop();
             }
             else
             {
@@ -669,8 +586,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     if (warning) {
                         side = side-1;
                     }
-                    
-                    
                     TPZGeoElSide gelside(gel,side);
                     std::vector<int> matidvec = IdentifyMaterial(gelside);
                     
@@ -685,7 +600,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     if (warning && collapsedQuad && side == 9) {
                         matid = matidvec[1];
                     }
-//                    std::cout<<"MatId: "<<matid<<std::endl;
                     if(ncontransfer.find(matid) == ncontransfer.end())
                     {
                         ncontransfer[matid].Resize(4, 0);
@@ -703,8 +617,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     int sidelower = SideLowerIndex(refside.Element(),refside.Side());
                     int targetind = fInterfaceByGeom(elindex,sidelower);
                     targetindex[cindex] = targetind;
-//                    std::cout<<"MatId: "<<matid<<std::endl;
-//                    std::cout<<"cindex: "<< cindex <<"Target Index(cindex): "<<targetindex[cindex]<<std::endl;
                     if(targetindex[cindex] < 0) DebugStop();
                 }
             }
@@ -861,7 +773,6 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
             for(auto itlist : list)
             {
                 TFromMixedToTransport &transport = itlist;
-//                transport.Print(out);
             }
         }
     }
@@ -869,8 +780,7 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
 
 // Build the data structure which defines the correspondence between
 // algebraic transport cells and indexes of mixed fast condensed elements
-void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(TPZCompMesh *fluxmesh,
-                                                                                TPZVec<int64_t> &Alg_Cell_Index)
+void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(TPZCompMesh *fluxmesh, TPZVec<int64_t> &Alg_Cell_Index)
 {
     // build a vector of the size of the geometric elements
     // where applicable the value of the vector is the index of the
@@ -1067,6 +977,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         TPZGeoEl *gel = cel->Reference();
         int geldim = gel->Dimension();
         int matId = gel->MaterialId();
+        //SetarCorretamente
         if(matId==2){
             transport.fCellsData.fporosity[i]=0.25;
         }
@@ -1259,7 +1170,7 @@ void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
     }
 }
 void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
-    
+    CheckDataTransferTransportToMixed();
     for(auto &meshit : fTransportMixedCorrespondence)
     {
         TPZAlgebraicTransport::TCellData &celldata = meshit.fTransport->fCellsData;
@@ -1271,6 +1182,19 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
                 DebugStop();
             }
 #endif
+            TPZCompEl *cel=meshit.fMixedCell[icell];
+            TPZFastCondensedElement *condensed = dynamic_cast<TPZFastCondensedElement*>(cel);
+            if(!condensed){
+                TPZCondensedCompEl *condcompel = dynamic_cast<TPZCondensedCompEl *>(cel);
+                if(condcompel){
+                    std::cout<<"Element "<<cel->Index()<<" is not FastCondensed"<<std::endl;
+                    continue;
+                }
+                else{
+                    DebugStop();
+                }
+            }
+            
             TPZFNMatrix<9, REAL> PermeabilityT, InvPerm;
             PermeabilityT.Redim(3, 3);
             InvPerm.Redim(3, 3);
@@ -1281,25 +1205,10 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
             InvPerm(0,0) = 1.0/(PermeabilityT(0,0));
             InvPerm(1,1) = 1.0/(PermeabilityT(1,1));
             InvPerm(2,2) = 1.0/(PermeabilityT(2,2));
-            TPZCompEl *cel = meshit.fMixedCell[icell];
             TPZGeoEl *gel = cel->Reference();
-            if(!gel) DebugStop();
-            TPZManVector<REAL,3> xcenter(3,0.), xi(gel->Dimension(),0.);
-            gel->CenterPoint(gel->NSides()-1, xi);
-            gel->X(xi, xcenter);
-            std::vector<REAL> cellcenter = celldata.fCenterCoordinate[transportcell];
-            REAL diff = 0;
-            for(int i=0; i<3; i++)
-            {
-                diff += fabs(xcenter[i]-cellcenter.at(i));
-            }
-            if(diff > 1.e-16)
-            {
-                DebugStop();
-            }
-            //            meshit.fMixedCell[icell]->SetLambda((*meshit.fPermData)[meshit.fTransportCell[icell]]);
-//            meshit.fMixedCell[icell]->SetPermTensorAndInv(PermeabilityT,InvPerm) ;
-//            meshit.fMixedCell[icell]->SetMixedDensity((celldata.fMixedDensity)[transportcell]);
+     //       meshit.fMixedCell[icell]->SetPermTensorAndInv(PermeabilityT,InvPerm) ;
+            condensed->SetPermTensorAndInv(PermeabilityT,InvPerm);
+            condensed->SetMixedDensity((celldata.fMixedDensity)[transportcell]);
             
         }
     }

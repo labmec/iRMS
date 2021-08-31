@@ -116,7 +116,6 @@ public:
     void Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<STATE> &Solout) override;
     /** @brief Set Permeability */
     void SetPermeability(REAL kappa){
-        int n_data = m_kappa.Rows();
         m_kappa.Zero();
         m_kappa_inv.Zero();
         for (int i = 0; i < 3; i++) {

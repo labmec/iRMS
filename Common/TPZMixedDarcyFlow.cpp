@@ -130,12 +130,12 @@ void TPZMixedDarcyFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datave
     // Computing the radius
     TPZFMatrix<REAL> x_spatial(3,1,0.0);
     x_spatial(0,0) = datavec[0].x[0];
-    STATE val = x_spatial(0,0);
+//    STATE val = x_spatial(0,0);
     REAL r = Norm(x_spatial);
     
     
     auto &div_phi = datavec[qb].divphi;
-    REAL div_q = datavec[qb].divsol[0][0];
+//    REAL div_q = datavec[qb].divsol[0][0];
     
     int nphi_q       = datavec[qb].fVecShapeIndex.NElements();
     int nphi_p       = phi_ps.Rows();
@@ -143,7 +143,7 @@ void TPZMixedDarcyFlow::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datave
     int first_p      = nphi_q + first_q;
     
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
-    STATE p                  = datavec[pb].sol[0][0];
+//    STATE p                  = datavec[pb].sol[0][0];
     
     //axisimetria
     REAL s = 1.0;
@@ -270,7 +270,7 @@ void TPZMixedDarcyFlow::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &data
     x_spatial(0,0) = datavec[0].x[0];
     REAL r = Norm(x_spatial);
     
-    int npos = q.size();
+//    int npos = q.size();
     
     //axisimetria
     REAL s = 1.0;

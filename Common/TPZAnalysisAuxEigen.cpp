@@ -461,11 +461,7 @@ void TPZAnalysisAuxEigen::Assemble(){
         
         std::pair<int64_t, int64_t> lrindex = fAlgebraicTransport->fInterfaceData[outlet_faces_id].fLeftRightVolIndex[iface];
         int left = lrindex.first;
-        int right = lrindex.second;
         int lefteq = fAlgebraicTransport->fCellsData.fEqNumber[left];
-        
-        
-    
         
         TPZVec<int64_t> indexes(1);
         indexes[0]=lefteq;

@@ -107,8 +107,8 @@ double Interpol3RelPerm::Val(double Sw, double Sg){
 }
 Matrix Interpol3RelPerm::Deriv(double Sw, double Sg){
     
-    int npointsw = Krw.GetData().Rows();
-    int npointsg = Krg.GetData().Rows();
+//    int npointsw = Krw.GetData().Rows();
+//    int npointsg = Krg.GetData().Rows();
     
     Matrix deriv(2,3,0.0);
     

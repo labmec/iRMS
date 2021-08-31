@@ -226,7 +226,7 @@ public:
     
     // verify the correspondence of the mixed elements and the algebraic cells
     void CheckDataTransferTransportToMixed();
-    
+    void TakeOrientationAndLowerIndex(TPZCompElSide &celSide, int &orientation, int &lowerIndex, int matId);
     TPZMultiphysicsElement* findMultiphysics(TPZElementGroup *group);
     
     std::pair<int, int> FindMortar(TPZGeoElSide &gelside);

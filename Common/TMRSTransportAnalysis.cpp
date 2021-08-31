@@ -424,7 +424,7 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
     TPZFMatrix<STATE> &sol = Solution();
 #ifdef USING_TBB
     tbb::parallel_for(size_t(0), size_t(ds.rows()), size_t(1),
-        [this,&ds] (size_t & i){
+                      [&ds, &sol] (size_t & i){
         sol(i,0) = ds(i,0);
         }
     );
@@ -546,17 +546,13 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     //
     std::set<int> mat_id_2D;
     
-    
-   
-//    mat_id_2D.insert(10);
-//    std::string file_frac("fracture_s.vtk");
-//    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
-//    PostProcess(div,2);
-    //
+//  mat_id_2D.insert(10);
+//  std::string file_frac("fracture_s.vtk");
+//  DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
+//  PostProcess(div,2);
+//
     DefineGraphMesh(dim,scalnames,vecnames,file);
     PostProcess(div,dim);
-    
-  
 }
 
 void TMRSTransportAnalysis::UpdateInitialSolutionFromCellsData(){

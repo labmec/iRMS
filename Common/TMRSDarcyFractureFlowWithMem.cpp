@@ -98,7 +98,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
     int qb = 0;
     int pb = 1;
-    int sb = 2;
+  //  int sb = 2;
     
     
     //    datavec[qb].Print(std::cout);
@@ -109,7 +109,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
     
     TPZFNMatrix<40, REAL> div_phi = datavec[qb].divphi;
-    REAL div_q = datavec[qb].divsol[0][0];
+  //  REAL div_q = datavec[qb].divsol[0][0];
     
     int nphi_q       = datavec[qb].fVecShapeIndex.NElements();
     int nphi_p       = phi_ps.Rows();
@@ -134,7 +134,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     STATE p                  = datavec[pb].sol[0][0];
-    STATE sw                 = datavec[sb].sol[0][0];
+  
     
     // Get the data at integrations points
     long gp_index = datavec[qb].intGlobPtIndex;

@@ -71,7 +71,7 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
         if (!cel) {
             continue;
         }
-        TPZGeoEl *gel = cel->Reference();
+      
         int nc = cel->NConnects();
         bool found = false;
         if(LagrangeLevelNotCondensed >=0)
@@ -124,10 +124,7 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
         cmesh->ComputeNodElCon();
     int64_t nel = cmesh->NElements();
     for (int64_t el=0; el<nel; el++) {
-        //        std::cout << "Element " << el << std::endl;
-        if(el==31){
-            int ok=1;
-        }
+       
         TPZCompEl *cel = cmesh->Element(el);
         if (!cel) {
             continue;
@@ -142,14 +139,14 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
                 TPZConnect &c = cel->Connect(ic);
                 char lag =c.LagrangeMultiplier();
                 if (lag==6) {
-                    int ok=0;
+                   
                     int ncon =c.NElConnected();
                     if (ncon==2) {
                         c.DecrementElConnected();
                     }
 
                 }
-                int ncon =c.NElConnected();
+               
                 if((c.LagrangeMultiplier() >= LagrangeLevelNotCondensed && c.NElConnected() == 1))
                 {
                     c.IncrementElConnected();
@@ -188,7 +185,7 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
             }
             else{
                 TPZCondensedCompEl *cond = new TPZCondensedCompEl(cel, keepmatrix);
-                int condd =0;
+                
             }
         }
         
@@ -239,7 +236,7 @@ void TPZReservoirTools::AddDependency( std::vector<std::pair<TPZGeoEl*, std::vec
 }
 void TPZReservoirTools::TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh, TPZVec<int64_t> &subdomain, std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons){
     
-    int nels = fluxCmesh->NElements();
+
     TPZGeoMesh *gmesh = fluxCmesh->Reference();
 //    gmesh->ResetReference();
     fluxCmesh->LoadReferences();
@@ -268,7 +265,7 @@ void TPZReservoirTools::TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh, TPZ
             LOGPZ_DEBUG(logger, sout.str())
         }
 #endif
-        TPZCompEl *celFat = gel->Reference();
+       
         std::vector<TPZGeoEl*> sons;
         TPZGeoElSide fatside(gel, gel->NSides()-1);
         TPZGeoElSide neigfatside = fatside.Neighbour();
@@ -402,11 +399,11 @@ void TPZReservoirTools::PutFluxElementsinSubdomain(TPZCompMesh *fluxCmesh, TPZVe
     TPZGeoMesh *gmesh = fluxCmesh->Reference();
     if(subdomain.size() != gmesh->NElements()) DebugStop();
     for (auto skel : fatherAndSons) {
-        auto gelskel = skel.first;
+//      auto gelskel = skel.first;
         auto &gelsons = skel.second;
         for(auto gelson : gelsons)
         {
-            int64_t sondomain = subdomain[gelson->Index()];
+            //int64_t sondomain = subdomain[gelson->Index()];
             TPZGeoElSide gelside(gelson);
             TPZGeoElSide neighbour = gelside.Neighbour();
             std::set<int64_t> domains;
@@ -420,7 +417,7 @@ void TPZReservoirTools::PutFluxElementsinSubdomain(TPZCompMesh *fluxCmesh, TPZVe
             TPZCompEl *cel = gelson->Reference();
             if(!cel || cel->NConnects() != 1) DebugStop();
             int64_t index;
-            TPZConnect &c = cel->Connect(0);
+          
             TPZStack<std::pair<TPZGeoElSide, TPZCompElSide>> loadstruct;
             loadstruct.Push({gelside,gelside.Reference()});
             gelside.Element()->ResetReference();

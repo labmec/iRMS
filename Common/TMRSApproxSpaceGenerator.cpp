@@ -150,7 +150,6 @@ void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h,
         for (auto gel:gmesh->ElementVec()) {
             TPZFMatrix<REAL> coordinates;
             gel->NodesCoordinates(coordinates);
-            int nsides = gel->NSides();
             if(coordinates(2,0)==0){
                 if(IsQuad){
                 gel->CreateBCGeoEl(20, -1);
@@ -331,7 +330,6 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
-    REAL kappa = 1.0;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
@@ -435,7 +433,6 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
 //            int hdiv_orient = gel->NormalOrientation(side);
             gel->SetReference(cel);
             int64_t index;
-            int neighside = neighbour.Side();
             TPZCompEl *celwrap = cmesh->CreateCompEl(neighbour.Element(), index);
 //            TPZInterpolationSpace *space = dynamic_cast<TPZInterpolationSpace *>(celwrap);
 //            space->SetSideOrient(neighside,hdiv_orient);
@@ -959,7 +956,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     //
     cmesh->InitializeBlock();
     cmesh->SetAllCreateFunctionsDiscontinuous();
-    int nels = mGeometry->NElements();
+
     for (auto gel:mGeometry->ElementVec()) {
        int gelId = gel->MaterialId();
         for (auto Mat_id: volIds) {
@@ -1033,7 +1030,6 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTrans
         if(!cel) DebugStop();
         TPZGeoEl *gel = cel->Reference();
         if(!gel) DebugStop();
-        int dim = gel->Dimension();
         int matid = gel->MaterialId();
         if(cmesh->FindMaterial(matid) == 0) continue;
         int64_t celindex;
@@ -1710,7 +1706,6 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
 int TMRSApproxSpaceGenerator::FindNeighSubDomain(TPZGeoElSide &gelside){
     TPZGeoEl *gel = gelside.Element();
     int indexGel = gel->Index();
-    int indexSubDomain = mSubdomainIndexGel[indexGel];
     int subdomainIndex =-1;
     TPZGeoElSide neigh = gelside.Neighbour();
     while(neigh!= gelside){

@@ -233,7 +233,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeInterface(TPZMaterialData &data, TPZVec
     TRSLinearInterpolator & Kro = mSimData.mTPetroPhysics.mLayer_Kro_RelPerModel[0];
     
     std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & fw = mSimData.mTMultiphaseFunctions.mLayer_fw[0];
-    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & fo = mSimData.mTMultiphaseFunctions.mLayer_fo[0];
+
     
 
     
@@ -367,7 +367,7 @@ void TMRSMultiphaseFlow<TMEM>::ContributeBCInterface(TPZMaterialData &data, TPZV
     TRSLinearInterpolator & Kro = mSimData.mTPetroPhysics.mLayer_Kro_RelPerModel[0];
     
     std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & fw = mSimData.mTMultiphaseFunctions.mLayer_fw[0];
-    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & fo = mSimData.mTMultiphaseFunctions.mLayer_fo[0];
+
     
     std::tuple<double, double, double> fw_l = fw(Krw,Kro,s_l,0.0);
     
