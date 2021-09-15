@@ -228,25 +228,39 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     REAL lambda_v = 1.0;
     
     // Getting the permeability correction based on the angle between
-    // plane xy and the plane of the element axes
+    // the plane of the element axes and the global coordinate system
     // Cosine of angle is calculated with the dot product of the normals
     // Obs: unit normals are assumed
-    TPZManVector<REAL,3> x1(3,0.), x2(3,0.), n1(3,0.), n2(3,0.);
-    n1[2] = 1.;
-    for (int i = 0; i < 3; i++) {
-        x1[i] = datavec[0].axes(0,i);
-        x2[i] = datavec[0].axes(1,i);
-    }
-    Cross(x1,x2,n2);
-    const REAL permCorrec = fabs(Dot(n1, n2));
+//    TPZManVector<REAL,3> elnormal(3,0.), dirNoChange(3,0.), dirToChange(3,0.), axes1(3,0.), axes2(3,0.);
+//    for (int i = 0; i < 3; i++) {
+//        axes1[i] = datavec[0].axes(0,i);
+//        axes2[i] = datavec[0].axes(1,i);
+//    }
+//    Cross(axes1,axes2,elnormal);
+//    TPZManVector<REAL,3> onez(3,0.);
+//    onez[2] = 1.;
+//    Cross(onez,elnormal,dirNoChange);
+//    const REAL normDirNoChange = Norm(dirNoChange);
+//    for (int i = 0; i < 3; i++)
+//        dirNoChange[i] = dirNoChange[i] / normDirNoChange;
+//
+//    Cross(elnormal, dirNoChange, dirToChange);
+//    const REAL cosangle = fabs(Dot(elnormal,onez));
+//    const REAL cosangle_2 = cosangle*cosangle;
+//
+////    TPZFNMatrix<9,REAL> kappa_inv_loc(3,3);
+////    kappa_inv_loc.Zero();
+//    for (int i = 0; i < 3; i++) {
+//        for (int j = 0; j < 3; j++) {
+//            memory.m_kappa(i,j) = dirNoChange[i]*dirNoChange[j] +
+//                (dirToChange[i]*dirToChange[j])/cosangle_2 +
+//                elnormal[i] * elnormal[j];
+//        }
+//    }
     
-    TPZFNMatrix<9,REAL> kappa_inv_loc(3,3);
-    kappa_inv_loc.Zero();
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            kappa_inv_loc(i,j) = memory.m_kappa_inv(i,j)*permCorrec;
-        }
-    }
+    // end of modifying permeability
+    
+//    memory.m_kappa.Inverse(memory.m_kappa_inv,ELU);
   
     
     int s_i, s_j;
@@ -254,7 +268,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            kappa_inv_q(i,0) += kappa_inv_loc(i,j)*(1.0/lambda_v)*q[j];
+            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
         }
     }
     
@@ -281,7 +295,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j(i,0) += kappa_inv_loc(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
                 }
             }
             

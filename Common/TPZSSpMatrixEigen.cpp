@@ -301,6 +301,9 @@ int TPZSYsmpMatrixEigen<TVar>::Decompose_LDLt()
 //    }
 //#endif
     fanalysis.factorize(fsparse_eigen);
+//    if(!fanalysis.m_factorizationIsOk){
+//        std::cout << "\n ==> ERROR! Could not factorize matrix!" << std::endl;
+//    }
 //#ifdef LOG4CXX
 //    if(logger->isDebugEnabled())
 //    {
