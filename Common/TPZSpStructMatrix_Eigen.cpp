@@ -130,7 +130,7 @@ TPZMatrix<STATE> * TPZSpStructMatrixEigen::Create(){
         // working equation by equation
         // rowdestindices contains the equation number of each element in the block number "i"
         for(ibleq=0; ibleq<rowdestindices.size(); ibleq++) {
-            int rowind = rowdestindices[ibleq];
+//            int rowind = rowdestindices[ibleq];
             //            if (rowind != pos) {
             //                DebugStop();
             //            }

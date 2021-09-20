@@ -43,7 +43,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
 {
     if(this->fMatrixComputed == false)
     {
-        TPZMaterial *mat = Material();
+       // TPZMaterial *mat = Material();
         TPZCondensedCompEl::CalcStiff(fEK, fEF);
         ComputeBodyforceRefValues();
         ComputeConstantPressureValues();
@@ -481,8 +481,8 @@ void TPZFastCondensedElement::IdentifyConnectandEquations()
 
     int pressmesh = 1;
     int fluxmesh = 0;
-    int distfluxmesh = 2;
-    int avpressmesh = 3;
+   // int distfluxmesh = 2;
+  //  int avpressmesh = 3;
     fAveragePressureConnect = -1;
 
     for(auto it : connects)
@@ -636,7 +636,7 @@ void TPZFastCondensedElement::ComputeConstantPressureValues()
     TPZManVector<STATE,40> fluxvals(flux_eqs.size());
     for (int eq = 0; eq<flux_eqs.size(); eq++) {
         fluxvals[eq] = sol(flux_eqs[eq]);
-        if(abs(fluxvals[eq]) > 1.e-8) allok = false;
+        if(abs(fluxvals[eq]) > 1.e-10) allok = false;
     }
     if(!allok) DebugStop();
 #endif
@@ -654,5 +654,5 @@ void TPZFastCondensedElement::SetConnectIndex(int inode, int64_t index){
     TPZMultiphysicsElement * mphys = dynamic_cast<TPZMultiphysicsElement *>(candidate);
     this->SetMultiphysics(mphys);
     mphys->SetConnectIndex(inode, index);
-    int ok=0;
+ 
 }

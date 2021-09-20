@@ -325,7 +325,7 @@ void TPZTracerFlow::ContributeBCInterface(const TPZMaterialDataT<STATE> &data, c
     if (m_mass_matrix_Q) {
         return;
     }
-    int nspaces = datavecleft.size();
+   
     int q_b = 0;
     int s_b = 2;
     
@@ -346,7 +346,7 @@ void TPZTracerFlow::ContributeBCInterface(const TPZMaterialDataT<STATE> &data, c
     TPZManVector<REAL,3> n = data.normal;
     TPZManVector<REAL,3> q_l =  datavecleft.find(q_b)->second.sol[0];
     REAL qn = 0.0;
-    REAL tol = 10e-10;
+   
     for (int i = 0; i < 3; i++) {
         qn += q_l[i]*n[i];
     }

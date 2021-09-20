@@ -150,7 +150,6 @@ void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h,
         for (auto gel:gmesh->ElementVec()) {
             TPZFMatrix<REAL> coordinates;
             gel->NodesCoordinates(coordinates);
-            int nsides = gel->NSides();
             if(coordinates(2,0)==0){
                 if(IsQuad){
                 gel->CreateBCGeoEl(20, -1);
@@ -328,7 +327,6 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
-    REAL kappa = 1.0;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
@@ -447,7 +445,6 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
 //            int hdiv_orient = gel->NormalOrientation(side);
             gel->SetReference(cel);
             int64_t index;
-            int neighside = neighbour.Side();
             TPZCompEl *celwrap = cmesh->CreateCompEl(neighbour.Element(), index);
 //            TPZInterpolationSpace *space = dynamic_cast<TPZInterpolationSpace *>(celwrap);
 //            space->SetSideOrient(neighside,hdiv_orient);
@@ -971,7 +968,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     //
     cmesh->InitializeBlock();
     cmesh->SetAllCreateFunctionsDiscontinuous();
-    int nels = mGeometry->NElements();
+
     for (auto gel:mGeometry->ElementVec()) {
        int gelId = gel->MaterialId();
         for (auto Mat_id: volIds) {
@@ -1045,7 +1042,6 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTrans
         if(!cel) DebugStop();
         TPZGeoEl *gel = cel->Reference();
         if(!gel) DebugStop();
-        int dim = gel->Dimension();
         int matid = gel->MaterialId();
         if(cmesh->FindMaterial(matid) == 0) continue;
         int64_t celindex;
@@ -1377,7 +1373,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     gSinglePointMemory = true;
     
     // NS to Jose: Should this method with these arguments be commited in PZ???
-    //    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem,
+//    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem, matsWithOutMem);
 //    DebugStop(); // look up
     // NS to Jose: Using this for now. Erase later
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
@@ -1403,32 +1399,24 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             std::cout<<"Num Eq Mixed: "<<mMixedOperator->NEquations()<<std::endl;
             HideTheElements(mMixedOperator);
             int nels = mMixedOperator->NElements();
-           
-            
             for(int iel =0; iel<nels; iel++){
                 TPZCompEl *cel = mMixedOperator->Element(iel);
                 if(!cel){continue;}
                 TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
                 if(subcmesh){
                 
+                    
                     std::set<int64_t> seed, groups;
                     subcmesh->ComputeNodElCon();
-                  
                     
-#ifdef LOG4CXX
-                    if(logger->isDebugEnabled())
-                    {
-                        std::stringstream sout;
-                        subcmesh->Print(sout);
-                        LOGPZ_DEBUG(logger, sout.str())
-                    }
-#endif
+                
                     
                     TPZReservoirTools::TakeSeedElements(subcmesh, seed);
                     TPZReservoirTools::GroupNeighbourElements(subcmesh,seed,groups );
                     subcmesh->ComputeNodElCon();
                     std::set<int> volmatId;
-                    
+//                    std::ofstream subcm("PrintSubm.txt");
+//                    subcmesh->Print(subcm);
                     int nel = subcmesh->NElements();
                     TPZReservoirTools::CondenseElements(subcmesh, pressuremortar, false,volmatId);
                     std::set<int64_t> groups2;
@@ -1436,37 +1424,20 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
                     TPZReservoirTools::GroupNeighbourElements(subcmesh, groups, groups2);
                     subcmesh->ComputeNodElCon();
                     // this shouldn't affect the fracture elements as they won't have condensable connects
-//                    int nel = subcmesh->NElements();
-                    for (int64_t el=0; el<nel; el++) {
-                        TPZCompEl *cel = subcmesh->Element(el);
-                        if (!cel) {
-                            continue;
-                        }
-                        int nconnects = cel->NConnects();
-                        for (int icon=0; icon<nconnects; icon++) {
-                            TPZConnect &connect = cel->Connect(icon);
-                            
-                            int lagrangemult = connect.LagrangeMultiplier();
-                            //Increment the number of connected elements for the avg pressure in order to not condense them
-                            if (lagrangemult==6) {
-                                connect.IncrementElConnected();
-                            }
-                        }
-                    }
                     TPZReservoirTools::CondenseElements(subcmesh, fluxmortar, false);
                     subcmesh->ComputeNodElCon();
-                    int numThreads =0;
-                    int preconditioned =0;
+//                    int numThreads =0;
+//                    int preconditioned =0;
+//                    TPZAutoPointer<TPZGuiInterface> guiInterface;
+//                    subcmesh->SetAnalysisSkyline(numThreads, preconditioned, guiInterface);
                     TPZAutoPointer<TPZGuiInterface> guiInterface;
-                    subcmesh->SetAnalysisSkyline(numThreads, preconditioned, guiInterface);
-                    TPZStepSolver<STATE> step;
-                    step.SetDirect(ELDLt);
-                    subcmesh->Analysis()->SetSolver(step);
-                    
+                    subcmesh->SetAnalysisSkyline(0, 0, guiInterface);
+//                    std::ofstream subcm2("PrintSubm2.txt");
+//                    subcmesh->Print(subcm2);
                     
                 }
             }
-            mMixedOperator->ComputeNodElCon();
+            mMixedOperator->ExpandSolution();
             std::cout<<"Num Eq Mixed MHM: "<<mMixedOperator->NEquations()<<std::endl;
 
         }
@@ -1485,7 +1456,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             }
             // this will only group volumetric elements
             TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, seed, groups);
-//            mMixedOperator->ComputeNodElCon();
+            mMixedOperator->ComputeNodElCon();
             
             std::set<int> volmatId;
             volmatId.insert(10);
@@ -1496,7 +1467,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             
             // this will act only on volumetric elements
             TPZCompMeshTools::GroupNeighbourElements(mMixedOperator, groups, groups2);
-//            mMixedOperator->ComputeNodElCon();
+            mMixedOperator->ComputeNodElCon();
             // this shouldn't affect the fracture elements as they won't have condensable connects
             TPZReservoirTools::CondenseElements(mMixedOperator, fluxmortar, false);
             mMixedOperator->ComputeNodElCon();
@@ -1545,7 +1516,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         std::stringstream file_name;
         file_name  << "mixed_cmesh_four_space_mortar_two_condense" << ".txt";
         std::ofstream sout(file_name.str().c_str());
-        mMixedOperator->Print(sout);
+//        mMixedOperator->Print(sout);
     }
 #endif
     
@@ -1730,8 +1701,12 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
         cond2 =subDomainIndexNeig!=-1 && (subDomainIndexNeig > subDomainIndex);
     }
     
-    if(cond1 || cond2)
+    if(cond1 )
     {
+        first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
+        second_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
+    }
+    if(cond2){
         first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
         second_lagrange = mSimData.mTGeometry.m_posLagrangeMatId;
     }
@@ -1784,7 +1759,6 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
 int TMRSApproxSpaceGenerator::FindNeighSubDomain(TPZGeoElSide &gelside){
     TPZGeoEl *gel = gelside.Element();
     int indexGel = gel->Index();
-    int indexSubDomain = mSubdomainIndexGel[indexGel];
     int subdomainIndex =-1;
     TPZGeoElSide neigh = gelside.Neighbour();
     while(neigh!= gelside){
@@ -2359,8 +2333,8 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
         
     }
     //crear controle no simdata
-    TPZBndCond * face3 = volume->CreateBC(volume,-11,1,val1,val2);
-    mTransportOperator->InsertMaterialObject(face3);
+//    TPZBndCond * face3 = volume->CreateBC(volume,-11,1,val1,val2);
+//    mTransportOperator->InsertMaterialObject(face3);
     
     int fracvol1ID = mSimData.mTGeometry.mInterface_material_idFracInf;
     int fracvol2ID = mSimData.mTGeometry.mInterface_material_idFracSup;
@@ -3229,6 +3203,8 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
             if(nneih==0){
                 std::set<int> FracBoundary;
                 FracBoundary.insert(-11);
+                FracBoundary.insert(-12);
+                FracBoundary.insert(-13);
                 std::vector<TPZGeoElSide > boundaries;
                 findNeighElementbyMatId(gelside,boundaries,FracBoundary);
                 int nneihbound=boundaries.size();
@@ -3279,7 +3255,7 @@ void TMRSApproxSpaceGenerator::CreateTransportElement(int p_order, TPZCompMesh *
     gel->ResetReference();
 }
 void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
-    int KeepOneLagrangian = 3;
+    int KeepOneLagrangian = 6;
 //    if (fHybridize) {
 //        KeepOneLagrangian = false;
 //    }
@@ -3350,7 +3326,7 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
             }
         }
     }
-//    cmesh->ComputeNodElCon();
+    cmesh->ComputeNodElCon();
     cmesh->CleanUpUnconnectedNodes();
     
 //    GroupandCondenseElements();

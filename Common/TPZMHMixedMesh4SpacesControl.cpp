@@ -557,8 +557,7 @@ void TPZMHMixedMesh4SpacesControl::GroupandCondenseElementsEigen()
 //        TPZCompMeshTools::CreatedCondensedElements(subcmesh, false);
         subcmesh->CleanUpUnconnectedNodes();
       
-        int numthreads = 0;
-        int preconditioned = 0;
+       
 #ifdef LOG4CXX2
         if(logger->isDebugEnabled())
         {

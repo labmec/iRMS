@@ -208,7 +208,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
 
     //Linear problem Benchmark
    
-    if(Norm(Rhs()) < 1.0e-9){
+    if(Norm(Rhs()) < 1.0e-4){
         std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
         std::cout << "Number of iterations = " << 1 << std::endl;
         std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
@@ -424,7 +424,7 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
     TPZFMatrix<STATE> &sol = Solution();
 #ifdef USING_TBB
     tbb::parallel_for(size_t(0), size_t(ds.rows()), size_t(1),
-        [this,&ds] (size_t & i){
+                      [&ds, &sol] (size_t & i){
         sol(i,0) = ds(i,0);
         }
     );
@@ -546,17 +546,13 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     //
     std::set<int> mat_id_2D;
     
-    
-   
-//    mat_id_2D.insert(10);
-//    std::string file_frac("fracture_s.vtk");
-//    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
-//    PostProcess(div,2);
-    //
+//  mat_id_2D.insert(10);
+//  std::string file_frac("fracture_s.vtk");
+//  DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
+//  PostProcess(div,2);
+//
     DefineGraphMesh(dim,scalnames,vecnames,file);
     PostProcess(div,dim);
-    
-  
 }
 
 void TMRSTransportAnalysis::UpdateInitialSolutionFromCellsData(){

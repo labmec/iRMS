@@ -222,7 +222,7 @@ void TPZSYsmpMatrixEigen<TVar>::AutoFill(int64_t nrow, int64_t ncol, int symmetr
             }
         }
     }
-    int64_t pos=0;
+   
     for (int64_t row=0; row< nrow; row++) {
         for (std::set<int64_t>::iterator col = eqs[row].begin(); col != eqs[row].end(); col++) {
             if(*col >= row)

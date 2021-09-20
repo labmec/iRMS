@@ -57,9 +57,7 @@ void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport
     InitializeTransportDataStructure(transport);
     InitializeVectorPointersMixedToTransport(transport);
     InitializeVectorPointersTranportToMixed(transport);
-
     CheckDataTransferTransportToMixed();
-    
 }
 
 // Identify the geometric elements corresponding to interface elements. Order them as
@@ -70,7 +68,6 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     // order them as a function of the number of corner nodes
     TPZGeoMesh *gmesh =  fTransportMesh->Reference();
     std::pair<int, int64_t> defpair(100,-1);
-    int nel_gmesh= gmesh->NElements();
     
     int64_t neltr = fTransportMesh->NElements();
     TPZVec<std::pair<int,int64_t>> interfaces(neltr,defpair);
@@ -189,13 +186,14 @@ int SideLowerIndexCollapsed(TPZGeoEl *gel, int side, int interfaceMatID)
     if (side>ncor-1 && side <nsides-1) {
         return side-ncor;
     }
+//@TODO: "Seleccionar los matids directamente del simdata"
+    
     if (side==(nsides-1) && interfaceMatID==101) {
         return ncor;
     }
     if (side==(nsides-1) && interfaceMatID==102) {
         return ncor+1;
     }
-
     return -1;
 }
 
@@ -227,8 +225,6 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
     
     for(auto it = fInterfaceGelIndexes.begin(); it != fInterfaceGelIndexes.end(); it++)
     {
-        int matid =it->first;
-      
         TPZVec<TInterfaceWithVolume> &facevec = it->second;
         int64_t nfaces = facevec.size();
         for(int64_t iface = 0; iface<nfaces; iface++)
@@ -236,58 +232,16 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             int64_t celindex = facevec[iface].fInterface_celindex;
             TPZCompEl *cel = fTransportMesh->Element(celindex);
             TPZMultiphysicsInterfaceElement *intface = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
-            TPZCompElSide leftside = intface->Left();
-            TPZCompEl *left = leftside.Element();
-            if(left->NConnects() > 1) DebugStop();
-            TPZGeoEl *leftgel = left->Reference();
-         
-            
-            
-            //TestCorrectNormalOrientation
-            //FindMortar
-            //
-            
-            int SideL =leftside.Side();
-            int nsidesmL = leftgel->NSides();
-            int leftorient = 0;
-            if(SideL < nsidesmL-1){
-                leftorient = leftgel->NormalOrientation(leftside.Side());
-            }
-            
-            
-            TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(left);
-            TPZCompEl *hdivBound = celmult->Element(0);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBound);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundT = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBound);
-            
-            bool is_collapsed = false;
-            if (hdivbound  ) {
-                is_collapsed=true;
-                if(matid!=103){
-                    leftorient = hdivbound->GetSideOrient(8);
-                }
-                
-                
-            }
-            if(hdivboundT ){
-                is_collapsed=true;
-                if(matid!=103){
-                     leftorient = hdivboundT->GetSideOrient(6);
-                }
-            }
-          
-            TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
-            int lowerindex = -1;
-            if (is_collapsed) {
-                lowerindex = SideLowerIndexCollapsed(leftgel,leftside.Side(), it->first);
-            }
-            else{
-                lowerindex = SideLowerIndex(leftgel,leftside.Side());
-            }
-            
-            if(fInterfaceByGeom(leftgel->Index(),lowerindex)!=-1){
+            if(!intface){
                 DebugStop();
             }
+            TPZCompElSide leftside = intface->Left();
+            TPZCompEl *left = leftside.Element();
+            TPZGeoEl *leftgel = left->Reference();
+            int leftorient = 0;
+            int lowerindex=-1;
+            TakeOrientationAndLowerIndex(leftside,  leftorient,  lowerindex, it->first);
+            TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
             fInterfaceByGeom(leftgel->Index(),lowerindex) = iface;
             int64_t leftindex = left->Index();
             if(VolumeElementIndex[leftindex] == -1 && (left->NConnects() == 1 ))
@@ -299,55 +253,11 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TPZCompEl *right = rightside.Element();
             if(right->NConnects() > 1) DebugStop();
             TPZGeoEl *rightgel = right->Reference();
-            int matIDR = rightgel->MaterialId();
-            
-            //
-            TPZMultiphysicsElement *celmultR =dynamic_cast<TPZMultiphysicsElement *>(right);
-            TPZCompEl *hdivBoundR = celmultR->Element(0);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivboundR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBoundR);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundTR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBoundR);
-            
-            bool is_collapsedR = false;
-            
-            int SideR =rightside.Side();
-            int nsidesmR = rightgel->NSides();
-            
-            int right_orient = 0;
-            if(SideR < nsidesmR-1){
-                right_orient = rightgel->NormalOrientation(rightside.Side());
-            }
-            
-            
-            
-            if (hdivboundR  ) {
-                is_collapsedR=true;
-                if(matIDR!=103){
-                    right_orient = hdivboundR->GetSideOrient(8);
-                }
-            }
-           
-            if(hdivboundTR ){
-                is_collapsedR=true;
-                if(matIDR!=103){
-                right_orient = hdivboundTR->GetSideOrient(6);
-                }
-                
-            }
-//            else
-//            {
-//                right_orient = rightgel->NormalOrientation(rightside.Side());
-//            }
-//            
-            
-        
-            
-        
             TPZGeoElSideIndex rightgelside(rightgel->Index(),rightside.Side());
             int64_t rightindex = right->Index();
-            lowerindex = SideLowerIndex(rightgel,rightside.Side());
-            if(fInterfaceByGeom(rightgel->Index(),lowerindex)!=-1){
-                DebugStop();
-            }
+            int right_orient = -1;
+            lowerindex=-1;
+            TakeOrientationAndLowerIndex(rightside,  right_orient,  lowerindex, it->first);
             fInterfaceByGeom(rightgel->Index(),lowerindex) = iface;
             if(VolumeElementIndex[rightindex] == -1 && right->NConnects() == 1)
             {
@@ -363,16 +273,10 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                     facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
                
                 }
-                if(right_orient == -1){
-                    facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
-                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
-                    
-                }
-                if(right_orient == 0){
+                if(right_orient !=1){
                     facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
                     facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
                 }
-                
             }
             else
             {
@@ -394,7 +298,49 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
         fVolumeElements[cellindex] = el;
     }
 }
-
+void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndex(TPZCompElSide &celSide, int &orientation, int &lowerIndex, int matId){
+    TPZCompEl *cel = celSide.Element();
+    if(cel->NConnects() > 1) DebugStop();
+    TPZGeoEl *gel = cel->Reference();
+    int Side =celSide.Side();
+    int nsidesm = gel->NSides();
+    orientation = 0;
+    if(Side < nsidesm-1){
+        orientation = gel->NormalOrientation(celSide.Side());
+    }
+    TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(cel);
+    TPZCompEl *hdivBound = celmult->Element(0);
+    TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBound);
+    TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundT = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBound);
+    //
+    int matid=gel->MaterialId();
+    bool is_collapsed = false;
+    if (hdivbound) {
+        is_collapsed=true;
+        if(matid!=103){
+            orientation = hdivbound->GetSideOrient(8);
+        }
+    }
+    if(hdivboundT){
+        is_collapsed=true;
+        if(matid!=103){
+            orientation = hdivboundT->GetSideOrient(6);
+        }
+    }
+    
+    TPZGeoElSideIndex leftgelside(gel->Index(),celSide.Side());
+    lowerIndex = -1;
+    if (is_collapsed) {
+        lowerIndex = SideLowerIndexCollapsed(gel,celSide.Side(), matId);
+    }
+    else{
+        lowerIndex = SideLowerIndex(gel,celSide.Side());
+    }
+    
+    if(fInterfaceByGeom(gel->Index(),lowerIndex)!=-1){
+        DebugStop();
+    }
+}
 // identify material of a face which is connected to a given geometric element
 std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex gelindex, int64_t faceindex)
 {
@@ -418,18 +364,16 @@ std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex ge
     std::cout << __PRETTY_FUNCTION__ << "couldnt find a material corresponding to gelindex " << gelindex <<
     " and faceindex " << faceindex << std::endl;
     DebugStop();
-//    return -10000;
+    return vector;
 }
 
 // identify material of a face which is connected to a given geometric element
 std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &gelside, int delta)
 {
-    TPZGeoMesh *gmesh = fTransportMesh->Reference();
     int64_t el = gelside.Element()->Index();
     int i = SideLowerIndex(gelside.Element(), gelside.Side());
     int64_t interface = fInterfaceByGeom(el,i);
     int nsides = gelside.Element()->NSides();
-    int ncord = gelside.Element()->NCornerNodes();
     TPZGeoElSide refside;
     if (gelside.Side() >= nsides-1) {
         TPZGeoElSide gelsideaux(gelside.Element(), nsides-1);
@@ -464,7 +408,7 @@ std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(const TPZGeoElSide &
 // find the neighbouring interface element
 TPZGeoElSide TPZAlgebraicDataTransfer::IdentifyInterfaceElement(const TPZGeoElSide &gelside)
 {
-    TPZGeoMesh *gmesh = fTransportMesh->Reference();
+    
     int64_t el = gelside.Element()->Index();
     int i = SideLowerIndex(gelside.Element(), gelside.Side());
     int64_t interface = fInterfaceByGeom(el,i);
@@ -492,15 +436,15 @@ TPZGeoElSide TPZAlgebraicDataTransfer::IdentifyInterfaceElement(const TPZGeoElSi
 
 static void ExtractElement(TPZCompEl *cel, std::list<TPZCompEl *> &ellist)
 {
-    TPZFastCondensedElement *cond = dynamic_cast<TPZFastCondensedElement *>(cel);
-    TPZGeoEl *gel = cel->Reference();
-
+    TPZFastCondensedElement *condF = dynamic_cast<TPZFastCondensedElement *>(cel);
+    TPZCondensedCompEl *cond = dynamic_cast<TPZCondensedCompEl *>(cel);
     TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *> (cel);
-    if(cond)
+    if(cond || condF)
     {
-//        TPZCompEl *celref = cond->ReferenceCompEl();
-//       ExtractElement(celref,ellist);
          ellist.push_back(cel);
+    }
+    if(elgr){
+        std::cout<<"Error"<<std::endl;
     }
 //    else if(gel)
 //    {
@@ -554,11 +498,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
     std::list<TPZCompEl *> cellist;
     std::list<TPZSubCompMesh *> submeshes;
     GetElementAndSubmeshPointers(*fluxmesh,cellist,submeshes);
-    //
-//    TestSideOrient(fluxmesh);
-    //
-    
-    
     TPZVec<int64_t> shouldtransfer(fluxmesh->NConnects(),0);
     TPZVec<int64_t> targetindex(fluxmesh->NConnects(),0);
     fluxmesh->LoadReferences();     
@@ -572,28 +511,38 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
         for(auto it = cellist.begin(); it != cellist.end(); it++)
         {
             TPZCompEl *cel = *it;
-           
             TPZFastCondensedElement *condensed = dynamic_cast<TPZFastCondensedElement*>(cel);
-            TPZCompEl *candidate = condensed->ReferenceCompEl();
-            TPZElementGroup *group = dynamic_cast<TPZElementGroup *>(candidate);
-            TPZMultiphysicsElement *mphys;
+            TPZCondensedCompEl *cnd = dynamic_cast<TPZCondensedCompEl *>(cel);
+            TPZCompEl *candidate=NULL;
+            TPZElementGroup *group=NULL;
+            TPZMultiphysicsElement *mphys=NULL;
+            if (condensed) {
+                candidate = condensed->ReferenceCompEl();
+                group = dynamic_cast<TPZElementGroup *>(candidate);
+            }
+            if(cnd)
+            {
+                mphys = dynamic_cast<TPZMultiphysicsElement *>(cnd->ReferenceCompEl());
+                cel=mphys;
+            }
+            
+            
             if(group){
                 mphys = findMultiphysics(group);
                 condensed->SetIsGroup(true);
                 condensed->SetMultiphysics(mphys);
+                cel =mphys;
             }
             if(condensed && !group){
                 mphys = dynamic_cast<TPZMultiphysicsElement *>(candidate);
                 condensed->SetMultiphysics(mphys);
+                cel=mphys;
             }
-            cel=condensed->GetMultiphysics();
             TPZGeoEl *gel = cel->Reference();
             TPZCompEl *hdiv = mphys->ReferredElement(0);
             if(!hdiv){
                 DebugStop();
             }
-            
-            
             TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *collapsedQuad = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>* >(hdiv);
             
              TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *collapsedTriangle = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>* >(hdiv);
@@ -603,27 +552,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                 // a boundary condition element
                 // boundary elements are not considered
                 continue;
-//                int64_t cindex = cel->ConnectIndex(0);
-//                if(shouldtransfer[cindex] != 0) continue;
-//                TPZGeoElSide gelside(gel,gel->NSides()-1);
-////                int matid = IdentifyMaterial(gelside);
-//                connectindexes[matid].Push(cindex);
-//                if(ncontransfer.find(matid) == ncontransfer.end())
-//                {
-//                    ncontransfer[matid].Resize(4, 0);
-//                }
-//                int nshape = cel->Connect(0).NShape();
-//                if(nshape > 4) DebugStop();
-//                for(int is = 0; is<nshape; is++)
-//                {
-//                    ncontransfer[matid][is]++;
-//                }
-//                shouldtransfer[cindex] = 1;
-//                TPZGeoElSide refside = IdentifyInterfaceElement(gelside);
-//                int side = refside.Side();
-//                int sidelower = SideLowerIndex(refside.Element(),side);
-//                targetindex[cindex] = fInterfaceByGeom(refside.Element()->Index(),sidelower);
-//                if(targetindex[cindex] < 0) DebugStop();
             }
             else
             {
@@ -658,8 +586,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     if (warning) {
                         side = side-1;
                     }
-                    
-                    
                     TPZGeoElSide gelside(gel,side);
                     std::vector<int> matidvec = IdentifyMaterial(gelside);
                     
@@ -674,7 +600,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     if (warning && collapsedQuad && side == 9) {
                         matid = matidvec[1];
                     }
-//                    std::cout<<"MatId: "<<matid<<std::endl;
                     if(ncontransfer.find(matid) == ncontransfer.end())
                     {
                         ncontransfer[matid].Resize(4, 0);
@@ -692,8 +617,6 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     int sidelower = SideLowerIndex(refside.Element(),refside.Side());
                     int targetind = fInterfaceByGeom(elindex,sidelower);
                     targetindex[cindex] = targetind;
-//                    std::cout<<"MatId: "<<matid<<std::endl;
-//                    std::cout<<"cindex: "<< cindex <<"Target Index(cindex): "<<targetindex[cindex]<<std::endl;
                     if(targetindex[cindex] < 0) DebugStop();
                 }
             }
@@ -850,7 +773,6 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
             for(auto itlist : list)
             {
                 TFromMixedToTransport &transport = itlist;
-//                transport.Print(out);
             }
         }
     }
@@ -858,8 +780,7 @@ void TPZAlgebraicDataTransfer::Print(std::ostream &out)
 
 // Build the data structure which defines the correspondence between
 // algebraic transport cells and indexes of mixed fast condensed elements
-void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(TPZCompMesh *fluxmesh,
-                                                                                TPZVec<int64_t> &Alg_Cell_Index)
+void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(TPZCompMesh *fluxmesh, TPZVec<int64_t> &Alg_Cell_Index)
 {
     // build a vector of the size of the geometric elements
     // where applicable the value of the vector is the index of the
@@ -896,14 +817,24 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
             // skip boundary elements
             if(cel->NConnects() == 1) continue;
             TPZFastCondensedElement *fastel = dynamic_cast<TPZFastCondensedElement *>(cel);
-            if(!fastel) DebugStop();
-            TPZCompEl *celaux= fastel->GetMultiphysics();
+            TPZCondensedCompEl *cond = dynamic_cast<TPZCondensedCompEl *>(cel);
+            if(!fastel && !cond) DebugStop();
+            
+            TPZCompEl *celaux=NULL;
+            if (fastel) {
+                celaux=fastel->GetMultiphysics();
+            }
+            else{
+                celaux=dynamic_cast<TPZMultiphysicsElement *>(cond->ReferenceCompEl());
+            }
+            
             int64_t celindex2 = cel->Index();
             int64_t gelindex = celaux->Reference()->Index();
             if(Alg_Cell_Index[gelindex] < 0) continue;
             TPZCompEl *celcondensed = fluxmesh->Element(celindex2);
             TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(celcondensed);
-            if(!fast) DebugStop();
+            TPZCondensedCompEl *cnd = dynamic_cast<TPZCondensedCompEl *>(celcondensed);
+            if(!fast && !cnd) DebugStop();
             num_elements++;
         }
         if (num_elements > 0) {
@@ -919,17 +850,31 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
             {
                 // skip boundary elements
                 if(cel->NConnects() == 1) continue;
-                
                 TPZFastCondensedElement *fastel = dynamic_cast<TPZFastCondensedElement *>(cel);
-                if(!fastel) DebugStop();
-                TPZCompEl *celaux=fastel->GetMultiphysics();
+                TPZCondensedCompEl *cond = dynamic_cast<TPZCondensedCompEl *>(cel);
+                if(!fastel && !cond) DebugStop();
+                TPZCompEl *celaux=NULL;
+                if (fastel) {
+                    celaux=fastel->GetMultiphysics();
+                }
+                else{
+                    celaux = dynamic_cast<TPZMultiphysicsElement *>(cond->ReferenceCompEl());
+                }
+                
                 int64_t celindex = cel->Index();
                 int64_t gelindex = celaux->Reference()->Index();
                 if(Alg_Cell_Index[gelindex] < 0) continue;
                 TPZCompEl *celcondensed = fluxmesh->Element(celindex);
                 TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(celcondensed);
-                if(!fast) continue;
-                transport.fMixedCell[count] = fast;
+                 TPZCondensedCompEl *condensed = dynamic_cast<TPZCondensedCompEl * >(celcondensed);
+                if(!fast && !condensed) continue;
+                if (fast) {
+                    transport.fMixedCell[count] = fast;
+                }
+                else{
+                     transport.fMixedCell[count] = condensed;
+                }
+                
                 int64_t AlgCelIndex = Alg_Cell_Index[gelindex];
                 int64_t TransportCelIndex = fVolumeElements[AlgCelIndex];
                 TPZGeoEl *fastgel = celaux->Reference();
@@ -1032,6 +977,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         TPZGeoEl *gel = cel->Reference();
         int geldim = gel->Dimension();
         int matId = gel->MaterialId();
+        //SetarCorretamente
         if(matId==2){
             transport.fCellsData.fporosity[i]=0.25;
         }
@@ -1161,22 +1107,23 @@ void TPZAlgebraicDataTransfer::TransferPressures(){
             DebugStop();
         }
 #endif
-        for (int icell = 0; icell < ncells; icell++)
-        {
-            int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
-            TPZFastCondensedElement *fastcompel =meshit.fMixedCell[icell];
-            if (!fastcompel) {
-                DebugStop();
-            }
-            TPZCompEl *compel = fastcompel->ReferenceCompEl();
-            int dim = compel->Dimension();
-            TPZVec<REAL> qsi(dim,0.0);
-            TPZVec<STATE> sol(dim,0.0);
-            int presureindex= 2;
-            compel->Solution(qsi, presureindex, sol);
-            meshit.fTransport->fCellsData.fPressure[cellindex] =sol[0];
-            
-        }
+//        for (int icell = 0; icell < ncells; icell++)
+//        {
+//            int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
+//
+//            TPZFastCondensedElement *fastcompel =meshit.fMixedCell[icell];
+//            if (!fastcompel) {
+//                DebugStop();
+//            }
+//            TPZCompEl *compel = fastcompel->ReferenceCompEl();
+//            int dim = compel->Dimension();
+//            TPZVec<REAL> qsi(dim,0.0);
+//            TPZVec<STATE> sol(dim,0.0);
+//            int presureindex= 2;
+//            compel->Solution(qsi, presureindex, sol);
+//            meshit.fTransport->fCellsData.fPressure[cellindex] =sol[0];
+//
+//        }
     }
     
 }
@@ -1193,37 +1140,37 @@ void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
             DebugStop();
         }
 #endif
-        for (int icell = 0; icell < ncells; icell++)
-        {
-            int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
-            REAL lambda = meshit.fTransport->fCellsData.flambda[cellindex];
-            meshit.fMixedCell[icell]->SetLambda(lambda);
-            
-            REAL mixedDensity =meshit.fTransport->fCellsData.fMixedDensity[cellindex];
-            meshit.fMixedCell[icell]->SetMixedDensity(mixedDensity);
-            
-            REAL porosity = meshit.fTransport->fCellsData.fporosity[cellindex];
-            REAL dt = meshit.fTransport->fdt;
-            REAL sw = meshit.fTransport->fCellsData.fSaturation[cellindex];
-            REAL so = 1-sw;
-            REAL drhoWdp = meshit.fTransport->fCellsData.fdDensityWaterdp[cellindex];
-            REAL drhoOdp = meshit.fTransport->fCellsData.fdDensityOildp[cellindex];
-            REAL compterm = (porosity/dt)*((sw*drhoWdp)+(so*drhoOdp));
-            
-            REAL swlast =meshit.fTransport->fCellsData.fSaturationLastState[cellindex];
-            REAL solast = 1.0 - swlast;
-            REAL rhoWlast =meshit.fTransport->fCellsData.fDensityWaterLastState[cellindex];
-            REAL rhoOlast =meshit.fTransport->fCellsData.fDensityOilLastState[cellindex];
-            REAL comptermrhs = (porosity/dt)*((swlast*rhoWlast)+(solast*rhoOlast));
-            
-            meshit.fMixedCell[icell]->SetCompressibiilityTerm(compterm, comptermrhs);
-            
-            
-        }
+//        for (int icell = 0; icell < ncells; icell++)
+//        {
+//            int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
+//            REAL lambda = meshit.fTransport->fCellsData.flambda[cellindex];
+//            meshit.fMixedCell[icell]->SetLambda(lambda);
+//
+//            REAL mixedDensity =meshit.fTransport->fCellsData.fMixedDensity[cellindex];
+//            meshit.fMixedCell[icell]->SetMixedDensity(mixedDensity);
+//
+//            REAL porosity = meshit.fTransport->fCellsData.fporosity[cellindex];
+//            REAL dt = meshit.fTransport->fdt;
+//            REAL sw = meshit.fTransport->fCellsData.fSaturation[cellindex];
+//            REAL so = 1-sw;
+//            REAL drhoWdp = meshit.fTransport->fCellsData.fdDensityWaterdp[cellindex];
+//            REAL drhoOdp = meshit.fTransport->fCellsData.fdDensityOildp[cellindex];
+//            REAL compterm = (porosity/dt)*((sw*drhoWdp)+(so*drhoOdp));
+//
+//            REAL swlast =meshit.fTransport->fCellsData.fSaturationLastState[cellindex];
+//            REAL solast = 1.0 - swlast;
+//            REAL rhoWlast =meshit.fTransport->fCellsData.fDensityWaterLastState[cellindex];
+//            REAL rhoOlast =meshit.fTransport->fCellsData.fDensityOilLastState[cellindex];
+//            REAL comptermrhs = (porosity/dt)*((swlast*rhoWlast)+(solast*rhoOlast));
+//
+//            meshit.fMixedCell[icell]->SetCompressibiilityTerm(compterm, comptermrhs);
+//
+//
+//        }
     }
 }
 void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
-    
+    CheckDataTransferTransportToMixed();
     for(auto &meshit : fTransportMixedCorrespondence)
     {
         TPZAlgebraicTransport::TCellData &celldata = meshit.fTransport->fCellsData;
@@ -1235,6 +1182,19 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
                 DebugStop();
             }
 #endif
+            TPZCompEl *cel=meshit.fMixedCell[icell];
+            TPZFastCondensedElement *condensed = dynamic_cast<TPZFastCondensedElement*>(cel);
+            if(!condensed){
+                TPZCondensedCompEl *condcompel = dynamic_cast<TPZCondensedCompEl *>(cel);
+                if(condcompel){
+                    std::cout<<"Element "<<cel->Index()<<" is not FastCondensed"<<std::endl;
+                    continue;
+                }
+                else{
+                    DebugStop();
+                }
+            }
+            
             TPZFNMatrix<9, REAL> PermeabilityT, InvPerm;
             PermeabilityT.Redim(3, 3);
             InvPerm.Redim(3, 3);
@@ -1245,25 +1205,10 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
             InvPerm(0,0) = 1.0/(PermeabilityT(0,0));
             InvPerm(1,1) = 1.0/(PermeabilityT(1,1));
             InvPerm(2,2) = 1.0/(PermeabilityT(2,2));
-            TPZCompEl *cel = meshit.fMixedCell[icell];
             TPZGeoEl *gel = cel->Reference();
-            if(!gel) DebugStop();
-            TPZManVector<REAL,3> xcenter(3,0.), xi(gel->Dimension(),0.);
-            gel->CenterPoint(gel->NSides()-1, xi);
-            gel->X(xi, xcenter);
-            std::vector<REAL> cellcenter = celldata.fCenterCoordinate[transportcell];
-            REAL diff = 0;
-            for(int i=0; i<3; i++)
-            {
-                diff += fabs(xcenter[i]-cellcenter.at(i));
-            }
-            if(diff > 1.e-16)
-            {
-                DebugStop();
-            }
-            //            meshit.fMixedCell[icell]->SetLambda((*meshit.fPermData)[meshit.fTransportCell[icell]]);
-            meshit.fMixedCell[icell]->SetPermTensorAndInv(PermeabilityT,InvPerm) ;
-            meshit.fMixedCell[icell]->SetMixedDensity((celldata.fMixedDensity)[transportcell]);
+     //       meshit.fMixedCell[icell]->SetPermTensorAndInv(PermeabilityT,InvPerm) ;
+            condensed->SetPermTensorAndInv(PermeabilityT,InvPerm);
+            condensed->SetMixedDensity((celldata.fMixedDensity)[transportcell]);
             
         }
     }
@@ -1289,6 +1234,17 @@ void TPZAlgebraicDataTransfer::CheckDataTransferTransportToMixed()
             
 #ifdef PZDEBUG
             TPZFastCondensedElement *condensed = dynamic_cast<TPZFastCondensedElement*>(cel);
+            if(!condensed){
+                TPZCondensedCompEl *condcompel = dynamic_cast<TPZCondensedCompEl *>(cel);
+                if(condcompel){
+                    std::cout<<"Element "<<cel->Index()<<" is not FastCondensed"<<std::endl;
+                    continue;
+                }
+                else{
+                    DebugStop();
+                }
+            }
+            
             TPZCompEl *celaux = condensed->GetMultiphysics();
             TPZGeoEl *gel = celaux->Reference();
             if(!gel) DebugStop();

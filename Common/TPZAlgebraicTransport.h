@@ -229,6 +229,7 @@ public:
     
     
     REAL fdt =0.1;
+    std::map<int, std::pair<int ,REAL>> fboundaryCMatVal;
     std::vector<REAL> fgravity;
     int fNFluxCoefficients;
     int inletmatid;
@@ -289,6 +290,7 @@ public:
     
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
     void VerifyElementFLuxes();
+    void PrintFluxes();
 };
 
 #endif /* AlgebraicTransport_h */

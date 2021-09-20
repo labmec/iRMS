@@ -15,6 +15,7 @@
 #include "TPZMultiphysicsCompMesh.h"
 #include "TPZAlgebraicTransport.h"
 #include "pzelementgroup.h"
+#include "pzcondensedcompel.h"
 class TPZSubCompMesh;
 class TPZFastCondensedElement;
 class TPZAlgebraicTransport;
@@ -98,7 +99,7 @@ public:
         std::vector<int64_t> fEqNum;
         
         TPZAlgebraicTransport *fTransport;
-        std::vector<TPZFastCondensedElement *> fMixedCell;
+        std::vector<TPZCondensedCompEl *> fMixedCell;
 
         TransportToMixedCorrespondence() : fMixedMesh(0), fAlgebraicTransportCellIndex(0), fEqNum(0),fTransport(0) {}
 
@@ -225,7 +226,7 @@ public:
     
     // verify the correspondence of the mixed elements and the algebraic cells
     void CheckDataTransferTransportToMixed();
-    
+    void TakeOrientationAndLowerIndex(TPZCompElSide &celSide, int &orientation, int &lowerIndex, int matId);
     TPZMultiphysicsElement* findMultiphysics(TPZElementGroup *group);
     
     std::pair<int, int> FindMortar(TPZGeoElSide &gelside);
