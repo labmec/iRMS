@@ -49,6 +49,7 @@ TPZGeoMesh *ReadFractureMeshCase4(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase5(std::string &filename);
 
 enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd, EVolume, EFaceBCPressure};
+int globFracID = 10;
 // ----- End of Functions -----
 
 // ----- Namespaces -----
@@ -121,8 +122,6 @@ void CaseOnlyFractures(const int caseToSim)
     
     // Setting gmesh
     aspace.SetGeometry(gmesh);
-    TPZVec<int64_t> subdomain;
-    aspace.SetSubdomainIndexes(subdomain);
     
     // Setting the global data transfer
     aspace.SetDataTransfer(sim_data);
@@ -240,7 +239,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     
     
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = EDomain;
+    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = globFracID;
 
     // NS: What are these?
     sim_data.mTGeometry.mInterface_material_id = 100;
@@ -356,7 +355,7 @@ TPZGeoMesh *ReadFractureMeshCase0(std::string &filename){
     dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
     
     // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture12"] = EDomain;
+    dim_name_and_physical_tagFine[2]["Fracture12"] = globFracID;
 
     // Fractures BCs
     dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
