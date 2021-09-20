@@ -48,7 +48,7 @@ TPZGeoMesh *ReadFractureMeshCase3(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase4(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase5(std::string &filename);
 
-enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd};
+enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd, EVolume, EFaceBCPressure};
 // ----- End of Functions -----
 
 // ----- Namespaces -----
@@ -98,7 +98,7 @@ void CaseOnlyFractures(const int caseToSim)
     
     CreateGMeshAndDataTransfer(gmesh,sim_data,caseToSim);
     
-    const bool isCtePressVariation = true;
+    const bool isCtePressVariation = false;
     
     const bool printgmesh = true;
     if (printgmesh) {
@@ -114,28 +114,31 @@ void CaseOnlyFractures(const int caseToSim)
     // Approximation space
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = false;
+    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q = false;
-    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E2Space;
+    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
+//    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E2Space;
     
     // Setting gmesh
     aspace.SetGeometry(gmesh);
+    TPZVec<int64_t> subdomain;
+    aspace.SetSubdomainIndexes(subdomain);
     
     // Setting the global data transfer
     aspace.SetDataTransfer(sim_data);
-    aspace.MatIDFracIntesect() = EIntersection;
+//    aspace.MatIDFracIntesect() = EIntersection;
     
     // Creates de multiphysics compmesh
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     
-    if (true) {
+    if (false) {
         ChangeMeshToImposePressureOnIntersection(aspace, mixed_operator);
     }
         
     // Analysis parameters
-    bool must_opt_band_width_Q = false;
+    bool must_opt_band_width_Q = true;
     int n_threads = 0;
     bool UsingPzSparse = false;
     bool UsePardiso_Q = true;
@@ -230,7 +233,14 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     
     // Fracture material
     TMRSDataTransfer sim_data;
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["Fractures"] = EDomain;
+    
+    int D_Type = 0;
+    int N_Type = 1;
+    REAL pressure_in = 1.0 ;
+    
+    
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = EDomain;
 
     // NS: What are these?
     sim_data.mTGeometry.mInterface_material_id = 100;
@@ -239,15 +249,15 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
     sim_data.mTGeometry.mIterface_material_idFracBound = 104;
     
-    int D_Type = 0;
-    int N_Type = 1;
-    REAL pressure_in = 1.0 ;
+
     
     // Boundary conditions
     if (caseToSim == 0) {
-        int bcfracid = EPressure;
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(1);
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(bcfracid,D_Type,pressure_in);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EFaceBCPressure,D_Type,pressure_in);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,D_Type,pressure_in);
+    
     }
     else if (caseToSim == 1) {
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -295,6 +305,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
     sim_data.mTNumerics.m_n_steps = 1 ;
     sim_data.mTNumerics.m_dt      = 1.0; //*day;
+    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
+    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
     grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
@@ -304,11 +316,11 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     //FracAndReservoirProperties
     sim_data.mTFracProperties.m_Permeability = 0.00001;
     REAL kappa=1.0;
-    int  id1=1;
-    int  id2=2;
-    std::vector<std::pair<int, REAL>> idPerm(2);
+    int  id1=EVolume;
+//    int  id2=2;
+    std::vector<std::pair<int, REAL>> idPerm(1);
     idPerm[0]= std::make_pair(id1,kappa);
-    idPerm[1]= std::make_pair(id2,kappa);
+//    idPerm[1]= std::make_pair(id2,kappa);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     
@@ -336,6 +348,13 @@ TPZGeoMesh *ReadFractureMeshCase0(std::string &filename){
     
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
 
+    // domain
+    dim_name_and_physical_tagFine[3]["c1"] = EVolume;
+    dim_name_and_physical_tagFine[3]["c2"] = EVolume;
+    dim_name_and_physical_tagFine[3]["c3"] = EVolume;
+    dim_name_and_physical_tagFine[3]["c4"] = EVolume;
+    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
+    
     // Fractures
     dim_name_and_physical_tagFine[2]["Fracture12"] = EDomain;
 

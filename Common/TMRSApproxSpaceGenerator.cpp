@@ -342,6 +342,21 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
         DebugStop();
     }
     
+    TMRSDarcyFractureFlowWithMem<TMRSMemory> * fracmat = nullptr;
+    for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1])
+    {
+        std::string material_name = chunk.first;
+        std::cout << "physical name = " << material_name <<
+        " material id " << chunk.second << " dimension " << dimension-1 << std::endl;
+        int materia_id = chunk.second;
+//        matsWithMem.insert(materia_id);
+        fracmat = new TMRSDarcyFractureFlowWithMem<TMRSMemory>(materia_id,dimension-1);
+        TMRSMemory defaultmem;
+        fracmat->SetDataTransfer(mSimData);
+        cmesh->InsertMaterialObject(fracmat);
+
+    }
+    
     // PHIL : as malhas atomicas nao precisam ser BndCond
     // poderiam ser null material...
     
@@ -1136,7 +1151,22 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
         }
         mMixedOperator->InsertMaterialObject(face);
     }
+
     
+    TMRSDarcyFractureFlowWithMem<TMRSMemory> * fracmat = nullptr;
+    for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1])
+    {
+        std::string material_name = chunk.first;
+        std::cout << "physical name = " << material_name <<
+        " material id " << chunk.second << " dimension " << dimension-1 << std::endl;
+        int materia_id = chunk.second;
+//        matsWithMem.insert(materia_id);
+        fracmat = new TMRSDarcyFractureFlowWithMem<TMRSMemory>(materia_id,dimension-1);
+        TMRSMemory defaultmem;
+        fracmat->SetDataTransfer(mSimData);
+        mMixedOperator->InsertMaterialObject(fracmat);
+
+    }
     
     TPZManVector<TPZCompMesh *, 3> mesh_vec(3);
     mesh_vec[0] = HdivFluxCmesh(order);
@@ -1348,7 +1378,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
     // NS to Jose: Should this method with these arguments be commited in PZ???
     //    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem,
-    DebugStop(); // look up
+//    DebugStop(); // look up
     // NS to Jose: Using this for now. Erase later
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
 
@@ -3360,7 +3390,7 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZManVector<TPZCompMesh *
         if (gelmatid != mMatIDIntersection && gelmatid != mMatIDIntersection+1) {
             continue;
         }
-        if (gel->Dimension() != dim - 1) {
+        if (gel->Dimension() != 1) {
             DebugStop();
         }
         const bool isIntersectEnd = gelmatid == mMatIDIntersection+1 ? true : false;
