@@ -26,6 +26,13 @@ check_pz_opt(PZ_USING_MKL _PZ_HAS_MKL)
 #     message(FATAL_ERROR "PZ NOT INSTALED WITH MKL. Please do so!")
 # endif()
 
+file(GLOB_RECURSE PZ_SRC
+     "../neopz/*.h"
+     "../neopz/*.cpp"
+)
+add_custom_target( GlobalFiles SOURCES ${PZ_SRC})
+
+
 # ----- Adding subdirectory of iMRS library -----
 add_subdirectory(Common)
 
