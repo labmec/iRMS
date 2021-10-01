@@ -33,6 +33,7 @@ add_subdirectory(Common)
 add_subdirectory(BenchmarkCase1)
 add_subdirectory(OnlyFractures)
 add_subdirectory(2Elements2Spaces2D)
+add_subdirectory(SimpleCaseTwoFractures)
 
 # ----- Subdirectories that need fixing to new pz (with the crazy materials) -----
 # add_subdirectory(SimpleCaseFracture)

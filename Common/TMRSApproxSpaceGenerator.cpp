@@ -1390,12 +1390,13 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     mMixedOperator->SetDimModel(3);
     gSinglePointMemory = true;
     
-    // NS to Jose: Should this method with these arguments be commited in PZ???
-    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem, matsWithOutMem);
-    //    DebugStop(); // look up
+ // NS to Jose: Should this method with these arguments be commited in PZ???
+
+//    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem, matsWithOutMem);
+//    DebugStop(); // look up
     // NS to Jose: Using this for now. Erase later
-    //    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
-    
+    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec);
+
     //Insert fractures properties
     InitializeFracProperties(mMixedOperator);
     // insert the interface elements
