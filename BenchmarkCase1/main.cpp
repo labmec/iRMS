@@ -46,7 +46,7 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
       std::string basemeshpath(FRACMESHES);
 //        std::string fileCoarse=  basemeshpath + "/flem_case1_Coarse_BC.msh";
 //        std::string fileFine=  basemeshpath + "/flem_case1_Submesh_Fractures.msh";
-    
+//
     
    
     std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine5400.msh";
@@ -58,8 +58,8 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
 //    std::string fileFine = basemeshpath + "/Case1_Cilamce/case1_fine7000.msh";
 //    std::string fileCoarse = basemeshpath + "/Case1_Cilamce/case1_coarse7000.msh";
     
-//    std::string fileCoarse("../../FracMeshes/Case1_Cilamce/case1_coarse.msh");
-//    std::string fileFine("../../FracMeshes/Case1_Cilamce/case1_fine1.msh");
+//    std::string fileCoarse = basemeshpath +"/Case1_Cilamce/case1_coarse.msh";
+//    std::string fileFine =basemeshpath + "/Case1_Cilamce/case1_fine5400.msh";
     
 
 //    std::string fileFine = basemeshpath + "/jose6_fine.msh";
@@ -180,11 +180,11 @@ TPZGeoMesh *ReadFractureMesh(){
 //    std::string fileFine("../../FracMeshes/flem_case1_Submesh_Fractures.msh");
 //    std::string fileFine("../../FracMeshes/case_1bas.msh");
 //    std::string fileFine("../../FracMeshes/case1_withoutFrac.msh");
- std::string fileFine("../../FracMeshes/case1_withFrac.msh");
+// std::string fileFine("../../FracMeshes/case1_withFrac.msh");
     
     
     
-//    std::string fileFine("../../FracMeshes/case1_simple_p1q0.msh");
+    std::string fileFine("../../FracMeshes/jose_simple0.msh");
     
 //    std::string fileFine("../../FracMeshes/case1_simple_5elem.msh");
     
@@ -657,8 +657,8 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTNumerics.m_max_iter_transport = 1;
     sim_data.mTNumerics.m_max_iter_sfi = 1;
     //BorderElementOrder
-    sim_data.mTNumerics.m_BorderElementPresOrder=0;
-    sim_data.mTNumerics.m_BorderElementFluxOrder=0;
+    sim_data.mTNumerics.m_BorderElementPresOrder=1;
+    sim_data.mTNumerics.m_BorderElementFluxOrder=1;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
@@ -749,8 +749,8 @@ void BenchmarkCase1()
     sim_data.mTGeometry.mSkeletonDiv =0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q = true;
-    sim_data.mTNumerics.m_UseSubstructures_Q = true ;
+    sim_data.mTNumerics.m_mhm_mixed_Q = false;
+    sim_data.mTNumerics.m_UseSubstructures_Q = false ;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
     //mSimData.mTGeometry.mDomainDimNameAndPhysicalTag
     aspace.SetGeometry(gmesh);
@@ -762,38 +762,18 @@ void BenchmarkCase1()
     
     aspace.SetDataTransfer(sim_data);
     
+
+    
+  
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     
-    std::ofstream filep("FluxCmeesh.txt");
-//    mixed_operator->Print(filep);
-//    bool must_opt_band_width_Q = true;
-//    int n_threads = 0;
-//
-//    //This parameter should be always "true"
-//    bool UsePardiso_Q = true;
-//
-//    //
-//    {
-//
-//        TMRSMixedAnalysis *mixedAnal = new TMRSMixedAnalysis(mixed_operator,must_opt_band_width_Q);
-//        //If the parameter "UsingPzSparse" is true, it uses the pz sparse matrix, otherwise it uses eigen sparse matrix
-//        bool UsingPzSparse = false;
-//        mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-//        mixedAnal->SetDataTransfer(&sim_data);
-//
-//        mixedAnal->Assemble();
-//        mixedAnal->Solve();
-//
-//        TPZFastCondensedElement::fSkipLoadSolution = false;
-//        mixed_operator->LoadSolution(mixed_operator->Solution());
-//        mixed_operator->UpdatePreviousState(-1.);
-//        mixedAnal->fsoltransfer.TransferFromMultiphysics();
-//        mixedAnal->PostProcessTimeStep();
-//    }
-//
-//    return;
+#ifdef USING_BOOST
+    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::time_duration deltat = tsim2-tsim1;
+    std::cout << "Mixed:: OverHead " << deltat << std::endl;
+#endif
     
     
     std::ofstream fileinform("Infomation.txt");
@@ -810,9 +790,12 @@ void BenchmarkCase1()
     
 //    mixedAnal->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
 //    mixedAnal->SetDataTransfer(&sim_data);
-    aspace.BuildTransportMultiPhysicsCompMesh();
-    TPZMultiphysicsCompMesh * transport_operator = aspace.GetTransportOperator();
+//    aspace.BuildTransportMultiPhysicsCompMesh();
+    aspace.BuildAuxTransportCmesh();
+    TPZCompMesh * transport_operator = aspace.GetTransportOperator();
     std::ofstream file("transportyMult.vtk");
+    std::ofstream file2("transportyMult.txt");
+    transport_operator->Print(file2);
     TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
     
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);

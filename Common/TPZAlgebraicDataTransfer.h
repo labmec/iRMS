@@ -35,7 +35,7 @@ public:
    
     TPZMultiphysicsCompMesh *fFluxMesh;
     
-    TPZMultiphysicsCompMesh *fTransportMesh;
+    TPZCompMesh *fTransportMesh;
     
     struct TInterfaceWithVolume
     {
@@ -159,7 +159,7 @@ public:
     /// Default desconstructor
     ~TPZAlgebraicDataTransfer();
     
-    void SetMeshes(TPZMultiphysicsCompMesh &fluxmesh, TPZMultiphysicsCompMesh &transportmesh)
+    void SetMeshes(TPZMultiphysicsCompMesh &fluxmesh, TPZCompMesh &transportmesh)
     {
         fFluxMesh = &fluxmesh;
         fTransportMesh = &transportmesh;

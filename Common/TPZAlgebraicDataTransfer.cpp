@@ -18,6 +18,7 @@
 #include "pzshapecube.h"
 #include "pzshapelinear.h"
 #include "pzelementgroup.h"
+#include "TPZInterfaceEl.h"
 #include "TPZLagrangeMultiplier.h"         // for TPZLagrangeMultiplier
 /// Default constructor
 TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer() : fFluxMesh(0), fTransportMesh(0)
@@ -76,11 +77,20 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     {
         TPZCompEl *cel = fTransportMesh->Element(el);
         TPZMultiphysicsInterfaceElement *interf = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
-        if(!interf)
+        TPZInterfaceElement *interf2 = dynamic_cast<TPZInterfaceElement *>(cel);
+        if(!interf && !interf2)
         {
             continue;
         }
-        TPZGeoEl *gel = interf->Reference();
+        TPZGeoEl *gel=NULL;
+        if(interf)
+        {
+             gel = interf->Reference();
+        }
+        else{
+            gel = interf2->Reference();
+        }
+        
         int ncorner = gel->NCornerNodes();
         if(ncorner > 4)
         {
@@ -232,10 +242,21 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             int64_t celindex = facevec[iface].fInterface_celindex;
             TPZCompEl *cel = fTransportMesh->Element(celindex);
             TPZMultiphysicsInterfaceElement *intface = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
-            if(!intface){
+            TPZInterfaceElement *intface2 = dynamic_cast<TPZInterfaceElement *>(cel);
+            if(!intface && !intface2){
                 DebugStop();
             }
-            TPZCompElSide leftside = intface->Left();
+            TPZCompElSide leftside;
+            TPZCompElSide rightside;
+            if(intface){
+                leftside = intface->Left();
+                rightside = intface->Right();
+            }
+            else{
+                leftside = intface2->LeftElementSide();
+                rightside = intface2->RightElementSide();
+            }
+            
             TPZCompEl *left = leftside.Element();
             TPZGeoEl *leftgel = left->Reference();
             int leftorient = 0;
@@ -249,7 +270,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                 VolumeElementIndex[leftindex] = volumecount;
                 volumecount++;
             }
-            TPZCompElSide rightside = intface->Right();
+            
             TPZCompEl *right = rightside.Element();
             if(right->NConnects() > 1) DebugStop();
             TPZGeoEl *rightgel = right->Reference();
@@ -309,6 +330,15 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndex(TPZCompElSide &celSi
         orientation = gel->NormalOrientation(celSide.Side());
     }
     TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(cel);
+    if(!celmult){
+        fTransportMesh->Reference()->ResetReference();
+        fFluxMesh->LoadReferences();
+        TPZCompEl *auxel = gel->Reference();
+        TPZMultiphysicsElement *celmult2 =dynamic_cast<TPZMultiphysicsElement *>(auxel);
+        celmult=celmult2;
+        fFluxMesh->Reference()->ResetReference();
+        fTransportMesh->LoadReferences();
+    }
     TPZCompEl *hdivBound = celmult->Element(0);
     TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBound);
     TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundT = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBound);
@@ -931,12 +961,20 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
             TPZGeoEl *gel = gmesh->Element(face_it.fInterface_gelindex);
             TPZCompEl *cel = gel->Reference();
             TPZMultiphysicsInterfaceElement * intel = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
-           
-            if (!intel) {
+           TPZInterfaceElement * intel2 = dynamic_cast<TPZInterfaceElement *>(cel);
+            if (!intel && !intel2) {
                 DebugStop();
             }
             TPZVec<REAL> normal;
-            intel->ComputeCenterNormal(normal);
+            if(intel){
+                intel->ComputeCenterNormal(normal);
+            }
+            else{
+                intel2->CenterNormal(normal);
+//                intel2->ComputeCenterNormal(normal);
+            }
+            
+            
             std::tuple<REAL, REAL, REAL> norm= std::make_tuple(normal[0],normal[1],normal[2]);
             InterfaceVec.fNormalFaceDirection.push_back(norm);
             int ncorner = gel->NCornerNodes();

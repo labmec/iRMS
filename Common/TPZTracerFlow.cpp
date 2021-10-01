@@ -398,3 +398,25 @@ void TPZTracerFlow::ContributeBCInterface(const TPZMaterialDataT<STATE> &data, c
     return;
     
 }
+void TPZTracerFlow::Solution(const TPZMaterialDataT<REAL> &data, int var,
+              TPZVec<REAL> &sol){
+
+    
+    REAL sw = data.sol[0][0];
+    
+    sol.Resize(this->NSolutionVariables(var));
+    
+    switch(var) {
+        case 0:
+        {
+            sol[0] = sw;
+        }
+            break;
+        case 1:
+        {
+            sol[0] = 1.0-sw;
+        }
+            break;
+    }
+    
+}

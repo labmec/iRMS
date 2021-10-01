@@ -50,7 +50,7 @@ void TPZMHMixedMeshWithTransportControl::BuildComputationalMesh(bool usersubstru
     //Link Memory
     faproxspace->mMixedOperator= multcmesh;
     faproxspace->BuildTransportMultiPhysicsCompMesh();
-    TPZMultiphysicsCompMesh *cmeshtrans = faproxspace->GetTransportOperator();
+    TPZCompMesh *cmeshtrans = faproxspace->GetTransportOperator();
     faproxspace->LinkMemory(multcmesh, cmeshtrans);
     //
     

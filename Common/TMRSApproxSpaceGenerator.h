@@ -43,7 +43,7 @@ public:
     
     TPZMultiphysicsCompMesh * mMixedOperator;
     
-    TPZMultiphysicsCompMesh * mTransportOperator;
+    TPZCompMesh * mTransportOperator;
     
     TPZVec<int64_t> mSubdomainIndexGel;
     
@@ -116,6 +116,8 @@ public:
     /// create a discontinuous mesh
     TPZCompMesh * TransportCmesh();
     
+    void  BuildAuxTransportCmesh();
+    
     /// create an HDiv mesh for mortar approximation
     TPZCompMesh *HDivMortarFluxCmesh(char mortarlagrange);
     
@@ -164,10 +166,10 @@ public:
 
     TPZMultiphysicsCompMesh * GetMixedOperator();
     
-    TPZMultiphysicsCompMesh * GetTransportOperator();
+    TPZCompMesh * GetTransportOperator();
     
     // Linking the memory between the operators
-    void LinkMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
+    void LinkMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZCompMesh * TransportOperator);
     
     static void AdjustMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
     
@@ -186,8 +188,9 @@ public:
     //
     void findNeighElementbyMatId(TPZGeoElSide &gelside, std::vector<TPZGeoElSide > &neihside, std::set<int> VolMatIds);
     void CreateElementInterfaces(TPZGeoEl *gel);
-    void CreateInterfaces(TPZMultiphysicsCompMesh *cmesh);
+    void CreateInterfaces(TPZCompMesh *cmesh);
     void CreateFracInterfaces(TPZGeoEl *gel);
+    void CreateInterfaceElements(TPZGeoElSide &gelside, TPZGeoElSide &gelneig, int matid, bool IsAtomic);
     void CreateTransportElement(int p_order, TPZCompMesh *cmesh, TPZGeoEl *gel, bool is_BC);
     void TestSideOrient(TPZCompMesh *MultFlux);
     void TakeElementsbyID(std::map<int, std::vector<TPZGeoEl* >> &, std::vector<int> & );
