@@ -16,9 +16,9 @@
 #include "TPZMatInterfaceSingleSpace.h"
 #include "TPZMatInterfaceCombinedSpaces.h"
 
-class TPZTracerFlow : public TPZMatBase<STATE, TPZMatInterfaceSingleSpace<STATE>, TPZMatCombinedSpacesT<STATE>, TPZMatInterfaceCombinedSpaces<STATE> > {
+class TPZTracerFlow : public TPZMatBase<STATE, TPZMatInterfaceSingleSpace<STATE>, TPZMatCombinedSpacesT<STATE>,TPZMatSingleSpaceT<STATE>, TPZMatInterfaceCombinedSpaces<STATE> > {
     
-    using TBase = TPZMatBase<STATE, TPZMatInterfaceSingleSpace<STATE>, TPZMatCombinedSpacesT<STATE>, TPZMatInterfaceCombinedSpaces<STATE> > ;
+    using TBase = TPZMatBase<STATE, TPZMatInterfaceSingleSpace<STATE>, TPZMatCombinedSpacesT<STATE>, TPZMatSingleSpaceT<STATE>,TPZMatInterfaceCombinedSpaces<STATE> > ;
     
 private:
     
@@ -90,7 +90,16 @@ public:
     {
         return new TPZTracerFlow(*this);
     }
-    
+    virtual void Contribute(const TPZMaterialDataT<STATE> &data, REAL weight,
+                            TPZFMatrix<STATE> &ek,
+                            TPZFMatrix<STATE> &ef){
+        
+    }
+    virtual void ContributeBC(const TPZMaterialDataT<STATE> &data, REAL weight,
+                              TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef,
+                              TPZBndCondT<STATE> &bc){
+        
+    }
     /** @brief Print out the data associated with the material */
     void Print(std::ostream &out = std::cout) const override;
     
@@ -105,6 +114,9 @@ public:
     
     /** @brief Returns the solution associated with the var index */
     void Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout) override;
+    
+    void Solution(const TPZMaterialDataT<REAL> &data, int var,
+             TPZVec<REAL> &sol);
     
     void Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef) override;
     

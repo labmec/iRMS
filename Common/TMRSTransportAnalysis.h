@@ -88,7 +88,7 @@ public:
     ~TMRSTransportAnalysis();
     
     /// Constructor based on a cmesh and optimization band directive
-    TMRSTransportAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q);
+    TMRSTransportAnalysis(TPZCompMesh * cmesh_mult, bool must_opt_band_width_Q);
     
     /// Configurates iternal members
     void Configure(int n_threads, bool UsePardiso_Q);

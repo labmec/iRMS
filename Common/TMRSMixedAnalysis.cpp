@@ -86,6 +86,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
     
     TPZFMatrix<STATE> dx,x(Solution());
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
+       
         NewtonIteration();
         dx = Solution();
         corr_norm = Norm(dx);
@@ -151,7 +152,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
 void TMRSMixedAnalysis::NewtonIteration(){
     
-
+#define USING_BOOST
     if(mIsFirstAssembleQ == true)
     {
         fStructMatrix->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);

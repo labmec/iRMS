@@ -42,6 +42,7 @@ static LoggerPtr logger(Logger::getLogger("pz.StrMatrix"));
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
 
+#include <typeinfo>
 using namespace std;
 
 TPZStructMatrix * TPZSymetricSpStructMatrixEigen::Clone(){
@@ -531,6 +532,12 @@ void  TPZSymetricSpStructMatrixEigen::Serial_AssembleGlob(TPZMatrix<STATE> & sti
 //            if(gel->Index()==61){
 //                int ok=0;
 //            }
+            if(iel == 70486)
+            {
+                std::ofstream sout("submesh.txt");
+                el->Print(sout);
+            }
+            std::cout << "Computing element " << iel <<  typeid(el).name() << std::endl;
             el->CalcStiff(ek, ef);
 //            filep<<"iel: "<<gel->Index()<< " MatId: "<<gel->MaterialId()<<std::endl;
 //                ek.fMat.Print("Ekmat= ", filep, EMathematicaInput);

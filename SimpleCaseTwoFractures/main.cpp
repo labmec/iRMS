@@ -12,7 +12,6 @@
 #include "TPZRefPatternTools.h"
 #include "TPZReservoirTools.h"
 #include "pzlog.h"
-#include "imrs_config.h"
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
@@ -83,10 +82,10 @@ void CaseSimple2Frac()
     
     
     // ------ Hybridizing fracture intersection -------
-//    TPZHybridizeHDiv hybridizer(mixed_operator->MeshVector());
-//    hybridizer.DimToHybridize() = 2; // fracture dimension
-//    hybridizer.MatIDToHybridize() = -14; // hardcoded for now
-//    hybridizer.Hybridize(mixed_operator);
+    TPZHybridizeHDiv hybridizer(mixed_operator->MeshVector());
+    hybridizer.DimToHybridize() = 2; // fracture dimension
+    hybridizer.MatIDToHybridize() = -14; // hardcoded for now
+    hybridizer.Hybridize(mixed_operator);
     // ------ End of hybridizing fracture intersection -------
     
     bool must_opt_band_width_Q = true;
@@ -467,9 +466,7 @@ TMRSDataTransfer Setting2Fractures(){
 
 
 TPZGeoMesh *ReadFractureMesh(){
-    string basemeshpath(FRACMESHES);
-    std::string fileFine = basemeshpath + "/Case2Frac.msh";
-//    std::string fileFine("../../FracMeshes/Case2Frac.msh");
+    std::string fileFine("../../FracMeshes/Case2Frac.msh");
 //    std::string fileFine("../../FracMeshes/dfnExport.msh");
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
     /*

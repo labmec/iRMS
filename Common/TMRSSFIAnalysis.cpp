@@ -23,7 +23,7 @@ TMRSSFIAnalysis::~TMRSSFIAnalysis(){
     
 }
 
-TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q){
+TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompMesh * cmesh_transport, bool must_opt_band_width_Q){
     m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);

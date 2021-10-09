@@ -25,10 +25,12 @@ TMRSTransportAnalysis::~TMRSTransportAnalysis(){
     
 }
 
-TMRSTransportAnalysis::TMRSTransportAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZLinearAnalysis(cmesh_mult, must_opt_band_width_Q){
+TMRSTransportAnalysis::TMRSTransportAnalysis(TPZCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZLinearAnalysis(cmesh_mult, must_opt_band_width_Q){
     
-    m_soltransportTransfer.BuildTransferData(cmesh_mult);
-    
+    TPZMultiphysicsCompMesh *cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(cmesh_mult);
+    if(cmesh){
+        m_soltransportTransfer.BuildTransferData(cmesh_mult);
+    }
 }
 
 void TMRSTransportAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
@@ -185,7 +187,8 @@ void TMRSTransportAnalysis::AssembleResidual(){
 void TMRSTransportAnalysis::RunTimeStep(){
     
     TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
-    if (!cmesh) {
+    TPZCompMesh * cmesh2 = dynamic_cast<TPZCompMesh *>(Mesh());
+    if (!cmesh &&!cmesh2) {
         DebugStop();
     }
     
@@ -257,7 +260,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
 void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     
     TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
-    if (!cmesh) {
+    TPZCompMesh * cmesh2 = dynamic_cast<TPZCompMesh *>(Mesh());
+    if (!cmesh &&!cmesh2) {
         DebugStop();
     }
     
@@ -265,11 +269,23 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     
     LoadSolution(x);
-    cmesh->LoadSolutionFromMultiPhysics();
+    if(cmesh){
+        cmesh->LoadSolutionFromMultiPhysics();
+    }
+    else{
+        cmesh2->LoadSolution(x);
+    }
+ 
+    
     NewtonIteration();
     x += Solution();
     LoadSolution(x);
-    cmesh->LoadSolutionFromMultiPhysics();
+    if(cmesh){
+        cmesh->LoadSolutionFromMultiPhysics();
+    }
+    else{
+        cmesh2->LoadSolution(x);
+    }
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     AssembleResidual();
@@ -557,11 +573,13 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
 
 void TMRSTransportAnalysis::UpdateInitialSolutionFromCellsData(){
     TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
-    if (!cmesh) {
+    TPZCompMesh * cmesh2 = dynamic_cast<TPZCompMesh *>(Mesh());
+    if (!cmesh && !cmesh2) {
         DebugStop();
     }
     fAlgebraicTransport.fCellsData.UpdateSaturationsTo(Solution());
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     LoadSolution();
-    cmesh->LoadSolutionFromMultiPhysics();
+    //REVISAR JOSE EN EL CASO DE NO MULTIFISICO
+//    cmesh->LoadSolutionFromMultiPhysics();
 }
