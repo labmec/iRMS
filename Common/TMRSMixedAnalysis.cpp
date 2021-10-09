@@ -203,20 +203,23 @@ void TMRSMixedAnalysis::NewtonIteration(){
 //    mateig->fsparse_eigen*0.0;
 }
 
-void TMRSMixedAnalysis::PostProcessTimeStep(){
+void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
     TPZStack<std::string,10> scalnames, vecnames;
     
     scalnames = m_sim_data->mTPostProcess.m_scalnames;
     vecnames = m_sim_data->mTPostProcess.m_vecnames;
     
     int div = 0;
-    int dim = Mesh()->Reference()->Dimension();
+    if (dimToPost < 0){
+        dimToPost = Mesh()->Reference()->Dimension();
+    }
+//    dim = 2;
 //    std::set<int> mat_id_2D;
 //    mat_id_2D.insert(10);
 //    std::string file_frac("fractureFlux_s.vtk");
 //    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
 //    PostProcess(div,2);
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
-    DefineGraphMesh(dim,scalnames,vecnames,file);
-    PostProcess(div,dim);
+    DefineGraphMesh(dimToPost,scalnames,vecnames,file);
+    PostProcess(div,dimToPost);
 }

@@ -382,18 +382,18 @@ TMRSDataTransfer Setting2Fractures(){
     
     int D_Type = 0;
     int N_Type = 1;
-    int zero_flux=0.0;
-    REAL pressure_in = 4.0 ;
+    REAL zero_flux = 0.0;
+    REAL pressure_in = 1.0 ;
     REAL pressure_out = 1.0 ;
     
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(-1,D_Type,pressure_in);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(-4,D_Type,pressure_out);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-5,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(-5,D_Type,pressure_in);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(3);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] =
-    std::make_tuple(-11,N_Type,zero_flux);
+    std::make_tuple(-11,D_Type,pressure_in);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[1] =
     std::make_tuple(-12,D_Type,pressure_in);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[2] =
@@ -436,14 +436,14 @@ TMRSDataTransfer Setting2Fractures(){
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     //FracAndReservoirProperties
-        sim_data.mTFracProperties.m_Permeability = 0.00001;
-        REAL kappa=1.0;
-        int  id1=1;
-        int  id2=2;
-        std::vector<std::pair<int, REAL>> idPerm(2);
-        idPerm[0]= std::make_pair(id1,kappa);
-        idPerm[1]= std::make_pair(id2,kappa);
-        sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
+    sim_data.mTFracProperties.m_Permeability = 1.e-5;
+    REAL kappa=1.0;
+    int  id1=1;
+    int  id2=2;
+    std::vector<std::pair<int, REAL>> idPerm(2);
+    idPerm[0]= std::make_pair(id1,kappa);
+    idPerm[1]= std::make_pair(id2,kappa);
+    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     
     

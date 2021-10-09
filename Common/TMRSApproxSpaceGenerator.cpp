@@ -693,7 +693,8 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
              int64_t cindex2 = HDivCollapsed->ConnectIndex(nconnects-1);
              int nsides = gel->NSides();
              // changing orientation of top
-             HDivCollapsed->SetSideOrient(nsides, -1);
+//             HDivCollapsed->SetSideOrient(nsides, -1);
+             HDivCollapsed->SetSideOrient(nsides-1, -1);
              // linking bottom to first zero flux element - interface left - zeroflux - frac pressure
              HDivCollapsed->SetConnectIndex(nconnects-2, zerofluxcomp.Element()->ConnectIndex(0));
              // linking top to second zero flux element - interface right - zeroflux - frac pressure
@@ -1314,7 +1315,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             int bc_id   = get<0>(chunk);
             int bc_type = get<1>(chunk);
             val2[0]  = get<2>(chunk);
-            TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+            TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+            if (HasForcingFunctionBC()) {
+                face->SetForcingFunctionBC(mForcingFunctionBC);
+            }
             mMixedOperator->InsertMaterialObject(face);
         }
     }
@@ -1328,7 +1332,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             int bc_type = get<1>(chunk);
             matsWithOutMem.insert(bc_id);
             val2[0]  = get<2>(chunk);
-            TPZBndCond * face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
+            TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
+            if (HasForcingFunctionBC()) {
+                face->SetForcingFunctionBC(mForcingFunctionBC);
+            }
             mMixedOperator->InsertMaterialObject(face);
         }
     }
@@ -1645,6 +1652,7 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
         }
     }
     
+    // For each side of a 3D element, create geowrappers for it
     for(int64_t el = 0; el<nel; el++)
     {
         TPZGeoEl *gel = mGeometry->Element(el);
@@ -1701,6 +1709,7 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
         cond2 =subDomainIndexNeig!=-1 && (subDomainIndexNeig > subDomainIndex);
     }
     
+    // @TODO: Delete cond2?
     if(cond1 )
     {
         first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
