@@ -153,11 +153,13 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     int s_i, s_j;
     int v_i, v_j;
     for (int i = 0; i < 3; i++) {
+        if(memory.m_kappa_inv(i,i) != memory.m_kappa_inv((i+1)%3,(i+1)%3)) DebugStop();
         for (int j = 0; j < 3; j++) {
+            if(i!=j && memory.m_kappa_inv(i,j) != 0.) DebugStop();
             kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*q[j];
         }
     }
-    
+    kappaNormal = memory.m_kappa(0,0);
    
    
     
@@ -215,7 +217,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
 
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q(i,0) += (1.0/kappaNormal)*q[i];
+            kappa_inv_q(i,0) += (2.0/kappaNormal)*q[i];
         }
         
         for (int i = 0; i < 3; i++) {
@@ -237,9 +239,11 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             // s_j is the index of the scalar function corresponding to jq
             // v_j is the index of the vector corresponding to jq
             // kappa_inv_phi_q_j = vector equal to 1/kappa phi_qs * phi_qs * vector(v_j)
+            // ad = 1
+            // factor = 1
             for (int j = 0; j < 3; j++) {
-                REAL KappaInvVal = (1.0/kappaNormal);
-                kappa_inv_phi_q_j(j,0) = (ad*KappaInvVal/2.0)* factor * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                REAL KappaInvVal = (2.0/kappaNormal);
+                kappa_inv_phi_q_j(j,0) = ad*KappaInvVal * factor * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
             }
             
 
@@ -266,7 +270,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
 
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q(i,0) += (1.0/kappaNormal)*q[i];
+            kappa_inv_q(i,0) += (2.0/kappaNormal)*q[i];
         }
         
         for (int i = 0; i < 3; i++) {
@@ -288,8 +292,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             // v_j is the index of the vector corresponding to jq
             // kappa_inv_phi_q_j = vector equal to 1/kappa phi_qs * phi_qs * vector(v_j)
             for (int j = 0; j < 3; j++) {
-                REAL KappaInvVal = (1.0/kappaNormal);
-                kappa_inv_phi_q_j(j,0) += (ad*KappaInvVal/2)* factor *phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                REAL KappaInvVal = (2.0/kappaNormal);
+                kappa_inv_phi_q_j(j,0) += ad*KappaInvVal* factor *phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
             }
             
             // kappa_inv_phi_q_j_dot_phi_q_i is the dot product of both vectors
