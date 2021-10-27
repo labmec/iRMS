@@ -164,7 +164,7 @@ void VerificationCases(const int caseToSim)
 //    std::ofstream outF("outf.txt");
 //    mixed_operator->MeshVector()[0]->Print(outF);
     
-    const int dimToPost = 2;
+    const int dimToPost = 3;
     mixAnalisys->PostProcessTimeStep(dimToPost);
     
     const std::string varname = "state";
@@ -172,11 +172,13 @@ void VerificationCases(const int caseToSim)
     matids.insert(EInlet);
 //    matids.insert(EOutlet);
     TPZVec<STATE> vecint = mixed_operator->MeshVector()[0]->Integrate(varname, matids);
-    std::cout << "\nint inlet = " << vecint[0] << std::endl;
+    if (vecint.size())
+        std::cout << "\nint inlet = " << vecint[0] << std::endl;
     matids.clear();
     matids.insert(EOutlet);
     vecint = mixed_operator->MeshVector()[0]->Integrate(varname, matids);
-    std::cout << "\nint outlet = " << vecint[0] << std::endl;
+    if (vecint.size())
+        std::cout << "\nint outlet = " << vecint[0] << std::endl;
     
     // Cleaning up
     delete gmesh;
@@ -209,15 +211,16 @@ void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TMRSDataTransfer &sim_data, c
             break;
         case 3: {
 //            std::string filename = basemeshpath + "/2DMeshes/flemisch2.msh";
-//            std::string filename = basemeshpath + "/verifications/verif0.msh";
-            std::string filename = basemeshpath + "/verifications/2blocking.msh";
+            std::string filename = basemeshpath + "/verifications/verif0.msh";
+//            std::string filename = basemeshpath + "/verifications/2blocking.msh";
             gmesh = ReadFractureMeshCase3(filename);
             sim_data  = SettingFracturesSimple(caseToSim);
         }
             break;
         case 4: {
 //            std::string filename = basemeshpath + "/2DMeshes/flemisch3_4frac_2.msh";
-            std::string filename = basemeshpath + "/2DMeshes/flemisch3_new.msh";
+//            std::string filename = basemeshpath + "/2DMeshes/flemisch3_new.msh";
+            std::string filename = basemeshpath + "/verifications/flcase3.msh";
             gmesh = ReadFractureMeshCase4(filename);
             sim_data  = SettingFracturesSimple(caseToSim);
             
@@ -282,11 +285,11 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,N_Type,zero_flux);
     
     }
-    else if (caseToSim < 4) {
+    else if (caseToSim < 5) {
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(1);
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EFaceBCPressure,D_Type,pressure_in);
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
-        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,N_Type,zero_flux);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,D_Type,pressure_in);
     }
     else if (caseToSim == 10) {
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -505,15 +508,27 @@ TPZGeoMesh *ReadFractureMeshCase4(std::string &filename){
     
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
 
+    // Volumes
+    std::string volbase = "c";
+    for (int ivol = 229; ivol < 445; ivol++) {
+        std::string ivolstring = volbase + to_string(ivol);
+        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
+    }
+    
+    // BC domain
+    dim_name_and_physical_tagFine[2]["bc4"] = EFaceBCPressure;
+    dim_name_and_physical_tagFine[2]["bc5"] = EFaceBCPressure;
+    dim_name_and_physical_tagFine[2]["bc6"] = EFaceBCPressure;
+    
     // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture10"] = EDomain;
-    dim_name_and_physical_tagFine[2]["Fracture11"] = EDomain;
-    dim_name_and_physical_tagFine[2]["Fracture12"] = EDomain;
-    dim_name_and_physical_tagFine[2]["Fracture13"] = EDomain;
-    dim_name_and_physical_tagFine[2]["Fracture14"] = EDomain;
-    dim_name_and_physical_tagFine[2]["Fracture15"] = EDomain;
-    dim_name_and_physical_tagFine[2]["Fracture16"] = EDomain;
-    dim_name_and_physical_tagFine[2]["Fracture17"] = EDomain;
+    dim_name_and_physical_tagFine[2]["Fracture10"] = globFracID;
+    dim_name_and_physical_tagFine[2]["Fracture11"] = globFracID;
+    dim_name_and_physical_tagFine[2]["Fracture12"] = globFracID;
+    dim_name_and_physical_tagFine[2]["Fracture13"] = globFracID;
+    dim_name_and_physical_tagFine[2]["Fracture14"] = globFracID;
+    dim_name_and_physical_tagFine[2]["Fracture15"] = globFracID;
+    dim_name_and_physical_tagFine[2]["Fracture16"] = globFracID;
+    dim_name_and_physical_tagFine[2]["Fracture17"] = globFracID;
 
     // Fractures BCs
     dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
@@ -526,26 +541,26 @@ TPZGeoMesh *ReadFractureMeshCase4(std::string &filename){
     dim_name_and_physical_tagFine[1]["BCfrac7"] = EPressure;
     
     // Intersections
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_2_3"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_2_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_3_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_4_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_5_6"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_5_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_6_7"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_0_7"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_1_7"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_2_7"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_2_7"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_3_7"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_4_7"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_5_6"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_5_7"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_6_7"] = EIntersection;
     
     // for isolated fracture cases
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_3"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_2"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_3"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_2_3"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_0_3"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_1_2"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_1_3"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_2_3"] = EIntersection;
     
     TPZGeoMesh* gmesh = generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
     
-    FixGMeshForIntersectionOverBCs(gmesh);
+//    FixGMeshForIntersectionOverBCs(gmesh);
     
     return gmesh;
 }
@@ -605,11 +620,10 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
     TPZGeoMesh *gmeshFine;
     REAL l = 1.0;
     GeometryFine.SetCharacteristiclength(l);
-    GeometryFine.SetFormatVersion("4.1");
     
     // Reading mesh
     GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
-    gmeshFine = GeometryFine.GeometricGmshMesh4(filename,nullptr,false);
+    gmeshFine = GeometryFine.GeometricGmshMesh(filename,nullptr,false);
 
     return gmeshFine;
 }

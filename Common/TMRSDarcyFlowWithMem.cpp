@@ -71,7 +71,7 @@ void TMRSDarcyFlowWithMem<TMEM>::FillBoundaryConditionDataRequirements(int type,
     for (int idata=0; idata < ndata ; idata++) {
         datavec[idata].SetAllRequirements(false);
         datavec[idata].fNeedsSol = true;
-        datavec[idata].fDeformedDirections = true;
+//        datavec[idata].fDeformedDirections = true;
     }
 }
 
