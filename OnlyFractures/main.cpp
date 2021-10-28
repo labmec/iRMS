@@ -171,12 +171,16 @@ void VerificationCases(const int caseToSim)
     std::set<int> matids;
     matids.insert(EInlet);
 //    matids.insert(EOutlet);
-    TPZVec<STATE> vecint = mixed_operator->MeshVector()[0]->Integrate(varname, matids);
+    
+    TPZCompMesh *fluxmesh = mixed_operator->MeshVector()[0];
+    fluxmesh->Reference()->ResetReference();
+    fluxmesh->LoadReferences();
+    TPZVec<STATE> vecint = fluxmesh->Integrate(varname, matids);
     if (vecint.size())
         std::cout << "\nint inlet = " << vecint[0] << std::endl;
     matids.clear();
     matids.insert(EOutlet);
-    vecint = mixed_operator->MeshVector()[0]->Integrate(varname, matids);
+    vecint = fluxmesh->Integrate(varname, matids);
     if (vecint.size())
         std::cout << "\nint outlet = " << vecint[0] << std::endl;
     
