@@ -215,8 +215,8 @@ void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TMRSDataTransfer &sim_data, c
             break;
         case 3: {
 //            std::string filename = basemeshpath + "/2DMeshes/flemisch2.msh";
-            std::string filename = basemeshpath + "/verifications/verif0.msh";
-//            std::string filename = basemeshpath + "/verifications/2blocking.msh";
+//            std::string filename = basemeshpath + "/verifications/verif0.msh";
+            std::string filename = basemeshpath + "/verifications/2blocking.msh";
             gmesh = ReadFractureMeshCase3(filename);
             sim_data  = SettingFracturesSimple(caseToSim);
         }
