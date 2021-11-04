@@ -122,7 +122,6 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     {
         REAL l = 1.0;
         GeometryCoarse.SetCharacteristiclength(l);
-        GeometryCoarse.SetFormatVersion("4.1");
         GeometryCoarse.SetDimNamePhysical(dim_name_and_physical_tagCoarse);
         gmeshCoarse = GeometryCoarse.GeometricGmshMesh(fileCoarse);
         GeometryCoarse.PrintPartitionSummary(std::cout);
@@ -130,7 +129,6 @@ TPZGeoMesh *ReadFractureMesh(TPZVec<int64_t> &subdomain)
     {
         REAL l = 1.0;
         GeometryFine.SetCharacteristiclength(l);
-        GeometryFine.SetFormatVersion("4.1");
         GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
         gmeshFine = GeometryFine.GeometricGmshMesh(fileFine);
         GeometryCoarse.PrintPartitionSummary(std::cout);
@@ -231,8 +229,7 @@ TPZGeoMesh *ReadFractureMesh(){
     TPZGeoMesh *gmeshFine;
 
         REAL l = 1.0;
-        GeometryFine.SetCharacteristiclength(l);
-        GeometryFine.SetFormatVersion("4.1");
+        GeometryFine.SetCharacteristiclength(l);        
 
         GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
         gmeshFine = GeometryFine.GeometricGmshMesh(fileFine);

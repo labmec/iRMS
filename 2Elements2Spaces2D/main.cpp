@@ -218,7 +218,7 @@ TPZGeoMesh *ReadFractureMesh(){
     
     REAL l = 1.0;
     GeometryFine.SetCharacteristiclength(l);
-    GeometryFine.SetFormatVersion("4.1");
+//    GeometryFine.SetFormatVersion("4.1");
     
     GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
     gmeshFine = GeometryFine.GeometricGmshMesh(fileFine);

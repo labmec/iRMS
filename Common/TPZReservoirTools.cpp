@@ -121,39 +121,39 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
 void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix, std::set<int> matids)
 {
     
-        cmesh->ComputeNodElCon();
+    cmesh->ComputeNodElCon();
     int64_t nel = cmesh->NElements();
     for (int64_t el=0; el<nel; el++) {
-       
+        
         TPZCompEl *cel = cmesh->Element(el);
         if (!cel) {
             continue;
         }
         TPZGeoEl *gel = cel->Reference();
-     
+        
         int nc = cel->NConnects();
         bool found = false;
         if(LagrangeLevelNotCondensed >=0)
-        {
+          {
             for (int ic=0; ic<nc; ic++) {
                 TPZConnect &c = cel->Connect(ic);
                 char lag =c.LagrangeMultiplier();
                 if (lag==6) {
-                   
+                    
                     int ncon =c.NElConnected();
                     if (ncon==2) {
                         c.DecrementElConnected();
                     }
-
+                    
                 }
-               
+                
                 if((c.LagrangeMultiplier() >= LagrangeLevelNotCondensed && c.NElConnected() == 1))
-                {
+                  {
                     c.IncrementElConnected();
                     found = true;
-                }
+                  }
             }
-        }
+          }
         int ic;
         for (ic=0; ic<nc; ic++) {
             TPZConnect &c = cel->Connect(ic);
@@ -164,13 +164,13 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
         }
         bool cancondense = (ic != nc);
         if(cancondense)
-        {
+          {
             int gel_matId = 0;
             if (gel) {
-                    gel_matId = gel->MaterialId();
+                gel_matId = gel->MaterialId();
             }
             
-//            if(LagrangeLevelNotCondensed >= 0 && !found) DebugStop();
+            //            if(LagrangeLevelNotCondensed >= 0 && !found) DebugStop();
             int verif = 0;
             
             for (auto matId:matids) {
@@ -187,7 +187,7 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
                 TPZCondensedCompEl *cond = new TPZCondensedCompEl(cel, keepmatrix);
                 
             }
-        }
+          }
         
     }
     

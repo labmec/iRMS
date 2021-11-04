@@ -18,19 +18,22 @@ ENDIF(APPLE)
 find_package(NeoPZ REQUIRED HINTS ${CMAKE_SOURCE_DIR}/../neopz_install/)
  
 
-# Check if PZ was installed with MKL 
+# ----- Check if PZ was installed with MKL -----
 check_pz_opt(PZ_USING_MKL _PZ_HAS_MKL)
-# TBD: mkl message not working. Need fixing on PZ
-# message("mymessage = ${_PZ_HAS_MKL}")
-#if(NOT _PZ_HAS_MKL)
-#     message(FATAL_ERROR "PZ NOT INSTALED WITH MKL. Please do so!")
-# endif()
 
 file(GLOB_RECURSE PZ_SRC
      "../neopz/*.h"
      "../neopz/*.cpp"
 )
 add_custom_target( GlobalFiles SOURCES ${PZ_SRC})
+
+# ----- To enable unit test using Catch2 UnitTest framework -----
+option(BUILD_UNITTESTING "Whether the Catch2 UnitTest will be linked in" OFF)
+if(BUILD_UNITTESTING)
+  include(cmake/add_unit_test.cmake)
+  include(cmake/EnableCatch2.cmake)
+  enable_catch2()
+endif()
 
 
 # ----- Adding subdirectory of iMRS library -----
@@ -40,8 +43,15 @@ add_subdirectory(Common)
 add_subdirectory(BenchmarkCase1)
 add_subdirectory(OnlyFractures)
 add_subdirectory(2Elements2Spaces2D)
-add_subdirectory(SimpleCaseTwoFractures)
-add_subdirectory(UnitTests)
+# add_subdirectory(SimpleCaseTwoFractures)
+add_subdirectory(SimpleCaseOneFracture)
+
+# ----- Enables testing -----
+if(BUILD_UNITTESTING)
+    add_subdirectory(UnitTests)    
+    ENABLE_TESTING()
+    include(CTest)
+endif()
 
 # ----- Subdirectories that need fixing to new pz (with the crazy materials) -----
 # add_subdirectory(SimpleCaseFracture)
