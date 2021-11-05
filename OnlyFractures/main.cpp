@@ -637,11 +637,11 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
     TPZGeoMesh *gmeshFine;
     REAL l = 1.0;
     GeometryFine.SetCharacteristiclength(l);
-    GeometryFine.SetFormatVersion("4.1");
+//    GeometryFine.SetFormatVersion("4.1");
     
     // Reading mesh
     GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
-    gmeshFine = GeometryFine.GeometricGmshMesh4(filename,nullptr,false);
+    gmeshFine = GeometryFine.GeometricGmshMesh(filename,nullptr,false);
 
     return gmeshFine;
 }

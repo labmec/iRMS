@@ -77,7 +77,7 @@ void TMRSApproxSpaceGenerator::LoadGeometry(std::string geometry_file){
     TPZGmshReader Geometry;
     REAL l = 1.0;
     Geometry.SetCharacteristiclength(l);
-    Geometry.SetFormatVersion("4.1");
+//    Geometry.SetFormatVersion("4.1");
     mGeometry = Geometry.GeometricGmshMesh(geometry_file);
     Geometry.PrintPartitionSummary(std::cout);
 #ifdef PZDEBUG
@@ -94,7 +94,7 @@ void TMRSApproxSpaceGenerator::LoadGeometry(std::string geometry_file,
     TPZGmshReader Geometry;
     REAL l = 1.0;
     Geometry.SetCharacteristiclength(l);
-    Geometry.SetFormatVersion("4.1");
+//    Geometry.SetFormatVersion("4.1");
     Geometry.SetDimNamePhysical(dim_name_and_physical_tag);
     mGeometry = Geometry.GeometricGmshMesh(geometry_file);
     Geometry.PrintPartitionSummary(std::cout);
