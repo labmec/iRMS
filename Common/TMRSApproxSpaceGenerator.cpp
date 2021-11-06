@@ -667,23 +667,25 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
              }
              int nconnects = HDivCollapsed->NConnects();
              // bottom connect index (which will be substituted)
-             int64_t cindex1 = HDivCollapsed->ConnectIndex(nconnects-2);
+             int64_t cindex1 = HDivCollapsed->ConnectIndex(nconnects);
              // top connect index (which will be substituted)
-             int64_t cindex2 = HDivCollapsed->ConnectIndex(nconnects-1);
+             int64_t cindex2 = HDivCollapsed->ConnectIndex(nconnects+1);
              int nsides = gel->NSides();
              // changing orientation of top
 //             HDivCollapsed->SetSideOrient(nsides, -1);
-             HDivCollapsed->SetSideOrient(nsides-1, -1);
+//             HDivCollapsed->SetSideOrient(nsides-1, -1);
              // linking bottom to first zero flux element - interface left - zeroflux - frac pressure
-             HDivCollapsed->SetConnectIndex(nconnects-2, zerofluxcomp.Element()->ConnectIndex(0));
+//             HDivCollapsed->SetConnectIndex(nconnects-2, zerofluxcomp.Element()->ConnectIndex(0));
+             HDivCollapsed->SetConnectIndex(nconnects, zerofluxcomp.Element()->ConnectIndex(0));
              // linking top to second zero flux element - interface right - zeroflux - frac pressure
-             HDivCollapsed->SetConnectIndex(nconnects-1, zerofluxcomp2.Element()->ConnectIndex(0));
-             cmesh->ConnectVec()[cindex1].DecrementElConnected();
-             cmesh->ConnectVec()[cindex2].DecrementElConnected();
-             cmesh->ConnectVec()[cindex1].SetSequenceNumber(-1);
-             cmesh->ConnectVec()[cindex2].SetSequenceNumber(-1);
-             cmesh->ConnectVec().SetFree(cindex1);
-             cmesh->ConnectVec().SetFree(cindex2);
+//             HDivCollapsed->SetConnectIndex(nconnects-1, zerofluxcomp2.Element()->ConnectIndex(0));
+             HDivCollapsed->SetConnectIndex(nconnects+1, zerofluxcomp2.Element()->ConnectIndex(0));
+//             cmesh->ConnectVec()[cindex1].DecrementElConnected();
+//             cmesh->ConnectVec()[cindex2].DecrementElConnected();
+//             cmesh->ConnectVec()[cindex1].SetSequenceNumber(-1);
+//             cmesh->ConnectVec()[cindex2].SetSequenceNumber(-1);
+//             cmesh->ConnectVec().SetFree(cindex1);
+//             cmesh->ConnectVec().SetFree(cindex2);
         }
     }
     
