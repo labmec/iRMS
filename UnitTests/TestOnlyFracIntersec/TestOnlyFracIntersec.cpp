@@ -6,20 +6,11 @@
 
 // PZ includes
 #include "TMRSApproxSpaceGenerator.h"
-#include "TMRSDataTransfer.h"
-#include "TMRSSFIAnalysis.h"
-#include "TMRSMixedAnalysis.h"
-#include "TMRSTransportAnalysis.h"
-#include "TPZRefPatternTools.h"
-#include "TPZReservoirTools.h"
-#include "pzlog.h"
 #include "imrs_config.h"
-#ifdef USING_BOOST
-#include "boost/date_time/posix_time/posix_time.hpp"
-#endif
-
-
 #include "pzlog.h"
+
+// Unit test includes
+#include <catch2/catch.hpp>
 
 // ----- Functions -----
 
@@ -27,9 +18,11 @@ void CaseOnlyFractures(const int caseToSim);
 TMRSDataTransfer SettingFracturesSimple(const int caseToSim);
 void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TMRSDataTransfer &sim_data, const int caseToSim);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
-
 TPZGeoMesh *ReadFractureMeshCase0(std::string &filename);
 
+// ---- Driver Function ----
+
+void Test2frac(const int& caseToSim);
 
 enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd};
 // ----- End of Functions -----
@@ -39,13 +32,12 @@ using namespace std;
 // ----- End of namespaces -----
 
 
-//-------------------------------------------------------------------------------------------------
-//   __  __      _      _   _   _
-//  |  \/  |    / \    | | | \ | |
-//  | |\/| |   / _ \   | | |  \| |
-//  | |  | |  / ___ \  | | | |\  |
-//  |_|  |_| /_/   \_\ |_| |_| \_|
-//-------------------------------------------------------------------------------------------------
+
+// ----- Test cases -----
+// ---- Test 0 ----
+TEST_CASE("2frac","[onlyfracintersect_test]"){
+    Test2frac(0);
+}
 
 static TPZLogger mainlogger("onlyfractures");
 
@@ -55,38 +47,30 @@ auto exactSol = [](const TPZVec<REAL> &loc,
     const auto &x=loc[0];
     const auto &y=loc[1];
     const auto &z=loc[2];
-//    u[0]= 1-x;
     u[0]= 2.;
     gradU(0,0) = 0.;
-//    gradU(1,0) = 0.;
 };
 
-int main(){
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+//-------------------------------------------------------------------------------------------------
+//   __  __      _      _   _   _
+//  |  \/  |    / \    | | | \ | |
+//  | |\/| |   / _ \   | | |  \| |
+//  | |  | |  / ___ \  | | | |\  |
+//  |_|  |_| /_/   \_\ |_| |_| \_|
+//-------------------------------------------------------------------------------------------------
+
+void Test2frac(const int& caseToSim)
+{
     TPZLogger::InitializePZLOG("log4cxx.cfg");
     if (mainlogger.isDebugEnabled()) {
         std::stringstream sout;
         sout << "\nLogger for OnlyFractures target\n" << endl;;
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
-        
-    const int caseToSim = 0;
-    // 0: 2 perpendicular fractures, cte pressure
-    // 1: 2 perpendicular fractures, 1D flow
-    // 2: Flemisch example 1
-    // 3: Flemisch example 2
-    // 4: Flemisch example 3
-    // 5: Flemisch example 4
-    // 6: inclined fracture
-    CaseOnlyFractures(caseToSim);
-    return 0;
-}
-// ----------------- End of Main -----------------
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void CaseOnlyFractures(const int caseToSim)
-{
+    
     // Reading ONLY the fractures of mesh from DFN
     TPZGeoMesh *gmesh = nullptr;
     TMRSDataTransfer sim_data;
@@ -144,21 +128,24 @@ void CaseOnlyFractures(const int caseToSim)
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
     mixAnalisys->PostProcessTimeStep();
     
-    const std::string varname = "state";
+    const std::string varname = "Pressure";
     std::set<int> matids;
-    matids.insert(EInlet);
+    matids.insert(EDomain);
     
-    TPZCompMesh *pmesh = mixed_operator->MeshVector()[1];
-    pmesh->Reference()->ResetReference();
-    pmesh->LoadReferences();
-    TPZVec<STATE> vecint = pmesh->Integrate(varname, matids);
-    if (vecint.size())
-        std::cout << "\nint inlet = " << vecint[0] << std::endl;
-    matids.clear();
-    matids.insert(EOutlet);
-    vecint = pmesh->Integrate(varname, matids);
-    if (vecint.size())
-        std::cout << "\nint outlet = " << vecint[0] << std::endl;
+//    TPZCompMesh *pmesh = mixed_operator->MeshVector()[1];
+    mixed_operator->Reference()->ResetReference();
+    mixed_operator->LoadReferences();
+    TPZVec<STATE> vecint = mixed_operator->Integrate(varname, matids);
+    if (vecint.size() != 1){
+        DebugStop();
+    }
+    const STATE integratedpressure = vecint[0];
+    std::cout << "\nintegral of pressure  = " << integratedpressure << std::endl;
+    
+    // Analytic solution is unit constant pressure (ctepressuresol = 1)
+    // There are two 2x2 fracture. Therefore total area is eight (area = 8)
+    // Thus, the integra of pressure should be area*ctepressuresol = 8
+    REQUIRE( integratedpressure == Approx( 8.0 ) );
     
     // Cleaning up
     delete gmesh;
