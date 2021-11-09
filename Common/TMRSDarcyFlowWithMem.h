@@ -21,9 +21,9 @@
 #include "TPZMatWithMem.h"
 
 template <class TMEM>
-class TMRSDarcyFlowWithMem : public TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatWithMem<TMEM> > {
+class TMRSDarcyFlowWithMem : public TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatWithMem<TMEM>, TPZMatErrorCombinedSpaces<STATE> >{
     
-    using TBase = TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatWithMem<TMEM> >;
+    using TBase = TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatWithMem<TMEM>, TPZMatErrorCombinedSpaces<STATE> >;
     
 protected:
     /// Dimension
@@ -62,6 +62,26 @@ public:
     
     /// Set the required data at each integration point
     void FillBoundaryConditionDataRequirements(int type, TPZVec<TPZMaterialDataT<STATE>> &datavec) const override;
+    
+    /**
+     * @brief Returns an unique class identifier
+     */
+    [[nodiscard]] int ClassId() const override;
+    
+    /**
+     * @brief Returns the number of errors to be evaluated
+     *
+     * Returns the number of errors to be evaluated, that is, the number of error norms associated
+     * with the problem.
+     */
+    int NEvalErrors() override { return 5; }
+    
+    /**
+     * @brief Calculates the approximation error at a point
+     * @param [in] data material data of the integration point
+     * @param [out] errors calculated errors
+     */
+    void Errors(const TPZVec<TPZMaterialDataT<STATE>> &data, TPZVec<REAL> &errors) override;
     
     /// Returns the name of the material
     std::string Name() const override {

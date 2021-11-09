@@ -95,8 +95,9 @@ int TMRSDarcyFlowWithMem<TMEM>::VariableIndex(const std::string &name) const {
     if(!strcmp("Pressure",name.c_str()))        return  2;
     if(!strcmp("div_q",name.c_str()))           return  3;
     if(!strcmp("kappa",name.c_str()))           return  4;
-    if(!strcmp("g_average",name.c_str()))        return  5;
-    if(!strcmp("p_average",name.c_str()))        return  6;
+    if(!strcmp("g_average",name.c_str()))       return  5;
+    if(!strcmp("p_average",name.c_str()))       return  6;
+    if(!strcmp("GradPressure", name.c_str()))   return 7;
     return TPZMaterial::VariableIndex(name);
 }
 
@@ -108,7 +109,13 @@ int TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(int var) const{
     if(var == 4) return 1;
     if(var == 5) return 1;
     if(var == 6) return 1;
+    if(var == 7) return 3;
     return TPZMaterial::NSolutionVariables(var);
+}
+
+template <class TMEM>
+int TMRSDarcyFlowWithMem<TMEM>::ClassId() const {
+    return Hash("TMRSDarcyFlowWithMem") ^ TBase::ClassId() << 1;
 }
 
 template <class TMEM>
@@ -178,6 +185,22 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> 
             Solout[0] = datavec[p_avgb].sol[0][0];
             return;
         }
+    }
+    
+    if (var == 9) {
+
+        if(datavec[1].fShapeType == TPZMaterialData::EEmpty) return;
+        TPZFNMatrix<9, REAL> dsoldx(3, 1.,0.);
+        TPZFNMatrix<9, REAL> dsoldaxes(m_dimension, 1,0.);
+
+        dsoldaxes = datavec[1].dsol[0];
+        TPZAxesTools<REAL>::Axes2XYZ(dsoldaxes, dsoldx, datavec[1].axes);
+
+        for (int i = 0; i < m_dimension; i++) {
+            Solout[i] = dsoldx(i, 0);
+        }
+
+        return;
     }
     
 //    DebugStop();
@@ -489,5 +512,69 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
     
 }
 
+template <class TMEM>
+void TMRSDarcyFlowWithMem<TMEM>::Errors(const TPZVec<TPZMaterialDataT<STATE>> &data, TPZVec<REAL> &errors) {
+
+    /**
+     * datavec[0]= Flux
+     * datavec[1]= Pressure
+     *
+     * Errors:
+     * [0] L2 for pressure
+     * [1] L2 for flux
+     * [2] L2 for div(flux)
+     * [3] Grad pressure (Semi H1)
+     * [4] Hdiv norm
+    **/
+    errors.Resize(NEvalErrors());
+    errors.Fill(0.0);
+
+    TPZManVector<STATE, 3> fluxfem(3), pressurefem(1,0);
+    fluxfem = data[0].sol[0];
+    STATE divsigmafem = data[0].divsol[0][0];
+
+    auto dsol = data[1].dsol;
+
+    TPZVec<STATE> divsigma(1);
+
+    TPZVec<STATE> u_exact(1, 0);
+    TPZFMatrix<STATE> du_exact(3, 1, 0);
+    if (this->fExactSol) {
+        this->fExactSol(data[0].x, u_exact, du_exact);
+    }
+    if (this->fForcingFunction) {
+        this->fForcingFunction(data[0].x, divsigma);
+    }
+
+    REAL residual = (divsigma[0] - divsigmafem) * (divsigma[0] - divsigmafem);
+    if(data[1].sol[0].size())
+        pressurefem[0] = data[1].sol[0][0];
+
+    long gp_index = data[0].intGlobPtIndex;
+    TMEM & memory = this->GetMemory().get()->operator[](gp_index);
+    const STATE perm = memory.m_kappa(0,0); // assuming isotropic!
+    const STATE inv_perm = 1. / perm;
+
+    TPZManVector<STATE, 3> gradpressurefem(3, 0.);
+    this->Solution(data, VariableIndex("GradPressure"), gradpressurefem);
+
+    TPZManVector<STATE, 3> fluxexactneg(3, 0);
+    TPZManVector<STATE, 3> gradpressure(3, 0);
+    for (int i = 0; i < 3; i++) {
+        gradpressure[i] = du_exact[i];
+        fluxexactneg[i] = -perm * gradpressure[i];
+    }
+
+    REAL L2flux = 0., L2grad = 0.;
+    for (int i = 0; i < 3; i++) {
+        L2flux += (fluxfem[i] + fluxexactneg[i]) * inv_perm * (fluxfem[i] + fluxexactneg[i]);
+        L2grad += (du_exact[i] - gradpressurefem[i]) * (du_exact[i] - gradpressurefem[i]);
+    }
+    errors[0] = (pressurefem[0] - u_exact[0]) * (pressurefem[0] - u_exact[0]);//L2 error for pressure
+    errors[1] = L2flux;//L2 error for flux
+    errors[2] = residual;//L2 for div
+    errors[3] = L2grad;
+    errors[4] = L2flux + residual;
+}
 
 template class TMRSDarcyFlowWithMem<TMRSMemory>;

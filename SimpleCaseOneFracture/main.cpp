@@ -40,9 +40,16 @@ using namespace std;
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
 
+static TPZLogger mainlogger("onefrac");
 
 int main(){
-        
+    TPZLogger::InitializePZLOG("log4cxx.cfg");    
+    if (mainlogger.isDebugEnabled()) {
+        std::stringstream sout;
+        sout << "\nLogger for SimpleCaseOneFracture target\n" << endl;;
+        LOGPZ_DEBUG(mainlogger, sout.str())
+    }
+    
     const int caseToSim = 1;
     // 0: 1 frac cte pressure
     // 1: 1 frac linear pressure variation
