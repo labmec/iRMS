@@ -398,42 +398,13 @@ void ChangeBCsToNoFlux(TPZGeoMesh* gmesh) {
         const REAL distP1 = fabs(cent[pos] - 1.);
         const REAL tol = 1.e-8;
         if (distM1 < tol) {
-//            gel->SetMaterialId(EFaceBCPressure);
             gel->SetMaterialId(EInlet);
             continue;
         }
         if (distP1 < tol) {
-//            gel->SetMaterialId(EFaceBCPressure);
             gel->SetMaterialId(EOutlet);
             continue;
         }
-//        gel->SetMaterialId(EFaceBCPressure);
         gel->SetMaterialId(ENoflux);
     }
 }
-
-
-//
-//void autoptrtest::AutoPointerConversionTest(){
-//
-//    SECTION("Testing TPZAutoPointerDynamicCast"){
-//        TPZAutoPointer<TPZMatrix<STATE>> mat_ptr(new TPZFMatrix<STATE>(1,1,0.));
-//        TPZAutoPointer<TPZFMatrix<STATE>> fmat_ptr =
-//            TPZAutoPointerDynamicCast<TPZFMatrix<STATE>>(mat_ptr);
-//        REQUIRE(fmat_ptr);
-//        TPZAutoPointer<TPZFNMatrix<9,STATE>> fnmat_ptr =
-//            TPZAutoPointerDynamicCast<TPZFNMatrix<9,STATE>>(mat_ptr);
-//        REQUIRE(!fnmat_ptr);
-//    }
-//    SECTION("Testing Conversion Constructor"){
-//        TPZAutoPointer<TPZFMatrix<STATE>> fmat_ptr(new TPZFMatrix<STATE>(1,1,0.));
-//        TPZAutoPointer<TPZMatrix<STATE>> mat_ptr(fmat_ptr);
-//        REQUIRE(mat_ptr);
-//    }
-//    SECTION("Testing Conversion Assignment"){
-//        TPZAutoPointer<TPZFMatrix<STATE>> fmat_ptr(new TPZFMatrix<STATE>(1,1,0.));
-//        TPZAutoPointer<TPZMatrix<STATE>> mat_ptr = nullptr;
-//        mat_ptr = fmat_ptr;
-//        REQUIRE(mat_ptr);
-//    }
-//}
