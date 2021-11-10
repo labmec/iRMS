@@ -21,17 +21,9 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
 TPZGeoMesh *ReadFractureMeshCase0(std::string &filename);
 
 // ---- Driver Function ----
-
 void Test2frac(const int& caseToSim);
 
 enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd};
-// ----- End of Functions -----
-
-// ----- Namespaces -----
-using namespace std;
-// ----- End of namespaces -----
-
-
 
 // ----- Test cases -----
 // ---- Test 0 ----
@@ -39,17 +31,11 @@ TEST_CASE("2frac","[onlyfracintersect_test]"){
     Test2frac(0);
 }
 
-static TPZLogger mainlogger("onlyfractures");
+// ----- Namespaces -----
+using namespace std;
 
-auto exactSol = [](const TPZVec<REAL> &loc,
-                   TPZVec<STATE>&u,
-                   TPZFMatrix<STATE>&gradU){
-    const auto &x=loc[0];
-    const auto &y=loc[1];
-    const auto &z=loc[2];
-    u[0]= 2.;
-    gradU(0,0) = 0.;
-};
+// ----- Logger -----
+static TPZLogger mainlogger("onlyfractures");
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
@@ -61,7 +47,6 @@ auto exactSol = [](const TPZVec<REAL> &loc,
 //  | |  | |  / ___ \  | | | |\  |
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
-
 void Test2frac(const int& caseToSim)
 {
     TPZLogger::InitializePZLOG("log4cxx.cfg");
@@ -71,13 +56,10 @@ void Test2frac(const int& caseToSim)
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
     
-    // Reading ONLY the fractures of mesh from DFN
+    // -------------- Reading ONLY the fractures of mesh from DFN --------------
     TPZGeoMesh *gmesh = nullptr;
     TMRSDataTransfer sim_data;
-    
     CreateGMeshAndDataTransfer(gmesh,sim_data,caseToSim);
-    
-    const bool isCtePressVariation = false;
     
     const bool printgmesh = true;
     if (printgmesh) {
@@ -85,33 +67,33 @@ void Test2frac(const int& caseToSim)
         TPZVTKGeoMesh::PrintGMeshVTK(gmesh, name);
     }
         
+    // -------------- Approximation space --------------
     TMRSApproxSpaceGenerator aspace;
-    // Approximation space
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = false;
     sim_data.mTNumerics.m_mhm_mixed_Q = false;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E2Space;
     
-    // Setting gmesh
+    // -------------- Setting gmesh --------------
     aspace.SetGeometry(gmesh);
     
-    // Setting the global data transfer
+    // -------------- Setting the global data transfer --------------
     aspace.SetDataTransfer(sim_data);
     aspace.MatIDFracIntesect() = EIntersection;
     
-    // Creates de multiphysics compmesh
+    // -------------- Creates de multiphysics compmesh --------------
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
         
-    // Analysis parameters
+    // -------------- Analysis parameters --------------
     bool must_opt_band_width_Q = false;
     int n_threads = 0;
     bool UsingPzSparse = false;
     bool UsePardiso_Q = true;
     
-    // Setting analysis
+    // -------------- Setting analysis --------------
     TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
     mixAnalisys->SetDataTransfer(&sim_data);
     mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
@@ -124,15 +106,14 @@ void Test2frac(const int& caseToSim)
     mixed_operator->LoadSolution(mixed_operator->Solution());
     // -------------- End of running problem --------------
     
-    // Post processing
+    // -------------- Post processing --------------
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
     mixAnalisys->PostProcessTimeStep();
     
+    // -------------- Integral of pressure over domain --------------
     const std::string varname = "Pressure";
     std::set<int> matids;
     matids.insert(EDomain);
-    
-//    TPZCompMesh *pmesh = mixed_operator->MeshVector()[1];
     mixed_operator->Reference()->ResetReference();
     mixed_operator->LoadReferences();
     TPZVec<STATE> vecint = mixed_operator->Integrate(varname, matids);
@@ -144,8 +125,8 @@ void Test2frac(const int& caseToSim)
     
     // Analytic solution is unit constant pressure (ctepressuresol = 1)
     // There are two 2x2 fracture. Therefore total area is eight (area = 8)
-    // Thus, the integra of pressure should be area*ctepressuresol = 8
-    REQUIRE( integratedpressure == Approx( 8.0 ) );
+    // Thus, the integral of pressure should be area*ctepressuresol = 8
+    REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
     
     // Cleaning up
     delete gmesh;
@@ -285,7 +266,6 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
     TPZGeoMesh *gmeshFine;
     REAL l = 1.0;
     GeometryFine.SetCharacteristiclength(l);
-//    GeometryFine.SetFormatVersion("4.1");
     
     // Reading mesh
     GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
