@@ -22,6 +22,7 @@ void ChangeBCsToNoFlux(TPZGeoMesh* gmesh);
 
 TPZGeoMesh *ReadFractureMeshCase0(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase1(std::string &filename);
+TPZGeoMesh *ReadFractureMeshCase2(std::string &filename);
 
 enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd, EVolume, EFaceBCPressure};
 int globFracID = 10;
@@ -50,7 +51,7 @@ int main(){
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
     
-    const int caseToSim = 1;
+    const int caseToSim = 2;
     // 0: 1 frac cte pressure
     // 1: 1 frac linear pressure variation
     RunTest(caseToSim);
@@ -114,7 +115,7 @@ void RunTest(const int caseToSim)
     
     // ----- Post processing -----
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-    const int dimToPost = 3;
+    const int dimToPost = 2;
     mixAnalisys->PostProcessTimeStep(dimToPost);
     
     // ----- Cleaning up -----
@@ -135,6 +136,11 @@ void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TMRSDataTransfer &sim_data, c
             break;
         case 1: {
             gmesh = ReadFractureMeshCase1(filename);
+        }
+            break;
+        case 2: {
+            std::string filename2 = basemeshpath + "/verifications/1frac2el.msh";
+            gmesh = ReadFractureMeshCase2(filename2);
         }
             break;
         default:
@@ -185,6 +191,14 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,N_Type,zero_flux);
     
+    }
+    else if (caseToSim < 4){
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(1);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EFaceBCPressure,D_Type,1.);
+        
+
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,D_Type,1.);
     }
     else {
         DebugStop();
@@ -299,6 +313,34 @@ TPZGeoMesh *ReadFractureMeshCase1(std::string &filename){
     ChangeBCsToNoFlux(gmesh);
     return gmesh;
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+TPZGeoMesh *ReadFractureMeshCase2(std::string &filename){
+    
+    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
+
+    // domain
+    std::string volbase = "c";
+
+    // Volumes
+    for (int ivol = 1; ivol < 3; ivol++) {
+        std::string ivolstring = volbase + to_string(ivol);
+        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
+    }
+    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
+    
+    // Fractures
+    dim_name_and_physical_tagFine[2]["Fracture10"] = globFracID;
+
+    // Fractures BCs
+    dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
+        
+    TPZGeoMesh* gmesh = generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
+    return gmesh;
+}
+
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------

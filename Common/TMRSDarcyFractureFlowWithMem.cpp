@@ -359,9 +359,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeFourSpaces(const TPZVec<TPZMa
 
 template <class TMEM>
 void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
-    TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
-    
-//    this->Contribute(datavec, weight, ekfake, ef);
+
     this->Contribute(datavec, weight, ef);
     
     if(TMRSDarcyFractureFlowWithMem<TMEM>::fUpdateMem){
