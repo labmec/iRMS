@@ -3549,8 +3549,9 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZManVector<
     const int lagrangematid = mHybridizer->lagrangeInterfaceMatId();
     const int lagrangematidend = mHybridizer->lagrangeInterfaceEndMatId();
     for (auto cel : cmeshpressure->ElementVec()) {
+        if(!cel) continue;
         const int celmatid = cel->Material()->Id();
-        if (!cel && celmatid != lagrangematid && celmatid != lagrangematidend) {
+        if (celmatid != lagrangematid && celmatid != lagrangematidend) {
             continue;
         }
         TPZGeoEl* gel = cel->Reference();
