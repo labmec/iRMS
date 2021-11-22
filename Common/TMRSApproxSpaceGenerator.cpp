@@ -401,6 +401,17 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     std::set<int> buildmatids(matids);
     // create all flux elements as discontinuous elements
     cmesh->AutoBuild(buildmatids);
+  {
+    std::ofstream myfile("FluxMeshGood.txt");
+    cmesh->Print(myfile);
+  }
+    
+//  {
+//    std::ofstream out("cmeshbef.vtk");
+//    TPZVTKGeoMesh::PrintCMeshVTK(cmesh, out);
+//  }
+
+    
     // add the Hdiv wrapper elements as boundary of the volumetric elements
     mGeometry->ResetReference();
     {
@@ -438,6 +449,11 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
         }
     }
     
+//  {
+//    std::ofstream out("cmeshafter.vtk");
+//    TPZVTKGeoMesh::PrintCMeshVTK(cmesh, out);
+//  }
+//
     buildmatids.clear();
     
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
@@ -453,6 +469,12 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     
     // create all flux elements as discontinuous elements
     cmesh->AutoBuild(buildmatids);
+    
+  {
+    std::ofstream myfile("FluxMeshGood.txt");
+    cmesh->Print(myfile);
+  }
+
     
     // vector with computational element pointers for creating fracture elements
     TPZVec<TPZCompEl *> fracsupport(mGeometry->NElements(),0);

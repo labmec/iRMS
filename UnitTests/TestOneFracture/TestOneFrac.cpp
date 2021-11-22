@@ -6,7 +6,9 @@
 
 #include <catch2/catch.hpp>
 
-#include "TMRSApproxSpaceGenerator.h"
+#include <TMRSApproxSpaceGenerator.h>
+#include <tpzgeoelrefpattern.h>
+#include <TPZGenGrid3D.h>
 #include "imrs_config.h"
 
 // ---- Enum for materials ----
@@ -387,25 +389,61 @@ TPZGeoMesh *ReadFractureMeshCase1(std::string &filename){
 
 TPZGeoMesh *ReadFractureMeshCase2(std::string &filename){
     
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
-
-    // domain
-    std::string volbase = "c";
-
-    // Volumes
-    for (int ivol = 1; ivol < 3; ivol++) {
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
-    }
-    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
-    
-    // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture10"] = globFracID;
-
-    // Fractures BCs
-    dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
+    const bool fromgmesh = 0;
+    TPZGeoMesh* gmesh = nullptr;
+    if (fromgmesh) {
         
-    TPZGeoMesh* gmesh = generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
+        TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
+        
+        // domain
+        std::string volbase = "c";
+        
+        // Volumes
+        for (int ivol = 1; ivol < 3; ivol++) {
+            std::string ivolstring = volbase + to_string(ivol);
+            dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
+        }
+        dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
+        
+        // Fractures
+        dim_name_and_physical_tagFine[2]["Fracture10"] = globFracID;
+        
+        // Fractures BCs
+        dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
+        
+        gmesh = generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
+    }
+    else{
+        // ----- Create Geo Mesh -----
+        const TPZVec<REAL> minX = {-1.,-1.,-1.};
+        const TPZVec<REAL> maxX = {1.,1.,1.};
+        const TPZVec<int> nelDiv = {1,1,2};
+        const MMeshType elType = MMeshType::EHexahedral;
+
+        TPZGenGrid3D gen3d(minX,maxX,nelDiv,elType);
+        gmesh = gen3d.BuildVolumetricElements(EVolume);
+
+        // ----- Fracture element -----
+        int64_t index;
+        TPZManVector<int64_t,2> nodesId = {4,5};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        nodesId = {5,7};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        nodesId = {7,6};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        nodesId = {6,4};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        TPZManVector<int64_t,4> nodesIdVec = {4,6,7,5};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoQuad>(nodesIdVec,globFracID,*gmesh,index);
+
+        // OBS: For some reason, the code leads to wrong results if these bcs are created before the fracture
+        gmesh = gen3d.BuildBoundaryElements(EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure);
+        
+        gmesh->BuildConnectivity();
+        std::ofstream out("meshbad.txt");
+        gmesh->Print(out);
+    }
+    
     return gmesh;
 }
 
