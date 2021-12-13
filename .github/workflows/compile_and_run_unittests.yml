@@ -52,6 +52,8 @@ jobs:
       working-directory: ${{github.workspace}}/libinterpolate/build
       # run: cmake $GITHUB_WORKSPACE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libinterpolate_install -DCMAKE_BUILD_TYPE=$BUILD_TYPE
       run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/libinterpolate_install
+      env:
+        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}      
     - name: Build And Install External libinterpolate
       working-directory: ${{github.workspace}}/libinterpolate/build
       shell: bash
