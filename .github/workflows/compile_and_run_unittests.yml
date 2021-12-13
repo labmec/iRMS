@@ -32,8 +32,8 @@ jobs:
       id: install-boost
       with:
         boost_version: 1.73.0    
-      platform_version: 18.04
-      boost_install_dir: /home/runner/boost
+        platform_version: 18.04
+        boost_install_dir: /home/runner/boost
               
     - name: Clone External libInterpolate
       uses: actions/checkout@v2
