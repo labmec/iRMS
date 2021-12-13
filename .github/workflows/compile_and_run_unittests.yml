@@ -18,7 +18,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [[macos-latest],[ubuntu-latest]]
+        os: [[macos-latest]]
 
     steps:      
     - uses: actions/checkout@v2    
@@ -32,8 +32,8 @@ jobs:
       id: install-boost
       with:
         boost_version: 1.73.0    
-        platform_version: 18.04
-        boost_install_dir: /home/runner/work/iMRS
+        platform_version: 10.15
+        boost_install_dir: /home/runner/work/iMRS/iMRS
               
     - name: Clone External libInterpolate
       uses: actions/checkout@v2
