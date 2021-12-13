@@ -40,22 +40,22 @@ jobs:
       timeout-minutes: 5
       run: sudo apt-get install intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mpi intel-oneapi-mpi-devel intel-oneapi-mkl ninja-build
 
-    - name: checkout project code
-      uses: actions/checkout@v2
+    # - name: checkout project code
+    #   uses: actions/checkout@v2
 
     - name: Setup Intel oneAPI environment
       run: |
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
         
-    - name: CMake Configure
-      run: cmake -B build
+    # - name: CMake Configure
+    #   run: cmake -B build
 
-    - name: CMake build
-      run: cmake --build build
+    # - name: CMake build
+    #   run: cmake --build build
 
-    - name: CMake test
-      run: ctest --test-dir build
+    # - name: CMake test
+    #   run: ctest --test-dir build
 
 
     - name: Clone External Eigen3
@@ -127,7 +127,7 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}/neopz/build
       # run: cmake $GITHUB_WORKSPACE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSING_MKL=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install
     - name: Build And Install External NeoPZ
       working-directory: ${{github.workspace}}/neopz/build
       shell: bash
