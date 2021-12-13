@@ -35,18 +35,16 @@ jobs:
         platform_version: 18.04
         # boost_install_dir: /home/runner/work/iMRS
               
+    - name: Install Eigen3
+      shell: bash
+      working-directory: ${{github.workspace}}/libinterpolate
+      run: sudo apt install libeigen3-dev              
     - name: Clone External libInterpolate
       uses: actions/checkout@v2
       with:
         path: ./libinterpolate
         repository: CD3/libInterpolate
         ref: master
-    - name: Boost libs
-      shell: bash
-      working-directory: ${{github.workspace}}/libinterpolate
-      run: echo "Boost path $BOOST_ROOT"        
-      env:
-        BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}      
     - name: Set up build environment for External libinterpolate
       shell: bash
       working-directory: ${{github.workspace}}/libinterpolate
