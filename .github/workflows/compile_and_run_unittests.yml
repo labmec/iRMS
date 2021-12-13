@@ -31,6 +31,10 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}
       run: git clone https://gitlab.com/libeigen/eigen.git && git checkout 3.3
+    - name: Change Branch of External Eigen3
+      shell: bash
+      working-directory: ${{github.workspace}}
+      run: git checkout 3.3      
     - name: Set up build environment for External Eigen3
       shell: bash
       working-directory: ${{github.workspace}}/eigen
