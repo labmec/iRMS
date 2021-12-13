@@ -38,7 +38,7 @@ jobs:
     - name: Configure CMake External Eigen3
       shell: bash
       working-directory: ${{github.workspace}}/eigen/build
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/eigen_install
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE --DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/eigen_install
     - name: Build And Install External Eigen3
       working-directory: ${{github.workspace}}/eigen/build
       shell: bash
@@ -68,7 +68,7 @@ jobs:
     - name: Configure CMake External libinterpolate
       shell: bash
       working-directory: ${{github.workspace}}/libinterpolate/build
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/libinterpolate_install
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/libinterpolate_install
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}              
     - name: Build And Install External libinterpolate
@@ -92,7 +92,7 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}/neopz/build
       # run: cmake $GITHUB_WORKSPACE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install -DCMAKE_BUILD_TYPE=$BUILD_TYPE
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/neopz_install
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install
     - name: Build And Install External NeoPZ
       working-directory: ${{github.workspace}}/neopz/build
       shell: bash
