@@ -27,10 +27,24 @@ jobs:
       # We'll use this as our working directory for all subsequent commands
       run: cmake -E make_directory ${{github.workspace}}/build
 
-    - name: Install Eigen3
+    - name: Clone External Eigen3
       shell: bash
       working-directory: ${{github.workspace}}
       run: git clone https://gitlab.com/libeigen/eigen.git
+    - name: Set up build environment for External Eigen3
+      shell: bash
+      working-directory: ${{github.workspace}}/eigen
+      run: cmake -E make_directory build
+    - name: Configure CMake External Eigen3
+      shell: bash
+      working-directory: ${{github.workspace}}/eigen/build
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/eigen_install
+    - name: Build And Install External Eigen3
+      working-directory: ${{github.workspace}}/eigen/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target install
+      env:
+        MAKEFLAGS: "-j4"                        
       
     - name: Install boost
       uses: MarkusJx/install-boost@v2.0.0
