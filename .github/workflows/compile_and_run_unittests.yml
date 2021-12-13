@@ -46,8 +46,8 @@ jobs:
         printenv >> $GITHUB_ENV
 
     - name: Var name
-      run: |
-        echo "$MKLROOT"
+      shell: bash
+      run: echo "$MKLROOT"
 
     - name: Clone External NeoPZ
       uses: actions/checkout@v2
