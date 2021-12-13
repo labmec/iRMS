@@ -30,9 +30,7 @@ jobs:
     - name: Install Eigen3
       shell: bash
       working-directory: ${{github.workspace}}
-      run: |
-        snip 
-        git clone https://gitlab.com/libeigen/eigen.git
+      run: git clone https://gitlab.com/libeigen/eigen.git
       
     - name: Install boost
       uses: MarkusJx/install-boost@v2.0.0
