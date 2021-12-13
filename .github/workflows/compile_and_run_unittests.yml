@@ -38,7 +38,7 @@ jobs:
     - name: Configure CMake External Eigen3
       shell: bash
       working-directory: ${{github.workspace}}/eigen/build
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE --DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/eigen_install
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/eigen_install
     - name: Build And Install External Eigen3
       working-directory: ${{github.workspace}}/eigen/build
       shell: bash
