@@ -26,6 +26,7 @@ void ChangeBCsToNoFlux(TPZGeoMesh* gmesh);
 TPZGeoMesh *ReadFractureMeshCase0(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase1(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase2(std::string &filename);
+TPZGeoMesh *ReadFractureMeshCase3();
 
 enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd, EVolume, EFaceBCPressure};
 int globFracID = 10;
@@ -54,10 +55,11 @@ int main(){
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
     
-    const int caseToSim = 2;
+    const int caseToSim = 3;
     // 0: 1 frac cte pressure
     // 1: 1 frac linear pressure variation
     // 2: 1 frac cte pressure | frac domain touching frac bnd
+    // 3: 2 frac cte pressure | frac domain touching frac bnd | w/ frac intersection
     RunTest(caseToSim);
     return 0;
 }
@@ -150,6 +152,10 @@ void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TMRSDataTransfer &sim_data, c
         case 2: {
             std::string filename2 = basemeshpath + "/verifications/1frac2el.msh";
             gmesh = ReadFractureMeshCase2(filename2);
+        }
+            break;
+        case 3: {
+            gmesh = ReadFractureMeshCase3();
         }
             break;
         default:
@@ -350,9 +356,6 @@ TPZGeoMesh *ReadFractureMeshCase2(std::string &filename){
         dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
         
         gmesh = generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
-        
-        std::ofstream out("meshgood.txt");
-        gmesh->Print(out);
     }
     else{
         // ----- Create Geo Mesh -----
@@ -381,13 +384,74 @@ TPZGeoMesh *ReadFractureMeshCase2(std::string &filename){
         gmesh = gen3d.BuildBoundaryElements(EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure);
         
         gmesh->BuildConnectivity();
-        std::ofstream out("meshbad.txt");
-        gmesh->Print(out);
     }
     
     return gmesh;
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+TPZGeoMesh *ReadFractureMeshCase3(){
+    
+    TPZGeoMesh* gmesh = nullptr;
+    
+    // ----- Create Geo Mesh -----
+    const TPZVec<REAL> minX = {-1.,-1.,-1.};
+    const TPZVec<REAL> maxX = {1.,1.,1.};
+    const TPZVec<int> nelDiv = {1,2,2};
+    const MMeshType elType = MMeshType::EHexahedral;
+
+    TPZGenGrid3D gen3d(minX,maxX,nelDiv,elType);
+    gmesh = gen3d.BuildVolumetricElements(EVolume);
+
+    // ----- Fracture element -----
+    int64_t index;
+    TPZManVector<int64_t,2> nodesId = {6,7};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {7,9};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {9,11};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {11,10};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {10,8};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {8,6};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+
+    nodesId = {9,15};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {15,14};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {14,8};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {8,2};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {2,3};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    nodesId = {3,9};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+
+    nodesId = {8,9};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EIntersection,*gmesh,index);
+    
+    TPZManVector<int64_t,4> nodesIdVec = {6,7,9,8};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoQuad>(nodesIdVec,globFracID,*gmesh,index);
+    nodesIdVec = {8,9,11,10};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoQuad>(nodesIdVec,globFracID,*gmesh,index);
+    nodesIdVec = {2,3,9,8};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoQuad>(nodesIdVec,globFracID,*gmesh,index);
+    nodesIdVec = {8,9,15,14};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoQuad>(nodesIdVec,globFracID,*gmesh,index);
+    
+    // OBS: For some reason, the code leads to wrong results if these bcs are created before the fracture
+    gmesh = gen3d.BuildBoundaryElements(EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure);
+    
+    gmesh->BuildConnectivity();
+
+    return gmesh;
+}
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------

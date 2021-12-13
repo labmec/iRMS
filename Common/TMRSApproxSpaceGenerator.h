@@ -103,8 +103,8 @@ public:
     }
     
     const bool isThereFracIntersection() const;
-    void HybridizeIntersections(TPZManVector<TPZCompMesh *, 3>& mesh_vec);
-    void CreateIntersectionInterfaceElements(TPZManVector<TPZCompMesh *, 3>& meshvec_Hybrid);
+    void HybridizeIntersections(TPZVec<TPZCompMesh *>& mesh_vec);
+    void CreateIntersectionInterfaceElements(TPZVec<TPZCompMesh *>& meshvec_Hybrid);
     void DeleteBCsThatAreOnIntersect(TPZCompMesh* hdivcmesh);
     
     void LoadGeometry(std::string geometry_file);

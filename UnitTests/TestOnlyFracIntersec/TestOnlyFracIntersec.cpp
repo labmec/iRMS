@@ -23,6 +23,7 @@ TPZGeoMesh *ReadFractureMeshCase0(std::string &filename);
 // ---- Driver Function ----
 void Test2frac(const int& caseToSim);
 
+int globFracID = 10;
 enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd};
 
 // ----- Test cases -----
@@ -113,7 +114,7 @@ void Test2frac(const int& caseToSim)
     // -------------- Integral of pressure over domain --------------
     const std::string varname = "Pressure";
     std::set<int> matids;
-    matids.insert(EDomain);
+    matids.insert(globFracID);
     mixed_operator->Reference()->ResetReference();
     mixed_operator->LoadReferences();
     TPZVec<STATE> vecint = mixed_operator->Integrate(varname, matids);
@@ -157,7 +158,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     
     // Fracture material
     TMRSDataTransfer sim_data;
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["Fractures"] = EDomain;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["Fractures"] = globFracID;
 
     // NS: What are these?
     sim_data.mTGeometry.mInterface_material_id = 100;
@@ -244,7 +245,7 @@ TPZGeoMesh *ReadFractureMeshCase0(std::string &filename){
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
 
     // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture12"] = EDomain;
+    dim_name_and_physical_tagFine[2]["Fracture12"] = globFracID;
 
     // Fractures BCs
     dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
