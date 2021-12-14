@@ -38,7 +38,8 @@ jobs:
         
     - name: Install Intel oneAPI
       timeout-minutes: 5
-      run: sudo apt-get install intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mpi intel-oneapi-mpi-devel intel-oneapi-mkl ninja-build
+      # run: sudo apt-get install intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mpi intel-oneapi-mpi-devel intel-oneapi-mkl ninja-build
+      run: sudo apt-get install 
 
     - name: Setup Intel oneAPI environment
       run: |
@@ -54,12 +55,15 @@ jobs:
       working-directory: /opt/intel/oneapi/mkl/2022.0.0
       run: |
         pwd
+        ls        
+        cd ..
+        pwd
         ls
         cd ..
+        pwd
         ls
         cd ..
-        ls
-        cd ..
+        pwd
         ls
 
     - name: Clone External NeoPZ
