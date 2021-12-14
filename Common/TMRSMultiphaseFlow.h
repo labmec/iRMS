@@ -114,10 +114,10 @@ public:
     
     void ContributeBCInterface(TPZMaterialData &data, TPZVec<TPZMaterialDataT<STATE>> &datavecleft, REAL weight, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc);
     
-    virtual void ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,
-                              REAL weight, TPZFMatrix<STATE> &ek,
-                              TPZFMatrix<STATE> &ef,
-                              TPZBndCondT<STATE> &bc){
+    void ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec,
+                      REAL weight, TPZFMatrix<STATE> &ek,
+                      TPZFMatrix<STATE> &ef,
+                      TPZBndCondT<STATE> &bc) override{
         DebugStop();
     }
     

@@ -74,7 +74,7 @@ public:
      * Returns the number of errors to be evaluated, that is, the number of error norms associated
      * with the problem.
      */
-    int NEvalErrors() override { return 5; }
+    int NEvalErrors() const override { return 5; }
     
     /**
      * @brief Calculates the approximation error at a point
