@@ -36,8 +36,6 @@ int main(){
     TPZLogger::InitializePZLOG();
 #endif
     BenchmarkCase1();
-
-
 }
 
 
