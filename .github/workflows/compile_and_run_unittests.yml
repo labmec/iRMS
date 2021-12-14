@@ -52,7 +52,15 @@ jobs:
     - name: What is on MKL folder
       shell: bash
       working-directory: /opt/intel/oneapi/mkl/2022.0.0
-      run: ls
+      run: |
+        pwd
+        ls
+        cd ..
+        ls
+        cd ..
+        ls
+        cd ..
+        ls
 
     - name: Clone External NeoPZ
       uses: actions/checkout@v2
