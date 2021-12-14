@@ -45,15 +45,19 @@ using namespace std;
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
 
+#ifdef PZ_LOG
 static TPZLogger mainlogger("onefrac");
+#endif
 
 int main(){
+#ifdef PZ_LOG
     TPZLogger::InitializePZLOG("log4cxx.cfg");    
     if (mainlogger.isDebugEnabled()) {
         std::stringstream sout;
         sout << "\nLogger for SimpleCaseOneFracture target\n" << endl;;
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
+#endif
     
     const int caseToSim = 3;
     // 0: 1 frac cte pressure

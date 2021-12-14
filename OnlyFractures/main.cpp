@@ -67,15 +67,19 @@ using namespace std;
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
 
+#ifdef PZ_LOG
 static TPZLogger mainlogger("onlyfractures");
+#endif
 
 int main(){
+#ifdef PZ_LOG
     TPZLogger::InitializePZLOG("log4cxx.cfg");
     if (mainlogger.isDebugEnabled()) {
         std::stringstream sout;
         sout << "\nLogger for OnlyFractures target\n" << endl;;
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
+#endif
         
     const int caseToSim = 0;
     // 0: 2 perpendicular fractures, cte pressure
