@@ -6,7 +6,7 @@ file(GLOB common_headers *.h)
 file(GLOB common_sources *.cpp)
 
 # This package is here because iMRS is the only one that uses it
-find_package(libInterpolate REQUIRED HINTS ${CMAKE_SOURCE_DIR}/../libinterpolate_install)
+find_package(libInterpolate REQUIRED HINTS ${CMAKE_SOURCE_DIR}/../libinterpolate_install ${CMAKE_SOURCE_DIR}/libinterpolate_install)
 
 # install eigen
 include(cmake/EnableEigen.cmake)

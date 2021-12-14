@@ -15,11 +15,15 @@ IF(APPLE)
 ENDIF(APPLE)
 
 # ----- Find PZ. By default searches one directory up -----
-find_package(NeoPZ REQUIRED HINTS ${CMAKE_SOURCE_DIR}/../neopz_install/)
+find_package(NeoPZ REQUIRED HINTS ${CMAKE_SOURCE_DIR}/../neopz_install/ ${CMAKE_SOURCE_DIR}/neopz_install/)
  
 
 # ----- Check if PZ was installed with MKL -----
 check_pz_opt(PZ_USING_MKL _PZ_HAS_MKL)
+if(${_PZ_HAS_MKL} STREQUAL "OFF")
+    message(FATAL_ERROR "\nERROR! NEOPZ WITHOUT MKL IS NOT SUPPORTED. PLEASE COMPILE NEOPZ WITH MKL")
+endif()
+
 
 file(GLOB_RECURSE PZ_SRC
      "../neopz/*.h"

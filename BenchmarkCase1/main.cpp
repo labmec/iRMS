@@ -32,10 +32,10 @@ TMRSDataTransfer SettingBenchmarkCase1();
 void  ForcingFunction (const TPZVec<REAL> &pt, TPZVec<STATE> &disp);
 
 int main(){
+#ifdef PZ_LOG
     TPZLogger::InitializePZLOG();
+#endif
     BenchmarkCase1();
-
-
 }
 
 

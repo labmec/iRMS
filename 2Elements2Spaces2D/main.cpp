@@ -25,7 +25,9 @@ TPZGeoMesh *ReadFractureMesh();
 
 
 int main(){
+#ifdef PZ_LOG
     TPZLogger::InitializePZLOG();
+#endif
     CaseSimple2Frac();
 
 }

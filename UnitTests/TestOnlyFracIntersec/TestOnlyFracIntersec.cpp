@@ -36,7 +36,9 @@ TEST_CASE("2frac","[onlyfracintersect_test]"){
 using namespace std;
 
 // ----- Logger -----
+#ifdef PZ_LOG
 static TPZLogger mainlogger("onlyfractures");
+#endif
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
@@ -50,12 +52,14 @@ static TPZLogger mainlogger("onlyfractures");
 //-------------------------------------------------------------------------------------------------
 void Test2frac(const int& caseToSim)
 {
+#ifdef PZ_LOG
     TPZLogger::InitializePZLOG("log4cxx.cfg");
     if (mainlogger.isDebugEnabled()) {
         std::stringstream sout;
         sout << "\nLogger for OnlyFractures target\n" << endl;;
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
+#endif
     
     // -------------- Reading ONLY the fractures of mesh from DFN --------------
     TPZGeoMesh *gmesh = nullptr;
