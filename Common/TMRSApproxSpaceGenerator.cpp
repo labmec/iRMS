@@ -3513,7 +3513,7 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
     fluxmesh->LoadReferences();
     mHybridizer->InsertPeriferalMaterialObjects(meshvec_Hybrid);
     
-    int dimfrac = fluxmesh->Dimension()-1;
+    int dimfrac = 2;
     for (auto gel : gmesh->ElementVec()) {
         const int gelmatid = gel->MaterialId();
         if (gelmatid != mMatIDIntersection && gelmatid != mMatIDIntersection+1) {
