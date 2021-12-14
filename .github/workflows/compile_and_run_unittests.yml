@@ -87,7 +87,7 @@ jobs:
       shell: bash
       run: cmake --build . --config $BUILD_TYPE --target install
       env:
-        MAKEFLAGS: "-j4"                          
+        MAKEFLAGS: "-j4"
 
     - name: Clone External Eigen3
       shell: bash
