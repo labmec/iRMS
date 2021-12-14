@@ -72,7 +72,7 @@ jobs:
       with:
         path: ./neopz
         repository: labmec/neopz
-        ref: iMRSAutomaticUnitTesting
+        ref: develop
     - name: Set up build environment for External NeoPZ
       shell: bash
       working-directory: ${{github.workspace}}/neopz
