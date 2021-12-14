@@ -18,15 +18,18 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [[ubuntu-latest]]
+        os: [[ubuntu-latest]] # Only ubuntu for now because of mkl
 
-    steps:      
+    steps:            
     - uses: actions/checkout@v2    
+
+    # ========= Create build directory ========= 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commandss
       run: cmake -E make_directory ${{github.workspace}}/build
 
+    # ========= Install MKL =========   
     - name: Intel Apt repository
       timeout-minutes: 1
       run: |
@@ -34,39 +37,16 @@ jobs:
         sudo apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
         rm GPG-PUB-KEY-INTEL-SW-PRODUCTS-2023.PUB
         echo "deb https://apt.repos.intel.com/oneapi all main" | sudo tee /etc/apt/sources.list.d/oneAPI.list
-        sudo apt-get update
-        
+        sudo apt-get update        
     - name: Install Intel oneAPI
-      timeout-minutes: 5
-      # run: sudo apt-get install intel-oneapi-compiler-fortran intel-oneapi-compiler-dpcpp-cpp-and-cpp-classic intel-oneapi-mpi intel-oneapi-mpi-devel intel-oneapi-mkl ninja-build
-      run: sudo apt-get install intel-oneapi-mpi intel-oneapi-mpi-devel intel-oneapi-mkl-devel ninja-build
-      # run: sudo apt-get install intel-basekit
-
+      timeout-minutes: 5    
+      run: sudo apt-get install intel-oneapi-mpi intel-oneapi-mpi-devel intel-oneapi-mkl-devel ninja-build      
     - name: Setup Intel oneAPI environment
       run: |
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
 
-    - name: Var name
-      shell: bash
-      run: echo "MKLROOT = $MKLROOT"
-
-    - name: What is on MKL folder
-      shell: bash
-      working-directory: /opt/intel/oneapi/mkl/2022.0.0
-      run: |
-        pwd
-        ls        
-        cd ..
-        pwd
-        ls
-        cd ..
-        pwd
-        ls
-        cd ..
-        pwd
-        ls
-
+    # ========= Install NeoPZ ========= 
     - name: Clone External NeoPZ
       uses: actions/checkout@v2
       with:
@@ -80,7 +60,6 @@ jobs:
     - name: Configure CMake External NeoPZ
       shell: bash
       working-directory: ${{github.workspace}}/neopz/build
-      # run: cmake $GITHUB_WORKSPACE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install -DCMAKE_BUILD_TYPE=$BUILD_TYPE
       run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSING_MKL=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install
     - name: Build And Install External NeoPZ
       working-directory: ${{github.workspace}}/neopz/build
@@ -89,6 +68,7 @@ jobs:
       env:
         MAKEFLAGS: "-j4"
 
+    # ========= Install Eigen3 ========= 
     - name: Clone External Eigen3
       shell: bash
       working-directory: ${{github.workspace}}
@@ -112,6 +92,7 @@ jobs:
       env:
         MAKEFLAGS: "-j4"                        
       
+    # ========= Install Boost =========   
     - name: Install boost
       uses: MarkusJx/install-boost@v2.0.0
       id: install-boost
@@ -119,6 +100,7 @@ jobs:
         boost_version: 1.73.0    
         platform_version: 18.04        
               
+    # ========= Install LibInterpolate =========               
     - name: Clone External libInterpolate
       uses: actions/checkout@v2
       with:
@@ -144,6 +126,7 @@ jobs:
       env:
         MAKEFLAGS: "-j4"                  
 
+    # ========= Build iMRS ========= 
     - name: Configure iMRS CMake
       # Use a bash shell so we can use the same syntax for environment variable
       # access regardless of the host operating system
@@ -162,6 +145,8 @@ jobs:
       run: cmake --build . --config $BUILD_TYPE
       env:
         MAKEFLAGS: "-j4"
+
+    # ========= Run Unit Tests =========         
     - name: Run Unit Tests
       working-directory: ${{github.workspace}}/build
       shell: bash
