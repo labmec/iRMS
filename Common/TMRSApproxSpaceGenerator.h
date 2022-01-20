@@ -49,7 +49,7 @@ public:
     
     TPZHybridizeHDiv* mHybridizer;
     
-    int mMatIDIntersection;
+    int mMatIDIntersection = -1000000;
  
     ForcingFunctionBCType<STATE> mForcingFunctionBC;
     
