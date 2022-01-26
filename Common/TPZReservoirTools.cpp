@@ -335,8 +335,8 @@ void TPZReservoirTools::GroupNeighbourElements(TPZCompMesh *cmesh, const std::se
     for(auto el : seed_elements)
     {
         elhandled[el] = 1;
-        int64_t index;
-        TPZElementGroup *elgr = new TPZElementGroup(*cmesh,index);
+        TPZElementGroup *elgr = new TPZElementGroup(*cmesh);
+        const int64_t index = elgr->Index();
         if(index < nel) elhandled[index] = 1;
         groupindexes.insert(index);
         TPZCompEl *cel = cmesh->Element(el);
@@ -416,7 +416,6 @@ void TPZReservoirTools::PutFluxElementsinSubdomain(TPZCompMesh *fluxCmesh, TPZVe
             TPZGeoElBC gelbc(gelside,gelson->MaterialId());
             TPZCompEl *cel = gelson->Reference();
             if(!cel || cel->NConnects() != 1) DebugStop();
-            int64_t index;
           
             TPZStack<std::pair<TPZGeoElSide, TPZCompElSide>> loadstruct;
             loadstruct.Push({gelside,gelside.Reference()});
@@ -430,7 +429,7 @@ void TPZReservoirTools::PutFluxElementsinSubdomain(TPZCompMesh *fluxCmesh, TPZVe
                     neighbour = neighbour.Neighbour();
                 }
             }
-            TPZCompEl *cel2 = fluxCmesh->ApproxSpace().CreateCompEl(gelbc.CreatedElement(), *fluxCmesh , index);
+            TPZCompEl *cel2 = fluxCmesh->ApproxSpace().CreateCompEl(gelbc.CreatedElement(), *fluxCmesh);
             int64_t c2index = cel2->ConnectIndex(0);
             TPZConnect &c2 = cel2->Connect(0);
             c2.ResetElConnected();

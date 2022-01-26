@@ -677,9 +677,8 @@ void TPZMHMixedMesh4SpacesControl::PutinSubmeshes(TPZCompMesh *cmesh, std::map<i
 
 {
     for (std::map<int64_t,std::set<int64_t> >::iterator it = elindices.begin(); it != elindices.end(); it++) {
-        int64_t index;
-        TPZSubCompMesh *subcmesh = new TPZSubCompMesh(*cmesh,index);
-        indices[it->first] = index;
+        TPZSubCompMesh *subcmesh = new TPZSubCompMesh(*cmesh);
+        indices[it->first] = subcmesh->Index();
         for (std::set<int64_t>::iterator itloc = it->second.begin(); itloc != it->second.end(); itloc++) {
             subcmesh->TransferElement(cmesh, *itloc);
         }
