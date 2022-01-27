@@ -1296,7 +1296,7 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
 
 void TMRSApproxSpaceGenerator::DeleteBCsThatAreOnIntersect(TPZCompMesh* hdivcmesh) {
     hdivcmesh->LoadReferences();
-    
+    const int matIdIntersection = mSimData.mTFracIntersectProperties.m_IntersectionId;
     for (auto cel : hdivcmesh->ElementVec()) {
         if (!cel)
             continue;
@@ -1305,7 +1305,7 @@ void TMRSApproxSpaceGenerator::DeleteBCsThatAreOnIntersect(TPZCompMesh* hdivcmes
             continue;
         
         TPZGeoElSide gelside(gel,gel->NSides()-1);
-        TPZGeoElSide neigh = gelside.HasNeighbour(mMatIDIntersection);
+        TPZGeoElSide neigh = gelside.HasNeighbour(matIdIntersection);
         if (neigh) {
             delete cel;
         }
@@ -1343,11 +1343,14 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     if (isThereFracIntersection()) {
         mHybridizer = new TPZHybridizeHDiv(meshvec);
         mHybridizer->IdToHybridize() = 10; // TODO: Make it not hardcoded
+        const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
+        if (intersectionPressureLossId > -10000) {
+            mHybridizer->fHDivWrapMatid = intersectionPressureLossId;
+        }
         HybridizeIntersections(meshvec);
-        mHybridizer->InsertPeriferalMaterialObjects(mMixedOperator);
     }
     
-        
+    
     std::ofstream file2("PressureCmesh.vtk");
     TPZVTKGeoMesh::PrintCMeshVTK(meshvec[1], file2);
     
@@ -1385,8 +1388,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         }
     }
     TMRSDarcyFractureFlowWithMem<TMRSMemory> * fracmat = nullptr;
-    for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1])
-    {
+    for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1]){
         std::string material_name = chunk.first;
         std::cout << "physical name = " << material_name <<
         " material id " << chunk.second << " dimension " << dimension-1 << std::endl;
@@ -1404,7 +1406,6 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
         //             volume->SetPermeability(1.0);
         fracmat->SetDataTransfer(mSimData);
         mMixedOperator->InsertMaterialObject(fracmat);
-        
     }
     if (!volume) {
         DebugStop();
@@ -1433,13 +1434,21 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             int bc_id   = get<0>(chunk);
             int bc_type = get<1>(chunk);
             matsWithOutMem.insert(bc_id);
-            val2[0]  = get<2>(chunk);
+            val2[0] = get<2>(chunk);
+            if(bc_type == 2){
+                val2[0] = 0.0;
+                val1(0,0) = get<2>(chunk);
+            }
             TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
             if (HasForcingFunctionBC()) {
                 face->SetForcingFunctionBC(mForcingFunctionBC);
             }
             mMixedOperator->InsertMaterialObject(face);
         }
+    }
+    
+    if(mHybridizer) {
+        mHybridizer->InsertPeriferalMaterialObjects(mMixedOperator);
     }
     
     {
@@ -1481,7 +1490,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     mMixedOperator->SetDimModel(3);
     gSinglePointMemory = true;
     
- // NS to Jose: Should this method with these arguments be commited in PZ???
+    // NS to Jose: Should this method with these arguments be commited in PZ???
 
 //    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,meshvec,matsWithMem, matsWithOutMem);
 //    DebugStop(); // look up
@@ -3474,10 +3483,10 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
 }
 
 const bool TMRSApproxSpaceGenerator::isThereFracIntersection() const {
-    
+    const int matIdIntersection = mSimData.mTFracIntersectProperties.m_IntersectionId;
     for (auto gel : mGeometry->ElementVec()){
         const int matid = gel->MaterialId();
-        if (matid == mMatIDIntersection || matid == mMatIDIntersection+1) { // intersection matid
+        if (matid == matIdIntersection || matid == matIdIntersection+1) { // intersection matid
             return true;
         }
     }
@@ -3492,7 +3501,7 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
     }
     
     const int matidfrac = 10;
-    
+    const int matIdIntersection = mSimData.mTFracIntersectProperties.m_IntersectionId;
     TPZCompMesh* fluxmesh = meshvec_Hybrid[0];
     TPZGeoMesh* gmesh = fluxmesh->Reference();
     fluxmesh->LoadReferences();
@@ -3501,13 +3510,13 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
     int dimfrac = 2;
     for (auto gel : gmesh->ElementVec()) {
         const int gelmatid = gel->MaterialId();
-        if (gelmatid != mMatIDIntersection && gelmatid != mMatIDIntersection+1) {
+        if (gelmatid != matIdIntersection && gelmatid != matIdIntersection+1) {
             continue;
         }
         if (gel->Dimension() != 1) {
             DebugStop();
         }
-        const bool isIntersectEnd = gelmatid == mMatIDIntersection+1 ? true : false;
+        const bool isIntersectEnd = gelmatid == matIdIntersection+1 ? true : false;
         // Search for first neighbor that that is domain
         TPZGeoElSide gelside(gel,gel->NSides()-1);
         TPZGeoElSide neigh = gelside.Neighbour();

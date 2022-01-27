@@ -28,8 +28,10 @@ TPZGeoMesh *ReadFractureMeshCase1(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase2(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase3();
 TPZGeoMesh *ReadFractureMeshCase4();
+TPZGeoMesh *ReadFractureMeshCase5();
 
-enum EMatid {ENone, EFracNoFlux, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd, EVolume, EFaceBCPressure, EDONTUSE, EFracInlet, EFracOutlet};
+//enum EMatid {ENone, EFracNoFlux, EInlet, EOutlet, ENoflux, EFracPressure, EIntersection, EIntersectionEnd, EVolume, EFaceBCPressure, EDONTUSE, EFracInlet, EFracOutlet, EPLossAtIntersect};
+enum EMatid {ENone, EVolume, EInlet, EOutlet, ENoflux, EFaceBCPressure, EFracInlet, EFracOutlet, EFracNoFlux, EFracPressure, EDONTUSEGLOBALFRACID, EIntersection, EIntersectionEnd, EPLossAtIntersect};
 int globFracID = 10;
 // ----- End of Functions -----
 
@@ -66,6 +68,7 @@ int main(){
     // 2: 1 frac cte pressure | frac domain touching frac bnd
     // 3: 2 frac cte pressure | frac domain touching frac bnd | w/ frac intersection
     // 4: 2 frac linear pressure variation | frac domain touching frac bnd | w/ frac intersection
+    // 5: 1 frac linear pressure variation | frac domain touching frac bnd
     RunTest(caseToSim);
     return 0;
 }
@@ -99,8 +102,9 @@ void RunTest(const int caseToSim)
     aspace.SetGeometry(gmesh);
     
     // ----- Setting the global data transfer -----
+    sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetDataTransfer(sim_data);
-    aspace.MatIDFracIntesect() = EIntersection;
+
     
     // ----- Creates the multiphysics compmesh -----
     int order = 1;
@@ -168,6 +172,10 @@ void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TMRSDataTransfer &sim_data, c
             gmesh = ReadFractureMeshCase4();
         }
             break;
+        case 5: {
+            gmesh = ReadFractureMeshCase5();
+        }
+            break;
         default:
             DebugStop();
     }
@@ -186,6 +194,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     
     int D_Type = 0;
     int N_Type = 1;
+    int Mixed_Type = 2;
     REAL pressure_in = 1.0 ;
     REAL zero_flux = 0.0;
     
@@ -214,7 +223,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         
 
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
-        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,N_Type,zero_flux);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracPressure,N_Type,zero_flux);
     
     }
     else if (caseToSim < 4){
@@ -223,7 +232,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         
 
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
-        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,D_Type,1.);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracPressure,D_Type,1.);
     }
     else if (caseToSim == 4){
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
@@ -232,10 +241,23 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
         
 
-        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(3);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(4);
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracInlet,D_Type,2.);
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[1] = std::make_tuple(EFracOutlet,D_Type,0.);
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[2] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[3] = std::make_tuple(EPLossAtIntersect,Mixed_Type,0.5);
+        
+        sim_data.mTFracIntersectProperties.m_IntersectionPressureLossId = EPLossAtIntersect;
+    }
+    else if (caseToSim == 5){
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(3);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,2.);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,0.);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+        
+
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
     }
     else {
         DebugStop();
@@ -318,7 +340,7 @@ TPZGeoMesh *ReadFractureMeshCase0(std::string &filename){
     dim_name_and_physical_tagFine[2]["Fracture10"] = globFracID;
 
     // Fractures BCs
-    dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
+    dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracPressure;
             
     return generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
 }
@@ -344,7 +366,7 @@ TPZGeoMesh *ReadFractureMeshCase1(std::string &filename){
     dim_name_and_physical_tagFine[2]["Fracture10"] = globFracID;
 
     // Fractures BCs
-    dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
+    dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracPressure;
         
     TPZGeoMesh* gmesh = generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
     ChangeBCsToNoFlux(gmesh);
@@ -375,7 +397,7 @@ TPZGeoMesh *ReadFractureMeshCase2(std::string &filename){
         dim_name_and_physical_tagFine[2]["Fracture10"] = globFracID;
         
         // Fractures BCs
-        dim_name_and_physical_tagFine[1]["BCfrac0"] = EPressure;
+        dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracPressure;
         
         gmesh = generateGMeshWithPhysTagVec(filename,dim_name_and_physical_tagFine);
     }
@@ -392,13 +414,13 @@ TPZGeoMesh *ReadFractureMeshCase2(std::string &filename){
         // ----- Fracture element -----
         int64_t index;
         TPZManVector<int64_t,2> nodesId = {4,5};
-        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
         nodesId = {5,7};
-        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
         nodesId = {7,6};
-        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
         nodesId = {6,4};
-        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
         TPZManVector<int64_t,4> nodesIdVec = {4,6,7,5};
         new TPZGeoElRefPattern<pzgeom::TPZGeoQuad>(nodesIdVec,globFracID,*gmesh,index);
 
@@ -430,30 +452,30 @@ TPZGeoMesh *ReadFractureMeshCase3(){
     // ----- Fracture element -----
     int64_t index;
     TPZManVector<int64_t,2> nodesId = {6,7};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {7,9};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {9,11};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {11,10};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {10,8};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {8,6};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
 
     nodesId = {9,15};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {15,14};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {14,8};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {8,2};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {2,3};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
     nodesId = {3,9};
-    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracPressure,*gmesh,index);
 
     nodesId = {8,9};
     new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EIntersection,*gmesh,index);
@@ -536,6 +558,44 @@ TPZGeoMesh *ReadFractureMeshCase4(){
     
     gmesh->BuildConnectivity();
 
+    return gmesh;
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+TPZGeoMesh *ReadFractureMeshCase5(){
+    
+    TPZGeoMesh* gmesh = nullptr;
+
+    // ----- Create Geo Mesh -----
+    const TPZVec<REAL> minX = {-1.,-1.,-1.};
+    const TPZVec<REAL> maxX = {1.,1.,1.};
+    const TPZVec<int> nelDiv = {1,1,2};
+    const MMeshType elType = MMeshType::EHexahedral;
+    
+    TPZGenGrid3D gen3d(minX,maxX,nelDiv,elType);
+    gmesh = gen3d.BuildVolumetricElements(EVolume);
+    
+    // ----- Fracture element -----
+    int64_t index;
+    TPZManVector<int64_t,2> nodesId = {4,5};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracNoFlux,*gmesh,index);
+    nodesId = {5,7};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracNoFlux,*gmesh,index);
+    nodesId = {7,6};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracNoFlux,*gmesh,index);
+    nodesId = {6,4};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracNoFlux,*gmesh,index);
+    TPZManVector<int64_t,4> nodesIdVec = {4,6,7,5};
+    new TPZGeoElRefPattern<pzgeom::TPZGeoQuad>(nodesIdVec,globFracID,*gmesh,index);
+    
+    // OBS: For some reason, the code leads to wrong results if these bcs are created before the fracture
+    gmesh = gen3d.BuildBoundaryElements(EInlet, ENoflux, ENoflux, ENoflux, ENoflux, EOutlet);
+    
+    gmesh->BuildConnectivity();
+    
+    
     return gmesh;
 }
 

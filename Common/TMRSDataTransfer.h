@@ -62,7 +62,7 @@ public:
         std::vector<std::map<std::string,int>> mDomainFracDimNameAndPhysicalTag;
         
         /** @brief
-          MaterialID of the interface element that will be inserted in the transport mesh
+         MaterialID of the interface element that will be inserted in the transport mesh
          */
         int mInterface_material_id = 100;
         int mInterface_material_idFracSup = 101;
@@ -91,7 +91,7 @@ public:
         std::string mGmeshFileName="";
         
         
-         /** @brief Default constructor */
+        /** @brief Default constructor */
         TGeometry(){
             
             mDomainDimNameAndPhysicalTag.resize(4);
@@ -128,14 +128,14 @@ public:
             m_negLagrangeMatId = other.m_negLagrangeMatId;
             /// material id for a zero order H(div) boundary flux
             m_zeroOrderHdivFluxMatId = other.m_zeroOrderHdivFluxMatId;
-
+            
             mGmeshFileName = other.mGmeshFileName;
             
         }
         /** @brief Copy assignment operator*/
         TGeometry &operator=(const TGeometry &other){
             if (this != & other) // prevent self-assignment
-            {
+                {
                 mDomainDimNameAndPhysicalTag = other.mDomainDimNameAndPhysicalTag;
                 mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
                 mInterface_material_id=other.mInterface_material_id;
@@ -158,10 +158,10 @@ public:
                 m_negLagrangeMatId = other.m_negLagrangeMatId;
                 /// material id for a zero order H(div) boundary flux
                 m_zeroOrderHdivFluxMatId = other.m_zeroOrderHdivFluxMatId;
-
+                
                 mGmeshFileName = other.mGmeshFileName;
-               
-            }
+                
+                }
             return *this;
         }
         
@@ -170,7 +170,7 @@ public:
     /**
      * @brief Class that stores PetroPhysics information
      */
-   
+    
     class TPetroPhysics : public TMRSSavable {
         
     public:
@@ -222,7 +222,7 @@ public:
         /** @brief Copy assignment operator*/
         TPetroPhysics &operator=(const TPetroPhysics &other){
             if (this != & other) // prevent self-assignment
-            {
+                {
                 mOilViscosity=other.mOilViscosity;
                 mWaterViscosity=other.mWaterViscosity;
                 mKro = other.mKro;
@@ -231,11 +231,11 @@ public:
                 mFw  = other.mFw;
                 mLambdaW = other.mLambdaW;
                 mLambdaO = other.mLambdaO;
-                 mLambdaTotal = other.mLambdaTotal;
+                mLambdaTotal = other.mLambdaTotal;
                 mLayer_Krw_RelPerModel=other.mLayer_Krw_RelPerModel;
                 mLayer_Kro_RelPerModel=other.mLayer_Kro_RelPerModel;
-               
-            }
+                
+                }
             return *this;
         }
         void CreateLinearKrModel();
@@ -284,13 +284,13 @@ public:
             mWaterViscosity = other.mWaterViscosity;
             mWaterCompressibility = other.mWaterCompressibility;
             mOilCompressibility = other.mOilCompressibility;
-
+            
             mReferencePressure = other.mReferencePressure;
             mOilDensityRef = other.mOilDensityRef;
             mWaterDensityRef = other.mWaterDensityRef;
             mOilDensityF = other.mOilDensityF;
             mWaterDensityF =other.mWaterDensityF;
-
+            
         }
         
         /** @brief Copy assignment operator*/
@@ -301,7 +301,7 @@ public:
             mOilCompressibility = other.mOilCompressibility;
             mOilDensityRef = other.mOilDensityRef;
             mWaterDensityRef = other.mWaterDensityRef;
-             mReferencePressure = other.mReferencePressure;
+            mReferencePressure = other.mReferencePressure;
             mOilDensityF = other.mOilDensityF;
             mWaterDensityF =other.mWaterDensityF;
             return *this;
@@ -406,12 +406,12 @@ public:
         /** @brief Copy assignment operator*/
         TMultiphaseFunctions &operator=(const TMultiphaseFunctions &other){
             if (this != & other) // prevent self-assignment
-            {
+                {
                 mLayer_fw = other.mLayer_fw;
                 mLayer_fo = other.mLayer_fo;
                 mLayer_lambda = other.mLayer_lambda;
                 mLayer_Glambda = other.mLayer_Glambda;
-            }
+                }
             return *this;
         }
         
@@ -442,7 +442,7 @@ public:
          * @brief Contains the boundary conditions (material_id), condition type and value of fractures in the transport problem
          */
         TPZManVector<std::tuple<int, int, REAL>> mBCTransportFracPhysicalTagTypeValue;
-       
+        
         /** @brief Default constructor */
         TBoundaryConditions(){
             
@@ -471,12 +471,12 @@ public:
         /** @brief Copy assignment operator*/
         TBoundaryConditions &operator=(const TBoundaryConditions &other){
             if (this != & other) // prevent self-assignment
-            {
+                {
                 mBCMixedPhysicalTagTypeValue = other.mBCMixedPhysicalTagTypeValue;
                 mBCMixedFracPhysicalTagTypeValue = other.mBCMixedFracPhysicalTagTypeValue;
                 mBCTransportPhysicalTagTypeValue = other.mBCTransportPhysicalTagTypeValue;
                 mBCTransportFracPhysicalTagTypeValue = other.mBCTransportFracPhysicalTagTypeValue;
-            }
+                }
             return *this;
         }
         
@@ -493,7 +493,7 @@ public:
          * @brief time step size
          */
         REAL m_dt;
-     
+        
         
         /**
          * @brief Residual tolerance for mixed operator
@@ -587,7 +587,7 @@ public:
             m_UseSubstructures_Q = false;
             
         }
-         /** @brief Destructor */
+        /** @brief Destructor */
         ~TNumerics(){
             
         }
@@ -718,7 +718,7 @@ public:
             buf.Read(m_ISLinearKrModelQ);
             buf.Read(&m_nThreadsMixedProblem);
             buf.Read(m_UseSubstructures_Q);
-           
+            
         }
         
         virtual int ClassId() const {
@@ -758,7 +758,7 @@ public:
         
         /**
          * @brief Transpor operator vtk file name
-          */
+         */
         std::string m_file_name_transport;
         
         /**
@@ -849,7 +849,7 @@ public:
             
         }
         
-    
+        
         void Write(TPZStream &buf, int withclassid) const{ //ok
             buf.Write(&m_file_name_mixed);
             buf.Write(&m_file_name_transport);
@@ -922,7 +922,7 @@ public:
                 return *this;
             }
             
-           m_Permeability=other.m_Permeability;
+            m_Permeability=other.m_Permeability;
             
             return *this;
         }
@@ -935,19 +935,19 @@ public:
             }
             
             return
-             m_Permeability==other.m_Permeability;
+            m_Permeability==other.m_Permeability;
             
         }
         
         
         void Write(TPZStream &buf, int withclassid) const{ //ok
             buf.Write(&m_Permeability);
-
+            
         }
         
         void Read(TPZStream &buf, void *context){ //ok
             buf.Read(&m_Permeability);
-           
+            
         }
         
         virtual int ClassId() const {
@@ -958,7 +958,93 @@ public:
         
         void Print() const {
             std::cout << "m_Permeability: " <<m_Permeability <<std::endl;
-          
+            
+        }
+        
+    };
+    
+    class TFracIntersectProperties : public TMRSSavable {
+        
+    public:
+        
+        int m_IntersectionId;
+        int m_IntersectionPressureLossId;
+        
+        /**
+         * @brief Default constructor
+         */
+        TFracIntersectProperties(){
+            
+            m_IntersectionId=-10000;
+            m_IntersectionPressureLossId=-10000;
+            
+        }
+        /**
+         * @brief Destructor
+         */
+        ~TFracIntersectProperties(){
+            
+        }
+        
+        /**
+         * @brief Copy constructor
+         */
+        TFracIntersectProperties(const TFracIntersectProperties & other){
+            m_IntersectionId=other.m_IntersectionId;
+            m_IntersectionPressureLossId=other.m_IntersectionPressureLossId;
+            
+        }
+        /**
+         * @brief Copy assignment operator
+         */
+        TFracIntersectProperties & operator=(const TFracIntersectProperties &other){
+            
+            // check for self-assignment
+            if(&other == this){
+                return *this;
+            }
+            
+            m_IntersectionId=other.m_IntersectionId;
+            m_IntersectionPressureLossId=other.m_IntersectionPressureLossId;
+            
+            return *this;
+        }
+        
+        bool operator==(const TFracIntersectProperties &other){
+            
+            // check for self-assignment
+            if(&other == this){
+                return true;
+            }
+            
+            return
+            m_IntersectionId==other.m_IntersectionId &&
+            m_IntersectionPressureLossId==other.m_IntersectionPressureLossId;
+            
+        }
+        
+        
+        void Write(TPZStream &buf, int withclassid) const{ //ok
+            buf.Write(&m_IntersectionId);
+            buf.Write(&m_IntersectionPressureLossId);
+            
+        }
+        
+        void Read(TPZStream &buf, void *context){ //ok
+            buf.Read(&m_IntersectionId);
+            buf.Read(&m_IntersectionPressureLossId);
+            
+        }
+        
+        virtual int ClassId() const {
+            return Hash("TMRSDataTransfer::TFracIntersectProperties");
+        }
+        
+        
+        
+        void Print() const {
+            std::cout << "m_IntersectionId: " <<m_IntersectionId <<std::endl;
+            std::cout << "m_IntersectionPressureLossId: " <<m_IntersectionPressureLossId <<std::endl;
         }
         
     };
@@ -972,6 +1058,7 @@ public:
     TNumerics mTNumerics;
     TPostProcess mTPostProcess;
     TFracProperties mTFracProperties;
+    TFracIntersectProperties mTFracIntersectProperties;
     
 };
 

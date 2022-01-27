@@ -440,6 +440,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
     
     TPZManVector<STATE,1> bc_data(1,0.0);
     bc_data[0] = bc.Val2()[0];
+    const REAL v1 = bc.Val1()(0,0);
     
     if (bc.HasForcingFunctionBC()) {
         TPZFNMatrix<1, STATE> mat_val(1, 1);
@@ -451,8 +452,6 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
         }
         
     }
-    
-    
     
     switch (bctype) {
         case 0 :    // Dirichlet BC  PD
@@ -482,6 +481,19 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
                 
             }
             
+        }
+            break;
+        case 2 :    // Mixed BC
+        {
+            for (int iq = 0; iq < nphi_q; iq++){
+                const REAL qn_N = bc_data[0];
+                REAL qn = 0.0;
+                qn = q[0];
+                ef(iq + first_q) += weight * (qn - qn_N) * phi_qs(iq,0);
+                for (int jq = 0; jq < nphi_q; jq++){
+                    ek(iq + first_q,jq + first_q) += weight/v1 * phi_qs(jq,0) * phi_qs(iq,0);
+                }
+            }
         }
             break;
         case 10:

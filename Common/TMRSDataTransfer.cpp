@@ -24,6 +24,7 @@ TMRSDataTransfer::TMRSDataTransfer(const TMRSDataTransfer &other){
     mTPostProcess = other.mTPostProcess;
     mSimulationName = other.mSimulationName;
     mTFracProperties =other.mTFracProperties;
+    mTFracIntersectProperties =other.mTFracIntersectProperties;
 }
 
 
@@ -41,6 +42,7 @@ TMRSDataTransfer & TMRSDataTransfer::operator=(const TMRSDataTransfer &other){
         mTPostProcess = other.mTPostProcess;
         mSimulationName = other.mSimulationName;
         mTFracProperties =other.mTFracProperties;
+        mTFracIntersectProperties =other.mTFracIntersectProperties;
     }
     return *this;
 }

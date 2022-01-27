@@ -84,8 +84,8 @@ void Test2frac(const int& caseToSim)
     aspace.SetGeometry(gmesh);
     
     // -------------- Setting the global data transfer --------------
+    sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetDataTransfer(sim_data);
-    aspace.MatIDFracIntesect() = EIntersection;
     
     // -------------- Creates de multiphysics compmesh --------------
     int order = 1;
