@@ -32,12 +32,14 @@ class TPZAlgebraicDataTransfer;
 
 class TMRSApproxSpaceGenerator : public TMRSSavable {
     
+private:
+    
+    void AddMultiphysicsMaterialsToCompMesh(const int order);
+    void SetLagrangeMultiplier4Spaces(TPZManVector<TPZCompMesh *, 5>& mesh_vec);
+    
 public:
     
     TPZGeoMesh * mGeometry;
-    
-    /// subdomain index of each geometric element
-    TPZVec<int64_t> mGelSubdomain;
     
     TMRSDataTransfer mSimData;
     
@@ -77,6 +79,11 @@ public:
     virtual int ClassId() const;
     
     void SetGeometry(TPZGeoMesh * geometry);
+    
+    /// For MHM
+    /// Sets the geometry based on a fine and a coarse mesh. It creates a list of subdomains based on that
+    /// and fills mSubdomainIndexGel vector that will be used to set the macro domains
+    void SetGeometry(TPZGeoMesh * gmeshfine, TPZGeoMesh * gmeshcoarse);
     
     void SetSubdomainIndexes(TPZVec<int64_t> &subIndexes){
         mSubdomainIndexGel =subIndexes;
@@ -127,6 +134,9 @@ public:
     /// create the HDiv computational mesh
     TPZCompMesh * HdivFluxCmesh(int order);
     
+    /// create hybridized hdiv computational mesh
+    TPZCompMesh * HdivFluxMeshHybridized(int order);
+    
     /// create a discontinuous mesh
     TPZCompMesh * DiscontinuousCmesh(int order, char lagrange);
     
@@ -153,12 +163,19 @@ public:
     void BuildMixed2SpacesMultiPhysicsCompMesh(int order);
     
     void BuildMixed4SpacesMultiPhysicsCompMesh(int order);
+        
+    /// Creates the mesh with 4 spaces and 1 hybridization between the flux elements
+    /// First only the 3D elements are hybridized. TODO: hybridize the fracture elements.
+    void BuildMixed4SpacesHybridized(int order);
     
     /// build a multiphysics mesh corresponding to a zero order mortar approximation
     void BuildMixed4SpacesMortarMesh();
     
     /// insert wrapper elements necessary for creating the (hybridized) mortar spaces
     void InsertGeoWrappersForMortar();
+    
+    /// insert wrapper elements necessary for creating the hybridized spaces
+    void InsertGeoWrappers();
     
     void GeoWrappersForMortarGelSide(TPZGeoElSide &gelside, std::set<int> bcids);
     int  FindNeighSubDomain(TPZGeoElSide &gelside);
@@ -214,6 +231,14 @@ public:
     void VerifySideOrientsCoarseFine(TPZCompMesh *fluxCmesh);
     void HideTheElements(TPZCompMesh *cmesh);
     void BuildMultiphysicsSpaceWithMemoryByMatId(TPZVec<int> & active_approx_spaces, TPZVec<TPZCompMesh * > & mesh_vector);
+    
+    void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh);
+    
+    
+    const bool isFracSim() const {return mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[0].size() ||
+        mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[1].size() ||
+        mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[2].size();}
+    
     
 };
 

@@ -87,6 +87,8 @@ public:
         int m_negLagrangeMatId = 35;
         /// material id for a zero order H(div) boundary flux
         int m_zeroOrderHdivFluxMatId = 40;
+        /// material id for pressure lagrange multiplier (same as mortar because they should not be in the same mesh)
+        int m_pressureMatId = 20;
         
         std::string mGmeshFileName="";
         
@@ -551,7 +553,7 @@ public:
         /**
          * @brief Approximation space "type"
          */
-        enum MSpaceType {ENone, E2Space, E4Space, E2SpaceMHM, E4SpaceMHM, E4SpaceMortar};
+        enum MSpaceType {ENone, E2Space, E4Space, E2SpaceMHM, E4SpaceMHM, E4SpaceMortar, E4Space1Hybridization};
         
         MSpaceType m_SpaceType = ENone;
         
