@@ -36,6 +36,10 @@ private:
     
     void AddMultiphysicsMaterialsToCompMesh(const int order);
     void SetLagrangeMultiplier4Spaces(TPZManVector<TPZCompMesh *, 5>& mesh_vec);
+    void AddAtomicMaterials(const int dim, TPZCompMesh* cmesh,
+                            std::set<int>& matids,
+                            std::set<int>& bcmatids,
+                            const bool isInsertBCs = true);
     
 public:
     

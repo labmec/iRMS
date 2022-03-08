@@ -306,60 +306,49 @@ void TMRSApproxSpaceGenerator::PrintGeometry(std::string name, bool vtkFile, boo
     }
 }
 
+void TMRSApproxSpaceGenerator::AddAtomicMaterials(const int dim, TPZCompMesh* cmesh,
+                                                  std::set<int>& matids,
+                                                  std::set<int>& bcmatids,
+                                                  const bool isInsertBCs) {
+    GetMaterialIds(dim, matids, bcmatids);
+    
+    // Domain
+    for (auto it:matids) {
+        TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(it,dim);
+        cmesh->InsertMaterialObject(nullmat);
+    }
+    
+    // BCs
+    if(isInsertBCs){
+        for (auto it:bcmatids) {
+            TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(it,dim-1);
+            cmesh->InsertMaterialObject(nullmat);
+        }
+    }
+}
 
 TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     
-    if (!mGeometry) {
+    // -----------> Problem dimension
+    if (!mGeometry)
         DebugStop();
-    }
+    const int dim = mGeometry->Dimension();
     
-    // -----------> Adding volume materials
+    // -----------> Creating hdiv comp mesh
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
-    TPZNullMaterial<> *volume = nullptr;
-    int dimension = mGeometry->Dimension();
-    cmesh->SetDefaultOrder(order);
-    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
-    for (int d = 0; d <= dimension; d++) {
-        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
-            std::string material_name = chunk.first;
-            int material_id = chunk.second;
-            volume = new TPZNullMaterial<>(material_id);
-            cmesh->InsertMaterialObject(volume);
-            if (!volume)
-                DebugStop();
-        }
-    }
     
-    // Not Frature for now
-    // -----------> Adding fracture materials
-//    for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1]) {
-//        std::string material_name = chunk.first;
-//        std::cout << "physical name = " << material_name <<
-//        " material id " << chunk.second << " dimension " << dimension-1 << std::endl;
-//        int material_id = chunk.second;
-//        TPZNullMaterial<> *fracmat = new TPZNullMaterial<>(material_id,dimension-1);
-//        cmesh->InsertMaterialObject(fracmat);
-//    }
-    
-    // -----------> Adding volume boundary conditions materials
-    TPZFMatrix<STATE> val1(1,1,0.0);
-    TPZVec<STATE> val2(1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        TPZNullMaterial<> *bcmat = new TPZNullMaterial<>(bc_id,dimension-1);
-        cmesh->InsertMaterialObject(bcmat);
-    }
-    
+    // -----------> Inserting atomic materials
+    std::set<int> matids, bcids;
+    AddAtomicMaterials(dim,cmesh,matids,bcids);
+        
+    // -----------> Setting space and building mesh
     cmesh->SetAllCreateFunctionsHDiv();
     cmesh->AutoBuild();
     cmesh->InitializeBlock();
     
 #ifdef PZDEBUG
-    std::stringstream file_name;
-    file_name << "q_cmesh" << ".txt";
-    std::ofstream sout(file_name.str().c_str());
-    cmesh->Print(sout);
+    std::ofstream sout("q_mesh.txt");
+//    cmesh->Print(sout);
 #endif
     return cmesh;
 }
@@ -832,27 +821,23 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepre
 
 TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagrange){
     
-    if (!mGeometry) {
+    // -----------> Problem dimension
+    if (!mGeometry)
         DebugStop();
-    }
-    
-    TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
-    TPZNullMaterial<STATE> * volume = nullptr;
     int dimension = mGeometry->Dimension();
+    
+    // -----------> Creating discontinuous comp mesh
+    TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
     cmesh->SetDefaultOrder(order);
-    for(int dim = 0; dim <= dimension; dim++)
-    {
-        std::set<int> matids, bcmatids;
-        GetMaterialIds(dim, matids, bcmatids);
-        if(matids.size() == 0) continue;
-        int nstate = 1;
-        for (auto material_id : matids) {
-            volume = new TPZNullMaterial(material_id,dim,nstate);
-            cmesh->InsertMaterialObject(volume);
-        }
+
+    // -----------> Setting space and building mesh for each dimension
+    const bool isInsertBCs = false; // Pressure mesh does not require BCs
+    for (int idim = 0; idim <= dimension; idim++) {
+        std::set<int> matids, bcids;
+        AddAtomicMaterials(idim,cmesh,matids,bcids,isInsertBCs);
+        if (matids.size() == 0) continue;
         
-        // PHIL : as malhas de contorno precisam objetos de condicao de contorno?
-        cmesh->SetDimModel(dim);
+        cmesh->SetDimModel(idim);
         if(order > 0)
         {
             cmesh->SetAllCreateFunctionsContinuous();
@@ -865,16 +850,15 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagra
         cmesh->AutoBuild(matids);
         cmesh->InitializeBlock();
     }
-    if(lagrange > 0)
-    {
+    
+    if(lagrange > 0){
         int64_t ncon = cmesh->NConnects();
-        //Set Lagrange multiplier
         for(int64_t i=0; i<ncon; i++){
             TPZConnect &newnod = cmesh->ConnectVec()[i];
             newnod.SetLagrangeMultiplier(lagrange);
         }
     }
-    cmesh->SetDimModel(mGeometry->Dimension());
+    
     return cmesh;
 }
 
@@ -1932,8 +1916,8 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
 #endif
             bcmatids.insert(bc_id);
         }
-    } else
-    {
+    }
+    else if (dim == mGeometry->Dimension()-1) {
         std::vector<std::map<std::string,int>> &DomainDimNameAndPhysicalTag =
         mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag;
         for (auto chunk : DomainDimNameAndPhysicalTag[dim]) {
@@ -2072,7 +2056,9 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
         int bc_type = get<1>(chunk);
         REAL val = get<2>(chunk);
         val2[0] =val;
-        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        if(HasForcingFunctionBC())
+            face->SetForcingFunctionBC(mForcingFunctionBC);
         mMixedOperator->InsertMaterialObject(face);
     }
     

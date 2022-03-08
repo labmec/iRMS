@@ -17,7 +17,6 @@
 #include <catch2/catch.hpp>
 
 // ----- Functions -----
-
 void RunTest(const int caseToSim);
 TMRSDataTransfer SettingFracturesSimple(const int caseToSim);
 void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TMRSDataTransfer &sim_data, const int caseToSim);

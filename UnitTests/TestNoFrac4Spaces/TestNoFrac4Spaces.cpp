@@ -8,12 +8,15 @@
 #include "pzlog.h"
 #include <tpzgeoelrefpattern.h>
 
-// ----- Functions -----
+// Unit test includes
+#include <catch2/catch.hpp>
 
+// ----- Functions -----
 void RunTest(const int caseToSim);
 TMRSDataTransfer SettingFracturesSimple(const int caseToSim);
 void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TPZGeoMesh*& gmeshcoarse,TMRSDataTransfer &sim_data, const int caseToSim);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
+const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& varname);
 
 TPZGeoMesh *ReadFractureMeshCase0();
 void ReadFractureMeshCase1(TPZGeoMesh*& gmesh,TPZGeoMesh*& gmeshcoarse);
@@ -41,6 +44,10 @@ auto exactSol = [](const TPZVec<REAL>& loc,
 using namespace std;
 // ----- End of namespaces -----
 
+// ----- Log -----
+#ifdef PZ_LOG
+static TPZLogger mainlogger("cubicdomain");
+#endif
 
 //-------------------------------------------------------------------------------------------------
 //   __  __      _      _   _   _
@@ -50,33 +57,28 @@ using namespace std;
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
 
-#ifdef PZ_LOG
-static TPZLogger mainlogger("cubicdomain");
-#endif
+// ----- Test cases -----
+// ---- Test 0 ----
+// 1: 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Cte pressure
+TEST_CASE("constant_pressure","[test_nofrac_3D]"){
+    RunTest(1);
+}
+// ---- Test 0 ----
+// 2: 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Linear pressure
+TEST_CASE("linear_pressure","[test_nofrac_3D]"){
+    RunTest(2);
+}
 
-int main(){
+void RunTest(const int caseToSim)
+{
 #ifdef PZ_LOG
-    TPZLogger::InitializePZLOG("log4cxx.cfg");    
+    TPZLogger::InitializePZLOG("log4cxx.cfg");
     if (mainlogger.isDebugEnabled()) {
         std::stringstream sout;
         sout << "\nLogger for Cubic Domain problem target\n" << endl;;
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
 #endif
-    
-    // 0: 2x1x1 domain
-    // 1: 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Cte pressure
-    // 2: 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Linear pressure
-    const int caseToSim = 2;
-    RunTest(caseToSim);
-    return 0;
-}
-// ----------------- End of Main -----------------
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-void RunTest(const int caseToSim)
-{
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
     TMRSDataTransfer sim_data;
@@ -141,6 +143,31 @@ void RunTest(const int caseToSim)
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
     const int dimToPost = 3;
     mixAnalisys->PostProcessTimeStep(dimToPost);
+    
+    // ----- Compute integral of pressure and flux over domain and compare with analytical solution -----
+    const std::string pvarname = "Pressure";
+    STATE integratedpressure = ComputeIntegralOverDomain(mixed_operator,pvarname);
+    if (fabs(integratedpressure) < 1.e-14 ) integratedpressure = 0.; // to make Approx(0.) work
+    std::cout << "\nintegral of pressure  = " << integratedpressure << std::endl;
+    
+    const std::string qvarname = "Flux";
+    STATE integratedflux = ComputeIntegralOverDomain(mixed_operator,qvarname);
+    if (fabs(integratedflux) < 1.e-14 ) integratedflux = 0.; // to make Approx(0.) work
+    std::cout << "\nintegral of flux  = " << integratedflux << std::endl;
+    
+    // ----- Comparing with analytical solution -----
+    // Results are intuitive by looking at paraview plots of the pressure and flux
+    if (caseToSim == 2){ // linear pressure variation
+        REQUIRE( integratedpressure == Approx( 0. ) ); // Approx is from catch2 lib
+        REQUIRE( integratedflux == Approx( 8.0 ) ); // Approx is from catch2 lib
+    }
+    else if (caseToSim == 1){
+        REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
+        REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
+    }
+    else{
+        DebugStop();
+    }
     
     // ----- Cleaning up -----
     delete gmeshfine;
@@ -324,3 +351,21 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
+const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& varname) {
+    std::set<int> matids;
+    matids.insert(EVolume);
+    cmesh->Reference()->ResetReference();
+    cmesh->LoadReferences(); // compute integral in the multiphysics mesh
+    TPZVec<STATE> vecint = cmesh->Integrate(varname, matids);
+    if ((varname == "Pressure" && vecint.size() != 1) ||
+        (varname == "Flux" && vecint.size() != 3)){
+        DebugStop();
+    }
+    if (varname == "Pressure")
+        return vecint[0];
+    else if (varname == "Flux")
+        return vecint[2];
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
