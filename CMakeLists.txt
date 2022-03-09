@@ -50,6 +50,8 @@ add_subdirectory(2Elements2Spaces2D)
 # add_subdirectory(SimpleCaseTwoFractures)
 add_subdirectory(SimpleCaseOneFracture)
 add_subdirectory(CubicDomainNoFractures)
+add_subdirectory(DFNIMRS)
+
 
 # ----- Enables testing -----
 if(BUILD_UNITTESTING)

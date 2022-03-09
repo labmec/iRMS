@@ -33,13 +33,23 @@ class TPZAlgebraicDataTransfer;
 class TMRSApproxSpaceGenerator : public TMRSSavable {
     
 private:
-    
+        
     void AddMultiphysicsMaterialsToCompMesh(const int order);
     void SetLagrangeMultiplier4Spaces(TPZManVector<TPZCompMesh *, 5>& mesh_vec);
     void AddAtomicMaterials(const int dim, TPZCompMesh* cmesh,
                             std::set<int>& matids,
                             std::set<int>& bcmatids,
-                            const bool isInsertBCs = true);
+                            const bool isInsertBCs = true);    
+    void CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
+                                    std::set<int>& matids, std::set<int>& bcids,
+                                    std::set<int>& matids_dim2, std::set<int>& bcids_dim2);
+    
+    void CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh);
+    void SplitConnectsAtInterface(TPZCompElSide& compside);
+    void AdjustOrientBoundaryEls(TPZCompMesh* cmesh, std::set<int>& buildmatids);
+    
+    int fInitMatIdForMergeMeshes = -1000;
+    int fFractureMatId = -1000;
     
 public:
     
@@ -83,6 +93,13 @@ public:
     virtual int ClassId() const;
     
     void SetGeometry(TPZGeoMesh * geometry);
+    
+    // Atribute access methods
+    const int& InitMatIdForMergeMeshes() const {return fInitMatIdForMergeMeshes;}
+    int& InitMatIdForMergeMeshes() {return fInitMatIdForMergeMeshes;}
+    const int& FractureMatId() const {return fFractureMatId;}
+    int& FractureMatId() {return fFractureMatId;}
+
     
     /// For MHM
     /// Sets the geometry based on a fine and a coarse mesh. It creates a list of subdomains based on that

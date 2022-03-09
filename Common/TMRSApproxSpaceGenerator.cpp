@@ -24,6 +24,8 @@
 #include "pzcompelwithmem.h"
 #include "pzsmanal.h"
 #include "TPZRefPatternTools.h"
+#include <pzshapequad.h>
+#include <pzshapelinear.h>
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -70,7 +72,7 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * geometry){
 void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * gmeshcoarse){
 //    ofstream out1("gmesh_before.txt");
 //    gmeshfine->Print(out1);
-//    MergeMeshes(gmeshfine, gmeshcoarse); // this fills mSubdomainIndexGel that is used for MHM
+    MergeMeshes(gmeshfine, gmeshcoarse); // this fills mSubdomainIndexGel that is used for MHM
 //    ofstream out2("gmesh_after.txt");
 //    gmeshfine->Print(out2);
     mGeometry = gmeshfine;
@@ -327,7 +329,240 @@ void TMRSApproxSpaceGenerator::AddAtomicMaterials(const int dim, TPZCompMesh* cm
     }
 }
 
+void TMRSApproxSpaceGenerator::SplitConnectsAtInterface(TPZCompElSide& compside) {
+    
+    TPZCompMesh* fluxmesh = compside.Element()->Mesh();
+    const int gmeshdim = fluxmesh->Reference()->Dimension();
+    
+    // ===> Find 3D element neighbor
+    TPZCompElSide compsideright;
+    TPZGeoElSide gleft(compside.Reference());
+    TPZGeoElSide neigh = gleft.Neighbour();
+    int icon = 0;
+    while(neigh != gleft){
+        TPZGeoEl* gelnei = neigh.Element();
+        if (!gelnei || gelnei->Dimension() != gmeshdim) {
+            neigh++;
+            continue;
+        }
+        compsideright = TPZCompElSide(gelnei->Reference(), neigh.Side());
+        break;
+    }
+    if (!compsideright.Element()) {
+        DebugStop(); // Could not find neighbor element!
+    }
+    
+    compside.SplitConnect(compsideright);
+}
+
+void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh){
+    
+    if(fFractureMatId == -1000){
+        cout << "ERROR! Please initialize the fracture matid" << endl;
+        DebugStop();
+    }
+    // ===> Create the fracture hdivcollapsed elements
+    // These should be unconnected with the 3D elements so we reset references in the gmesh
+    // They are, however, connected (with connects) between themselves
+    TPZGeoMesh* gmesh = cmesh->Reference();
+    gmesh->ResetReference(); // So it does not try to use connects of neighbor elements
+    const int gmeshdim = gmesh->Dimension();
+    cmesh->SetDimModel(gmeshdim-1);
+    for(auto gel : gmesh->ElementVec()) {
+        const int matid = gel->MaterialId();
+        if (matid != fFractureMatId) continue;
+        const int hassubel = gel->HasSubElement();
+        if (hassubel) { // the mesh can be uniformly refined
+            continue;
+        }
+        TPZInterpolationSpace* hdivcollapsed = nullptr;
+        if (gmeshdim == 2){
+            hdivcollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeLinear>(*cmesh,gel);
+        }
+        else {
+            if(gel->Type() == MElementType::ETriangle){
+                hdivcollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>(*cmesh,gel);
+            }
+            else if (gel->Type() == MElementType::EQuadrilateral){
+                hdivcollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>(*cmesh,gel);
+            }
+            else{
+                DebugStop();
+            }
+        }
+        
+    }
+    
+    // ===> Set HdivCollapsed elements connection with adjacent 3d elements
+    // This is done through top and bottom connects of the hdivcollapsed el.
+    // Since bottom connect's default sideorient is negative one (-1),
+    // we should connect it with the 3D element side that has sideorient positive one (+1)
+    cmesh->LoadReferences(); // So the hdivcollapsed element can see the 3D the flux mesh adjacent elements to it
+    
+    // if there are superposed fracture elements then first connects need to be created to link the superposed
+    // fracture elements
+    // then the extremes need to link to the 3D elements
+    for(auto cel : cmesh->ElementVec()) {
+        if (!cel) continue;
+        TPZGeoEl* gel = cel->Reference();
+        const int matid = gel->MaterialId();
+        if (matid != fFractureMatId) continue;
+        int64_t index;
+        TPZInterpolationSpace* hdivcollapsed = nullptr;
+        if (gmeshdim == 2) {
+            hdivcollapsed = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeLinear>* >(cel);
+        }
+        else{
+            if(gel->Type() == MElementType::ETriangle){
+                hdivcollapsed = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>* >(cel);
+            }
+            else if (gel->Type() == MElementType::EQuadrilateral){
+                hdivcollapsed = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>* >(cel);
+            }
+        }
+        
+        if (!hdivcollapsed) {
+            DebugStop();
+        }
+        
+        int nconnects = hdivcollapsed->NConnects();
+        TPZGeoElSide gelside(gel,gel->NSides()-1);
+        TPZGeoElSide neigh = gelside.Neighbour();
+        int icon = 0;
+        // loop over all neighbours of the fracture element
+        while(neigh != gelside){
+            TPZGeoEl* gelnei = neigh.Element();
+            if (!gelnei || gelnei->Dimension() != gmeshdim) {
+                neigh++;
+                continue;
+            }
+            // we found a volumetric element
+            TPZCompElSide compside = TPZCompElSide(gelnei->Reference(), neigh.Side());
+            if (icon == 0){
+                // split the connect shared by two adjacent 3d elements if it is the first time
+                SplitConnectsAtInterface(compside);
+            }
+            
+            const int conindex = compside.ConnectIndex();
+            TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement*>(compside.Element());
+            const int sideorient = intel->GetSideOrient(compside.Side());
+            if (sideorient == 1) { // this is a bottom connection (bottom is -1)
+                hdivcollapsed->SetConnectIndex(nconnects, conindex);
+                icon++;
+            }
+            else if (sideorient == -1){
+                hdivcollapsed->SetConnectIndex(nconnects+1, conindex);
+                icon++;
+            }
+            else{
+                DebugStop();
+            }
+            neigh++;
+        }
+        if (icon != 2) {
+            DebugStop();
+        }
+    }
+    
+    cmesh->ExpandSolution();
+//    std::ofstream out("cmeshaftercollapsed.txt");
+//    cmesh->Print(out);
+    
+    cmesh->SetDimModel(gmeshdim);
+}
+
+
+void TMRSApproxSpaceGenerator::AdjustOrientBoundaryEls(TPZCompMesh* cmesh, std::set<int>& buildmatids) {
+    for (auto cel : cmesh->ElementVec()) {
+        if (!cel) {
+            continue;
+        }
+        TPZGeoEl *gel = cel->Reference();
+        int matid = gel->MaterialId();
+        if(buildmatids.find(matid) == buildmatids.end()) continue;
+        TPZInterpolationSpace *intel = dynamic_cast<TPZInterpolationSpace *>(cel);
+        intel->SetSideOrient(gel->NSides()-1, 1);
+        TPZGeoElSide gelside(gel);
+        TPZGeoElSide neighbour(gelside.Neighbour());
+        while(neighbour != gelside)
+        {
+            TPZGeoEl *neighgel = neighbour.Element();
+            TPZCompEl *neighcel = neighgel->Reference();
+            if(neighcel && neighgel->Dimension() == gel->Dimension()+1)
+            {
+                TPZInterpolationSpace *neighintel = dynamic_cast<TPZInterpolationSpace *>(neighcel);
+                neighintel->SetSideOrient(neighbour.Side(), 1);
+            }
+            neighbour = neighbour.Neighbour();
+        }
+    }
+}
+
+
+void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
+                                                          std::set<int>& matids, std::set<int>& bcids,
+                                                          std::set<int>& matids_dim2, std::set<int>& bcids_dim2){
+    
+    if(fFractureMatId == -1000){
+        cout << "ERROR! Please initialize the fracture matid" << endl;
+        DebugStop();
+    }
+    
+    TPZGeoMesh* gmesh = cmesh->Reference();
+    const int dim = gmesh->Dimension();
+    
+    // ===> Creating space for 3D elements
+    cmesh->SetAllCreateFunctionsHDiv();
+    cmesh->ApproxSpace().CreateDisconnectedElements(false); // we need to disconnect by hand at the fracture location later
+    cmesh->AutoBuild(matids);
+    
+    // ===> Creating fracture element
+    // split the volumetric elements in the flux mesh
+    CreateFractureHDivCollapsedEl(cmesh);
+    cmesh->CleanUpUnconnectedNodes();
+    
+    // ===> Create BCs for fracture
+    gmesh->ResetReference();
+    for (auto cel : cmesh->ElementVec()) {
+        if (!cel) {
+            continue;
+        }
+        if (cel->Reference()->MaterialId() == fFractureMatId) {
+            cel->LoadElementReference();
+        }
+    }
+    cmesh->SetDimModel(dim-1);
+    cmesh->SetAllCreateFunctionsHDiv();
+    cmesh->AutoBuild(bcids_dim2);
+    AdjustOrientBoundaryEls(cmesh,bcids_dim2);
+    
+    // ===> Create BCs for 3D domain
+    gmesh->ResetReference();
+    for (auto cel : cmesh->ElementVec()) {
+        if (!cel) {
+            continue;
+        }
+        const int gelmatid = cel->Reference()->MaterialId();
+        if (matids.find(gelmatid) != matids.end()) {
+            cel->LoadElementReference();
+        }
+    }
+    cmesh->SetDimModel(dim);
+    cmesh->SetAllCreateFunctionsHDiv();
+    cmesh->ApproxSpace().CreateDisconnectedElements(false);
+    cmesh->AutoBuild(bcids);
+    cmesh->CleanUpUnconnectedNodes();
+    
+    // ===> Fix blocks
+    cmesh->SetDimModel(dim);
+    cmesh->InitializeBlock();
+    
+    
+}
+
 TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
+    
+    const bool hasFrac = isFracSim();
     
     // -----------> Problem dimension
     if (!mGeometry)
@@ -336,19 +571,29 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     
     // -----------> Creating hdiv comp mesh
     TPZCompMesh *cmesh = new TPZCompMesh(mGeometry);
+    cmesh->SetDefaultOrder(order);
     
-    // -----------> Inserting atomic materials
+    // -----------> Inserting atomic matrix materials
     std::set<int> matids, bcids;
     AddAtomicMaterials(dim,cmesh,matids,bcids);
-        
+
     // -----------> Setting space and building mesh
-    cmesh->SetAllCreateFunctionsHDiv();
-    cmesh->AutoBuild();
-    cmesh->InitializeBlock();
+    if (hasFrac) {
+        std::set<int> matids_dim2, bcids_dim2;
+        const int dimfrac = dim-1;
+        AddAtomicMaterials(dimfrac,cmesh,matids_dim2,bcids_dim2); // Inserting atomic fracture materials
+        CreateFractureHDivCompMesh(cmesh,matids,bcids,matids_dim2,bcids_dim2);
+    }
+    else{
+        // simple autobuild suffice
+        cmesh->SetAllCreateFunctionsHDiv();
+        cmesh->AutoBuild();
+        cmesh->InitializeBlock();
+    }
     
 #ifdef PZDEBUG
     std::ofstream sout("q_mesh.txt");
-//    cmesh->Print(sout);
+    cmesh->Print(sout);
 #endif
     return cmesh;
 }
@@ -2027,39 +2272,73 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesHybridized(int order) {
 void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int order) {
     
     const int dimension = mGeometry->Dimension();
+    mMixedOperator->SetDefaultOrder(order);
     
     // ---------------> Adding volume materials
+    cout << "\n---------------------- Inserting materials in multiphysics cmesh ----------------------" << endl;
     TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-    mMixedOperator->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << std::endl;
             int material_id = chunk.second;
             volume = new TMRSDarcyFlowWithMem<TMRSMemory>(material_id,d);
             volume->SetDataTransfer(mSimData);
-            
             mMixedOperator->InsertMaterialObject(volume);
+            std::cout << "Added volume material w/ physical name = " << material_name << " and id = " << material_id << std::endl;
         }
     }
     
-    if (!volume) {
-        DebugStop();
-    }
-    
+    if(!volume) DebugStop();
+        
     // ---------------> Adding volume boundary condition materials
-    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+    TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
     for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+        TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
         int bc_id   = get<0>(chunk);
         int bc_type = get<1>(chunk);
-        REAL val = get<2>(chunk);
-        val2[0] =val;
+        val2[0] = get<2>(chunk);
         TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         if(HasForcingFunctionBC())
             face->SetForcingFunctionBC(mForcingFunctionBC);
         mMixedOperator->InsertMaterialObject(face);
+        std::cout << "Added volume BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
+    }
+    
+    // ---------------> Adding fracture materials
+    if (isFracSim()) {
+        TMRSDarcyFractureFlowWithMem<TMRSMemory> * fracmat = nullptr;
+        for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1]){
+            std::string material_name = chunk.first;
+            int material_id = chunk.second;
+            fracmat = new TMRSDarcyFractureFlowWithMem<TMRSMemory>(material_id,dimension-1);
+            fracmat->SetDataTransfer(mSimData);
+            mMixedOperator->InsertMaterialObject(fracmat);
+            std::cout << "Added frac material w/ physical name = " << material_name << " and id = " << material_id << std::endl;
+        }
+        if (!fracmat) {
+            DebugStop();
+        }
+        
+        // ---------------> Adding fracture boundary condition materials
+        TPZManVector<std::tuple<int, int, REAL>> &BCFracPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue;
+        for (std::tuple<int, int, REAL> chunk : BCFracPhysicalTagTypeValue) {
+            TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
+            if(!fracmat) DebugStop();
+            int bc_id   = get<0>(chunk);
+            int bc_type = get<1>(chunk);
+            val2[0] = get<2>(chunk);
+            if(bc_type == 2){
+                val2[0] = 0.0;
+                val1(0,0) = get<2>(chunk);
+            }
+            TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
+            if (HasForcingFunctionBC()) {
+                face->SetForcingFunctionBC(mForcingFunctionBC);
+            }
+            mMixedOperator->InsertMaterialObject(face);
+            std::cout << "Added frac BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
+        }
     }
     
     mMixedOperator->SetDimModel(dimension);
@@ -2090,11 +2369,7 @@ void TMRSApproxSpaceGenerator::SetLagrangeMultiplier4Spaces(TPZManVector<TPZComp
 }
 
 void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
-        
-    // ========================================================
-    // Some variables for all classes
-    const bool hasFrac = isFracSim();
-    
+            
     // ========================================================
     // Creating atomic comp meshes
     TPZManVector<TPZCompMesh *, 5> mesh_vec(5);
@@ -2124,8 +2399,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
     
 #ifdef PZDEBUG
+//    ofstream out("mphysics.vtk");
+//    TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, out);
     std::ofstream sout("mixed_cmesh_four_spaces.txt");
-    //    mMixedOperator->Print(sout);
+//    mMixedOperator->Print(sout);
 #endif
     
     // ========================================================
@@ -3657,41 +3934,49 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZVec<TPZCom
 
 void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh) {
     
+    if(fInitMatIdForMergeMeshes == -1000) {
+        cout << "ERROR! Please, set TMRSApproxSpaceGenerator::::fInitMatIdForMergeMeshes" << endl;
+        DebugStop();
+    }
+    
     int fine_skeleton_matid = 18;
     int coarse_skeleton_matid = 19;
     std::map<int,int64_t> MatFinetoCoarseElIndex;
-    std::map<int64_t,int64_t> NodeCoarseToNodeFine;
+//    std::map<int64_t,int64_t> NodeCoarseToNodeFine;
+    std::vector<int64_t> NodeCoarseToNodeFine(coarsemesh->NNodes(),-1);
     std::map<int64_t,int64_t> ElCoarseToElFine;
-    /*
-    int temp_bc_mat = -10;
-    // create boundary elements for elements without neighbour
-    {
-        std::map<int, int> num_created;
-        int64_t nel_fine = finemesh->NElements();
-        for (int64_t el = 0; el<nel_fine; el++) {
-            TPZGeoEl *gel = finemesh->Element(el);
-            int dim = gel->Dimension();
-            int nsides = gel->NSides();
-            int firstside = nsides-gel->NSides(dim-1)-1;
-            for (int side = firstside; side<nsides-1; side++) {
-                TPZGeoElSide gelside(gel,side);
-                TPZGeoElSide neighbour = gelside.Neighbour();
-                while(neighbour.Element()->Dimension() != dim){
-                    neighbour = neighbour.Neighbour();
-                }
-                if(neighbour == gelside){
-                    TPZGeoElBC gelbc(gelside,temp_bc_mat);
-                    num_created[gel->MaterialId()]++;
-                }
-            }
-        }
-#ifdef PZDEBUG
-        for (auto it : num_created) {
-            std::cout << "For matid " << it.first << " number of elements created " << it.second << std::endl;
-        }
-#endif
-    }*/
-    // find the correspondence between coarse nodes and fine nodes (MOST EXPENSIVE OPERATION)
+    
+//    int temp_bc_mat = -10;
+//    // create boundary elements for elements without neighbour of dimension dim
+//    { // OBS: why do we need this!!?? We dont since gmsh contains the boundary elements
+//        std::map<int, int> num_created;
+//        int64_t nel_fine = finemesh->NElements();
+//        for (int64_t el = 0; el<nel_fine; el++) {
+//            TPZGeoEl *gel = finemesh->Element(el);
+//            int dim = gel->Dimension();
+//            int nsides = gel->NSides();
+//            int firstside = nsides-gel->NSides(dim-1)-1;
+//            for (int side = firstside; side<nsides-1; side++) {
+//                TPZGeoElSide gelside(gel,side);
+//                TPZGeoElSide neighbour = gelside.Neighbour();
+//                while(neighbour.Element()->Dimension() != dim){
+//                    neighbour = neighbour.Neighbour();
+//                }
+//                if(neighbour == gelside){
+//                    TPZGeoElBC gelbc(gelside,temp_bc_mat);
+//                    num_created[gel->MaterialId()]++;
+//                }
+//            }
+//        }
+//#ifdef PZDEBUG
+//        for (auto it : num_created) {
+//            std::cout << "For matid " << it.first << " number of elements created " << it.second << std::endl;
+//        }
+//#endif
+//    }
+    // Find the correspondence between coarse nodes and fine nodes (MOST EXPENSIVE OPERATION)
+    // For each coarse node, find its correspondence in the fine mesh and store the information in NodeCoarseToNodeFine
+    // This is used later to create the skeleton mesh
     { // Why do we need this?
         int64_t nnode_coarse = coarsemesh->NNodes();
         for (int64_t n = 0; n<nnode_coarse; n++) {
@@ -3701,6 +3986,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
             no.GetCoordinates(co);
             int64_t fineindex;
             TPZGeoNode *finenode = finemesh->FindNode(co,fineindex);
+            if(!finenode) DebugStop();
             NodeCoarseToNodeFine[n] = fineindex;
         }
     }
@@ -3720,6 +4006,8 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
             }
         }
     }
+    
+    // Create Map between matid of fine elements and coarse element index
     int64_t nel_fine = finemesh->NElements();
     mSubdomainIndexGel.Resize(nel_fine);
     mSubdomainIndexGel.Fill(-1);
@@ -3727,7 +4015,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         auto *gel = finemesh->Element(el);
         if(gel->Dimension() != dim) continue;
         int matid = gel->MaterialId();
-        mSubdomainIndexGel[el] = matid-14+first3DCoarse;
+        mSubdomainIndexGel[el] = matid-fInitMatIdForMergeMeshes+first3DCoarse;
 #ifdef PZDEBUG
         if(MatFinetoCoarseElIndex.find(matid) == MatFinetoCoarseElIndex.end()){
             TPZManVector<REAL,3> xcenter(3);
@@ -3737,22 +4025,21 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
             int64_t coarse_index = 0;
             
             TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
-            if(coarse_index-first3DCoarse != matid - 14) DebugStop();
+            if(coarse_index-first3DCoarse != matid - fInitMatIdForMergeMeshes) DebugStop();
             MatFinetoCoarseElIndex[matid] = coarse_index;
         }
 #else
-        MatFinetoCoarseElIndex[matid] = matid-1+first3DCoarse;
+        MatFinetoCoarseElIndex[matid] = matid-fInitMatIdForMergeMeshes+first3DCoarse;
 #endif
     }
 #ifdef PZDEBUG
-    for(auto it : MatFinetoCoarseElIndex)
-        {
+    for(auto it : MatFinetoCoarseElIndex){
         std::cout << "Fine mat id " << it.first << " coarse element index " << it.second << std::endl;
-        }
+    }
 #endif
     }
     // modify the material id of the boundary elements of the fine mesh (EXPENSIVE OPERATION)
-//    {
+//    { // Not needed since gmsh contains the boundary elements
 //    int64_t nel_fine = finemesh->NElements();
 //    int meshdim = finemesh->Dimension();
 //    std::map<int,int> created_by_mat;
@@ -3798,11 +4085,11 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         TPZGeoEl *gel = coarsemesh->Element(el);
         int geldim = gel->Dimension();
         if(geldim != 3) continue;
-        int firstside = gel->NSides()-gel->NSides(dim-1)-1;
-        for (int side = firstside; side < gel->NSides()-1; side++) {
+        int firstside = gel->NSides()-gel->NSides(dim-1)-1; // first face side
+        for (int side = firstside; side < gel->NSides()-1; side++) { // skip volume
             TPZGeoElSide gelside(gel,side);
             TPZGeoElSide neighbour = gelside.Neighbour();
-            while(neighbour != gelside){
+            while(neighbour != gelside){ // look for volume neighbor
                 if(neighbour.Element()->Dimension() == dim) break;
                 neighbour = neighbour.Neighbour();
             }
@@ -3812,6 +4099,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
             std::pair<int64_t, int64_t> leftright(el,neighindex);
             if(neighindex < el) leftright = std::pair<int64_t, int64_t>(neighindex,el);
             CoarseFaceEl[leftright] = gelbc.CreatedElement()->Index();
+            // will create two skeleton elements for each interface. Why?
         }
     }
     }
@@ -3823,7 +4111,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     for (int64_t el = 0; el<nelcoarse; el++) {
         auto gel = coarsemesh->Element(el);
         int matid = gel->MaterialId();
-        if(matid != coarse_skeleton_matid) continue;
+        if(matid != coarse_skeleton_matid) continue; // only skeleton elements
         int nnode = gel->NNodes();
         TPZManVector<int64_t, 8> nodeindices(nnode);
         for(int n=0; n<nnode; n++){
@@ -3841,7 +4129,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     // the integer is the element index of the skeleton element in the fine mesh
     std::map<std::pair<int64_t,int64_t>, int64_t> FineFaceEl;
     
-    for(auto it : CoarseFaceEl){
+    for(auto it : CoarseFaceEl){ // loop over skeleton coarse face elements of the coarse mesh
         auto coarsepair = it.first;
         int64_t coarseface = it.second;
         //        if(ElCoarseToElFine.find(coarsepair.first) == ElCoarseToElFine.end()) DebugStop();
@@ -3851,23 +4139,24 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     }
     finemesh->BuildConnectivity();
     // modify the material id of the volumetric elements of the fine mesh
-//    {
-//        int64_t nel_fine = finemesh->NElements();
-//        int dim = finemesh->Dimension();
-//        for (int64_t el = 0; el < nel_fine; el++) {
-//            TPZGeoEl *gel = finemesh->Element(el);
-//            if(gel->Dimension() != dim) continue;
-//            int matid = gel->MaterialId();
-//            if(MatFinetoCoarseElIndex.find(matid) == MatFinetoCoarseElIndex.end()){
-//                continue;
-//            }
-//            int64_t coarse_index = MatFinetoCoarseElIndex[matid];
-//            int64_t fine_index = ElCoarseToElFine[coarse_index];
-//            TPZGeoEl *father = coarsemesh->Element(coarse_index);
-//            int fathermatid = father->MaterialId();
-//            gel->SetMaterialId(fathermatid);
-//        }
-//    }
+    // Why not do this earlier?
+    {
+        int64_t nel_fine = finemesh->NElements();
+        int dim = finemesh->Dimension();
+        for (int64_t el = 0; el < nel_fine; el++) {
+            TPZGeoEl *gel = finemesh->Element(el);
+            if(gel->Dimension() != dim) continue;
+            int matid = gel->MaterialId();
+            if(MatFinetoCoarseElIndex.find(matid) == MatFinetoCoarseElIndex.end()){
+                continue;
+            }
+            int64_t coarse_index = MatFinetoCoarseElIndex[matid];
+//            int64_t fine_index = ElCoarseToElFine[coarse_index]; // Do we need this?
+            TPZGeoEl *father = coarsemesh->Element(coarse_index);
+            int fathermatid = father->MaterialId();
+            gel->SetMaterialId(fathermatid);
+        }
+    }
     
     // create face elements along the small elements as sons of macroscopic faces
     {
@@ -3881,7 +4170,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
             if(gel->Dimension() != dim) continue;
             int64_t domain = mSubdomainIndexGel[el];
             if(domain == -1) continue;
-            int firstside = gel->NSides()-gel->NSides(dim-1)-1;
+            int firstside = gel->NSides()-gel->NSides(dim-1)-1; // face sides
             for (int side = firstside; side < gel->NSides()-1; side++) {
                 TPZGeoElSide gelside(gel,side);
                 TPZGeoElSide neighbour = gelside.Neighbour();
@@ -3905,7 +4194,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     // second : list of geometric element indexes of (dim-1) face elements
     for (auto it : facelist) {
         if(FineFaceEl.find(it.first) == FineFaceEl.end()) DebugStop();
-        int64_t fine_skel = FineFaceEl[it.first];
+        int64_t fine_skel = FineFaceEl[it.first]; // change name
         int nelmesh = it.second.size()+1;
         TPZVec<TPZGeoEl *> gelvec(nelmesh);
         gelvec[0] = finemesh->Element(fine_skel);

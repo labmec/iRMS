@@ -103,7 +103,8 @@ void RunTest(const int caseToSim)
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     
     // ----- Setting gmesh -----
-    aspace.SetGeometry(gmeshfine,gmeshcoarse);
+//    aspace.SetGeometry(gmeshfine,gmeshcoarse);
+    aspace.SetGeometry(gmeshfine); // Not testing MHM yet
     
     // ----- Setting the global data transfer -----
     aspace.SetDataTransfer(sim_data);
