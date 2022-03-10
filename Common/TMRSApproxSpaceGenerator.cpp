@@ -2341,6 +2341,10 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
         }
     }
     
+    if(mHybridizer){
+        mHybridizer->InsertPeriferalMaterialObjects(mMixedOperator);
+    }
+    
     mMixedOperator->SetDimModel(dimension);
 }
 
@@ -2378,6 +2382,18 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     mesh_vec[2] = DiscontinuousCmesh(0,0);
     mesh_vec[3] = DiscontinuousCmesh(0,0);
     mesh_vec[4] = TransportCmesh();
+
+    // ========================================================
+    // Hybridize flux mesh in case there are intersections
+    if (isThereFracIntersection()) {
+        mHybridizer = new TPZHybridizeHDiv(mesh_vec);
+        mHybridizer->IdToHybridize() = FractureMatId(); // TODO: Make it not hardcoded
+        const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
+        if (intersectionPressureLossId > -10000) {
+            mHybridizer->fHDivWrapMatid = intersectionPressureLossId;
+        }
+        HybridizeIntersections(mesh_vec);
+    }
     
     // ========================================================
     // Setting lagrange multiplier order
@@ -2397,6 +2413,11 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     AddMultiphysicsMaterialsToCompMesh(order);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
+    
+    // ========================================================
+    // Creates interface elements for hybridized intersections
+    if (mHybridizer)
+        CreateIntersectionInterfaceElements(mesh_vec);
     
 #ifdef PZDEBUG
 //    ofstream out("mphysics.vtk");
@@ -3850,7 +3871,7 @@ const bool TMRSApproxSpaceGenerator::isThereFracIntersection() const {
     const int matIdIntersection = mSimData.mTFracIntersectProperties.m_IntersectionId;
     for (auto gel : mGeometry->ElementVec()){
         const int matid = gel->MaterialId();
-        if (matid == matIdIntersection || matid == matIdIntersection+1) { // intersection matid
+        if (matid == matIdIntersection) { // intersection matid
             return true;
         }
     }
@@ -3863,10 +3884,17 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
     if (!mHybridizer){
         DebugStop();
     }
-    
-    const int matidfrac = 10;
+        
+    const int matidfrac = FractureMatId();
     const int matIdIntersection = mSimData.mTFracIntersectProperties.m_IntersectionId;
     TPZCompMesh* fluxmesh = meshvec_Hybrid[0];
+
+    // Need to decrease dimension otherwise 1d elements are not created
+    const int dim = fluxmesh->Reference()->Dimension();
+    fluxmesh->SetDimModel(2);
+    fluxmesh->SetAllCreateFunctionsHDiv();
+
+    
     TPZGeoMesh* gmesh = fluxmesh->Reference();
     fluxmesh->LoadReferences();
     mHybridizer->InsertPeriferalMaterialObjects(meshvec_Hybrid);
@@ -3912,6 +3940,10 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
             neigh = neigh.Neighbour();
         } // while
     }
+    
+    // Set createApproxSpace createCompEl functions back to domain max dimension
+    fluxmesh->SetDimModel(dim);
+    fluxmesh->SetAllCreateFunctionsHDiv();
 }
 
 void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZVec<TPZCompMesh *>& meshvec_Hybrid) {

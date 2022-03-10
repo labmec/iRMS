@@ -299,7 +299,7 @@ void ReadFractureMeshCase1(TPZGeoMesh*& gmeshfine,TPZGeoMesh*& gmeshcoarse){
     std::string filenamecoarse = basemeshpath + "/verificationMHMNoHybrid/twoElCoarse.msh";
     
     // Domain
-    std::string volbase = "c1";
+    std::string volbase = "c";
     for (int ivol = 1; ivol <= 2; ivol++) {
         std::string ivolstring = volbase + to_string(ivol);
         dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;

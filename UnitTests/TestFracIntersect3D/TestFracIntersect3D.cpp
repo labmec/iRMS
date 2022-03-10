@@ -92,6 +92,7 @@ void RunTest(const int caseToSim)
     
     // ----- Setting the global data transfer -----
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
+    aspace.FractureMatId() = globFracID;
     aspace.SetDataTransfer(sim_data);
 
     // ----- Creates the multiphysics compmesh -----

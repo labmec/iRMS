@@ -59,8 +59,10 @@ int main(){
 #endif
     
     string basemeshpath(FRACMESHES);
-    string filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/twoElCoarse.msh";
-    std::string filenameFine = basemeshpath + "/verificationMHMNoHybrid/twoElFine.msh";
+//    string filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/twoElCoarse.msh";
+//    string filenameFine = basemeshpath + "/verificationMHMNoHybrid/twoElFine.msh";
+    string filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/intersectCoarse.msh";
+    string filenameFine = basemeshpath + "/verificationMHMNoHybrid/intersectFine.msh";
     RunProblem(filenameFine,filenameCoarse);
     return 0;
 }
@@ -101,6 +103,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse)
     TMRSApproxSpaceGenerator aspace;
     aspace.InitMatIdForMergeMeshes() = EInitVolumeMatForMHM;
     aspace.FractureMatId() = EFracture;
+    sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
 //    aspace.SetGeometry(gmeshfine);
     
@@ -208,8 +211,8 @@ void ReadMeshes(string& filenameFine, string& filenameCoarse,
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
     
     // Domain
-    std::string volbase = "c1";
-    for (int ivol = 1; ivol <= 2; ivol++) {
+    std::string volbase = "c";
+    for (int ivol = 1; ivol <= 4; ivol++) { // How to set this maximum?
         std::string ivolstring = volbase + to_string(ivol);
         dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
     }
@@ -224,7 +227,7 @@ void ReadMeshes(string& filenameFine, string& filenameCoarse,
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
             
     // Domain
-    for (int ivol = 1; ivol <= 2; ivol++) {
+    for (int ivol = 1; ivol <= 4; ivol++) {
         std::string ivolstring = volbase + to_string(ivol);
         dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-1);
 //        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
@@ -235,9 +238,16 @@ void ReadMeshes(string& filenameFine, string& filenameCoarse,
     
     // Fractures
     dim_name_and_physical_tagFine[2]["Fracture12"] = EFracture;
+    
+    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
+    dim_name_and_physical_tagFine[2]["Fracture11"] = EFracture;
 
     // Fractures BCs
     dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracNoFlux;
+    dim_name_and_physical_tagFine[1]["BCfrac1"] = EFracNoFlux;
+    
+    // Intersections
+    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection;
             
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
 }

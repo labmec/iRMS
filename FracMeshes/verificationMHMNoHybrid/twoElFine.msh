@@ -6,8 +6,8 @@ $PhysicalNames
 1 10 "BCfrac0"
 2 1 "bc1"
 2 12 "Fracture12"
-3 11 "c11"
-3 12 "c12"
+3 11 "c1"
+3 12 "c2"
 $EndPhysicalNames
 $Entities
 12 20 11 2
