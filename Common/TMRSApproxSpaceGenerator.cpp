@@ -2419,6 +2419,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     if (mHybridizer)
         CreateIntersectionInterfaceElements(mesh_vec);
     
+    // ========================================================
+    // Initialize all fractures properties (TMRSMemory)
+    InitializeFracProperties(mMixedOperator);
+    
 #ifdef PZDEBUG
 //    ofstream out("mphysics.vtk");
 //    TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, out);

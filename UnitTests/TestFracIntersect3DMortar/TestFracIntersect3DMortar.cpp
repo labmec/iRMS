@@ -35,11 +35,11 @@ using namespace std;
 
 // ----- Test cases -----
 // ---- Test 0 ----
-TEST_CASE("constant_pressure","[test_intersection_3D]"){
+TEST_CASE("constant_pressure","[test_intersection_3D_Mortar]"){
     RunTest(0);
 }
 // ---- Test 0 ----
-TEST_CASE("linear_pressure","[test_intersection_3D]"){
+TEST_CASE("linear_pressure","[test_intersection_3D_Mortar]"){
     RunTest(1);
 }
 
