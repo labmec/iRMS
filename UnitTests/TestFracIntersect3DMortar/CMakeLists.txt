@@ -1,1 +1,1 @@
-add_unit_test(TestFracIntersect3D TestFracIntersect3D.cpp)
+add_unit_test(TestFracIntersect3DMortar TestFracIntersect3DMortar.cpp)
