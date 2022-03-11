@@ -221,6 +221,10 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
 //    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
 //    PostProcess(div,2);
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
+    const int dim = Mesh()->Dimension();
+    if (dimToPost == dim-1){
+        file = file.substr(0, file.find(".")) + "_frac.vtk";
+    }
     DefineGraphMesh(dimToPost,scalnames,vecnames,file);
     PostProcess(div,dimToPost);
 }
