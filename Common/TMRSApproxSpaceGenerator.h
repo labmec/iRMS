@@ -35,6 +35,7 @@ class TMRSApproxSpaceGenerator : public TMRSSavable {
 private:
         
     void AddMultiphysicsMaterialsToCompMesh(const int order);
+    void AddMultiphysicsMaterialsToCompMesh(const int order, std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem);
     void SetLagrangeMultiplier4Spaces(TPZManVector<TPZCompMesh *, 5>& mesh_vec);
     void AddAtomicMaterials(const int dim, TPZCompMesh* cmesh,
                             std::set<int>& matids,

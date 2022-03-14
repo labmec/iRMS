@@ -75,7 +75,7 @@ int main(){
     // 2: Flemisch case 1
     // 3: Flemisch case 2
     // 4: Flemisch case 3
-    int simcase = 4;
+    int simcase = 3;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:

@@ -2347,7 +2347,92 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
     
     mMixedOperator->SetDimModel(dimension);
 }
-
+void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int order, std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem) {
+    
+    const int dimension = mGeometry->Dimension();
+    mMixedOperator->SetDefaultOrder(order);
+    
+    // ---------------> Adding volume materials
+    cout << "\n---------------------- Inserting materials in multiphysics cmesh ----------------------" << endl;
+    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+    for (int d = 0; d <= dimension; d++) {
+        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
+            std::string material_name = chunk.first;
+            int material_id = chunk.second;
+            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(material_id,d);
+            volume->SetDataTransfer(mSimData);
+            mMixedOperator->InsertMaterialObject(volume);
+            std::cout << "Added volume material w/ physical name = " << material_name << " and id = " << material_id << std::endl;
+            MatsWithmem.insert(material_id);
+        }
+    }
+    
+    if(!volume) DebugStop();
+        
+    // ---------------> Adding volume boundary condition materials
+    TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue;
+    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+        TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
+        int bc_id   = get<0>(chunk);
+        int bc_type = get<1>(chunk);
+        val2[0] = get<2>(chunk);
+        TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+        if(HasForcingFunctionBC())
+            face->SetForcingFunctionBC(mForcingFunctionBC);
+        mMixedOperator->InsertMaterialObject(face);
+        MatsWitOuthmem.insert(bc_id);
+        std::cout << "Added volume BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
+    }
+    
+    // ---------------> Adding fracture materials
+    if (isFracSim()) {
+        TMRSDarcyFractureFlowWithMem<TMRSMemory> * fracmat = nullptr;
+        for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1]){
+            std::string material_name = chunk.first;
+            int material_id = chunk.second;
+            fracmat = new TMRSDarcyFractureFlowWithMem<TMRSMemory>(material_id,dimension-1);
+            fracmat->SetDataTransfer(mSimData);
+            mMixedOperator->InsertMaterialObject(fracmat);
+            MatsWithmem.insert(material_id);
+            std::cout << "Added frac material w/ physical name = " << material_name << " and id = " << material_id << std::endl;
+        }
+        if (!fracmat) {
+            DebugStop();
+        }
+        
+        // ---------------> Adding fracture boundary condition materials
+        TPZManVector<std::tuple<int, int, REAL>> &BCFracPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue;
+        for (std::tuple<int, int, REAL> chunk : BCFracPhysicalTagTypeValue) {
+            TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
+            if(!fracmat) DebugStop();
+            int bc_id   = get<0>(chunk);
+            int bc_type = get<1>(chunk);
+            val2[0] = get<2>(chunk);
+            if(bc_type == 2){
+                val2[0] = 0.0;
+                val1(0,0) = get<2>(chunk);
+            }
+            TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
+            if (HasForcingFunctionBC()) {
+                face->SetForcingFunctionBC(mForcingFunctionBC);
+            }
+            mMixedOperator->InsertMaterialObject(face);
+            std::cout << "Added frac BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
+            MatsWitOuthmem.insert(bc_id);
+        }
+    }
+    
+    if(mHybridizer){
+        mHybridizer->InsertPeriferalMaterialObjects(mMixedOperator);
+        MatsWitOuthmem.insert(mHybridizer->fLagrangeInterface);
+        MatsWitOuthmem.insert(mHybridizer->fHDivWrapMatid);
+        MatsWitOuthmem.insert(mHybridizer->fInterfaceMatid.first);
+        MatsWitOuthmem.insert(mHybridizer->fInterfaceMatid.second);
+    }
+    
+    mMixedOperator->SetDimModel(dimension);
+}
 void TMRSApproxSpaceGenerator::SetLagrangeMultiplier4Spaces(TPZManVector<TPZCompMesh *, 5>& mesh_vec) {
     // First is pressure mesh
     int ncon = mesh_vec[1]->NConnects();
@@ -2411,9 +2496,9 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     // ========================================================
     // Build multiphysics comp mesh
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
-    AddMultiphysicsMaterialsToCompMesh(order);
-    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec);
-    
+    std::set<int> matsWithMem, matsWithOutMem;
+    AddMultiphysicsMaterialsToCompMesh(order,matsWithMem, matsWithOutMem);
+    mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec,matsWithMem, matsWithOutMem );
     // ========================================================
     // Creates interface elements for hybridized intersections
     if (mHybridizer)
