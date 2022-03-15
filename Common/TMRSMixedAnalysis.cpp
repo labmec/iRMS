@@ -10,6 +10,8 @@
 #include "TPZSpStructMatrix_Eigen.h"
 #include "TPZSpMatrixEigen.h"
 
+using namespace std;
+
 TMRSMixedAnalysis::TMRSMixedAnalysis(){
     
 }
@@ -205,6 +207,11 @@ void TMRSMixedAnalysis::NewtonIteration(){
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
+    
+    const int dim = Mesh()->Dimension();
+    auto start_time_pp = std::chrono::steady_clock::now();
+    cout << "\n--------------------- Post process dim = " << dimToPost << " ---------------------\n" << endl;
+        
     TPZStack<std::string,10> scalnames, vecnames;
     
     scalnames = m_sim_data->mTPostProcess.m_scalnames;
@@ -221,10 +228,36 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
 //    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
 //    PostProcess(div,2);
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
-    const int dim = Mesh()->Dimension();
+    
     if (dimToPost == dim-1){
         file = file.substr(0, file.find(".")) + "_frac.vtk";
     }
     DefineGraphMesh(dimToPost,scalnames,vecnames,file);
     PostProcess(div,dimToPost);
+    
+    auto total_time_pp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_pp).count()/1000.;
+    cout << "Total time post process = " << total_time_pp << " seconds" << endl;
+
+}
+
+void TMRSMixedAnalysis::Assemble(){
+#ifdef PZDEBUG
+    auto start_time_ass = std::chrono::steady_clock::now();
+#endif
+    TPZLinearAnalysis::Assemble();
+#ifdef PZDEBUG
+    auto total_time_ass = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_ass).count()/1000.;
+    cout << "\nTotal time assemble = " << total_time_ass << " seconds" << endl;
+#endif
+}
+
+void TMRSMixedAnalysis::Solve(){
+#ifdef PZDEBUG
+    auto start_time_solve = std::chrono::steady_clock::now();
+#endif
+    TPZLinearAnalysis::Solve();
+#ifdef PZDEBUG
+    auto total_time_solve = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_solve).count()/1000.;
+    cout << "Total time solve = " << total_time_solve << " seconds" << endl;
+#endif
 }

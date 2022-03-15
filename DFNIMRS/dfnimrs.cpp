@@ -58,8 +58,10 @@ static TPZLogger mainlogger("cubicdomain");
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
 int main(){
+    string basemeshpath(FRACMESHES);
 #ifdef PZ_LOG
-    TPZLogger::InitializePZLOG("log4cxx.cfg");    
+    string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
+    TPZLogger::InitializePZLOG(logpath);
     if (mainlogger.isDebugEnabled()) {
         std::stringstream sout;
         sout << "\nLogger for Cubic Domain problem target\n" << endl;;
@@ -67,15 +69,18 @@ int main(){
     }
 #endif
     
-    string basemeshpath(FRACMESHES);
     
+    
+//    cout << "MKL_NUM_THREADS = " << std::getenv("MKL_NUM_THREADS") << endl;
+    setenv("MKL_NUM_THREADS","8",1);
+    cout << "MKL_NUM_THREADS_SECOND = " << std::getenv("MKL_NUM_THREADS") << endl;
     
     // 0: two elements, 1 frac
     // 1: 4 elements, 2 frac, w/ intersection
     // 2: Flemisch case 1
     // 3: Flemisch case 2
     // 4: Flemisch case 3
-    int simcase = 1;
+    int simcase = 0;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -171,7 +176,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     // ----- Analysis parameters -----
     bool must_opt_band_width_Q = false;
     int n_threads = 0;
-    bool UsingPzSparse = false;
+    bool UsingPzSparse = true;
     bool UsePardiso_Q = true;
     
     // ----- Setting analysis -----
@@ -180,10 +185,16 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
     
     // -------------- Running problem --------------
+    cout << "\n--------------------- Assembling ---------------------\n" << endl;
+    cout << "Number of equations: " << mixed_operator->NEquations() << endl;
     mixAnalisys->Assemble();
+
+    cout << "\n--------------------- Solving ---------------------\n" << endl;
     mixAnalisys->Solve();
+    
+    // The system is solve as non linear, so have to multiply by -1
     mixed_operator->UpdatePreviousState(-1.);
-    TPZFastCondensedElement::fSkipLoadSolution = false;
+    TPZFastCondensedElement::fSkipLoadSolution = false; // So we can postprocess variables correctly
     mixed_operator->LoadSolution(mixed_operator->Solution());
     
     // ----- Post processing -----
@@ -515,7 +526,15 @@ void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
     dim_name_and_physical_tagFine[1]["fracIntersection_2_7"] = EIntersection;
     dim_name_and_physical_tagFine[1]["fracIntersection_3_7"] = EIntersection;
     dim_name_and_physical_tagFine[1]["fracIntersection_4_7"] = EIntersection;
-            
+
+    dim_name_and_physical_tagFine[1]["fracIntersection_0_7"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_1_7"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_2_3"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_2_7"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_3_7"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_4_7"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_5_7"] = EIntersection;
+    
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
     
 }

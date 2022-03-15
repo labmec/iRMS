@@ -69,7 +69,11 @@ public:
     /// Perform a Newton iteration
     void NewtonIteration();
    
+    /// override assemble to have timers
+    void Assemble() override;
     
+    /// override solve to have timers
+    void Solve() override;    
 };
 
 #endif /* TMRSMixedAnalysis_h */

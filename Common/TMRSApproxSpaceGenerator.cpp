@@ -2141,7 +2141,7 @@ int TMRSApproxSpaceGenerator::FindNeighSubDomain(TPZGeoElSide &gelside){
 void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, std::set<int> &bcmatids)
 {
 #ifdef PZDEBUG
-    std::cout << "\n===> GetMaterialIds - Identifying material objects for dimension " << dim << std::endl;
+//    std::cout << "\n===> GetMaterialIds - Identifying material objects for dimension " << dim << std::endl;
 #endif
     if(dim == mGeometry->Dimension())
     {
@@ -2149,7 +2149,7 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
         for (auto chunk : DomainDimNameAndPhysicalTag[dim]) {
 #ifdef PZDEBUG
             std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << " matid " << chunk.second<< std::endl;
+//            std::cout << "physical name = " << material_name << " matid " << chunk.second<< std::endl;
 #endif
             matids.insert(chunk.second);
         }
@@ -2157,7 +2157,7 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
         for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
             int bc_id   = get<0>(chunk);
 #ifdef PZDEBUG
-            std::cout << "boundary condition matid " << bc_id << std::endl;
+//            std::cout << "boundary condition matid " << bc_id << std::endl;
 #endif
             bcmatids.insert(bc_id);
         }
@@ -2168,7 +2168,7 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
         for (auto chunk : DomainDimNameAndPhysicalTag[dim]) {
 #ifdef PZDEBUG
             std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << " matid " << chunk.second<< std::endl;
+//            std::cout << "physical name = " << material_name << " matid " << chunk.second<< std::endl;
 #endif
             matids.insert(chunk.second);
         }
@@ -2178,7 +2178,7 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
             for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
                 int bc_id   = get<0>(chunk);
 #ifdef PZDEBUG
-                std::cout << "boundary condition matid " << bc_id << std::endl;
+//                std::cout << "boundary condition matid " << bc_id << std::endl;
 #endif
                 bcmatids.insert(bc_id);
             }
