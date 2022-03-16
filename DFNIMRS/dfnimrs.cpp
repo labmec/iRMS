@@ -75,7 +75,7 @@ int main(){
     // 2: Flemisch case 1
     // 3: Flemisch case 2
     // 4: Flemisch case 3
-    int simcase = 4;
+    int simcase = 0;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -170,7 +170,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
             
     // ----- Analysis parameters -----
     bool must_opt_band_width_Q = false;
-    int n_threads = 8;
+    int n_threads = 0;
     bool UsingPzSparse = true;
     bool UsePardiso_Q = true;
     
