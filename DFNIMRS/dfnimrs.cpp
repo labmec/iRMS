@@ -70,17 +70,12 @@ int main(){
 #endif
     
     
-    
-//    cout << "MKL_NUM_THREADS = " << std::getenv("MKL_NUM_THREADS") << endl;
-    setenv("MKL_NUM_THREADS","8",1);
-    cout << "MKL_NUM_THREADS_SECOND = " << std::getenv("MKL_NUM_THREADS") << endl;
-    
     // 0: two elements, 1 frac
     // 1: 4 elements, 2 frac, w/ intersection
     // 2: Flemisch case 1
     // 3: Flemisch case 2
     // 4: Flemisch case 3
-    int simcase = 0;
+    int simcase = 4;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -175,7 +170,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
             
     // ----- Analysis parameters -----
     bool must_opt_band_width_Q = false;
-    int n_threads = 0;
+    int n_threads = 8;
     bool UsingPzSparse = true;
     bool UsePardiso_Q = true;
     
