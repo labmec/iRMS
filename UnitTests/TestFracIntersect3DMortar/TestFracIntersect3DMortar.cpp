@@ -103,7 +103,7 @@ void RunTest(const int caseToSim)
     // ----- Analysis parameters -----
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
-    bool UsingPzSparse = false;
+    bool UsingPzSparse = true;
     bool UsePardiso_Q = true;
     
     // ----- Setting analysis -----
