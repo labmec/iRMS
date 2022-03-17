@@ -287,9 +287,9 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     
     BuildAlgebraicDataStructure();
     
-    m_transport_module->fAlgebraicTransport.interfaceid = 100;
-    m_transport_module->fAlgebraicTransport.inletmatid = -2;
-    m_transport_module->fAlgebraicTransport.outletmatid = -4;
+    m_transport_module->fAlgebraicTransport.interfaceid = m_sim_data->mTGeometry.mInterface_material_id;
+    m_transport_module->fAlgebraicTransport.inletmatid = 2;
+    m_transport_module->fAlgebraicTransport.outletmatid = 3;
     m_transport_module->fAlgebraicTransport.fgravity = m_sim_data->mTNumerics.m_gravity;
     
     
@@ -417,6 +417,7 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
         
     if(isLinear){
         m_mixed_module->RunTimeStep();
+        
         isLinear=false;
         fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
         m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
@@ -430,9 +431,11 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
         m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol2ID);
         m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(103);
         m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(104);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-1);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(2);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(3);
+//        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-1);
+//        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
+//        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
 //        m_transport_module->fAlgebraicTransport.PrintFluxes();
 //        
 //        int ncells =m_transport_module->fAlgebraicTransport.fCellsData.fCenterCoordinate.size();

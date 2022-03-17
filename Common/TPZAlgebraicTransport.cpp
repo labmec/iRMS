@@ -327,7 +327,7 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
 
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef, int inId){
    
-    REAL s_inlet = fboundaryCMatVal[inId].second;;
+    REAL s_inlet =1.0;// fboundaryCMatVal[inId].second;;
     REAL fluxint  = fInterfaceData[inId].fIntegralFlux[index];
     ef(0,0) = 1.0*s_inlet*fluxint* fdt;
 }
@@ -383,10 +383,13 @@ void TPZAlgebraicTransport::UpdateIntegralFlux(int matid){
     fInterfaceData[matid].fIntegralFlux=val;
     for (int i = 1; i<nels; i++) {
         int np =fInterfaceData[matid].fCoefficientsFlux[i].size();
+        
         for (int index = 0; index<np; index++) {
             REAL val = fInterfaceData[matid].fCoefficientsFlux[i][index];
             fInterfaceData[matid].fIntegralFlux[index] +=val;
+            std::cout<<"FluxInte: "<< val<<std::endl;
         }
+      
     }
 }
 void TPZAlgebraicTransport::TInterfaceDataTransport::Print(std::ostream &out){

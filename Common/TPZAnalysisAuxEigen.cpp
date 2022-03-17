@@ -60,8 +60,8 @@ void TPZAnalysisAuxEigen::Assemble(){
     int internal_faces_id2 = 102;
     int internal_faces_id3 = 103;
     int outletfrac_id = 104;
-    int inlet_faces_id = -2;
-    int outlet_faces_id = -4;
+    int inlet_faces_id = 2;
+    int outlet_faces_id = 3;
     
     int n_internal_faces = fAlgebraicTransport->fInterfaceData[internal_faces_id].fFluxSign.size();
     int n_internal_faces1 = fAlgebraicTransport->fInterfaceData[internal_faces_id1].fFluxSign.size();
@@ -444,13 +444,11 @@ void TPZAnalysisAuxEigen::Assemble(){
         std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport->fInterfaceData[inlet_faces_id].fLeftRightVolIndex[iface];
         int left = lrindex.first;
         int lefteq = fAlgebraicTransport->fCellsData.fEqNumber[left];
-      
-        
         TPZVec<int64_t> indexes(1);
         indexes[0]=lefteq;
         TPZFMatrix<double> ef;
         ef.Resize(1, 1);
-        fAlgebraicTransport->ContributeBCInletInterface(iface,ef);
+        fAlgebraicTransport->ContributeBCInletInterface(iface,ef,2); //here
         size_t i_rhs_begin = (iface) + n_cells + 2*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3);
         m_rhs_triplets[i_rhs_begin] = Triplet2<REAL>(indexes[0],0, ef(0,0));
     
@@ -468,7 +466,7 @@ void TPZAnalysisAuxEigen::Assemble(){
         TPZFMatrix<double> elmat, ef;
         elmat.Resize(1, 1);
         ef.Resize(1, 1);
-        fAlgebraicTransport->ContributeBCOutletInterface(iface,elmat, ef);
+        fAlgebraicTransport->ContributeBCOutletInterface(iface,elmat, ef, 3); //here
         size_t i_begin = iface +   + 4*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3) ;
         m_trans_triplets[i_begin] = (Triplet2<REAL>(indexes[0],indexes[0], elmat(0,0)));
         

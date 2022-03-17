@@ -226,7 +226,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
         
 
         LoadSolution(x);
-        cmesh->LoadSolutionFromMultiPhysics();
+//        cmesh->LoadSolutionFromMultiPhysics();
 //        PostProcessTimeStep();
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);

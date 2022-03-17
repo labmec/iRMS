@@ -69,7 +69,7 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     // order them as a function of the number of corner nodes
     TPZGeoMesh *gmesh =  fTransportMesh->Reference();
     std::pair<int, int64_t> defpair(100,-1);
-    
+    fTransportMesh->LoadReferences();
     int64_t neltr = fTransportMesh->NElements();
     TPZVec<std::pair<int,int64_t>> interfaces(neltr,defpair);
     int64_t num_interfaces = 0;

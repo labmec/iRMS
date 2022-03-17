@@ -35,6 +35,7 @@ class TMRSApproxSpaceGenerator : public TMRSSavable {
 private:
         
     void AddMultiphysicsMaterialsToCompMesh(const int order, std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem);
+    void GetTransportMaterials(std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem);
     void SetLagrangeMultiplier4Spaces(TPZManVector<TPZCompMesh *, 5>& mesh_vec);
     void AddAtomicMaterials(const int dim, TPZCompMesh* cmesh,
                             std::set<int>& matids,
@@ -245,7 +246,7 @@ public:
     void CreateElementInterfaces(TPZGeoEl *gel);
     void CreateInterfaces(TPZCompMesh *cmesh);
     void CreateFracInterfaces(TPZGeoEl *gel);
-    void CreateInterfaceElements(TPZGeoElSide &gelside, TPZGeoElSide &gelneig, int matid, bool IsAtomic);
+    void CreateInterfaceElements(TPZGeoElSide &gelside, TPZGeoElSide &gelneig, int matid);
     void CreateTransportElement(int p_order, TPZCompMesh *cmesh, TPZGeoEl *gel, bool is_BC);
     void TestSideOrient(TPZCompMesh *MultFlux);
     void TakeElementsbyID(std::map<int, std::vector<TPZGeoEl* >> &, std::vector<int> & );
