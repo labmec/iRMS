@@ -41,12 +41,12 @@ static TPZLogger mainlogger("cubicdomain");
 // ---- Test 0 ----
 TEST_CASE("constant_pressure","[test_intersection_3D]"){
     string basemeshpath(FRACMESHES);
-    string filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/twoElCoarse.msh";
-    string filenameFine = basemeshpath + "/verificationMHMNoHybrid/twoElFine.msh";
+    string filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/intersectCoarse.msh";
+    string filenameFine = basemeshpath + "/verificationMHMNoHybrid/intersectCoarse.msh";
     const bool isLinPVar = false;
     RunProblem(filenameFine,filenameCoarse,isLinPVar);
 }
-// ---- Test 0 ----
+// ---- Test 1 ----
 TEST_CASE("linear_pressure","[test_intersection_3D]"){
     string basemeshpath(FRACMESHES);
     string filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/intersectCoarse.msh";
