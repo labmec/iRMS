@@ -16,6 +16,7 @@ using namespace std;
 void RunProblem(string& filenameFine, string& filenameCoarse, const int simcase);
 TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
+void fixPossibleMissingIntersections(TPZGeoMesh* gmesh);
 
 void ReadMeshes(string& filenameFine, string& filenameCoarse,
                 TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
@@ -28,6 +29,12 @@ void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse,
 
 void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
                              TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
+
+void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
+                               TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
+
+void ReadMeshesFlemischCase4Debug(string& filenameFine, string& filenameCoarse,
+                                  TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 
 enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
     /*5*/EFaceBCPressure, EFracInlet, EFracOutlet, EFracNoFlux, EFracPressure,
@@ -75,7 +82,10 @@ int main(){
     // 2: Flemisch case 1
     // 3: Flemisch case 2
     // 4: Flemisch case 3
-    int simcase = 0;
+    // 5: Flemisch case 4
+    // 6: Flemisch case 4 with less fractures (and no overlap)
+    // 7: Flemisch case 4 with much less fractures (for debugging)
+    int simcase = 6;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -98,6 +108,19 @@ int main(){
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case3_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case3_fine.msh";
             break;
+        case 5:
+            DebugStop(); // Need to generate mesh without overlap or need to treat overlap
+            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case4_coarse.msh";
+            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case4_fine.msh";
+            break;
+        case 6:
+            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case4_coarse_lf.msh";
+            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case4_fine_lf.msh";
+            break;
+        case 7:
+            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case4_coarse_debug.msh";
+            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case4_fine_debug.msh";
+            break;
         default:
             break;
     }
@@ -112,21 +135,25 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
 {
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
-    if (simcase < 2) {
+    if (simcase < 2)
         ReadMeshes(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    }
-    else if (simcase == 2){
+    else if (simcase == 2)
         ReadMeshesFlemischCase1(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    }
-    else if (simcase == 3){
+    else if (simcase == 3)
         ReadMeshesFlemischCase2(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    }
-    else if (simcase == 4){
+    else if (simcase == 4)
         ReadMeshesFlemischCase3(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    }
-    else {
+    else if (simcase == 5)
         DebugStop();
-    }
+    else if (simcase == 6)
+        ReadMeshesFlemischCase4LF(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
+    else if (simcase == 7)
+        ReadMeshesFlemischCase4Debug(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
+    else
+        DebugStop();
+        
+    fixPossibleMissingIntersections(gmeshfine); // read about this in the function
+    
     
     TMRSDataTransfer sim_data;
     FillDataTransfer(sim_data);
@@ -170,7 +197,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
             
     // ----- Analysis parameters -----
     bool must_opt_band_width_Q = false;
-    int n_threads = 0;
+    int n_threads = 8;
     bool UsingPzSparse = true;
     bool UsePardiso_Q = true;
     
@@ -532,6 +559,217 @@ void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
     
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
     
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
+                               TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
+    
+    // ===================> Coarse mesh <=======================
+    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
+    
+    // Domain
+    std::string volbase = "c";
+    const int initc = 1, endc = 1000;
+    for (int ivol = initc; ivol <= endc; ivol++) { // How to set this maximum?
+        std::string ivolstring = volbase + to_string(ivol);
+        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
+    }
+    
+    // Domain BC
+    dim_name_and_physical_tagCoarse[2]["bc1"] = EFaceBCPressure;
+    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
+        
+    // ===================> Fine mesh <=======================
+    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
+            
+    // Domain
+    for (int ivol = initc; ivol <= endc; ivol++) {
+        std::string ivolstring = volbase + to_string(ivol);
+        dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-initc);
+//        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
+    }
+    
+    // Domain BC
+    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
+     
+    // Fractures
+    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
+    
+    // Fractures BCs
+    for (int i = 0; i <= 36; i++) {
+        string bcfrac = "BCfrac" + to_string(i);
+        dim_name_and_physical_tagFine[1][bcfrac] = EFracNoFlux;
+    }
+        
+    // Intersections
+//    dim_name_and_physical_tagFine[1]["fracIntersection_1_25"] = 10025;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_1_31"] = 10031;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_2_25"] = 20025;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_3_5" ] = 30005;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_4_25"] = 40025;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_5_25"] = 50025;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_6_19"] = 60019;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_6_29"] = 60029;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_7_11"] = 70011;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_8_34"] = 80034;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_17_22"] =170022;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_25_36"] =250036;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_26_27"] =260027;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_29_32"] =290032;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_30_33"] =300033;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_30_36"] =300036;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_31_33"] =310033;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_31_36"] =310036;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_34_35"] =340035;
+    
+    dim_name_and_physical_tagFine[1]["fracIntersection_1_25"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_1_31"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_2_25"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_3_5" ] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_4_25"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_5_25"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_6_19"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_6_29"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_7_11"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_8_34"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_17_22"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_25_36"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_26_27"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_29_32"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_30_33"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_30_36"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_31_33"] = -121321313;
+    dim_name_and_physical_tagFine[1]["fracIntersection_31_36"] = EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_34_35"] = EIntersection;
+
+    gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+    
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void ReadMeshesFlemischCase4Debug(string& filenameFine, string& filenameCoarse,
+                                  TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
+    
+    // ===================> Coarse mesh <=======================
+    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
+    
+    // Domain
+    std::string volbase = "c";
+    const int initc = 1, endc = 1000;
+    for (int ivol = initc; ivol <= endc; ivol++) { // How to set this maximum?
+        std::string ivolstring = volbase + to_string(ivol);
+        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
+    }
+    
+    // Domain BC
+    dim_name_and_physical_tagCoarse[2]["bc1"] = EFaceBCPressure;
+    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
+        
+    // ===================> Fine mesh <=======================
+    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
+            
+    // Domain
+    for (int ivol = initc; ivol <= endc; ivol++) {
+        std::string ivolstring = volbase + to_string(ivol);
+        dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-initc);
+//        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
+    }
+    
+    // Domain BC
+    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
+     
+    // Fractures
+    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
+    
+    // Fractures BCs
+    for (int i = 0; i <= 19; i++) {
+        string bcfrac = "BCfrac" + to_string(i);
+        dim_name_and_physical_tagFine[1][bcfrac] = EFracNoFlux;
+    }
+        
+    // Intersections
+    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_4_7"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_5_8"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_5_11"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_6_8"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_6_11"] =  EIntersection;
+    dim_name_and_physical_tagFine[1]["fracIntersection_9_10"] =  EIntersection;
+
+
+    gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+    
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void fixPossibleMissingIntersections(TPZGeoMesh* gmesh){
+    // it may happen that the supplied mesh from DFN has missing intersections where 2 fractures intersect.
+    // We treat this here. But it would be ideal to make DFN robust enough so we could remove this function whatsoever
+    // The main idea is to check if a fracture element has more than 1 fracture neightbor. If so, an intersection element is
+    // needed to hybridzie the region.
+    cout << "\n\t==================== Searching for problematic intersection elements ====================\n" << endl;
+    
+    int nInterCreated = 0;
+    for (auto gel : gmesh->ElementVec()) {
+        if (!gel || gel->MaterialId() != EFracture) {
+            continue;
+        }
+        if (gel->Dimension() != 2) {
+            DebugStop(); // Should it work with 2D problems? (1d fractures)
+        }
+        
+        const int firstedge = gel->FirstSide(1);
+        const int lastedge = gel->FirstSide(2);
+        for (int iside = firstedge; iside < lastedge; iside++) {
+            TPZStack<TPZGeoEl*> interEls;
+            int nFracElsForSide = 0;
+            TPZGeoElSide gside(gel,iside);
+            TPZGeoElSide neig = gside.Neighbour();
+            for (; gside != neig; neig++) {
+                TPZGeoEl* neigel = neig.Element();
+                if (neigel->MaterialId() == EIntersection) {
+                    interEls.push_back(neigel);
+                }
+                if (neigel->MaterialId() == EFracture) {
+                    nFracElsForSide++;
+                }
+            }
+            if (interEls.size() > 1) {
+                if (interEls.size() > 2) {
+                    DebugStop(); // there are 3 intersection elements in the same place! Please check why...
+                }
+                cout << "Found two intersection elements at the same place!" << endl;
+                cout << "Manually deleting intersection geoel..." << endl;
+                TPZGeoEl* gelduplicate = interEls[1];
+                const int64_t duplicateIndex = gelduplicate->Index();
+                gelduplicate->RemoveConnectivities();
+                delete gelduplicate;
+                gmesh->ElementVec()[duplicateIndex] = nullptr;
+            }
+            if (nFracElsForSide > 1 && !interEls.size()) {
+                cout << "nfracs for this side: " << nFracElsForSide << endl;
+                cout << "Manually creating intersection geoel..." << endl;
+                TPZGeoElBC(gel, iside, EIntersection);
+                nInterCreated++;
+            }
+            
+        }
+    }
+    if (nInterCreated) {
+        cout << "\n\t\t==================== WARNING ====================" << endl;
+        cout << "\t\t=================================================" << endl;
+        cout << "\n\t- Imported mesh has " << nInterCreated << " missing intersection elements" << endl;
+        cout << "\t- These were created here as a safety measure. However, it is advised to find out why weren't these elements in the mesh\n" << endl;
+    }
+        
+    gmesh->BuildConnectivity();
 }
 
 // ---------------------------------------------------------------------

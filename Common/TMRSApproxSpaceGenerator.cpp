@@ -3915,16 +3915,31 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
     
     int dimfrac = 2;
     for (auto gel : gmesh->ElementVec()) {
+        if(!gel) continue;
         const int gelmatid = gel->MaterialId();
-        if (gelmatid != matIdIntersection && gelmatid != matIdIntersection+1) {
+        if (gelmatid != matIdIntersection) {
             continue;
         }
         if (gel->Dimension() != 1) {
             DebugStop();
         }
-        const bool isIntersectEnd = gelmatid == matIdIntersection+1 ? true : false;
+        const bool isIntersectEnd = false; // this was used to set pressure at an intersection end. TODO: Delete?
         // Search for first neighbor that that is domain
-        TPZGeoElSide gelside(gel,gel->NSides()-1);
+        TPZGeoElSide gelside(gel);
+#ifdef PZDEBUG
+        TPZGeoElSide test = gelside.Neighbour().HasNeighbour(matIdIntersection);
+        if(test && test != gelside){
+            // Why are there two intersection at the same location?!?!
+            DebugStop();
+            
+            // This could be called instead of DebugStop to erase the duplicates
+            TPZGeoEl* geltest = test.Element();
+            const int64_t duplicateIndex = geltest->Index();
+            geltest->RemoveConnectivities();
+            delete geltest;
+            gmesh->ElementVec()[duplicateIndex] = nullptr;
+        }
+#endif
         TPZGeoElSide neigh = gelside.Neighbour();
         
         while(neigh != gelside){
