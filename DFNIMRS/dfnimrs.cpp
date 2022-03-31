@@ -15,6 +15,7 @@ using namespace std;
 // ----- Functions -----
 void RunProblem(string& filenameFine, string& filenameCoarse, const int simcase);
 TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data);
+TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
 void fixPossibleMissingIntersections(TPZGeoMesh* gmesh);
 
@@ -169,7 +170,11 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     
     TMRSDataTransfer sim_data;
-    FillDataTransfer(sim_data);
+    
+    if (simcase == 2)
+        FillDataTransferCase1(sim_data);
+    else
+        FillDataTransfer(sim_data);
     
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
@@ -221,6 +226,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     // -------------- Running problem --------------
     cout << "\n--------------------- Assembling ---------------------\n" << endl;
+    cout << "Number of elements: " << mixed_operator->NElements() << endl;
     cout << "Number of equations: " << mixed_operator->NEquations() << endl;
     mixAnalisys->Assemble();
 
@@ -285,6 +291,69 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
     int  id1=EVolume;
     std::vector<std::pair<int, REAL>> idPerm(1);
     idPerm[0]= std::make_pair(id1,kappa);
+    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
+    
+    // ----- Use function as BC -----
+//    aspace.SetForcingFunctionBC(exactSol);
+    
+    // PostProcess controls
+    sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
+    sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
+    TPZStack<std::string,10> scalnames, vecnames;
+    vecnames.Push("Flux");
+    scalnames.Push("Pressure");
+    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
+        scalnames.Push("g_average");
+        scalnames.Push("p_average");
+    }
+    sim_data.mTPostProcess.m_vecnames = vecnames;
+    sim_data.mTPostProcess.m_scalnames = scalnames;
+    return sim_data;
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data){
+    
+    int D_Type = 0;
+    int N_Type = 1;
+    int Mixed_Type = 2;
+    REAL zero_flux = 0.0, inlet_pressure = 4.0, outlet_pressure = 1.0;
+    
+    // Domain material
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume2"] = EVolume2;
+    
+    // Domain boundary conditions
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,inlet_pressure);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,outlet_pressure);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+            
+    // Fracture material
+    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = EFracture;
+    
+    // Fracture boundary conditions
+    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
+    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
+
+    
+    // Simulation properties
+    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
+    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
+    
+    //FracAndReservoirProperties
+    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
+    
+    REAL kappa1=1.0e-5;
+    REAL kappa2=1.0e-6;
+    int id1 = EVolume2;
+    int id2 = EVolume;
+    std::vector<std::pair<int, REAL>> idPerm(2);
+    idPerm[0]= std::make_pair(id1,kappa1);
+    idPerm[1]= std::make_pair(id2,kappa2);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     // ----- Use function as BC -----
@@ -385,15 +454,20 @@ void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
     
     // Domain
     std::string volbase = "c";
-    for (int ivol = 33; ivol <= 44; ivol++) { // How to set this maximum?
+    for (int ivol = 33; ivol <= 36; ivol++) { // How to set this maximum?
+        std::string ivolstring = volbase + to_string(ivol);
+        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume2;
+    }
+    for (int ivol = 37; ivol <= 44; ivol++) { // How to set this maximum?
         std::string ivolstring = volbase + to_string(ivol);
         dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
     }
+
     
     // Domain BC
-    dim_name_and_physical_tagCoarse[2]["bc4"] = EFaceBCPressure;
-    dim_name_and_physical_tagCoarse[2]["bc5"] = EFaceBCPressure;
-    dim_name_and_physical_tagCoarse[2]["bc6"] = EFaceBCPressure;
+    dim_name_and_physical_tagCoarse[2]["bc4"] = EInlet;
+    dim_name_and_physical_tagCoarse[2]["bc5"] = EOutlet;
+    dim_name_and_physical_tagCoarse[2]["bc6"] = ENoflux;
         
     gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
     
@@ -409,9 +483,9 @@ void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
     }
     
     // Domain BC
-    dim_name_and_physical_tagFine[2]["bc4"] = EFaceBCPressure;
-    dim_name_and_physical_tagFine[2]["bc5"] = EFaceBCPressure;
-    dim_name_and_physical_tagFine[2]["bc6"] = EFaceBCPressure;
+    dim_name_and_physical_tagFine[2]["bc4"] = EInlet;
+    dim_name_and_physical_tagFine[2]["bc5"] = EOutlet;
+    dim_name_and_physical_tagFine[2]["bc6"] = ENoflux;
      
     // Fractures
     dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
@@ -420,7 +494,7 @@ void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
     dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracNoFlux;
     
     // Intersections
-//    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection;
+    // No intersections in this case!
             
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
     

@@ -742,6 +742,7 @@ void BenchmarkCase1()
 //    TPZGeoMesh *gmesh = ReadFractureMesh();
     
     TMRSApproxSpaceGenerator aspace;
+    aspace.FractureMatId() = 10;
     TMRSDataTransfer sim_data  = SettingBenchmarkCase1();
     sim_data.mTGeometry.mSkeletonDiv =0;
     sim_data.mTGeometry.m_skeletonMatId = 19;

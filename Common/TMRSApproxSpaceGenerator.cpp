@@ -3546,7 +3546,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     }
     
     
-    TPZMaterial * material = cmesh->FindMaterial(10); //matIdFractures;
+    TPZMaterial * material = cmesh->FindMaterial(FractureMatId()); //matIdFractures;
     if (!material) {
         return;
     }
