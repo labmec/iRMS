@@ -65,6 +65,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
     
     // ----- Approximation space -----
     TMRSApproxSpaceGenerator aspace;
+    aspace.FractureMatId() = globFracID;
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;

@@ -104,7 +104,7 @@ void RunProblem(const int simcase)
     string basemeshpath(FRACMESHES);
     if (simcase == 1){
         filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case1_coarse.msh";
-        filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case1_fine.msh";
+        filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case1_fine_NotSoFine.msh";
         ReadMeshesFlemischCase1(filenameFine,filenameCoarse,gmeshfine,gmeshcoarse);
     }
     else if (simcase == 2){
