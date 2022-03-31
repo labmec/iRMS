@@ -330,7 +330,6 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     
     // Frac And Reservoir Properties
     sim_data.mTFracProperties.m_Permeability = 1.e4;
