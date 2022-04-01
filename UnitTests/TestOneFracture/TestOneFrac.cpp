@@ -20,6 +20,7 @@ void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TMRSDataTransfer &sim_data, c
 TPZGeoMesh *ReadFractureMeshCase0(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase1(std::string &filename);
 TPZGeoMesh *ReadFractureMeshCase2(std::string &filename);
+TPZGeoMesh *ReadFractureMeshCase3(std::string &filename);
 TMRSDataTransfer SettingFracturesSimple(const int caseToSim);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
 void ChangeBCsToNoFlux(TPZGeoMesh* gmesh);
@@ -49,6 +50,16 @@ TEST_CASE("constant_pressure_frac_at_dom_bound","[onefrac_test]"){
     onefractest::TestOneFrac(2);
 }
 
+// ---- Test 3 ----
+TEST_CASE("linear_pressure_transport","[onefrac_test]"){
+    onefractest::TestOneFrac(3);
+}
+
+int main(){
+    onefractest::TestOneFrac(3);
+    return 0;
+}
+
 // ---- Driver Function Implementation ----
 void onefractest::TestOneFrac(const int& caseToSim)
 {
@@ -56,7 +67,6 @@ void onefractest::TestOneFrac(const int& caseToSim)
     TPZGeoMesh *gmesh = nullptr;
     TMRSDataTransfer sim_data;
     CreateGMeshAndDataTransfer(gmesh,sim_data,caseToSim);
-    
     const bool printgmesh = true;
     if (printgmesh) {
         std::ofstream name("GeoMeshFractures.vtk");
@@ -78,16 +88,62 @@ void onefractest::TestOneFrac(const int& caseToSim)
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetDataTransfer(sim_data);    
     
-    // ----- Creates the multiphysics compmesh -----
-    int order = 1;
-    aspace.BuildMixedMultiPhysicsCompMesh(order);
-    TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-            
     // ----- Analysis parameters -----
     bool must_opt_band_width_Q = true;
     int n_threads = 0;
     bool UsingPzSparse = true;
     bool UsePardiso_Q = true;
+    // ----- Creates the multiphysics compmesh -----
+    int order = 1;
+    aspace.BuildMixedMultiPhysicsCompMesh(order);
+    TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
+    
+    
+    if(caseToSim == 3){
+        aspace.BuildAuxTransportCmesh();
+        TPZCompMesh * transport_operator = aspace.GetTransportOperator();
+        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+        sfi_analysis->SetDataTransfer(&sim_data);
+        sfi_analysis->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+        int n_steps = sim_data.mTNumerics.m_n_steps;
+        REAL dt = sim_data.mTNumerics.m_dt;
+        
+        TPZStack<REAL,100> reporting_times;
+        reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
+        REAL sim_time = 0.0;
+        int pos =0;
+        REAL current_report_time = reporting_times[pos];
+        int npos = reporting_times.size();
+        
+        sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
+        REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+        std::cout << "Mass report at time : " << 0.0 << std::endl;
+        std::cout << "Mass integral :  " << initial_mass << std::endl;
+        std::ofstream fileCilamce("IntegratedSat.txt");
+        TPZFastCondensedElement::fSkipLoadSolution = false;
+        bool first=true;
+        for (int it = 1; it <= n_steps; it++) {
+            sim_time = it*dt;
+            sfi_analysis->m_transport_module->SetCurrentTime(dt);
+            sfi_analysis->PostProcessTimeStep(2);
+            sfi_analysis->RunTimeStep();
+            mixed_operator->LoadSolution(mixed_operator->Solution());
+            if (sim_time >=  current_report_time) {
+                std::cout << "Time step number:  " << it << std::endl;
+                std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
+                mixed_operator->UpdatePreviousState(-1.);
+                sfi_analysis->PostProcessTimeStep();
+                pos++;
+                current_report_time =reporting_times[pos];
+                REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
+                fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
+                REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+                std::cout << "Mass report at time : " << sim_time << std::endl;
+                std::cout << "Mass integral :  " << mass << std::endl;
+            }
+        }
+    }
+    else{
     
     // ----- Setting analysis -----
     TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
@@ -106,7 +162,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
     const int dimToPost = 3;
     mixAnalisys->PostProcessTimeStep(dimToPost);
-    
+ 
     // ----- Checking if results match -----
     gmesh->ResetReference();
     mixed_operator->LoadReferences();
@@ -135,8 +191,8 @@ void onefractest::TestOneFrac(const int& caseToSim)
             }
         } // ellist
     } // elementvec
-    
-    
+    }
+   
     // ----- Cleaning up -----
     delete gmesh;
 }
@@ -222,6 +278,11 @@ void CreateGMeshAndDataTransfer(TPZGeoMesh*& gmesh,TMRSDataTransfer &sim_data, c
             gmesh = ReadFractureMeshCase2(filename2);
         }
             break;
+        case 3: {
+            std::string filename2 = basemeshpath + "/verifications/1frac2el.msh";
+            gmesh = ReadFractureMeshCase3(filename2);
+        }
+            break;
         default:
             DebugStop();
     }
@@ -284,19 +345,34 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,0.);
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,1.);
-        
-
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,N_Type,zero_flux);
     
     }
-    else if (caseToSim < 4){
+    else if (caseToSim < 3){
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(1);
         sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EFaceBCPressure,D_Type,1.);
         
-
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,D_Type,1.);
+    }
+    else if (caseToSim < 4){
+        
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,2.);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,0.);
+        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+        //sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(ENoflux,D_Type,1.);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
+        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,N_Type,zero_flux);
+        
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(4);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,2.);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,0.);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,1.);
+        sim_data.mTGeometry.mIterface_material_idFracBound = EPressure;
+        
     }
     else {
         DebugStop();
@@ -331,9 +407,13 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
+    sim_data.mTNumerics.m_n_steps = 10;
+    sim_data.mTNumerics.m_dt      = 0.005;//*day;
+    sim_data.mTNumerics.m_max_iter_sfi=1;
+    sim_data.mTNumerics.m_max_iter_mixed=1;
+    sim_data.mTNumerics.m_max_iter_transport=1;
     
-    // Frac And Reservoir Properties
-    sim_data.mTFracProperties.m_Permeability = 1.e4;
+    //FracAndReservoirProperties
     REAL kappa=1.0;
     int  id1=EVolume;
     std::vector<std::pair<int, REAL>> idPerm(1);
@@ -350,9 +430,22 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
+    
+    int n_steps = sim_data.mTNumerics.m_n_steps;
+    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
+    REAL dt = sim_data.mTNumerics.m_dt;
+    TPZStack<REAL,100> reporting_times;
+    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    int n_reporting_times =(n_steps)/(time/dt) + 1;
+    REAL r_time =0.0;
+    for (int i =1; i<= n_reporting_times; i++) {
+        r_time += dt*(time/dt);
+        reporting_times.push_back(r_time);
+    }
+    sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
+    
     return sim_data;
 }
 
@@ -446,7 +539,44 @@ TPZGeoMesh *ReadFractureMeshCase2(std::string &filename){
     
     return gmesh;
 }
+TPZGeoMesh *ReadFractureMeshCase3(std::string &filename){
+    
+    const bool fromgmesh = 0;
+    TPZGeoMesh* gmesh = nullptr;
+   
+        // ----- Create Geo Mesh -----
+        const TPZVec<REAL> minX = {-1.,-1.,-1.};
+        const TPZVec<REAL> maxX = {1.,1.,1.};
+        const TPZVec<int> nelDiv = {1,1,2};
+        const MMeshType elType = MMeshType::EHexahedral;
 
+        TPZGenGrid3D gen3d(minX,maxX,nelDiv,elType);
+        gmesh = gen3d.BuildVolumetricElements(EVolume);
+
+        // ----- Fracture element -----
+        int64_t index;
+        TPZManVector<int64_t,2> nodesId = {4,5};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        nodesId = {5,7};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        nodesId = {7,6};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        nodesId = {6,4};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        TPZManVector<int64_t,4> nodesIdVec = {4,6,7,5};
+        new TPZGeoElRefPattern<pzgeom::TPZGeoQuad>(nodesIdVec,globFracID,*gmesh,index);
+
+        // OBS: For some reason, the code leads to wrong results if these bcs are created before the fracture
+        gmesh = gen3d.BuildBoundaryElements(EInlet, ENoflux,ENoflux , ENoflux,ENoflux , EOutlet);
+        
+        gmesh->BuildConnectivity();
+        std::ofstream out("meshbad.txt");
+        gmesh->Print(out);
+    std::ofstream file("FineMesh.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
+    
+    return gmesh;
+}
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 

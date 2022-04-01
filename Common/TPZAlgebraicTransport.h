@@ -275,7 +275,7 @@ public:
     
     void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef, int InletID = -2);
     void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int OutId=-4);
-    void ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef);
+    void ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef, int matId=4);
 
     
     // IHU auxiliary functions

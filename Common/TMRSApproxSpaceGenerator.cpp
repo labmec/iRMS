@@ -1222,6 +1222,7 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
     
     
     int dimension = mGeometry->Dimension();
+
     mTransportOperator = new TPZCompMesh(mGeometry);
     TPZTracerFlow * volume = nullptr;
     mTransportOperator->SetDefaultOrder(0);
@@ -1256,13 +1257,21 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
     
     // ---------------> Adding fracture materials
     if (isFracSim()){
-        for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1]){
-            std::string material_name = chunk.first;
-            int material_id = chunk.second;
-            volume = new TPZTracerFlow(material_id,dimension-1);
-            mTransportOperator->InsertMaterialObject(volume);
-            volIds.insert(material_id);
+        int val = 0;
+        if(isThereFracIntersection()){
+            val=1;
         }
+        for (int i=1; i<= val+1; i++) {
+            for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-i]){
+                std::string material_name = chunk.first;
+                int material_id = chunk.second;
+                volume = new TPZTracerFlow(material_id,dimension-1);
+                mTransportOperator->InsertMaterialObject(volume);
+                volIds.insert(material_id);
+            }
+        }
+     
+        
         if (!volume) {
             DebugStop();
         }
@@ -1276,14 +1285,19 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
         int fracFracID = mSimData.mTGeometry.mInterface_material_idFracFrac;
         int fracbounId = mSimData.mTGeometry.mIterface_material_idFracBound;
         
-        TPZBndCond * face = volume->CreateBC(volume,fracvol1ID,dimension-2,val1,val2);
+        TPZBndCond * face = volume->CreateBC(volume,fracvol1ID,dimension-1,val1,val2);
         mTransportOperator->InsertMaterialObject(face);
-        TPZBndCond * face4 = volume->CreateBC(volume,fracvol2ID,dimension-2,val1,val2);
+        TPZBndCond * face4 = volume->CreateBC(volume,fracvol2ID,dimension-1,val1,val2);
         mTransportOperator->InsertMaterialObject(face4);
         TPZBndCond * face2 = volume->CreateBC(volume,fracFracID,dimension-2,val1,val2);
         mTransportOperator->InsertMaterialObject(face2);
         TPZBndCond * face5 = volume->CreateBC(volume,fracbounId,dimension-2,val1,val2);
         mTransportOperator->InsertMaterialObject(face5);
+        boundaryId.insert(fracbounId);
+//        if(isThereFracIntersection()){
+//            volIds.insert(mSimData.mTFracIntersectProperties.m_IntersectionId);
+//        }
+        
     }
     
     
@@ -1312,6 +1326,7 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
             }
         }
     }
+    
     mTransportOperator->ApproxSpace().SetAllCreateFunctionsDiscontinuous();
     int s_order = 0;
     mTransportOperator->SetDefaultOrder(s_order);
@@ -1320,9 +1335,17 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
     {
         mTransportOperator->Reference()->ResetReference();
         mTransportOperator->LoadReferences();
+
+        std::ofstream file2("Transport.vtk");
+        TPZVTKGeoMesh::PrintCMeshVTK(mTransportOperator, file2);
         CreateInterfaces(mTransportOperator);
+       
+   
+        
+      
     }
-    
+ 
+   
 #ifdef PZDEBUG
     std::ofstream transport("transport_cmesh.txt");
     mTransportOperator->Print(transport);
@@ -2466,6 +2489,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::set<int> matsWithMem, matsWithOutMem;
     AddMultiphysicsMaterialsToCompMesh(order,matsWithMem, matsWithOutMem);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec,matsWithMem, matsWithOutMem );
+    std::ofstream file("MixOpew.vtk");
+    TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
     // ========================================================
     // Creates interface elements for hybridized intersections
     if (mHybridizer)
@@ -3697,6 +3722,10 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     int transport_matid = mSimData.mTGeometry.mInterface_material_id;
     auto frac = mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[2];
     int fracmat = frac["Fractures"];
+    std::set<int> FracBoundary;
+//    FracBoundary.insert(matIdFracBound);
+//    FracBoundary.insert(7);
+//    FracBoundary.insert(6);
     
     int matIdFracSup = mSimData.mTGeometry.mInterface_material_idFracSup;
     int matIdFracInf = mSimData.mTGeometry.mInterface_material_idFracInf;
@@ -3709,15 +3738,29 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     if (dimension==3) {
         val = gel->NSides(1);
     }
+    
+    // ---------------> Adding volume materials
+    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
+    std::set<int> VolMatIds;
+    int dimen = gel->Mesh()->Dimension();
+    for (int d = 0; d <= dimen; d++) {
+        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
+            int material_id = chunk.second;
+            VolMatIds.insert(material_id);
+        }
+    }
+    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue;
+    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+        int bc_id   = get<0>(chunk);
+        FracBoundary.insert(bc_id);
+    }
+    
     for (int iside = ncoord; iside < nsides; iside++) {
         TPZGeoElSide gelside(gel,iside);
         std::vector<TPZGeoElSide> gelneigVec;
         TPZCompElSide celside_l=gelside.Reference();
         //FracVol Elements
         if(iside == nsides-1 ){
-            std::set<int> VolMatIds;
-            VolMatIds.insert(1);
-            VolMatIds.insert(2);
             findNeighElementbyMatId(gelside,gelneigVec,VolMatIds);
             if(gelneigVec.size()==2){
                 for (int ivol = 0; ivol<2; ivol++) {
@@ -3726,17 +3769,34 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                     if (ivol==0) {
                         matid=mSimData.mTGeometry.mInterface_material_idFracInf;
                     }
-                    CreateInterfaceElements(gelside, gelneig, matid);
+                    CreateInterfaceElements(gelneig, gelside, matid);
                 }
             }
         }
         else{
             std::set<int> FracNeihVec;
+            std::vector<TPZGeoElSide> gelneigVec2;
             FracNeihVec.insert(fracmat);
+            FracNeihVec.insert(11);
             findNeighElementbyMatId(gelside,gelneigVec,FracNeihVec);
             int nneih=gelneigVec.size();
+            
+            //Frac-Frac intersecttion
             if (nneih>1){
-                DebugStop();
+                std::set<int> FracNeihVec2;
+                FracNeihVec2.insert(11);
+                findNeighElementbyMatId(gelside,gelneigVec2,FracNeihVec2);
+                int ninter = gelneigVec2.size();
+                if (ninter>1) {
+                    DebugStop();
+                }
+                int   matIdIntersecId=100;
+                TPZGeoElSide gelneig =gelneigVec2[0];
+//                if (gel->Id() < gelneig.Element()->Id()) {
+                    int matid=100;
+                    CreateInterfaceElements(gelside, gelneig, matIdIntersecId);
+//                }
+                
             }
             //Frac-Frac Interfaces
             if (nneih==1) {
@@ -3746,16 +3806,24 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                     CreateInterfaceElements(gelside, gelneig, matIdFracSup);
                 }
             }
-            //Frac - Boound Interfaces
+       
+            //Frac - Bound Interfaces
             if(nneih==0){
-                std::set<int> FracBoundary;
-                FracBoundary.insert(matIdFracBound);
+               
                 std::vector<TPZGeoElSide > boundaries;
+                
                 findNeighElementbyMatId(gelside,boundaries,FracBoundary);
                 int nneihbound=boundaries.size();
                 if(nneihbound==1){
                     TPZGeoElSide gelneig = boundaries[0];
-                    CreateInterfaceElements(gelside, gelneig, matIdFracBound);
+                    int mid=matIdFracBound;
+                    if(gelneig.Element()->MaterialId()==7){
+                        mid= 3;
+                    }
+                    if(gelneig.Element()->MaterialId()==6){
+                        mid= 2;
+                    }
+                    CreateInterfaceElements(gelside, gelneig, mid);
                 }
                 else{
                     std::cout<<"Error"<<std::endl;
@@ -3785,6 +3853,11 @@ void TMRSApproxSpaceGenerator::CreateTransportElement(int p_order, TPZCompMesh *
     cmesh->SetDimModel(dimension);
     if (is_BC) {
         cmesh->SetDimModel(dimension+1);
+//        if (gel->MaterialId()==6) {
+//            gel->SetMaterialId(2);
+//        }else if (gel->MaterialId()==7){
+//            gel->SetMaterialId(3);
+//        }
     }
     TPZCompEl * cel = cmesh->ApproxSpace().CreateCompEl(gel, *cmesh);
     TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *> (cel);

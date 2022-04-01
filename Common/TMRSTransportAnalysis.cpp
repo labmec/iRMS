@@ -279,6 +279,9 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     
     NewtonIteration();
     x += Solution();
+    
+    std::cout<<"SOLUTION: "<<std::endl;
+    std::cout<<x<<std::endl;
     LoadSolution(x);
     if(cmesh){
         cmesh->LoadSolutionFromMultiPhysics();
@@ -295,7 +298,6 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
 }
 
 bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
-    
     TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
     if (!cmesh) {
         DebugStop();
@@ -562,10 +564,17 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     //
     std::set<int> mat_id_2D;
     
-//  mat_id_2D.insert(10);
-//  std::string file_frac("fracture_s.vtk");
-//  DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
-//  PostProcess(div,2);
+  mat_id_2D.insert(10);
+  std::string file_frac("fracture_s.vtk");
+  DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
+  PostProcess(div,2);
+    
+    std::set<int> mat_id_1D;
+    
+  mat_id_2D.insert(11);
+  std::string file_frac2("fracture_s1d.vtk");
+  DefineGraphMesh(1,mat_id_2D,scalnames,vecnames,file_frac2);
+  PostProcess(div,1);
 //
     DefineGraphMesh(dim,scalnames,vecnames,file);
     PostProcess(div,dim);

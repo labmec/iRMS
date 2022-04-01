@@ -329,16 +329,19 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndex(TPZCompElSide &celSi
     if(Side < nsidesm-1){
         orientation = gel->NormalOrientation(celSide.Side());
     }
-    TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(cel);
+  
+    fTransportMesh->Reference()->ResetReference();
+    fFluxMesh->LoadReferences();
+    TPZCompEl *auxel = gel->Reference();
+    TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(auxel);
     if(!celmult){
-        fTransportMesh->Reference()->ResetReference();
-        fFluxMesh->LoadReferences();
-        TPZCompEl *auxel = gel->Reference();
-        TPZMultiphysicsElement *celmult2 =dynamic_cast<TPZMultiphysicsElement *>(auxel);
-        celmult=celmult2;
-        fFluxMesh->Reference()->ResetReference();
-        fTransportMesh->LoadReferences();
+        std::cout<<"TransportElement Without fluxelement: INTERESECTION?"<<std::endl;
+        orientation = gel->NormalOrientation(Side);
+        lowerIndex = SideLowerIndex(gel,Side);
+        return;
     }
+    fFluxMesh->Reference()->ResetReference();
+    fTransportMesh->LoadReferences();
     TPZCompEl *hdivBound = celmult->Element(0);
     TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBound);
     TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundT = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBound);
@@ -1033,6 +1036,11 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         if (matid==10) {
             volume = gel->SideArea(gel->NSides()-1);
             volume=volume*fracFactor;
+        }
+        if (matid==11) {
+            volume = gel->SideArea(gel->NSides()-1);
+            volume=volume*fracFactor*fracFactor;
+            transport.fCellsData.fporosity[i]=0.4;
         }
         transport.fCellsData.fVolume[i]=volume;
         transport.fCellsData.fMatId[i]=matid;

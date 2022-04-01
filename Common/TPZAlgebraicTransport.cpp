@@ -341,10 +341,10 @@ void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<dou
     ek(0,0) = dfwSw_L*fluxint* fdt;
 }
 
-void TPZAlgebraicTransport::ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef){
+void TPZAlgebraicTransport::ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef, int outId){
   
-    std::pair<int64_t, int64_t> lr_index = fInterfaceData[outletmatid].fLeftRightVolIndex[index];
-    REAL fluxint  = fInterfaceData[outletmatid].fIntegralFlux[index];
+    std::pair<int64_t, int64_t> lr_index = fInterfaceData[outId].fLeftRightVolIndex[index];
+    REAL fluxint  = fInterfaceData[outId].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
     ef(0,0) = 1.0*fw_L*fluxint* fdt;
 }
