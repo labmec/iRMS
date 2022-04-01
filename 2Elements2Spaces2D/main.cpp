@@ -155,8 +155,7 @@ TMRSDataTransfer Setting2Fractures(){
     std::vector<REAL> grav(3,0.0);
     grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;    
     
     //FracAndReservoirProperties
         sim_data.mTFracProperties.m_Permeability = 0.00001;

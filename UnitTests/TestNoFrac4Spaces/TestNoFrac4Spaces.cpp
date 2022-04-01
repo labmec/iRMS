@@ -306,7 +306,6 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     sim_data.mTNumerics.m_n_steps = 10;
     sim_data.mTNumerics.m_dt      = 0.5;//*day;
     sim_data.mTNumerics.m_max_iter_sfi=1;

@@ -1492,7 +1492,7 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
         val2[0]  = get<2>(chunk);
         TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         if (HasForcingFunctionBC()) {
-            face->SetForcingFunctionBC(mForcingFunctionBC);
+            face->SetForcingFunctionBC(mForcingFunctionBC,1);
         }
         mMixedOperator->InsertMaterialObject(face);
     }
@@ -1673,7 +1673,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             val2[0]  = get<2>(chunk);
             TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
             if (HasForcingFunctionBC()) {
-                face->SetForcingFunctionBC(mForcingFunctionBC);
+                face->SetForcingFunctionBC(mForcingFunctionBC,1);
             }
             mMixedOperator->InsertMaterialObject(face);
         }
@@ -1694,7 +1694,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
             }
             TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
             if (HasForcingFunctionBC()) {
-                face->SetForcingFunctionBC(mForcingFunctionBC);
+                face->SetForcingFunctionBC(mForcingFunctionBC,1);
             }
             mMixedOperator->InsertMaterialObject(face);
         }
@@ -2323,7 +2323,7 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
         val2[0] = get<2>(chunk);
         TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
         if(HasForcingFunctionBC())
-            face->SetForcingFunctionBC(mForcingFunctionBC);
+            face->SetForcingFunctionBC(mForcingFunctionBC,1);
         mMixedOperator->InsertMaterialObject(face);
         MatsWitOuthmem.insert(bc_id);
         std::cout << "Added volume BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
@@ -2359,7 +2359,7 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
             }
             TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
             if (HasForcingFunctionBC()) {
-                face->SetForcingFunctionBC(mForcingFunctionBC);
+                face->SetForcingFunctionBC(mForcingFunctionBC,1);
             }
             mMixedOperator->InsertMaterialObject(face);
             std::cout << "Added frac BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
@@ -3571,7 +3571,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     }
     
     
-    TPZMaterial * material = cmesh->FindMaterial(10); //matIdFractures;
+    TPZMaterial * material = cmesh->FindMaterial(FractureMatId()); //matIdFractures;
     if (!material) {
         return;
     }
