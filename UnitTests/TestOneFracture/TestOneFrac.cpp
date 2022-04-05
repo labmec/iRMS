@@ -55,10 +55,10 @@ TEST_CASE("linear_pressure_transport","[onefrac_test]"){
     onefractest::TestOneFrac(3);
 }
 
-int main(){
-    onefractest::TestOneFrac(3);
-    return 0;
-}
+//int main(){
+//    onefractest::TestOneFrac(3);
+//    return 0;
+//}
 
 // ---- Driver Function Implementation ----
 void onefractest::TestOneFrac(const int& caseToSim)
