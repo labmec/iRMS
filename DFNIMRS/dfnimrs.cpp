@@ -40,6 +40,10 @@ void ReadMeshesFlemischCase4Debug(string& filenameFine, string& filenameCoarse,
 void ReadMeshesWell(string& filenameFine, string& filenameCoarse,
                     TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 
+void ReadMeshesIP3D(string& filenameFine, string& filenameCoarse,
+                    TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
+
+
 enum EMatid {/*0*/ENone, EVolume, EVolume2, EInlet, EOutlet, ENoflux,
     /*5*/EFaceBCPressure, EFracInlet, EFracOutlet, EFracNoFlux, EFracPressure,
     /*10*/EFracture, EIntersection, EIntersectionEnd, EPLossAtIntersect,
@@ -91,7 +95,8 @@ int main(){
     // 6: Flemisch case 4 with less fractures (and no overlap)
     // 7: Flemisch case 4 with much less fractures (for debugging)
     // 8: Well mesh (Initially idealized just for generating a beautiful mesh)
-    int simcase = 2;
+    // 9: IP3D mesh (Initially idealized just for generating a beautiful mesh)
+    int simcase = 9;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -131,6 +136,10 @@ int main(){
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/wellmesh_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/wellmesh_fine.msh";
             break;
+        case 9:
+            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/ip3dmesh_coarse.msh";
+            filenameFine = basemeshpath + "/verificationMHMNoHybrid/ip3dmesh_fine.msh";
+            break;
         default:
             break;
     }
@@ -163,6 +172,8 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         ReadMeshesFlemischCase4Debug(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else if (simcase == 8)
         ReadMeshesWell(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
+    else if (simcase == 9)
+        ReadMeshesIP3D(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else
         DebugStop();
         
@@ -844,6 +855,85 @@ void ReadMeshesWell(string& filenameFine, string& filenameCoarse,
 
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
     
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void ReadMeshesIP3D(string& filenameFine, string& filenameCoarse,
+                    TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmesh) {
+    
+    string basemeshpath(FRACMESHES);
+    // ===================> Coarse mesh <=======================
+    gmesh = new TPZGeoMesh;
+    const int nnodes = 32 + 1;
+    gmesh->NodeVec().Resize(nnodes);
+    int id = 1;
+    std::ifstream read(basemeshpath + "/verificationMHMNoHybrid/ip3dmesh_nodes.txt");
+    string str;
+    REAL c1, c2, c3;
+    TPZManVector<REAL,3> coord(3,0.);
+    TPZGeoNode nodebog(id++,coord,*gmesh);
+    gmesh->NodeVec()[0] = nodebog;
+    int inod = 1;
+    read >> coord[0];
+    while (read) {
+        cout << "inod = " << inod << endl;
+        read >> coord[1];
+        read >> coord[2];
+        TPZGeoNode node(id++,coord,*gmesh);
+        gmesh->NodeVec()[inod] = node;
+        inod++;
+        read >> coord[0];
+    }
+    
+    int64_t index;
+    // ========> Outer cubes
+    const int outercubematid = 1;
+    TPZManVector<int64_t,8> cubeind = {17,1,5,20,18,3,7,19};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, outercubematid, index);
+    cubeind = {2,21,24,6,4,22,23,8};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, outercubematid, index);
+    cubeind = {3,7,31,32,4,8,30,29};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, outercubematid, index);
+    cubeind = {1,25,26,5,2,28,27,6};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, outercubematid, index);
+    
+    // ========> Inside cubes
+    const int innercubematid = 2;
+    cubeind = {5,7,3,1,13,15,11,9};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
+    cubeind = {5,6,8,7,13,14,16,15};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
+    cubeind = {6,8,4,2,14,16,12,10};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
+    cubeind = {4,3,1,2,12,11,9,10};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
+    cubeind = {6,5,1,2,14,13,9,10};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
+    cubeind = {8,7,3,4,16,15,11,12};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
+
+    // ========> Cube well
+    const int wellcubematid = 10;
+    cubeind = {13,15,11,9,14,16,12,10};
+    gmesh->CreateGeoElement(MElementType::ECube, cubeind, wellcubematid, index);
+    
+    // ========> Prisms
+    const int prismmatid = 3;
+    TPZManVector<int64_t,6> prismind = {17,25,1,20,26,5};
+    gmesh->CreateGeoElement(MElementType::EPrisma, prismind, prismmatid, index);
+    prismind = {27,24,6,28,21,2};
+    gmesh->CreateGeoElement(MElementType::EPrisma, prismind, prismmatid, index);
+    prismind = {4,22,29,8,23,30};
+    gmesh->CreateGeoElement(MElementType::EPrisma, prismind, prismmatid, index);
+    prismind = {7,31,19,3,32,18};
+    gmesh->CreateGeoElement(MElementType::EPrisma, prismind, prismmatid, index);
+    
+    // just so it works...
+    gmeshfine = gmesh;
+    
+    // ===================> Fine mesh <=======================
 }
 
 // ---------------------------------------------------------------------
