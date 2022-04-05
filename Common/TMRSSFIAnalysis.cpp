@@ -32,12 +32,8 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompM
 }
 
 void TMRSSFIAnalysis::BuildAlgebraicDataStructure(){
-         fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
- 
-//    SetDataTransfer(m_mixed_module->GetDataTransfer());
+    fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
     FillProperties();
-//    FillMaterialMemoryDarcy(1);
-    
 }
 
 TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<REAL(const TPZVec<REAL> & )> & kx, std::function<REAL(const TPZVec<REAL> & )> & ky, std::function<REAL(const TPZVec<REAL> & )> & kz, std::function<REAL(const TPZVec<REAL> & )> & phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
@@ -63,7 +59,6 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
         FillProperties(fileprops, &m_transport_module->fAlgebraicTransport);
     }
 
-//    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
 }
 
 TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
@@ -75,7 +70,6 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fkappa_phi = kappa_phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-//    fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     
     FillMaterialMemoryDarcy(1);
     std::string fileprops("Props.txt");
@@ -92,35 +86,29 @@ void TMRSSFIAnalysis::FillMaterialMemoryDarcy(int material_id){
     if (!m_mixed_module|| !m_transport_module) {
         DebugStop();
     }
-    //Inicializar puntos de integracion
+    // Initialize integration points memory
     
     TPZCompMesh * cmesh = m_mixed_module->Mesh();
     TPZMaterial * material = cmesh->FindMaterial(material_id);
     TPZDarcyFlowWithMem *mat = dynamic_cast<TPZDarcyFlowWithMem *>(material);
 
-//    mat->SetAlgebraicTransport(&m_transport_module->fAlgebraicTransport);
-    if (!material) {
+    if (!material)
         DebugStop();
-    }
 
     TPZMatWithMem<TPZDarcyMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TPZDarcyMemory> * >(material);
-    if (!mat_with_memory) {
+    if (!mat_with_memory)
         DebugStop();
-    }
 
     std::shared_ptr<TPZAdmChunkVector<TPZDarcyMemory>> & memory_vector = mat_with_memory->GetMemory();
 
-    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
-    {
-        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
-#ifdef PZDEBUG
-        if(meshit.fTransport == 0)
-        {
-            DebugStop();
-        }
-#endif
-        for (int icell = 0; icell < ncells; icell++)
-        {
+//    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence) {
+//        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
+//#ifdef PZDEBUG
+//        if(meshit.fTransport == 0)
+//            DebugStop();
+//
+//#endif
+//        for (int icell = 0; icell < ncells; icell++) {
 //            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
 //            TPZFastCondensedElement * fastCond = meshit.fMixedCell[icell];
 //            if(fastCond->Reference()->MaterialId()!=material_id){
@@ -141,8 +129,8 @@ void TMRSSFIAnalysis::FillMaterialMemoryDarcy(int material_id){
 //                m_transport_module->fAlgebraicTransport.fCellsData.fKz[algbindex] = 1.0;
 //                m_transport_module->fAlgebraicTransport.fCellsData.fporosity[algbindex] = 0.1;
 //            }
-        }
-    }
+//        }
+//    }
     
 }
 void TMRSSFIAnalysis::FillProperties(){
@@ -192,15 +180,15 @@ void TMRSSFIAnalysis::FillProperties(std::string fileprops, TPZAlgebraicTranspor
     
     TPZCompMesh * cmesh = m_mixed_module->Mesh();
     
-    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
-    {
-        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
-#ifdef PZDEBUG
-        if(meshit.fTransport == 0)
-        {
-            DebugStop();
-        }
-#endif
+//    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
+//    {
+//        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
+//#ifdef PZDEBUG
+//        if(meshit.fTransport == 0)
+//        {
+//            DebugStop();
+//        }
+//#endif
 //        for (int icell = 0; icell < ncells; icell++)
 //        {
 //            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
@@ -215,7 +203,7 @@ void TMRSSFIAnalysis::FillProperties(std::string fileprops, TPZAlgebraicTranspor
 //            algebraicTransport->fCellsData.fKz[algbindex] = Kz[geoIndexMixed];
 //            algebraicTransport->fCellsData.fporosity[algbindex] = Phi[geoIndexMixed];
 //        }
-    }
+//    }
     m_transport_module->fAlgebraicTransport.fHasPropQ=true;
     
 }
@@ -228,15 +216,15 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport){
     
     TPZCompMesh * cmesh = m_mixed_module->Mesh();
     
-    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
-    {
-        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
-#ifdef PZDEBUG
-        if(meshit.fTransport == 0)
-        {
-            DebugStop();
-        }
-#endif
+//    for(auto &meshit : fAlgebraicDataTransfer.fTransportMixedCorrespondence)
+//    {
+//        int64_t ncells = meshit.fAlgebraicTransportCellIndex.size();
+//#ifdef PZDEBUG
+//        if(meshit.fTransport == 0)
+//        {
+//            DebugStop();
+//        }
+//#endif
 //        for (int icell = 0; icell < ncells; icell++)
 //        {
 //            int64_t algbindex = meshit.fAlgebraicTransportCellIndex[icell];
@@ -256,7 +244,7 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport){
 //                algebraicTransport->fCellsData.fKx[algbindex]  = kappa_phi[2];
 //                algebraicTransport->fCellsData.fKx[algbindex] = kappa_phi[3] + 0.01;
 //        }
-    }
+//    }
     m_transport_module->fAlgebraicTransport.fHasPropQ=true;
 }
 
@@ -277,14 +265,18 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport, 
     m_transport_module->fAlgebraicTransport.fHasPropQ=true;
     
 }
+
+// TODOJOSE: Modify name
 void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
     m_mixed_module->SetDataTransfer(sim_data);
     m_transport_module->SetDataTransfer(sim_data);
     m_transport_module->fAlgebraicTransport.fCellsData.SetDataTransfer(sim_data);
     
-    
-    
+    // Creates the interface data structure which holds data such as integrated fluxes at
+    // interfaces and information of neighborhood
+    // Also creats the TCellData which holds information such as the saturation, density,
+    // porosity, etc. in each element
     BuildAlgebraicDataStructure();
     
     m_transport_module->fAlgebraicTransport.interfaceid = m_sim_data->mTGeometry.mInterface_material_id;
@@ -292,11 +284,7 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_transport_module->fAlgebraicTransport.outletmatid = 3;
     m_transport_module->fAlgebraicTransport.fgravity = m_sim_data->mTNumerics.m_gravity;
     
-    
     //Set initial properties
-    std::cout << "interface matid " <<m_sim_data->mTGeometry.mInterface_material_id;
-    std::cout << " water viscosity " << m_sim_data->mTFluidProperties.mWaterViscosity;
-    std::cout << std::endl;
     m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[0] = m_sim_data->mTFluidProperties.mWaterViscosity;
     m_transport_module->fAlgebraicTransport.fCellsData.fViscosity[1] = m_sim_data->mTFluidProperties.mOilViscosity;
     int ncells = m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil.size();
@@ -317,7 +305,6 @@ void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     }
     
     m_transport_module->AnalyzePattern();
-    
 }
 
 TMRSDataTransfer * TMRSSFIAnalysis::GetDataTransfer(){
@@ -401,66 +388,41 @@ void TMRSSFIAnalysis::PostProcessTimeStep(int val){
 
 void TMRSSFIAnalysis::SFIIteration(){
     
+#ifdef USING_BOOST
+    boost::posix_time::ptime t1 = boost::posix_time::microsec_clock::local_time();
+#endif
+    m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
+//    m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
+//    fAlgebraicDataTransfer.TransferLambdaCoefficients();
 #ifdef USING_BOOST
-        boost::posix_time::ptime t1 = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
+    auto deltat = t2-t1;
+    std::cout << "Transfer from transport to mixed time: " << deltat << std::endl;
 #endif
-m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
-        
-//        m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
-//        fAlgebraicDataTransfer.TransferLambdaCoefficients();
-#ifdef USING_BOOST
-        boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
-        auto deltat = t2-t1;
-        std::cout << "Transfer from transport to mixed time: " << deltat << std::endl;
-#endif
-        
+    
     if(isLinear){
-        m_mixed_module->RunTimeStep();
+        m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
         
-        isLinear=false;
+        isLinear = false; // so it leaves after this iteration
+        
+        // Now, we transfer the mixed problem dofs to the transport problem. These will be used
+        // to compute the transport of saturations in an algebraic way
         fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100);
-        //    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(101);
-        //    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(102);
         
-        int fracvol1ID = m_sim_data->mTGeometry.mInterface_material_idFracInf;
-        int fracvol2ID = m_sim_data->mTGeometry.mInterface_material_idFracSup;
-        
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol1ID);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(fracvol2ID);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(103);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(104);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(2);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(3);
-//        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-1);
-//        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-2);
-//        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(-4);
-//        m_transport_module->fAlgebraicTransport.PrintFluxes();
-//        
-//        int ncells =m_transport_module->fAlgebraicTransport.fCellsData.fCenterCoordinate.size();
-//        
-//        for (int icell =0; icell<ncells; icell++) {
-//            std::vector<REAL> center = m_transport_module->fAlgebraicTransport.fCellsData.fCenterCoordinate[icell];
-//            std::cout<<"icell: "<<icell<<std::endl;
-//            std::cout<<"x: "<<center[0]<<std::endl;
-//            std::cout<<"y: "<<center[1]<<std::endl;
-//            std::cout<<"z: "<<center[2]<<std::endl;
-//            std::cout<<std::endl;
-//        }
-        
-        
-       
+        //TODOJOSE: wrap all these in a function
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100); //TODOJOSE: PUT MATID FROM DATATRANSFER
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracInf);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracSup);
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(103);  //TODOJOSE: PUT MATID FROM DATATRANSFER
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(104); //TODOJOSE: PUT MATID FROM DATATRANSFER
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(2); //TODOJOSE: PUT MATID FROM DATATRANSFER
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(3); //TODOJOSE: PUT MATID FROM DATATRANSFER
     }
     
-    
-    
-    
-  
-    
-    
 //    m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
-    
+  
+    // For non linear....
 //    fAlgebraicDataTransfer.TransferPressures();
 //    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
     
@@ -470,6 +432,7 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     std::cout << "Transfer mixed to transport time: " << deltat << std::endl;
 #endif
     
+    // Solves the transport problem
     m_transport_module->RunTimeStep();
     
 #ifdef USING_BOOST
@@ -477,8 +440,7 @@ m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambd
     deltat = t5-t4;
     std::cout << "Total Transport time: " << deltat << std::endl;
 #endif
-    //    m_transport_module->Solution() = m_transport_module->Solution() + solution_n;
-    //    TransferToMixedModule();        // Transfer to mixed
+//    TransferToMixedModule(); // Transfer to mixed
 }
 
 

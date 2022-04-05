@@ -47,11 +47,9 @@ TPZAlgebraicDataTransfer::~TPZAlgebraicDataTransfer(){
 }
 
 // compute the data transfer data structures between the fluxmesh and transport class
-void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport &transport)
-{
-    
+void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport &transport){
     IdentifyInterfaceGeometricElements();
-    this->IdentifyVolumeGeometricElements();
+    IdentifyVolumeGeometricElements();
     BuildMixedToTransportDataStructures(fFluxMesh);
     TPZVec<int64_t> Volume_Index;
     BuildTransportToMixedCorrespondenceDatastructure(fFluxMesh, Volume_Index);
@@ -73,30 +71,23 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     int64_t neltr = fTransportMesh->NElements();
     TPZVec<std::pair<int,int64_t>> interfaces(neltr,defpair);
     int64_t num_interfaces = 0;
-    for(int64_t el=0; el<neltr; el++)
-    {
+    for(int64_t el=0; el<neltr; el++){
         TPZCompEl *cel = fTransportMesh->Element(el);
         TPZMultiphysicsInterfaceElement *interf = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
         TPZInterfaceElement *interf2 = dynamic_cast<TPZInterfaceElement *>(cel);
         if(!interf && !interf2)
-        {
             continue;
-        }
+
         TPZGeoEl *gel=NULL;
         if(interf)
-        {
              gel = interf->Reference();
-        }
-        else{
+        else
             gel = interf2->Reference();
-        }
-        
+                
         int ncorner = gel->NCornerNodes();
         if(ncorner > 4)
-        {
-            // an interface element should not have more than 4 corner nodes
-            DebugStop();
-        }
+            DebugStop();     // an interface element should not have more than 4 corner nodes
+        
         interfaces[num_interfaces++] = std::pair<int,int64_t>(ncorner,el);
     }
     // this vector has all interface elements
@@ -107,13 +98,9 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     std::map<int,std::map<int,int64_t>> numinterfaces_matid;
     // number of interface elements by matid
     std::map<int,int64_t> total_internal_interfaces_matid;
-    for(int64_t el = 0; el<num_interfaces; el++)
-    {
+    for(int64_t el = 0; el<num_interfaces; el++) {
         if(interfaces[el].first > 4)
-        {
-            // an interface element should not have more than 4 corner nodes
-            DebugStop();
-        }
+            DebugStop(); // an interface element should not have more than 4 corner nodes
         int64_t celindex = interfaces[el].second;
         TPZCompEl *cel = fTransportMesh->Element(celindex);
         int64_t gelindex = cel->Reference()->Index();
@@ -123,18 +110,15 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     }
     
     // then the number of interfaces elements will be the size of this data structure
-    for(auto it = total_internal_interfaces_matid.begin(); it != total_internal_interfaces_matid.end(); it++)
-    {
+    for(auto it = total_internal_interfaces_matid.begin(); it != total_internal_interfaces_matid.end(); it++) {
         fInterfaceGelIndexes[it->first].Resize(it->second);
     }
     // compute an index within the vector of interfaces
     std::map<int,std::map<int,int64_t>> count_interfaces;
-    for(auto matit=numinterfaces_matid.begin(); matit != numinterfaces_matid.end(); matit++)
-    {
+    for(auto matit=numinterfaces_matid.begin(); matit != numinterfaces_matid.end(); matit++) {
         int64_t prev_count = 0;
         int matid = matit->first;
-        for(auto it = matit->second.rbegin(); it != matit->second.rend(); it++)
-        {
+        for(auto it = matit->second.rbegin(); it != matit->second.rend(); it++) {
             int ncorner_nodes = it->first;
             count_interfaces[matid][ncorner_nodes] = prev_count;
             int64_t numfaces = it->second;
@@ -143,8 +127,7 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     }
     
     
-    for(int64_t el = 0; el<num_interfaces; el++)
-    {
+    for(int64_t el = 0; el<num_interfaces; el++) {
         if(interfaces[el].first > 4) DebugStop();
         int64_t celindex = interfaces[el].second;
         TPZCompEl *cel = fTransportMesh->Element(celindex);
@@ -161,16 +144,12 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
     
 #ifdef PZDEBUG
     {
-        for(auto &it : fInterfaceGelIndexes)
-        {
+        for(auto &it : fInterfaceGelIndexes) {
             TPZVec<TInterfaceWithVolume> &vec = it.second;
             int64_t nel = vec.size();
-            for(int64_t el = 0; el < nel; el++)
-            {
+            for(int64_t el = 0; el < nel; el++){
                 if(vec[el].fInterface_gelindex == -1)
-                {
                     DebugStop();
-                }
             }
         }
     }
@@ -290,9 +269,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             {
                 if(right_orient == 1){
                     facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
-
-                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
-               
+                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};               
                 }
                 if(right_orient !=1){
                     facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};

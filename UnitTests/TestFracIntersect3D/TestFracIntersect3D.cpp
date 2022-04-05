@@ -88,11 +88,11 @@ TEST_CASE("Four_El_Two_Frac_lin_pressure_Transp","[test_frac_4spaces_3D]"){
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
 
-int main(){
-    int CaseToSim = 7;
-    RunProblem(CaseToSim);
-    return 0;
-}
+//int main(){
+//    int CaseToSim = 7;
+//    RunProblem(CaseToSim);
+//    return 0;
+//}
 void RunProblem( const int &caseToSim){
     string basemeshpath(FRACMESHES);
 #ifdef PZ_LOG
@@ -198,7 +198,7 @@ void RunProblem( const int &caseToSim){
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
             sfi_analysis->PostProcessTimeStep(2);
-            sfi_analysis->RunTimeStep();
+            sfi_analysis->RunTimeStep(); // runs mixed and transport problems
             mixed_operator->LoadSolution(mixed_operator->Solution());
             if (sim_time >=  current_report_time) {
                 std::cout << "Time step number:  " << it << std::endl;
@@ -207,7 +207,9 @@ void RunProblem( const int &caseToSim){
                 sfi_analysis->PostProcessTimeStep();
                 pos++;
                 current_report_time =reporting_times[pos];
-                REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
+                
+                // computes integral of saturation for elements of certain matid
+                REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(aspace.FractureMatId());
                 fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
                
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
@@ -240,11 +242,11 @@ void RunProblem( const int &caseToSim){
     
     // ----- Comparing with analytical solution -----
 
-//    REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
-//    if (caseToSim == 1 || caseToSim == 3 || caseToSim == 5 || caseToSim == 7) // linear pressure variation
-//        REQUIRE( integratedflux == Approx( 8./3. ) ); // Approx is from catch2 lib
-//    if (caseToSim == 0 || caseToSim == 2 || caseToSim == 4 || caseToSim == 6)  // cte ppressyre
-//        REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
+    REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
+    if (caseToSim == 1 || caseToSim == 3 || caseToSim == 5 || caseToSim == 7) // linear pressure variation
+        REQUIRE( integratedflux == Approx( 8./3. ) ); // Approx is from catch2 lib
+    if (caseToSim == 0 || caseToSim == 2 || caseToSim == 4 || caseToSim == 6)  // cte ppressyre
+        REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
     
     // ----- Cleaning up -----
     delete gmeshfine;

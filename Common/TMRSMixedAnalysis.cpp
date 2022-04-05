@@ -74,9 +74,8 @@ void TMRSMixedAnalysis::Configure(int n_threads, bool UsePardiso_Q,bool UsePZ){
 void TMRSMixedAnalysis::RunTimeStep(){
     
     TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
-    if (!cmesh) {
+    if (!cmesh)
         DebugStop();
-    }
     
     int n = m_sim_data->mTNumerics.m_max_iter_mixed;
     bool stop_criterion_Q = false;
@@ -96,11 +95,6 @@ void TMRSMixedAnalysis::RunTimeStep(){
         x +=dx;
         cmesh->UpdatePreviousState(-1.);
         fsoltransfer.TransferFromMultiphysics();
-        std::ofstream filesol("SolFlux.txt");
-//        std::ofstream filesolRhs("Rhs.txt");
-        cmesh->MeshVector()[0]->Print(filesol);
-//        cmesh->Print(filesol);
-//        Rhs().Print("jose.txt");
         
 #ifdef USING_BOOST
         boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
@@ -114,40 +108,25 @@ void TMRSMixedAnalysis::RunTimeStep(){
         std::cout << "Mixed:: Assembly 2 time Global " << deltat << std::endl;
 #endif
       
-//        DebugStop();
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
-      
-#ifdef PZDEBUG
-        {
-            std::ofstream out("mphysics_flux.txt");
-//            cmesh->Print(out);
-        }
-#endif
 
 #ifdef PZDEBUG
         {
- 
             if(std::isnan(corr_norm) || std::isnan(res_norm))
-            {
                 DebugStop();
-            }
         }
 #endif
 
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
         if (stop_criterion_Q) {
+            std::cout << "\n\n\t================================================" << std::endl;
             std::cout << "Mixed operator: " << std::endl;
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
-  
             break;
         }
-//                if (m_k_iteration >= n) {
-//                    std::cout << "Mixed operator not converge " << std::endl;
-////                    DebugStop();
-//                }
     }
 }
 

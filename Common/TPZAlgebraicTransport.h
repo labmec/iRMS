@@ -83,7 +83,7 @@ public:
         std::vector<REAL> fdDensityOildp;
         std::vector<REAL> fDensityOilLastState;
         std::vector<REAL> fDensityWater;
-         std::vector<REAL> fdDensityWaterdp;
+        std::vector<REAL> fdDensityWaterdp;
         std::vector<REAL> fDensityWaterLastState;
         std::vector<REAL> fMixedDensity;
         std::vector<REAL> flambda;
