@@ -162,14 +162,14 @@ void RunTest(const int caseToSim)
         for (int it = 1; it <= n_steps; it++) {
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
-            sfi_analysis->PostProcessTimeStep(2);
+            sfi_analysis->PostProcessTimeStep(3);
             sfi_analysis->RunTimeStep();
             mixed_operator->LoadSolution(mixed_operator->Solution());
             if (sim_time >=  current_report_time) {
                 std::cout << "Time step number:  " << it << std::endl;
                 std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
                 mixed_operator->UpdatePreviousState(-1.);
-                sfi_analysis->PostProcessTimeStep();
+                sfi_analysis->PostProcessTimeStep(3);
                 pos++;
                 current_report_time =reporting_times[pos];
                 REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
@@ -212,20 +212,20 @@ void RunTest(const int caseToSim)
     
     // ----- Comparing with analytical solution -----
     // Results are intuitive by looking at paraview plots of the pressure and flux
-//    if (caseToSim == 2){ // linear pressure variation
-//        REQUIRE( integratedpressure == Approx( 0. ) ); // Approx is from catch2 lib
-//        REQUIRE( integratedflux == Approx( 8.0 ) ); // Approx is from catch2 lib
-//    }
-//    else if (caseToSim == 1){
-//        REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
-//        REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
-//    }
-//    else if(caseToSim == 3){
-//        
-//    }
-//    else{
-//        DebugStop();
-//    }
+    if (caseToSim == 2){ // linear pressure variation
+        REQUIRE( integratedpressure == Approx( 0. ) ); // Approx is from catch2 lib
+        REQUIRE( integratedflux == Approx( 8.0 ) ); // Approx is from catch2 lib
+    }
+    else if (caseToSim == 1){
+        REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
+        REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
+    }
+    else if(caseToSim == 3){
+        
+    }
+    else{
+        DebugStop();
+    }
     
     // ----- Cleaning up -----
     delete gmeshfine;
@@ -455,7 +455,7 @@ const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& var
     if (varname == "Pressure")
         return vecint[0];
     else if (varname == "Flux")
-        return vecint[2];
+        return vecint[0];
 }
 void ModifyBcsForTransport(TPZGeoMesh* gmesh, int inletBc, int outletBc) {
     int nels = gmesh->NElements();

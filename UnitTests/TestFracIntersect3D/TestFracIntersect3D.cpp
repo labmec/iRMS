@@ -89,11 +89,11 @@ TEST_CASE("Four_El_Two_Frac_lin_pressure_Transp","[test_frac_4spaces_3D]"){
 //-------------------------------------------------------------------------------------------------
 
 
-int main(){
-    int CaseToSim = 5;
-    RunProblem(CaseToSim);
-    return 0;
-}
+//int main(){
+//    int CaseToSim = 5;
+//    RunProblem(CaseToSim);
+//    return 0;
+//}
 
 void RunProblem( const int &caseToSim){
     string basemeshpath(FRACMESHES);
