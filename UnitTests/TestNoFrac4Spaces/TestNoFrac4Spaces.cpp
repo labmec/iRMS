@@ -64,7 +64,7 @@ static TPZLogger mainlogger("cubicdomain");
 TEST_CASE("constant_pressure","[test_nofrac_3D]"){
     RunTest(1);
 }
-// ---- Test 0 ----
+// ---- Test 1 ----
 // 2: 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Linear pressure
 TEST_CASE("linear_pressure","[test_nofrac_3D]"){
     RunTest(2);
@@ -81,6 +81,8 @@ TEST_CASE("transport_linear_pressure","[test_nofrac_3D]"){
 
 void RunTest(const int caseToSim)
 {
+    cout << "\n\n\t\t---------------------- Start of Simulation " << caseToSim <<  " ------------------------\n" << endl;
+    
 #ifdef PZ_LOG
     TPZLogger::InitializePZLOG("log4cxx.cfg");
     if (mainlogger.isDebugEnabled()) {
@@ -228,6 +230,8 @@ void RunTest(const int caseToSim)
     // ----- Cleaning up -----
     delete gmeshfine;
     delete gmeshcoarse;
+    
+    cout << "\n\n\t\t****************** End of Simulation " << caseToSim <<  " ******************\n" << endl;
 }
 
 // ---------------------------------------------------------------------
