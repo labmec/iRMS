@@ -72,6 +72,9 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * geometry){
 void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * gmeshcoarse){
 //    ofstream out1("gmesh_before.txt");
 //    gmeshfine->Print(out1);
+    if (InitMatIdForMergeMeshes() == -1000) {
+        DebugStop(); // MatId for MHM should be set in main!
+    }
     MergeMeshes(gmeshfine, gmeshcoarse); // this fills mSubdomainIndexGel that is used for MHM
 //    ofstream out2("gmesh_after.txt");
 //    gmeshfine->Print(out2);
@@ -1412,6 +1415,14 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     
     bool cond1 = mSimData.mTNumerics.m_four_approx_spaces_Q;
     bool cond2 = mSimData.mTNumerics.m_mhm_mixed_Q;
+    
+    // Sanity checks
+    if (isFracSim() && FractureMatId() == -1000) {
+        DebugStop(); // if simulation has fractures, it should set the matid
+    }
+    if (isThereFracIntersection() && mSimData.mTFracIntersectProperties.m_IntersectionId == -10000){
+        DebugStop(); // if simulation has frac/frac intersections, this matid should have been set
+    }
     
     switch(mSimData.mTNumerics.m_SpaceType)
     {
