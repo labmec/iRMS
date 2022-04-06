@@ -654,12 +654,7 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
             std::cout<<"The sum of the flows on each element must be zero. Element:  "<<iel<<" has a value of"<<SumFluxByElement[iel]<<std::endl;
             
             DebugStop();
-        }
-        
-        if(nInterfacesByElement[iel]==numZeroFluxByElement[iel]){
-            std::cout<<"Error: The sum of the flows over the elements is zero because all the flows on the interfaces are zero."<<std::endl;
-            DebugStop();
-        }
+        }        
     }
     std::cout<<"The sum of the flows over the elements is zero. ¡This is correct!"<<std::endl;
 }
