@@ -403,13 +403,12 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     if(isLinear){
         m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
-        
         isLinear = false; // so it leaves after this iteration
+
         
         // Now, we transfer the mixed problem dofs to the transport problem. These will be used
         // to compute the transport of saturations in an algebraic way
         fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
-        
         //TODOJOSE: wrap all these in a function
         m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100); //TODOJOSE: PUT MATID FROM DATATRANSFER
         m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracInf);
@@ -418,11 +417,13 @@ void TMRSSFIAnalysis::SFIIteration(){
         m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(104); //TODOJOSE: PUT MATID FROM DATATRANSFER
         m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(2); //TODOJOSE: PUT MATID FROM DATATRANSFER
         m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(3); //TODOJOSE: PUT MATID FROM DATATRANSFER
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(4); //TODOJOSE: PUT MATID FROM DATATRANSFER
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(5); //TODOJOSE: PUT MATID FROM DATATRANSFER
+        m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
     }
     
-//    m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
+   
   
-    // For non linear....
 //    fAlgebraicDataTransfer.TransferPressures();
 //    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
     

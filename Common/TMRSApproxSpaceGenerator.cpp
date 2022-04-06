@@ -1332,9 +1332,10 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
         mTransportOperator->Reference()->ResetReference();
         mTransportOperator->LoadReferences();
 
-        std::ofstream file2("Transport.vtk");
-        TPZVTKGeoMesh::PrintCMeshVTK(mTransportOperator, file2);
+       
         CreateInterfaces(mTransportOperator); // Here is where the interface elements are actually created!
+        std::string name("geo");
+        PrintGeometry(name);
     }
  
 #ifdef PZDEBUG
@@ -3793,8 +3794,10 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
             if (nneih==1) {
                 TPZGeoElSide gelneig =gelneigVec[0];
                 if (gel->Id() < gelneig.Element()->Id()) {
+
                     int matid = matIdFracFrac;
-                    CreateInterfaceElements(gelside, gelneig, matIdFracSup);
+                    CreateInterfaceElements(gelside, gelneig, matid);
+
                 }
             }
             
@@ -3806,13 +3809,13 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                 int nneihbound=boundaries.size();
                 if(nneihbound==1){
                     TPZGeoElSide gelneig = boundaries[0];
-                    int mid=matIdFracBound;
-                    if(gelneig.Element()->MaterialId()==7){
-                        mid= 3;
-                    }
-                    if(gelneig.Element()->MaterialId()==6){
-                        mid= 2;
-                    }
+                    int mid=104;
+//                    if(gelneig.Element()->MaterialId()==7){
+//                        mid= 3;
+//                    }
+//                    if(gelneig.Element()->MaterialId()==6){
+//                        mid= 2;
+//                    }
                     CreateInterfaceElements(gelside, gelneig, mid);
                 }
                 else{

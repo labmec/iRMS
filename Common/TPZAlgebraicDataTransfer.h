@@ -48,7 +48,9 @@ public:
         // left right volume index in the AlgebraicTransport data structure
         std::pair<int64_t, int64_t> fLeftRightVolIndex;
         
-        TInterfaceWithVolume() : fInterface_gelindex(-1), fInterface_celindex(-1), fLeftRightGelSideIndex(), fLeftRightVolIndex(-1,-1)
+        std::pair<int64_t, int64_t> fLeftRightGelIndex;
+        
+        TInterfaceWithVolume() : fInterface_gelindex(-1), fInterface_celindex(-1), fLeftRightGelSideIndex(), fLeftRightVolIndex(-1,-1),fLeftRightGelIndex(-1,-1)
         {
             
         }

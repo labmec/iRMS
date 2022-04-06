@@ -39,14 +39,13 @@ void ReadMeshesFlemischCase4Debug(string& filenameFine, string& filenameCoarse,
 
 void ReadMeshesWell(string& filenameFine, string& filenameCoarse,
                     TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
-
 void ReadMeshesIP3D(string& filenameFine, string& filenameCoarse,
                     TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 
 
-enum EMatid {/*0*/ENone, EVolume, EVolume2, EInlet, EOutlet, ENoflux,
+enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
     /*5*/EFaceBCPressure, EFracInlet, EFracOutlet, EFracNoFlux, EFracPressure,
-    /*10*/EFracture, EIntersection, EIntersectionEnd, EPLossAtIntersect,
+    /*10*/EFracture, EIntersection, EIntersectionEnd, EPLossAtIntersect,EVolume2,
     /*14 HAS TO BE LAST*/EInitVolumeMatForMHM /*Not sure if we will keep this structure */
 };
 
@@ -96,7 +95,7 @@ int main(){
     // 7: Flemisch case 4 with much less fractures (for debugging)
     // 8: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 9: IP3D mesh (Initially idealized just for generating a beautiful mesh)
-    int simcase = 9;
+    int simcase = 2;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -109,7 +108,8 @@ int main(){
             break;
         case 2:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case1_coarse.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case1_fine.msh";
+            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case1_fine_NotSoFine.msh";
+//            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case1_fine.msh";
             break;
         case 3:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case2_coarse.msh";
@@ -235,30 +235,73 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     mixAnalisys->SetDataTransfer(&sim_data);
     mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
     
-    // -------------- Running problem --------------
-    cout << "\n--------------------- Assembling ---------------------\n" << endl;
-    cout << "Number of elements: " << mixed_operator->NElements() << endl;
-    cout << "Number of equations: " << mixed_operator->NEquations() << endl;
-    mixAnalisys->Assemble();
-
-    cout << "\n--------------------- Solving ---------------------\n" << endl;
-    mixAnalisys->Solve();
+    if(1){
+        aspace.BuildAuxTransportCmesh();
+        TPZCompMesh * transport_operator = aspace.GetTransportOperator();
+        
+        std::ofstream name("TransportOperator.vtk");
+        TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, name);
+        
+        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+        sfi_analysis->SetDataTransfer(&sim_data);
+        sfi_analysis->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+        int n_steps = sim_data.mTNumerics.m_n_steps;
+        REAL dt = sim_data.mTNumerics.m_dt;
+        
+        TPZStack<REAL,100> reporting_times;
+        reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
+        REAL sim_time = 0.0;
+        int pos =0;
+        REAL current_report_time = reporting_times[pos];
+        int npos = reporting_times.size();
+        
+        sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
+        REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+        std::cout << "Mass report at time : " << 0.0 << std::endl;
+        std::cout << "Mass integral :  " << initial_mass << std::endl;
+        std::ofstream fileCilamce("IntegratedSat.txt");
+        TPZFastCondensedElement::fSkipLoadSolution = false;
+        bool first=true;
+        for (int it = 1; it <= n_steps; it++) {
+            sim_time = it*dt;
+            sfi_analysis->m_transport_module->SetCurrentTime(dt);
+            sfi_analysis->RunTimeStep();
+            if(it==1){
+                sfi_analysis->PostProcessTimeStep(1);
+            }
+            mixed_operator->LoadSolution(mixed_operator->Solution());
+            if (sim_time >=  current_report_time) {
+                std::cout << "Time step number:  " << it << std::endl;
+                std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
+                mixed_operator->UpdatePreviousState(-1.);
+                sfi_analysis->PostProcessTimeStep(2);
+                pos++;
+                current_report_time =reporting_times[pos];
+                REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
+                fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
+               
+                REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+                std::cout << "Mass report at time : " << sim_time << std::endl;
+                std::cout << "Mass integral :  " << mass << std::endl;
+            }
+        }
+    }
+    else{
+        // -------------- Running problem --------------
+        mixAnalisys->Assemble();
+        mixAnalisys->Solve();
+        mixed_operator->UpdatePreviousState(-1.);
+        TPZFastCondensedElement::fSkipLoadSolution = false;
+        mixed_operator->LoadSolution(mixed_operator->Solution());
+        // ----- Post processing -----
+        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+        const int dimToPost = 3;
+        mixAnalisys->PostProcessTimeStep(dimToPost);
     
-    // The system is solve as non linear, so have to multiply by -1
-    mixed_operator->UpdatePreviousState(-1.);
-    TPZFastCondensedElement::fSkipLoadSolution = false; // So we can postprocess variables correctly
-    mixed_operator->LoadSolution(mixed_operator->Solution());
-    
-    // ----- Post processing -----
-    mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-    int dimToPost = 2;
-    mixAnalisys->PostProcessTimeStep(dimToPost);
-    dimToPost = 3;
-    mixAnalisys->PostProcessTimeStep(dimToPost);
     
     auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count()/1000.;
     cout << "\n\n\t--------- Total time of simulation = " << total_time << " seconds -------\n" << endl;
-
+}
     // ----- Cleaning up -----
     delete gmeshfine;
     delete gmeshcoarse;
@@ -350,16 +393,52 @@ TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
 
     
-    // Simulation properties
+    
+    sim_data.mTGeometry.mInterface_material_id = 100;
+    sim_data.mTGeometry.mInterface_material_idFracInf = 101;
+    sim_data.mTGeometry.mInterface_material_idFracSup = 102;
+    sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
+    sim_data.mTGeometry.mIterface_material_idFracBound = 104;
+    
+//    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(5);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,N_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,D_Type,1.);
+    sim_data.mTGeometry.mIterface_material_idFracBound = EFracNoFlux;
+    
+    
+ 
+  
+    // Other properties
+    sim_data.mTGeometry.mSkeletonDiv = 0;
+    sim_data.mTNumerics.m_sfi_tol = 0.0001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_n_steps = 1 ;
+    sim_data.mTNumerics.m_dt      = 1.0; //*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
+    std::vector<REAL> grav(3,0.0);
+    grav[1] = 0.0;//-9.8*(1.0e-6); // hor
+    sim_data.mTNumerics.m_gravity = grav;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
+    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
+    sim_data.mTNumerics.m_max_iter_sfi=1;
+    sim_data.mTNumerics.m_max_iter_mixed=1;
+    sim_data.mTNumerics.m_max_iter_transport=1;
     
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
-    
-    REAL kappa1=1.0e-5;
-    REAL kappa2=1.0e-6;
+    sim_data.mTFracProperties.m_Permeability = 1.0;
+    REAL kappa1=1.0;
+    REAL kappa2=1.0;
+//    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
+//    REAL kappa1=1.0e-5;
+//    REAL kappa2=1.0e-6;
     int id1 = EVolume2;
     int id2 = EVolume;
     std::vector<std::pair<int, REAL>> idPerm(2);
@@ -367,8 +446,6 @@ TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data){
     idPerm[1]= std::make_pair(id2,kappa2);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
-    // ----- Use function as BC -----
-//    aspace.SetForcingFunctionBC(exactSol);
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -382,6 +459,20 @@ TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data){
     }
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
+    
+    int n_steps = sim_data.mTNumerics.m_n_steps;
+    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
+    REAL dt = sim_data.mTNumerics.m_dt;
+    TPZStack<REAL,100> reporting_times;
+    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    int n_reporting_times =(n_steps)/(time/dt) + 1;
+    REAL r_time =0.0;
+    for (int i =1; i<= n_reporting_times; i++) {
+        r_time += dt*(time/dt);
+        reporting_times.push_back(r_time);
+    }
+    sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
+    
     return sim_data;
 }
 

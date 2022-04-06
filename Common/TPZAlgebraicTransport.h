@@ -27,6 +27,9 @@ public:
         std::vector<std::vector<REAL> > fCoefficientsFlux;
         // left right volume index in the AlgebraicTransport data structure
         std::vector<std::pair<int64_t, int64_t>> fLeftRightVolIndex;
+        
+        // left right volume index in the AlgebraicTransport data structure
+        std::vector<std::pair<int64_t, int64_t>> fLeftRightGelIndex;
         //Integral of the flux functions associated with faces
         std::vector<REAL> fIntegralFluxFunctions;
         //  Integral of the flux
@@ -40,7 +43,7 @@ public:
         //dado x calcula a permeabilidade... calcular a permeabilidade
         // transferir las densidades al problema mixto en transport to mixed
         
-        TInterfaceDataTransport() : fMatid(0), fcelindex(0), fCoefficientsFlux(0), fIntegralFluxFunctions(0), fLeftRightVolIndex(0),fIntegralFlux(0),fFluxSign(0), fNormalFaceDirection(0) {
+        TInterfaceDataTransport() : fMatid(0), fcelindex(0), fCoefficientsFlux(0), fIntegralFluxFunctions(0), fLeftRightVolIndex(0),fIntegralFlux(0),fFluxSign(0), fNormalFaceDirection(0), fLeftRightGelIndex(0) {
            
         }
         TInterfaceDataTransport(const TInterfaceDataTransport &copy){
@@ -52,6 +55,7 @@ public:
             fNormalFaceDirection = copy.fNormalFaceDirection;
             fcelindex=copy.fcelindex;
             fLeftRightVolIndex=copy.fLeftRightVolIndex;
+            fLeftRightGelIndex = copy.fLeftRightGelIndex;
         }
         TInterfaceDataTransport &operator=(const TInterfaceDataTransport &copy)
         {
@@ -62,6 +66,7 @@ public:
             fFluxSign= copy.fFluxSign;
             fNormalFaceDirection = copy.fNormalFaceDirection;
             fLeftRightVolIndex=copy.fLeftRightVolIndex;
+            fLeftRightGelIndex = copy.fLeftRightGelIndex;
             return *this;
         }
         void Print(std::ostream &out);
@@ -228,7 +233,8 @@ public:
     };
     
     
-    REAL fdt =0.1;
+    REAL fdt = 0.1;
+    REAL factor = 1.0;
     std::map<int, std::pair<int ,REAL>> fboundaryCMatVal;
     std::vector<REAL> fgravity;
     int fNFluxCoefficients;
@@ -290,6 +296,7 @@ public:
     
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
     void VerifyElementFLuxes();
+    void ZeroFluxes();
     void PrintFluxes();
 };
 

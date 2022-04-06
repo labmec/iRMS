@@ -341,7 +341,7 @@ void TPZAnalysisAuxEigen::Assemble(){
         TPZVec<int64_t> indexes(2);
         indexes[0]=lefteq;
         indexes[1]=righteq;
-        
+//
 //        indexes[0]=righteq;
 //        indexes[1]=lefteq;
         
@@ -354,8 +354,6 @@ void TPZAnalysisAuxEigen::Assemble(){
         m_trans_triplets[i_begin+1] = (Triplet2<REAL>(indexes[0],indexes[1], elmat(0,1)));
         m_trans_triplets[i_begin+2] = (Triplet2<REAL>(indexes[1],indexes[0], elmat(1,0)));
         m_trans_triplets[i_begin+3] = (Triplet2<REAL>(indexes[1],indexes[1], elmat(1,1)));
-        
-        
         
         size_t i_rhs_begin = 2*(iface) + n_cells + 2*(n_internal_faces);
         m_rhs_triplets[i_rhs_begin] = Triplet2<REAL>(indexes[0],0, ef(0,0));
@@ -376,11 +374,11 @@ void TPZAnalysisAuxEigen::Assemble(){
         int righteq = fAlgebraicTransport->fCellsData.fEqNumber[right];
         
         TPZVec<int64_t> indexes(2);
-//        indexes[0]=lefteq;
-//        indexes[1]=righteq;
+        indexes[0]=lefteq;
+        indexes[1]=righteq;
         
-        indexes[0]=righteq;
-        indexes[1]=lefteq;
+//        indexes[0]=righteq;
+//        indexes[1]=lefteq;
         
         TPZFMatrix<double> elmat, ef;
         elmat.Resize(2, 2);
@@ -743,12 +741,12 @@ void TPZAnalysisAuxEigen::Solve(){
     
     m_transmissibility += m_mass;
     
-    for(int i=0; i< m_mass.rows(); i++){
-        for(int j=0; j< m_mass.rows(); j++){
-            gmatrixmass(i,j) =m_mass.coeffRef(i, j);
-        }
-    }
-    gmatrixmass.Print("Ek= ",std::cout, EMathematicaInput);
+//    for(int i=0; i< m_transmissibility.rows(); i++){
+//        for(int j=0; j< m_transmissibility.rows(); j++){
+//            gmatrixmass(i,j) =m_transmissibility.coeffRef(i, j);
+//        }
+//    }
+//    gmatrixmass.Print("Ek= ",std::cout, EMathematicaInput);
     
      m_rhs *= -1.0;
 
@@ -756,7 +754,7 @@ void TPZAnalysisAuxEigen::Solve(){
             rhs(j,0) =m_rhs.coeffRef(j, 0);
         }
 
-    rhs.Print("rhs= ",std::cout, EMathematicaInput);
+//    rhs.Print("rhs= ",std::cout, EMathematicaInput);
     
 //    std::cout<<"Matrix: "<<std::endl;
 //    std::cout<<m_transmissibility.toDense()<<std::endl;
@@ -778,7 +776,7 @@ void TPZAnalysisAuxEigen::Solve(){
     for(int i=0; i< m_transmissibility.rows(); i++){
         vectorm(i,0) = ds.coeffRef(i, 0);
     }
-    vectorm.Print("Sol= ",std::cout, EMathematicaInput);
+//    vectorm.Print("Sol= ",std::cout, EMathematicaInput);
 //    std::cout<<"MatrixTransportMortar"<<std::endl;
 //    std::ofstream filemortar("matrixmortar.txt");
 //    gmatrixmass.Print("MassMotar=", filemortar, EMathematicaInput);

@@ -78,20 +78,19 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     REAL fw_R = fCellsData.fWaterfractionalflow[lr_index.second];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
     REAL dfwSw_R = fCellsData.fDerivativeWfractionalflow[lr_index.second];
-    
     REAL beta =0.0;
  //upwind
     if (fluxint>0.0) {
         beta = 1.0;
     }
     
-    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint * fdt;
-    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
+    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint*factor* fdt;
+    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint*factor* fdt;
     
-    ek(0,0) = +1.0*dfwSw_L  * beta * fluxint* fdt;
-    ek(0,1) = +1.0*dfwSw_R * (1-beta) * fluxint* fdt;
-    ek(1,0) = -1.0*dfwSw_L* beta * fluxint * fdt;
-    ek(1,1) = -1.0*dfwSw_R * (1-beta)*fluxint* fdt;
+    ek(0,0) = +1.0*dfwSw_L  * beta * fluxint*factor* fdt;
+    ek(0,1) = +1.0*dfwSw_R * (1-beta) * fluxint*factor* fdt;
+    ek(1,0) = -1.0*dfwSw_L* beta * fluxint*factor* fdt;
+    ek(1,1) = -1.0*dfwSw_R * (1-beta)*fluxint*factor* fdt;
    
 //    Gravity fluxes contribution
 //    ContributeInterfaceIHU(index, ek, ef);
@@ -104,15 +103,15 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
    
     REAL fw_L = fCellsData.fWaterfractionalflow[lr_index.first];
     REAL fw_R = fCellsData.fWaterfractionalflow[lr_index.second];
-    
+
     REAL beta =0.0;
 //upwind
     if (fluxint>0.0) {
         beta = 1.0;
     }
     
-    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint* fdt;
-    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
+    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint*factor* fdt;
+    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint*factor* fdt;
     
 // Gravity fluxes contribution
 //    ContributeInterfaceIHUResidual(index, ef);
@@ -329,24 +328,24 @@ void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<dou
    
     REAL s_inlet =1.0;// fboundaryCMatVal[inId].second;;
     REAL fluxint  = fInterfaceData[inId].fIntegralFlux[index];
-    ef(0,0) = 1.0*s_inlet*fluxint* fdt;
+    ef(0,0) = 1.0*s_inlet*fluxint*factor* fdt;
 }
 void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int outID){
   
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outID].fLeftRightVolIndex[index];
-    REAL fluxint  = fInterfaceData[outID].fIntegralFlux[index];
+    REAL fluxint  =  1.0*fInterfaceData[outID].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
-    ef(0,0) = 1.0*fw_L*fluxint* fdt;
-    ek(0,0) = dfwSw_L*fluxint* fdt;
+    ef(0,0) = fw_L*fluxint*factor* fdt;
+    ek(0,0) = dfwSw_L*fluxint*factor* fdt;
 }
 
 void TPZAlgebraicTransport::ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef, int outId){
   
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outId].fLeftRightVolIndex[index];
-    REAL fluxint  = fInterfaceData[outId].fIntegralFlux[index];
+    REAL fluxint  = 1.0*fInterfaceData[outId].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
-    ef(0,0) = 1.0*fw_L*fluxint* fdt;
+    ef(0,0) = fw_L*fluxint*factor* fdt;
 }
 
 void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
@@ -376,7 +375,7 @@ void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){
 
 void TPZAlgebraicTransport::UpdateIntegralFlux(int matid){
     
-    if(fInterfaceData.find(matid) == fInterfaceData.end()) DebugStop();
+    if(fInterfaceData.find(matid) == fInterfaceData.end()) return;
     int nels = fInterfaceData[matid].fCoefficientsFlux.size();
     if(nels == 0) return;
     std::vector<REAL> val =fInterfaceData[matid].fCoefficientsFlux[0];
@@ -387,7 +386,7 @@ void TPZAlgebraicTransport::UpdateIntegralFlux(int matid){
         for (int index = 0; index<np; index++) {
             REAL val = fInterfaceData[matid].fCoefficientsFlux[i][index];
             fInterfaceData[matid].fIntegralFlux[index] +=val;
-            std::cout<<"FluxInte: "<< val<<std::endl;
+//            std::cout<<"FluxInte: "<< val<<std::endl;
         }
       
     }
@@ -615,6 +614,7 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
     int nels = fCellsData.fVolume.size();
     std::vector<int> nInterfacesByElement(nels);
     std::vector<int> numZeroFluxByElement(nels);
+    std::vector<int> IndexGels(nels,-1);
     std::vector<REAL> SumFluxByElement(nels);
     for( auto interdata: fInterfaceData){
      
@@ -623,6 +623,15 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
         for(int iel = 0; iel<neles; iel++){
             int leftIndex = transport.fLeftRightVolIndex[iel].first;
             int rightIndex = transport.fLeftRightVolIndex[iel].second;
+            if(IndexGels[leftIndex]==-1){
+                IndexGels[leftIndex]=1;
+                std::cout<<"IndexVec: "<<leftIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].first<<std::endl;
+            }
+            if(IndexGels[rightIndex]==-1){
+                IndexGels[rightIndex]=1;
+                std::cout<<"IndexVec: "<<rightIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].second<<std::endl;
+            }
+                
             REAL fluxInt =transport.fIntegralFlux[iel];
             if(abs(fluxInt)<1.0e-10){
                 numZeroFluxByElement[leftIndex]++;
@@ -634,13 +643,16 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
             if(rightIndex<0){
                 continue;
             }
+            
             nInterfacesByElement[rightIndex] ++;
-            SumFluxByElement[rightIndex] += -1.0*fluxInt;
+            SumFluxByElement[rightIndex] +=  -fluxInt;
+            
         }
     }
     for(int iel = 0; iel<nInterfacesByElement.size(); iel++){
         if(abs(SumFluxByElement[iel])>1.0e-8){
             std::cout<<"The sum of the flows on each element must be zero. Element:  "<<iel<<" has a value of"<<SumFluxByElement[iel]<<std::endl;
+            
             DebugStop();
         }
         
@@ -661,6 +673,15 @@ void TPZAlgebraicTransport::PrintFluxes(){
             std::pair<int, int> lefrig= interfaID.second.fLeftRightVolIndex[iflux];
             std::cout<<interfaID.second.fIntegralFlux[iflux]<<std::endl;
             std::cout<<fCellsData.fEqNumber[lefrig.first]<<" ,"<<fCellsData.fEqNumber[lefrig.second]<<std::endl;
+        }
+    }
+}
+void TPZAlgebraicTransport::ZeroFluxes(){
+    for( auto interdata: fInterfaceData){
+        TInterfaceDataTransport &transport  =interdata.second;
+        int neles = transport.fLeftRightVolIndex.size();
+        for(int iel = 0; iel<neles; iel++){
+            transport.fIntegralFlux[iel] = 0.0;
         }
     }
 }
