@@ -94,7 +94,7 @@ public:
     void RunTimeStep();
     
     /// Render a vtk file with requested variables for a time step
-    void PostProcessTimeStep(int val=0);
+    void PostProcessTimeStep(const int type);
     
     /// Perform a SFI iteration
     void SFIIteration();

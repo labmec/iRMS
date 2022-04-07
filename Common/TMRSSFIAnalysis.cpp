@@ -363,19 +363,19 @@ void TMRSSFIAnalysis::RunTimeStep(){
     
 }
 
-void TMRSSFIAnalysis::PostProcessTimeStep(int val){
+void TMRSSFIAnalysis::PostProcessTimeStep(const int type){
 #ifdef USING_BOOST
     boost::posix_time::ptime t1 = boost::posix_time::microsec_clock::local_time();
     
 #endif
-    if (val == 0) {
+    if (type == 0) {
         m_mixed_module->PostProcessTimeStep();
         m_transport_module->PostProcessTimeStep();
     }
-    if (val == 1) {
+    if (type == 1) {
         m_mixed_module->PostProcessTimeStep();
     }
-    if (val == 2) {
+    if (type == 2) {
         m_transport_module->PostProcessTimeStep();
     }
 #ifdef USING_BOOST
