@@ -78,7 +78,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
     
     // ----- Approximation space -----
     TMRSApproxSpaceGenerator aspace;
-    aspace.FractureMatId() = globFracID;
+    sim_data.mTFracProperties.m_matid = globFracID;
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -129,6 +129,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
         for (int it = 1; it <= n_steps; it++) {
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
+            const int typeToPostProc = 2; // only saturation
             sfi_analysis->PostProcessTimeStep(2);
             sfi_analysis->RunTimeStep();
             mixed_operator->LoadSolution(mixed_operator->Solution());
@@ -136,7 +137,8 @@ void onefractest::TestOneFrac(const int& caseToSim)
                 std::cout << "Time step number:  " << it << std::endl;
                 std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
                 mixed_operator->UpdatePreviousState(-1.);
-                sfi_analysis->PostProcessTimeStep();
+                const int typeToPostProcEnd = 0; // p/flux and transport
+                sfi_analysis->PostProcessTimeStep(typeToPostProcEnd);
                 pos++;
                 current_report_time =reporting_times[pos];
                 REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);

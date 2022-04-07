@@ -50,7 +50,6 @@ private:
     void AdjustOrientBoundaryEls(TPZCompMesh* cmesh, std::set<int>& buildmatids);
     
     int fInitMatIdForMergeMeshes = -1000;
-    int fFractureMatId = -1000;
     
 public:
     
@@ -98,8 +97,7 @@ public:
     // Atribute access methods
     const int& InitMatIdForMergeMeshes() const {return fInitMatIdForMergeMeshes;}
     int& InitMatIdForMergeMeshes() {return fInitMatIdForMergeMeshes;}
-    const int& FractureMatId() const {return fFractureMatId;}
-    int& FractureMatId() {return fFractureMatId;}
+    const int& FractureMatId() const {return mSimData.mTFracProperties.m_matid;}
 
     
     /// For MHM

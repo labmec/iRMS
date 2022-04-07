@@ -151,7 +151,7 @@ void RunProblem( const int &caseToSim){
     // Code takes a fine and a coarse mesh to generate MHM data structure
     TMRSApproxSpaceGenerator aspace;
     aspace.InitMatIdForMergeMeshes() = EInitVolumeMatForMHM;
-    aspace.FractureMatId() = EFracture;
+    sim_data.mTFracProperties.m_matid = EFracture;
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
 //  aspace.SetGeometry(gmeshfine);
@@ -205,14 +205,16 @@ void RunProblem( const int &caseToSim){
         for (int it = 1; it <= n_steps; it++) {
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
-            sfi_analysis->PostProcessTimeStep(2);
+            const int typeToPostProc = 2; // only transport
+            sfi_analysis->PostProcessTimeStep(typeToPostProc);
             sfi_analysis->RunTimeStep(); // runs mixed and transport problems
             mixed_operator->LoadSolution(mixed_operator->Solution());
             if (sim_time >=  current_report_time) {
                 std::cout << "Time step number:  " << it << std::endl;
                 std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
                 mixed_operator->UpdatePreviousState(-1.);
-                sfi_analysis->PostProcessTimeStep();
+                const int typeToPostProcEnd = 0; // p/flux and transport
+                sfi_analysis->PostProcessTimeStep(typeToPostProcEnd);
                 pos++;
                 current_report_time =reporting_times[pos];
                 
@@ -515,4 +517,8 @@ const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& var
         return vecint[0];
     else if (varname == "Flux")
         return vecint[1];
+    else
+        DebugStop();
+    
+    return -100000; // default value so compiler does not complain
 }

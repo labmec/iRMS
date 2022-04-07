@@ -360,7 +360,7 @@ void TMRSApproxSpaceGenerator::SplitConnectsAtInterface(TPZCompElSide& compside)
 
 void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh){
     
-    if(fFractureMatId == -1000){
+    if(FractureMatId() == -1000){
         cout << "ERROR! Please initialize the fracture matid" << endl;
         DebugStop();
     }
@@ -373,7 +373,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
     cmesh->SetDimModel(gmeshdim-1);
     for(auto gel : gmesh->ElementVec()) {
         const int matid = gel->MaterialId();
-        if (matid != fFractureMatId) continue;
+        if (matid != FractureMatId()) continue;
         const int hassubel = gel->HasSubElement();
         if (hassubel) { // the mesh can be uniformly refined
             continue;
@@ -409,7 +409,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         if (!cel) continue;
         TPZGeoEl* gel = cel->Reference();
         const int matid = gel->MaterialId();
-        if (matid != fFractureMatId) continue;
+        if (matid != FractureMatId()) continue;
         int64_t index;
         TPZInterpolationSpace* hdivcollapsed = nullptr;
         if (gmeshdim == 2) {
@@ -506,7 +506,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
                                                           std::set<int>& matids, std::set<int>& bcids,
                                                           std::set<int>& matids_dim2, std::set<int>& bcids_dim2){
     
-    if(fFractureMatId == -1000){
+    if(FractureMatId() == -1000){
         cout << "ERROR! Please initialize the fracture matid" << endl;
         DebugStop();
     }
@@ -530,7 +530,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
         if (!cel) {
             continue;
         }
-        if (cel->Reference()->MaterialId() == fFractureMatId) {
+        if (cel->Reference()->MaterialId() == FractureMatId()) {
             cel->LoadElementReference();
         }
     }

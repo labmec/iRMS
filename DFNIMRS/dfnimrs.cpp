@@ -211,7 +211,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     // Code takes a fine and a coarse mesh to generate MHM data structure
     TMRSApproxSpaceGenerator aspace;
     aspace.InitMatIdForMergeMeshes() = EInitVolumeMatForMHM;
-    aspace.FractureMatId() = EFracture;
+    sim_data.mTFracProperties.m_matid = EFracture;
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
 //    aspace.SetGeometry(gmeshfine);

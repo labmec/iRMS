@@ -155,7 +155,7 @@ void RunProblem(const int simcase)
     // Code takes a fine and a coarse mesh to generate MHM data structure
     TMRSApproxSpaceGenerator aspace;
     aspace.InitMatIdForMergeMeshes() = EInitVolumeMatForMHM;
-    aspace.FractureMatId() = EFracture;
+    sim_data.mTFracProperties.m_matid = EFracture;
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
 //    aspace.SetGeometry(gmeshfine);
@@ -664,6 +664,10 @@ const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& var
         return vecint[0];
     else if (varname == "Flux")
         return vecint[1];
+    else
+        DebugStop();
+    
+    return -100000; // default value so compiler does not complain
 }
 
 // ---------------------------------------------------------------------

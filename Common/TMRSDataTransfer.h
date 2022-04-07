@@ -167,6 +167,10 @@ public:
             return *this;
         }
         
+        const bool isThereFracture() const {return mDomainFracDimNameAndPhysicalTag[0].size() ||
+            mDomainFracDimNameAndPhysicalTag[1].size() ||
+            mDomainFracDimNameAndPhysicalTag[2].size();}
+        
     };
     
     /**
@@ -891,6 +895,7 @@ public:
     public:
         
         REAL m_Permeability;
+        int m_matid;
         
         /**
          * @brief Default constructor
@@ -898,6 +903,7 @@ public:
         TFracProperties(){
             
             m_Permeability=1.0;
+            m_matid = -1000;
             
         }
         /**
@@ -912,7 +918,7 @@ public:
          */
         TFracProperties(const TFracProperties & other){
             m_Permeability=other.m_Permeability;
-            
+            m_matid = other.m_matid;
         }
         /**
          * @brief Copy assignment operator
@@ -925,6 +931,7 @@ public:
             }
             
             m_Permeability=other.m_Permeability;
+            m_matid = other.m_matid;
             
             return *this;
         }
@@ -936,20 +943,20 @@ public:
                 return true;
             }
             
-            return
-            m_Permeability==other.m_Permeability;
+            return (m_Permeability==other.m_Permeability && m_matid == other.m_matid);
             
         }
         
         
         void Write(TPZStream &buf, int withclassid) const{ //ok
             buf.Write(&m_Permeability);
+            buf.Write(&m_matid);
             
         }
         
         void Read(TPZStream &buf, void *context){ //ok
             buf.Read(&m_Permeability);
-            
+            buf.Read(&m_matid);
         }
         
         virtual int ClassId() const {
@@ -959,7 +966,8 @@ public:
         
         
         void Print() const {
-            std::cout << "m_Permeability: " <<m_Permeability <<std::endl;
+            std::cout << "m_Permeability: " << m_Permeability << std::endl;
+            std::cout << "m_matid: " << m_matid << std::endl;
             
         }
         
@@ -1047,6 +1055,10 @@ public:
         void Print() const {
             std::cout << "m_IntersectionId: " <<m_IntersectionId <<std::endl;
             std::cout << "m_IntersectionPressureLossId: " <<m_IntersectionPressureLossId <<std::endl;
+        }
+        
+        const bool isThereFractureIntersection() {
+            return m_IntersectionId != -10000;
         }
         
     };

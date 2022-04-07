@@ -59,23 +59,25 @@ static TPZLogger mainlogger("cubicdomain");
 //-------------------------------------------------------------------------------------------------
 
 // ----- Test cases -----
-// ---- Test 0 ----
+// ---- Test 1 ----
 // 1: 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Cte pressure
 TEST_CASE("constant_pressure","[test_nofrac_3D]"){
     RunTest(1);
 }
-// ---- Test 1 ----
-// 2: 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Linear pressure
+// ---- Test 2 ----
+// 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Linear pressure
 TEST_CASE("linear_pressure","[test_nofrac_3D]"){
     RunTest(2);
 }
 
+// ---- Test 3 ----
+// 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Linear pressure and transport
 TEST_CASE("transport_linear_pressure","[test_nofrac_3D]"){
     RunTest(3);
 }
 
 //int main(){
-//    //RunTest(3);
+//    RunTest(3);
 //    return 0;
 //}
 
@@ -158,20 +160,22 @@ void RunTest(const int caseToSim)
         std::cout << "Mass integral :  " << initial_mass << std::endl;
         TPZFastCondensedElement::fSkipLoadSolution = false;
         bool first=true;
+        const int typeOfPostProc = 2; // 0: both, 1: p/sigma, 2: transport
         for (int it = 1; it <= n_steps; it++) {
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
-            sfi_analysis->PostProcessTimeStep(3);
+            sfi_analysis->PostProcessTimeStep(typeOfPostProc);
             sfi_analysis->RunTimeStep();
             mixed_operator->LoadSolution(mixed_operator->Solution());
             if (sim_time >=  current_report_time) {
                 std::cout << "Time step number:  " << it << std::endl;
                 std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
                 mixed_operator->UpdatePreviousState(-1.);
-                sfi_analysis->PostProcessTimeStep(3);
+                const int typeOfPostProcEnd = 0; // both p/flux and transport
+                sfi_analysis->PostProcessTimeStep(typeOfPostProcEnd);
                 pos++;
-                current_report_time =reporting_times[pos];
-                REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
+                current_report_time = reporting_times[pos];
+                REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
                
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
@@ -454,6 +458,10 @@ const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& var
         return vecint[0];
     else if (varname == "Flux")
         return vecint[0];
+    else
+        DebugStop();
+    
+    return -100000; // default value so compiler does not complain
 }
 void ModifyBcsForTransport(TPZGeoMesh* gmesh, int inletBc, int outletBc) {
     int nels = gmesh->NElements();

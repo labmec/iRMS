@@ -92,7 +92,7 @@ void RunTest(const int caseToSim)
     
     // ----- Setting the global data transfer -----
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
-    aspace.FractureMatId() = globFracID;
+    sim_data.mTFracProperties.m_matid = globFracID;
     aspace.SetDataTransfer(sim_data);
 
     // ----- Creates the multiphysics compmesh -----
@@ -444,6 +444,10 @@ const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& var
         return vecint[0];
     else if (varname == "Flux")
         return vecint[1];
+    else
+        DebugStop();
+    
+    return -100000; // default value so compiler does not complain
 }
 
 // ---------------------------------------------------------------------

@@ -561,21 +561,24 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();
     std::string file = m_sim_data->mTPostProcess.m_file_name_transport;
-    //
-    std::set<int> mat_id_2D;
+        
+    std::set<int> matidsToPost;
     
-    mat_id_2D.insert(10);
-    std::string file_frac("fracture_s.vtk");
-    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
-    PostProcess(div,2);
+    if (m_sim_data->mTGeometry.isThereFracture()) {
+        const int fracMatId = m_sim_data->mTFracProperties.m_matid;
+        matidsToPost.insert(fracMatId);
+        std::string file_frac("fracture_s.vtk");
+        DefineGraphMesh(2,matidsToPost,scalnames,vecnames,file_frac);
+        PostProcess(div,2);
+    }
     
-    std::set<int> mat_id_1D;
+    if(m_sim_data->mTFracIntersectProperties.isThereFractureIntersection()){
+        matidsToPost.insert(m_sim_data->mTFracIntersectProperties.m_IntersectionId);
+        std::string file_frac2("fracture_s1d.vtk");
+        DefineGraphMesh(1,matidsToPost,scalnames,vecnames,file_frac2);
+        PostProcess(div,1);
+    }
     
-    mat_id_2D.insert(11);
-    std::string file_frac2("fracture_s1d.vtk");
-    DefineGraphMesh(1,mat_id_2D,scalnames,vecnames,file_frac2);
-    PostProcess(div,1);
-    //
     DefineGraphMesh(dim,scalnames,vecnames,file);
     PostProcess(div,dim);
 }
