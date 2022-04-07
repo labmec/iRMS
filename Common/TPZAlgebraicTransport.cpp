@@ -639,7 +639,7 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
             }
             
             SumFluxByElement[leftIndex] += fluxInt;
-            nInterfacesByElement[leftIndex] ++;
+            nInterfacesByElement[leftIndex]++;
             if(rightIndex<0){
                 continue;
             }

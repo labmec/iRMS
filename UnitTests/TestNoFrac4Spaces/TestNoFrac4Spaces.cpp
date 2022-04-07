@@ -156,7 +156,6 @@ void RunTest(const int caseToSim)
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         std::cout << "Mass report at time : " << 0.0 << std::endl;
         std::cout << "Mass integral :  " << initial_mass << std::endl;
-        std::ofstream fileCilamce("IntegratedSat.txt");
         TPZFastCondensedElement::fSkipLoadSolution = false;
         bool first=true;
         for (int it = 1; it <= n_steps; it++) {
@@ -173,7 +172,6 @@ void RunTest(const int caseToSim)
                 pos++;
                 current_report_time =reporting_times[pos];
                 REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
-                fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
                
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
