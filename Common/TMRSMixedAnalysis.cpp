@@ -223,6 +223,7 @@ void TMRSMixedAnalysis::Assemble(){
 #ifdef PZDEBUG
     auto start_time_ass = std::chrono::steady_clock::now();
 #endif
+    cout << "\n---------------------- Assemble ----------------------" << endl;
     TPZLinearAnalysis::Assemble();
 #ifdef PZDEBUG
     auto total_time_ass = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_ass).count()/1000.;
@@ -234,6 +235,7 @@ void TMRSMixedAnalysis::Solve(){
 #ifdef PZDEBUG
     auto start_time_solve = std::chrono::steady_clock::now();
 #endif
+    cout << "\n---------------------- Solve ----------------------" << endl;
     TPZLinearAnalysis::Solve();
 #ifdef PZDEBUG
     auto total_time_solve = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_solve).count()/1000.;

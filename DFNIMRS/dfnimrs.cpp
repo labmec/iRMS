@@ -14,9 +14,9 @@ using namespace std;
 
 // ----- Functions -----
 void RunProblem(string& filenameFine, string& filenameCoarse, const int simcase);
-TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data);
-TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data);
-TMRSDataTransfer FillDataTransferCase2(TMRSDataTransfer& sim_data);
+void FillDataTransfer(TMRSDataTransfer& sim_data);
+void FillDataTransferCase1(TMRSDataTransfer& sim_data);
+void FillDataTransferCase2(TMRSDataTransfer& sim_data);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
 void fixPossibleMissingIntersections(TPZGeoMesh* gmesh);
 
@@ -157,14 +157,18 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
 {
     auto start_time = std::chrono::steady_clock::now();
     
+    bool isRefineMesh = false;
+    
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
     if (simcase < 2)
         ReadMeshes(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else if (simcase == 2)
         ReadMeshesFlemischCase1(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 3)
+    else if (simcase == 3){
+        isRefineMesh = true;
         ReadMeshesFlemischCase2(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
+    }
     else if (simcase == 4)
         ReadMeshesFlemischCase3(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else if (simcase == 5)
@@ -219,6 +223,18 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     sim_data.mTFracProperties.m_matid = EFracture;
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
+    
+    if(isRefineMesh){
+        cout << "\n---------------------- Uniformly refining geomesh ----------------------" << endl;
+        gRefDBase.InitializeUniformRefPattern(ECube);
+        gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
+        gRefDBase.InitializeUniformRefPattern(EOned);
+        for (auto gel : aspace.mGeometry->ElementVec()){
+            TPZManVector<TPZGeoEl*,10> children;
+            gel->Divide(children);
+        }
+    }
+    
 //    aspace.SetGeometry(gmeshfine);
     
     // ----- Setting the global data transfer -----
@@ -317,7 +333,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
+void FillDataTransfer(TMRSDataTransfer& sim_data){
     
     int D_Type = 0;
     int N_Type = 1;
@@ -370,13 +386,12 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
     }
     sim_data.mTPostProcess.m_vecnames = vecnames;
     sim_data.mTPostProcess.m_scalnames = scalnames;
-    return sim_data;
 }
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data){
+void FillDataTransferCase1(TMRSDataTransfer& sim_data){
     
     int D_Type = 0;
     int N_Type = 1;
@@ -475,14 +490,12 @@ TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data){
         reporting_times.push_back(r_time);
     }
     sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
-    
-    return sim_data;
 }
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-TMRSDataTransfer FillDataTransferCase2(TMRSDataTransfer& sim_data){
+void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     
     int D_Type = 0;
     int N_Type = 1;
@@ -582,8 +595,6 @@ TMRSDataTransfer FillDataTransferCase2(TMRSDataTransfer& sim_data){
         reporting_times.push_back(r_time);
     }
     sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
-    
-    return sim_data;
 }
 
 // ---------------------------------------------------------------------
@@ -788,16 +799,6 @@ void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse,
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
     ModifyBCsForCase2(gmeshfine);
     
-    
-    gRefDBase.InitializeUniformRefPattern(ECube);
-    gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
-    gRefDBase.InitializeUniformRefPattern(EOned);
-    for (auto gel : gmeshfine->ElementVec()){
-        TPZManVector<TPZGeoEl*,10> children;
-        gel->Divide(children);
-    }
-    gmeshfine->BuildConnectivity();
-
 }
 
 // ---------------------------------------------------------------------
@@ -1219,7 +1220,7 @@ void fixPossibleMissingIntersections(TPZGeoMesh* gmesh){
     // We treat this here. But it would be ideal to make DFN robust enough so we could remove this function whatsoever
     // The main idea is to check if a fracture element has more than 1 fracture neightbor. If so, an intersection element is
     // needed to hybridzie the region.
-    cout << "\n\t==================== Searching for problematic intersection elements ====================\n" << endl;
+    cout << "\n---------------------- Searching for problematic intersection elements ----------------------" << endl;
     
     int nInterCreated = 0;
     for (auto gel : gmesh->ElementVec()) {
@@ -1271,6 +1272,9 @@ void fixPossibleMissingIntersections(TPZGeoMesh* gmesh){
         cout << "\n\t\t==================== MESSAGE =================" << endl;
         cout << "\n\t- Imported mesh has " << nInterCreated << " missing intersection elements" << endl;
         cout << "\t- These were created here and this shouldn't be a problem...\n" << endl;
+    }
+    else {
+        cout << "\n====> Ok! No problematic intersections found" << endl;
     }
         
     gmesh->BuildConnectivity();

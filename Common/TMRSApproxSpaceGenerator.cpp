@@ -24,6 +24,7 @@
 #include "pzcompelwithmem.h"
 #include "pzsmanal.h"
 #include "TPZRefPatternTools.h"
+#include "TPZRefPattern.h"
 #include <pzshapequad.h>
 #include <pzshapelinear.h>
 #ifdef USING_TBB
@@ -2386,7 +2387,6 @@ void TMRSApproxSpaceGenerator::GetTransportMaterials(std::set<int> &MatsWithmem,
     
     const int dimension = mGeometry->Dimension();
     // ---------------> Adding volume materials
-    cout << "\n---------------------- Inserting materials in multiphysics cmesh ----------------------" << endl;
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
@@ -3993,7 +3993,7 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
     
     int dimfrac = 2;
     for (auto gel : gmesh->ElementVec()) {
-        if(!gel) continue;
+        if(!gel || gel->HasSubElement()) continue;
         const int gelmatid = gel->MaterialId();
         if (gelmatid != matIdIntersection) {
             continue;
@@ -4078,6 +4078,8 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZVec<TPZCom
 
 
 void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh) {
+    
+    cout << "\n---------------------- Starting MergeMeshes for MHM data structure ----------------------\n" << endl;
     
     if(fInitMatIdForMergeMeshes == -1000) {
         cout << "ERROR! Please, set TMRSApproxSpaceGenerator::::fInitMatIdForMergeMeshes" << endl;
@@ -4178,9 +4180,9 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 #endif
     }
 #ifdef PZDEBUG
-    for(auto it : MatFinetoCoarseElIndex){
-        std::cout << "Fine mat id " << it.first << " coarse element index " << it.second << std::endl;
-    }
+//    for(auto it : MatFinetoCoarseElIndex){
+//        std::cout << "Fine mat id " << it.first << " coarse element index " << it.second << std::endl;
+//    }
 #endif
     }
     // modify the material id of the boundary elements of the fine mesh (EXPENSIVE OPERATION)
@@ -4229,6 +4231,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     for(int64_t el = 0; el<nel; el++){
         TPZGeoEl *gel = coarsemesh->Element(el);
         int geldim = gel->Dimension();
+        if(!gel || gel->HasSubElement()) continue;
         if(geldim != 3) continue;
         int firstside = gel->NSides()-gel->NSides(dim-1)-1; // first face side
         for (int side = firstside; side < gel->NSides()-1; side++) { // skip volume
@@ -4255,6 +4258,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     int meshdim = coarsemesh->Dimension();
     for (int64_t el = 0; el<nelcoarse; el++) {
         auto gel = coarsemesh->Element(el);
+        if(!gel || gel->HasSubElement()) continue;
         int matid = gel->MaterialId();
         if(matid != coarse_skeleton_matid) continue; // only skeleton elements
         int nnode = gel->NNodes();
@@ -4290,6 +4294,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         int dim = finemesh->Dimension();
         for (int64_t el = 0; el < nel_fine; el++) {
             TPZGeoEl *gel = finemesh->Element(el);
+            if(!gel || gel->HasSubElement()) continue;
             if(gel->Dimension() != dim) continue;
             int matid = gel->MaterialId();
             if(MatFinetoCoarseElIndex.find(matid) == MatFinetoCoarseElIndex.end()){
@@ -4312,6 +4317,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         int dim = finemesh->Dimension();
         for(int64_t el = 0; el<nel; el++){
             TPZGeoEl *gel = finemesh->Element(el);
+            if(!gel || gel->HasSubElement()) continue;
             if(gel->Dimension() != dim) continue;
             int64_t domain = mSubdomainIndexGel[el];
             if(domain == -1) continue;
@@ -4341,7 +4347,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         if(FineFaceEl.find(it.first) == FineFaceEl.end()) DebugStop();
         int64_t fine_skel = FineFaceEl[it.first]; // change name
         int nelmesh = it.second.size()+1;
-        TPZVec<TPZGeoEl *> gelvec(nelmesh);
+        TPZManVector<TPZGeoEl *> gelvec(nelmesh);
         gelvec[0] = finemesh->Element(fine_skel);
         int64_t count = 1;
         for(auto itel : it.second) gelvec[count++] = finemesh->Element(itel);
@@ -4352,7 +4358,9 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         REAL diff = Area-Sum;
         std::cout << "Skeleton area of el " << fine_skel << " area " << Area << " sum of small " << Sum << std::endl;
 #endif
-        TPZAutoPointer<TPZRefPattern> refpat = TPZRefPatternTools::GetRefPatternBasedOnRealMeshElements(gelvec);
+        TPZGeoMesh gmeshrefpattern;
+        TPZRefPatternTools::GenerateGMeshFromElementVec(gelvec,gmeshrefpattern);
+        TPZAutoPointer<TPZRefPattern> refpat = new TPZRefPattern(gmeshrefpattern);
         TPZGeoEl *gelcoarse = finemesh->Element(fine_skel);
         gelcoarse->SetRefPattern(refpat);
         for(int i=1; i<gelvec.size(); i++){
@@ -4371,6 +4379,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     int dim = finemesh->Dimension();
     for (int64_t el = 0; el<nel; el++) {
         TPZGeoEl *gel = finemesh->Element(el);
+        if(!gel || gel->HasSubElement()) continue;
         int geldim = gel->Dimension();
         int64_t domain = mSubdomainIndexGel[el];
         if(geldim == dim && domain == -1) DebugStop();
@@ -4417,4 +4426,6 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         }
     }
 #endif
+    
+    cout << "\n---------------------- Finished MergeMeshes for MHM data structure ----------------------\n" << endl;
 }
