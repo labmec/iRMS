@@ -1413,6 +1413,8 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTrans
 
 void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     
+    cout << "\n---------------------- Building multiphysics cmesh ----------------------" << endl;
+    
     bool cond1 = mSimData.mTNumerics.m_four_approx_spaces_Q;
     bool cond2 = mSimData.mTNumerics.m_mhm_mixed_Q;
     

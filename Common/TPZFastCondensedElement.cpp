@@ -639,6 +639,7 @@ void TPZFastCondensedElement::ComputeConstantPressureValues()
         if(abs(fluxvals[eq]) > 1.e-10) allok = false;
     }
     if(!allok) DebugStop();
+    // NOTE: This can happen if BCs are now well set
 #endif
     sol(avpress_eq,0) = avpress;
     // copy the values of the boundary fluxes and set the fluxes to zero

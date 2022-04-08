@@ -16,6 +16,7 @@ using namespace std;
 void RunProblem(string& filenameFine, string& filenameCoarse, const int simcase);
 TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data);
 TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data);
+TMRSDataTransfer FillDataTransferCase2(TMRSDataTransfer& sim_data);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
 void fixPossibleMissingIntersections(TPZGeoMesh* gmesh);
 
@@ -27,6 +28,8 @@ void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
 
 void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse,
                              TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
+void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh);
+void ModifyBCsForCase2(TPZGeoMesh* gmesh);
 
 void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
                              TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
@@ -45,8 +48,8 @@ void ReadMeshesIP3D(string& filenameFine, string& filenameCoarse,
 
 enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
     /*5*/EFaceBCPressure, EFracInlet, EFracOutlet, EFracNoFlux, EFracPressure,
-    /*10*/EFracture, EIntersection, EIntersectionEnd, EPLossAtIntersect,EVolume2,
-    /*14 HAS TO BE LAST*/EInitVolumeMatForMHM /*Not sure if we will keep this structure */
+    /*10*/EFracture, EIntersection, EIntersectionEnd, EPLossAtIntersect, EVolume2,
+    /*15 HAS TO BE LAST*/EInitVolumeMatForMHM /*Not sure if we will keep this structure */
 };
 
 
@@ -95,7 +98,7 @@ int main(){
     // 7: Flemisch case 4 with much less fractures (for debugging)
     // 8: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 9: IP3D mesh (Initially idealized just for generating a beautiful mesh)
-    int simcase = 2;
+    int simcase = 3;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -184,6 +187,8 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     if (simcase == 2)
         FillDataTransferCase1(sim_data);
+    else if (simcase == 3)
+        FillDataTransferCase2(sim_data);
     else
         FillDataTransfer(sim_data);
     
@@ -235,7 +240,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     mixAnalisys->SetDataTransfer(&sim_data);
     mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
     
-    if(1){
+    if(simcase == 2){
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
         
@@ -295,13 +300,15 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         mixed_operator->LoadSolution(mixed_operator->Solution());
         // ----- Post processing -----
         mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-        const int dimToPost = 3;
+        int dimToPost = 3;
         mixAnalisys->PostProcessTimeStep(dimToPost);
-    
+        dimToPost = 2;
+        mixAnalisys->PostProcessTimeStep(dimToPost);
+    }
     
     auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count()/1000.;
     cout << "\n\n\t--------- Total time of simulation = " << total_time << " seconds -------\n" << endl;
-}
+
     // ----- Cleaning up -----
     delete gmeshfine;
     delete gmeshcoarse;
@@ -319,6 +326,7 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
     
     // Domain material
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume2"] = EVolume2;
     
     // Domain boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
@@ -337,7 +345,7 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
     
     // Simulation properties
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
+    sim_data.mTNumerics.m_mhm_mixed_Q          = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     
     //FracAndReservoirProperties
@@ -392,8 +400,6 @@ TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
 
-    
-    
     sim_data.mTGeometry.mInterface_material_id = 100;
     sim_data.mTGeometry.mInterface_material_idFracInf = 101;
     sim_data.mTGeometry.mInterface_material_idFracSup = 102;
@@ -409,9 +415,6 @@ TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,D_Type,1.);
     sim_data.mTGeometry.mIterface_material_idFracBound = EFracNoFlux;
     
-    
- 
-  
     // Other properties
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
@@ -441,6 +444,113 @@ TMRSDataTransfer FillDataTransferCase1(TMRSDataTransfer& sim_data){
 //    REAL kappa2=1.0e-6;
     int id1 = EVolume2;
     int id2 = EVolume;
+    std::vector<std::pair<int, REAL>> idPerm(2);
+    idPerm[0]= std::make_pair(id1,kappa1);
+    idPerm[1]= std::make_pair(id2,kappa2);
+    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
+    
+    
+    // PostProcess controls
+    sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
+    sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
+    TPZStack<std::string,10> scalnames, vecnames;
+    vecnames.Push("Flux");
+    scalnames.Push("Pressure");
+    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
+        scalnames.Push("g_average");
+        scalnames.Push("p_average");
+    }
+    sim_data.mTPostProcess.m_vecnames = vecnames;
+    sim_data.mTPostProcess.m_scalnames = scalnames;
+    
+    int n_steps = sim_data.mTNumerics.m_n_steps;
+    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
+    REAL dt = sim_data.mTNumerics.m_dt;
+    TPZStack<REAL,100> reporting_times;
+    REAL time = sim_data.mTPostProcess.m_file_time_step;
+    int n_reporting_times =(n_steps)/(time/dt) + 1;
+    REAL r_time =0.0;
+    for (int i =1; i<= n_reporting_times; i++) {
+        r_time += dt*(time/dt);
+        reporting_times.push_back(r_time);
+    }
+    sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
+    
+    return sim_data;
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+TMRSDataTransfer FillDataTransferCase2(TMRSDataTransfer& sim_data){
+    
+    int D_Type = 0;
+    int N_Type = 1;
+    int Mixed_Type = 2;
+    REAL zero_flux = 0.0, inlet_pressure = 1.0, outlet_flux = -1.0;
+    
+    // Domain material
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume2"] = EVolume2;
+    
+    // Domain boundary conditions
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,inlet_pressure);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,N_Type,outlet_flux);
+    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+            
+    // Fracture material
+    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = EFracture;
+    
+    // Fracture boundary conditions
+    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
+    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
+
+    sim_data.mTGeometry.mInterface_material_id = 100;
+    sim_data.mTGeometry.mInterface_material_idFracInf = 101;
+    sim_data.mTGeometry.mInterface_material_idFracSup = 102;
+    sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
+    sim_data.mTGeometry.mIterface_material_idFracBound = 104;
+    
+//    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(5);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,N_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,D_Type,1.);
+    sim_data.mTGeometry.mIterface_material_idFracBound = EFracNoFlux;
+    
+    // Other properties
+    sim_data.mTGeometry.mSkeletonDiv = 0;
+    sim_data.mTNumerics.m_sfi_tol = 0.0001;
+    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+    sim_data.mTNumerics.m_n_steps = 1 ;
+    sim_data.mTNumerics.m_dt      = 1.0; //*day;
+    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
+    sim_data.mTNumerics.m_mhm_mixed_Q          = false;
+    std::vector<REAL> grav(3,0.0);
+    grav[1] = 0.0;//-9.8*(1.0e-6); // hor
+    sim_data.mTNumerics.m_gravity = grav;
+    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
+    sim_data.mTNumerics.m_n_steps = 100;
+    sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
+    sim_data.mTNumerics.m_max_iter_sfi=1;
+    sim_data.mTNumerics.m_max_iter_mixed=1;
+    sim_data.mTNumerics.m_max_iter_transport=1;
+    
+    //FracAndReservoirProperties
+    // There are two cases, one with very condutive fracture (1e4) and other with very NON conductive fracture (1e-4)
+    sim_data.mTFracProperties.m_Permeability = 1.e4;
+//    sim_data.mTFracProperties.m_Permeability = 1.e-4;
+//    REAL kappa1=1.0;
+//    REAL kappa2=1.0;
+    REAL kappa1=1.0;
+    REAL kappa2=0.1;
+    int id1 = EVolume;
+    int id2 = EVolume2;
     std::vector<std::pair<int, REAL>> idPerm(2);
     idPerm[0]= std::make_pair(id1,kappa1);
     idPerm[1]= std::make_pair(id2,kappa2);
@@ -622,6 +732,7 @@ void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse,
     dim_name_and_physical_tagCoarse[2]["bc1"] = EFaceBCPressure;
         
     gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
+    ModifyPermeabilityForCase2(gmeshcoarse);
         
     // ===================> Fine mesh <=======================
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
@@ -675,7 +786,80 @@ void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse,
     dim_name_and_physical_tagFine[1]["fracIntersection_7_8"] = EIntersection;
             
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+    ModifyBCsForCase2(gmeshfine);
     
+    
+    gRefDBase.InitializeUniformRefPattern(ECube);
+    gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
+    gRefDBase.InitializeUniformRefPattern(EOned);
+    for (auto gel : gmeshfine->ElementVec()){
+        TPZManVector<TPZGeoEl*,10> children;
+        gel->Divide(children);
+    }
+    gmeshfine->BuildConnectivity();
+
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh) {
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != EVolume) continue; // only matrix
+        
+        TPZVec<REAL> masscent(3,0.0), xcenter(3,0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        gel->X(masscent, xcenter);
+        
+        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+        if (x > 0.5 && y < 0.5)
+            gel->SetMaterialId(EVolume2);
+        
+        if (x > 0.75 && y > 0.5 && y < 0.75 && z > 0.5)
+            gel->SetMaterialId(EVolume2);
+        
+        if (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625 && z > 0.5 && z < 0.75)
+            gel->SetMaterialId(EVolume2);        
+    }
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void ModifyBCsForCase2(TPZGeoMesh* gmesh) {
+    
+    const int meshdim = gmesh->Dimension();
+    const REAL inletDomain = 0.25, outletDomain = 0.875;
+    const REAL zerotol = ZeroTolerance();
+    
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != EFaceBCPressure) continue; // 2d faces on boundary only
+        
+        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        gel->X(masscent, xcenter);
+        const bool isXzero = fabs(xcenter[0]) < zerotol, isYzero = fabs(xcenter[1]) < zerotol, isZzero = fabs(xcenter[2]) < zerotol;
+        const bool isXone = fabs(xcenter[0]-1.) < zerotol, isYone = fabs(xcenter[1]-1.) < zerotol, isZone = fabs(xcenter[2]-1.) < zerotol;
+
+        gel->SetMaterialId(ENoflux); // Default is no flux
+        // Setting inlet BCs
+        if(isXzero && (xcenter[1] < inletDomain && xcenter[2] < inletDomain))
+                gel->SetMaterialId(EInlet);
+        if(isYzero && (xcenter[0] < inletDomain && xcenter[2] < inletDomain))
+                gel->SetMaterialId(EInlet);
+        if(isZzero && (xcenter[0] < inletDomain && xcenter[1] < inletDomain))
+                gel->SetMaterialId(EInlet);
+
+        // Setting outlet BCs
+        if(isXone && (xcenter[1] > outletDomain && xcenter[2] > outletDomain))
+                gel->SetMaterialId(EOutlet);
+        if(isYone && (xcenter[0] > outletDomain && xcenter[2] > outletDomain))
+                gel->SetMaterialId(EOutlet);
+        if(isZone && (xcenter[0] > outletDomain && xcenter[1] > outletDomain))
+                gel->SetMaterialId(EOutlet);
+    }
 }
 
 // ---------------------------------------------------------------------
