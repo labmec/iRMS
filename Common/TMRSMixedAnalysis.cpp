@@ -224,6 +224,8 @@ void TMRSMixedAnalysis::Assemble(){
     auto start_time_ass = std::chrono::steady_clock::now();
 #endif
     cout << "\n---------------------- Assemble ----------------------" << endl;
+    cout << "Number of equations: " << fCompMesh->NEquations() << endl;
+    cout << "Number of elements: " << fCompMesh->NElements() << endl;
     TPZLinearAnalysis::Assemble();
 #ifdef PZDEBUG
     auto total_time_ass = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_ass).count()/1000.;

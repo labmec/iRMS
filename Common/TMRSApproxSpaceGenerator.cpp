@@ -1152,7 +1152,6 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     for (int d = 0; d <= dimension; d++) {
         for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
             std::string material_name = chunk.first;
-            std::cout << "physical name = " << material_name << std::endl;
             int material_id = chunk.second;
             //            volume = new TMRSMultiphaseFlow<TMRSMemory>(material_id,d);
             //            volume->SetDataTransfer(mSimData);
@@ -4160,6 +4159,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     mSubdomainIndexGel.Fill(-1);
     for (int64_t el = 0; el<nel_fine; el++) {
         auto *gel = finemesh->Element(el);
+        if(!gel) continue;
         if(gel->Dimension() != dim) continue;
         int matid = gel->MaterialId();
         mSubdomainIndexGel[el] = matid-fInitMatIdForMergeMeshes+first3DCoarse;
