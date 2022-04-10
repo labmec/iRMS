@@ -34,6 +34,7 @@ void ModifyBCsForCase2(TPZGeoMesh* gmesh);
 
 void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
                              TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
+void ModifyBCsForCase3(TPZGeoMesh* gmesh);
 
 void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
                                TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
@@ -934,8 +935,7 @@ void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh) {
 // ---------------------------------------------------------------------
 
 void ModifyBCsForCase2(TPZGeoMesh* gmesh) {
-    
-    const int meshdim = gmesh->Dimension();
+        
     const REAL inletDomain = 0.25, outletDomain = 0.875;
     const REAL zerotol = ZeroTolerance();
     
@@ -1007,8 +1007,8 @@ void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
     
     // Domain BC
     dim_name_and_physical_tagFine[2]["bc4"] = ENoflux;
-    dim_name_and_physical_tagFine[2]["bc5"] = EInlet;
-    dim_name_and_physical_tagFine[2]["bc6"] = EOutlet;
+    dim_name_and_physical_tagFine[2]["bc5"] = ENoflux;
+    dim_name_and_physical_tagFine[2]["bc6"] = ENoflux;
      
     // Fractures
     dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
@@ -1042,7 +1042,36 @@ void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
     dim_name_and_physical_tagFine[1]["fracIntersection_5_7"] = EIntersection;
     
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+    ModifyBCsForCase3(gmeshfine);
     
+}
+
+void ModifyBCsForCase3(TPZGeoMesh* gmesh) {
+    
+    const REAL zerotol = ZeroTolerance();
+    const REAL onethird = 1./3., twothirds = 2./3.;
+    
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != ENoflux) continue; // 2d faces on boundary only
+        
+        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        gel->X(masscent, xcenter);
+        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+        const bool isYzero = fabs(y) < zerotol;
+        const bool isYend = fabs(y-2.25) < zerotol;
+        
+        // Setting inlet BCs
+        if(isYzero && (z > onethird && z < twothirds))
+                gel->SetMaterialId(EInlet);
+    
+        // Setting outlet BCs
+        if(isYend && (z > 0. && z < onethird))
+                gel->SetMaterialId(EOutlet);
+        if(isYend && (z > twothirds && z < 1.))
+                gel->SetMaterialId(EOutlet);
+    }
 }
 
 // ---------------------------------------------------------------------
