@@ -38,6 +38,7 @@ void ModifyBCsForCase3(TPZGeoMesh* gmesh);
 
 void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
                                TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
+void ModifyBCsForCase4(TPZGeoMesh* gmesh);
 
 void ReadMeshesFlemischCase4Debug(string& filenameFine, string& filenameCoarse,
                                   TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
@@ -52,17 +53,6 @@ enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
     /*5*/EFaceBCPressure, EFracInlet, EFracOutlet, EFracNoFlux, EFracPressure,
     /*10*/EFracture, EIntersection, EIntersectionEnd, EPLossAtIntersect, EVolume2,
     /*15 HAS TO BE LAST*/EInitVolumeMatForMHM /*Not sure if we will keep this structure */
-};
-
-
-auto exactSol = [](const TPZVec<REAL>& loc,
-                   TPZVec<STATE>& u,
-                   TPZFMatrix<STATE>& gradU){
-    const auto& x = loc[0];
-    const auto& y = loc[1];
-    const auto& z = loc[2];
-    u[0] = 1. - z;
-    gradU(0,0) = 0.; // not used
 };
 
 // ----- Logger -----
@@ -100,7 +90,7 @@ int main(){
     // 7: Flemisch case 4 with much less fractures (for debugging)
     // 8: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 9: IP3D mesh (Initially idealized just for generating a beautiful mesh)
-    int simcase = 4;
+    int simcase = 3;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -160,6 +150,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     auto start_time = std::chrono::steady_clock::now();
     
     bool isRefineMesh = false;
+    const bool isPostProc = true;
     
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
@@ -318,12 +309,15 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         mixed_operator->UpdatePreviousState(-1.);
         TPZFastCondensedElement::fSkipLoadSolution = false;
         mixed_operator->LoadSolution(mixed_operator->Solution());
+        
         // ----- Post processing -----
-        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-        int dimToPost = 3;
-        mixAnalisys->PostProcessTimeStep(dimToPost);
-        dimToPost = 2;
-        mixAnalisys->PostProcessTimeStep(dimToPost);
+        if (isPostProc) {
+            mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+            int dimToPost = 3;
+            mixAnalisys->PostProcessTimeStep(dimToPost);
+            dimToPost = 2;
+            mixAnalisys->PostProcessTimeStep(dimToPost);
+        }
     }
     
     auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count()/1000.;
@@ -374,9 +368,6 @@ void FillDataTransfer(TMRSDataTransfer& sim_data){
     std::vector<std::pair<int, REAL>> idPerm(1);
     idPerm[0]= std::make_pair(id1,kappa);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
-    
-    // ----- Use function as BC -----
-//    aspace.SetForcingFunctionBC(exactSol);
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -1046,6 +1037,9 @@ void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
     
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void ModifyBCsForCase3(TPZGeoMesh* gmesh) {
     
     const REAL zerotol = ZeroTolerance();
@@ -1092,7 +1086,7 @@ void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
     }
     
     // Domain BC
-    dim_name_and_physical_tagCoarse[2]["bc1"] = EFaceBCPressure;
+    dim_name_and_physical_tagCoarse[2]["bc1"] = ENoflux;
     gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
         
     // ===================> Fine mesh <=======================
@@ -1106,7 +1100,7 @@ void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
     }
     
     // Domain BC
-    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
+    dim_name_and_physical_tagFine[2]["bc1"] = ENoflux;
      
     // Fractures
     dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
@@ -1118,26 +1112,6 @@ void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
     }
         
     // Intersections
-//    dim_name_and_physical_tagFine[1]["fracIntersection_1_25"] = 10025;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_1_31"] = 10031;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_2_25"] = 20025;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_3_5" ] = 30005;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_4_25"] = 40025;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_5_25"] = 50025;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_6_19"] = 60019;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_6_29"] = 60029;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_7_11"] = 70011;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_8_34"] = 80034;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_17_22"] =170022;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_25_36"] =250036;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_26_27"] =260027;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_29_32"] =290032;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_30_33"] =300033;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_30_36"] =300036;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_31_33"] =310033;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_31_36"] =310036;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_34_35"] =340035;
-    
     dim_name_and_physical_tagFine[1]["fracIntersection_1_25"] =  EIntersection;
     dim_name_and_physical_tagFine[1]["fracIntersection_1_31"] =  EIntersection;
     dim_name_and_physical_tagFine[1]["fracIntersection_2_25"] =  EIntersection;
@@ -1154,12 +1128,44 @@ void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
     dim_name_and_physical_tagFine[1]["fracIntersection_29_32"] = EIntersection;
     dim_name_and_physical_tagFine[1]["fracIntersection_30_33"] = EIntersection;
     dim_name_and_physical_tagFine[1]["fracIntersection_30_36"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_31_33"] = -121321313;
+    dim_name_and_physical_tagFine[1]["fracIntersection_31_33"] = EIntersection;
     dim_name_and_physical_tagFine[1]["fracIntersection_31_36"] = EIntersection;
     dim_name_and_physical_tagFine[1]["fracIntersection_34_35"] = EIntersection;
 
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+    ModifyBCsForCase4(gmeshfine);
+}
+
+void ModifyBCsForCase4(TPZGeoMesh* gmesh) {
     
+    const REAL zerotol = ZeroTolerance();
+    
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != ENoflux) continue; // 2d faces on boundary only
+        
+        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        gel->X(masscent, xcenter);
+        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+        const bool isYend = fabs(y-1500.) < zerotol;
+        const bool isXinit = fabs(x+500.) < zerotol;
+        const bool isXend = fabs(x-350.) < zerotol;
+        
+        // Default is no flux already set previously
+        
+        // Setting inlet BCs
+        if(isYend && (z > 300. && x < -200.))
+                gel->SetMaterialId(EInlet);
+        if(isXinit && (z > 300. && y > 1200.))
+                gel->SetMaterialId(EInlet);
+
+        // Setting outlet BCs
+        if(isXinit && (y < 400. && z < 100.))
+                gel->SetMaterialId(EOutlet);
+        if(isXend && (y < 400. && z < 100.))
+                gel->SetMaterialId(EOutlet);
+    }
 }
 
 // ---------------------------------------------------------------------
