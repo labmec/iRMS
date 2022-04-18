@@ -88,7 +88,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
     aspace.SetGeometry(gmesh);
     
     // ----- Setting the global data transfer -----
-    sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
+//    sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetDataTransfer(sim_data);    
     
     // ----- Analysis parameters -----

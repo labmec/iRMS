@@ -90,7 +90,7 @@ int main(){
     // 7: Flemisch case 4 with much less fractures (for debugging)
     // 8: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 9: IP3D mesh (Initially idealized just for generating a beautiful mesh)
-    int simcase = 3;
+    int simcase = 4;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -159,7 +159,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     else if (simcase == 2)
         ReadMeshesFlemischCase1(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else if (simcase == 3){
-        isRefineMesh = true;
+        isRefineMesh = false;
         ReadMeshesFlemischCase2(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     }
     else if (simcase == 4)
@@ -219,16 +219,16 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
     
-    if(isRefineMesh){
-        cout << "\n---------------------- Uniformly refining geomesh ----------------------" << endl;
-        gRefDBase.InitializeUniformRefPattern(ECube);
-        gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
-        gRefDBase.InitializeUniformRefPattern(EOned);
-        for (auto gel : aspace.mGeometry->ElementVec()){
-            TPZManVector<TPZGeoEl*,10> children;
-            gel->Divide(children);
-        }
-    }
+//    if(isRefineMesh){
+//        cout << "\n---------------------- Uniformly refining geomesh ----------------------" << endl;
+//        gRefDBase.InitializeUniformRefPattern(ECube);
+//        gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
+//        gRefDBase.InitializeUniformRefPattern(EOned);
+//        for (auto gel : aspace.mGeometry->ElementVec()){
+//            TPZManVector<TPZGeoEl*,10> children;
+//            gel->Divide(children);
+//        }
+//    }
     
 //    aspace.SetGeometry(gmeshfine);
     
@@ -247,30 +247,28 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     bool UsePardiso_Q = true;
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-    TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
-    mixAnalisys->SetDataTransfer(&sim_data);
-    mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
     
-    if(simcase == 2){
+    if(simcase == 2 ||simcase == 3 ||simcase == 4){
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
-        
-        std::ofstream name("TransportOperator.vtk");
-        TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, name);
-        
+        std::string name("mesh");
+        aspace.PrintGeometry(name);
+        std::ofstream name2("TransportOperator.vtk");
+        TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, name2);
+
         TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
         sfi_analysis->SetDataTransfer(&sim_data);
         sfi_analysis->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
         int n_steps = sim_data.mTNumerics.m_n_steps;
         REAL dt = sim_data.mTNumerics.m_dt;
-        
+
         TPZStack<REAL,100> reporting_times;
         reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
         REAL sim_time = 0.0;
         int pos =0;
         REAL current_report_time = reporting_times[pos];
         int npos = reporting_times.size();
-        
+
         sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         std::cout << "Mass report at time : " << 0.0 << std::endl;
@@ -295,7 +293,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
                 current_report_time =reporting_times[pos];
                 REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
                 fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
-               
+
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
                 std::cout << "Mass integral :  " << mass << std::endl;
@@ -303,7 +301,10 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         }
     }
     else{
-        // -------------- Running problem --------------        
+        // -------------- Running problem --------------
+        TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
+        mixAnalisys->SetDataTransfer(&sim_data);
+        mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
         mixAnalisys->Assemble();
         mixAnalisys->Solve();
         mixed_operator->UpdatePreviousState(-1.);
@@ -411,18 +412,18 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
 
     sim_data.mTGeometry.mInterface_material_id = 100;
-    sim_data.mTGeometry.mInterface_material_idFracInf = 101;
-    sim_data.mTGeometry.mInterface_material_idFracSup = 102;
+    sim_data.mTGeometry.mInterface_material_idFracInf = 102;
+    sim_data.mTGeometry.mInterface_material_idFracSup = 101;
     sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
     sim_data.mTGeometry.mIterface_material_idFracBound = 104;
     
 //    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(5);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,5,1.);
     sim_data.mTGeometry.mIterface_material_idFracBound = EFracNoFlux;
     
     // Other properties
@@ -446,18 +447,28 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
     sim_data.mTNumerics.m_max_iter_transport=1;
     
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 1.0;
-    REAL kappa1=1.0;
-    REAL kappa2=1.0;
-//    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
-//    REAL kappa1=1.0e-5;
-//    REAL kappa2=1.0e-6;
+//    sim_data.mTFracProperties.m_Permeability = 1.0;
+//    REAL kappa1=1.0;
+//    REAL kappa2=1.0;
+    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
+    REAL kappa1=1.0e-5;
+    REAL kappa2=1.0e-6;
     int id1 = EVolume2;
     int id2 = EVolume;
     std::vector<std::pair<int, REAL>> idPerm(2);
     idPerm[0]= std::make_pair(id1,kappa1);
     idPerm[1]= std::make_pair(id2,kappa2);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
+    
+    REAL resPorosity1 = 0.2;
+    REAL resPorosity2 = 0.25;
+    REAL FracPorosity = 0.4;
+    REAL fracFactor = 0.1;
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor.resize(3);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[0] = std::make_tuple(EVolume,resPorosity1, 1.0);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[1] = std::make_tuple(EVolume2, resPorosity2,1.0);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[2] = std::make_tuple(EFracture, FracPorosity, fracFactor);
+    
     
     
     // PostProcess controls
@@ -495,7 +506,7 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     int D_Type = 0;
     int N_Type = 1;
     int Mixed_Type = 2;
-    REAL zero_flux = 0.0, inlet_pressure = 1.0, outlet_flux = -1.0;
+    REAL zero_flux = 0.0, inlet_pressure = 1.0, outlet_flux = 1.0;
     
     // Domain material
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
@@ -509,7 +520,7 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
             
     // Fracture material
     sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = EFracture;
-    
+    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[1]["Intersection"] = EIntersection;
     // Fracture boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
@@ -522,12 +533,31 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     
 //    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(5);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,5,1.);
     sim_data.mTGeometry.mIterface_material_idFracBound = EFracNoFlux;
+    
+    sim_data.mTGeometry.mInterface_material_id = 100;
+    sim_data.mTGeometry.mInterface_material_idFracInf = 101;
+    sim_data.mTGeometry.mInterface_material_idFracSup = 102;
+    sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
+    sim_data.mTGeometry.mIterface_material_idFracBound = 104;
+    
+    sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(7);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,0,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,1,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracNoFlux,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(EFracInlet,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[6] = std::make_tuple(EFracOutlet,5,1.);
+    sim_data.mTGeometry.mIterface_material_idFracBound = 104;
+    
+    
     
     // Other properties
     sim_data.mTGeometry.mSkeletonDiv = 0;
@@ -544,15 +574,15 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     sim_data.mTNumerics.m_n_steps = 100;
-    sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
+    sim_data.mTNumerics.m_dt      = 0.25;//*day;
     sim_data.mTNumerics.m_max_iter_sfi=1;
     sim_data.mTNumerics.m_max_iter_mixed=1;
     sim_data.mTNumerics.m_max_iter_transport=1;
     
     //FracAndReservoirProperties
     // There are two cases, one with very condutive fracture (1e4) and other with very NON conductive fracture (1e-4)
-    sim_data.mTFracProperties.m_Permeability = 1.e4;
-//    sim_data.mTFracProperties.m_Permeability = 1.e-4;
+    sim_data.mTFracProperties.m_Permeability = 1.0;
+//    sim_data.mTFracProperties.m_Permeability = 1.e4;
 //    REAL kappa1=1.0;
 //    REAL kappa2=1.0;
     REAL kappa1=1.0;
@@ -563,7 +593,14 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     idPerm[0]= std::make_pair(id1,kappa1);
     idPerm[1]= std::make_pair(id2,kappa2);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
-    
+  
+    REAL resPorosity = 0.2;
+    REAL fracPorosity = 0.1;
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor.resize(4);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[0] = std::make_tuple(EVolume, resPorosity,1.0);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[1] = std::make_tuple(EVolume2, resPorosity,1.0);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[2] = std::make_tuple(EFracture, fracPorosity, 0.2);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[3] = std::make_tuple(EIntersection, fracPorosity, 0.2*0.2);
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -613,6 +650,7 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
             
     // Fracture material
     sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = EFracture;
+    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[1]["Intersection"] = EIntersection;
     
     // Fracture boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
@@ -626,11 +664,11 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     
 //    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(5);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,5,1.);
     sim_data.mTGeometry.mIterface_material_idFracBound = EFracNoFlux;
     
     // Other properties
@@ -648,7 +686,7 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     sim_data.mTNumerics.m_n_steps = 100;
-    sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
+    sim_data.mTNumerics.m_dt      = 0.01;//*day;
     sim_data.mTNumerics.m_max_iter_sfi=1;
     sim_data.mTNumerics.m_max_iter_mixed=1;
     sim_data.mTNumerics.m_max_iter_transport=1;
@@ -665,6 +703,13 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     idPerm[0]= std::make_pair(id1,kappa1);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
+    REAL resPorosity = 0.2;
+    REAL fracPorosity = 0.2;
+    REAL fracLength = 0.1;
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor.resize(4);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[0] = std::make_tuple(EVolume, resPorosity,1.0);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[2] = std::make_tuple(EFracture, fracPorosity, fracLength);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[3] = std::make_tuple(EIntersection, fracPorosity, fracLength*fracLength);
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";

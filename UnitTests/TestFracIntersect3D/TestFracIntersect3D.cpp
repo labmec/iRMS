@@ -20,6 +20,7 @@ void RunProblem(const int& caseToSim);
 TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
 void modifyBCsForInletOutlet(TPZGeoMesh* gmesh);
+void modifyBCsForInletOutletFracTransport(TPZGeoMesh* gmesh);
 
 void ReadMeshes(string& filenameFine, string& filenameCoarse,
                 TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse, int const  caseToSim);
@@ -36,24 +37,23 @@ enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
 static TPZLogger mainlogger("cubicdomain");
 #endif
 
-// ----- Test cases -----
-// ---- Test 0 ----
-TEST_CASE("Two_El_One_Frac_cte_pressure","[test_frac_4spaces_3D]"){
-    RunProblem(0);
-}
-// ---- Test 1 ----
-TEST_CASE("Two_El_One_Frac_lin_pressure","[test_frac_4spaces_3D]"){
-    RunProblem(1);
-}
-// ---- Test 2 ----
-TEST_CASE("Four_El_Two_Frac_cte_pressure","[test_frac_4spaces_3D]"){
-    RunProblem(2);
-}
-// ---- Test 3 ----
-TEST_CASE("Four_El_Two_Frac_lin_pressure","[test_frac_4spaces_3D]"){
-    RunProblem(3);
-}
-//TODOJOSE: Fix the unit tests
+//// ----- Test cases -----
+//// ---- Test 0 ----
+//TEST_CASE("Two_El_One_Frac_cte_pressure","[test_frac_4spaces_3D]"){
+//    RunProblem(0);
+//}
+//// ---- Test 1 ----
+//TEST_CASE("Two_El_One_Frac_lin_pressure","[test_frac_4spaces_3D]"){
+//    RunProblem(1);
+//}
+//// ---- Test 2 ----
+//TEST_CASE("Four_El_Two_Frac_cte_pressure","[test_frac_4spaces_3D]"){
+//    RunProblem(2);
+//}
+//// ---- Test 3 ----
+//TEST_CASE("Four_El_Two_Frac_lin_pressure","[test_frac_4spaces_3D]"){
+//    RunProblem(3);
+//}
 //// ---- Test 4 ----
 //TEST_CASE("Two_El_One_Frac_cte_pressure_Transp","[test_frac_4spaces_3D]"){
 //    RunProblem(4);
@@ -66,10 +66,10 @@ TEST_CASE("Four_El_Two_Frac_lin_pressure","[test_frac_4spaces_3D]"){
 //TEST_CASE("Four_El_Two_Frac_cte_pressure_Transp","[test_frac_4spaces_3D]"){
 //    RunProblem(6);
 //}
-//// ---- Test 7 ----
-//TEST_CASE("Four_El_Two_Frac_lin_pressure_Transp","[test_frac_4spaces_3D]"){
-//    RunProblem(7);
-//}
+// ---- Test 7 ----
+TEST_CASE("Four_El_Two_Frac_lin_pressure_Transp","[test_frac_4spaces_3D]"){
+    RunProblem(7);
+}
 
 // Case0: TwoElements, one fracture constant pressure
 // Case1: TwoElements, one fracture linear pressure
@@ -91,7 +91,7 @@ TEST_CASE("Four_El_Two_Frac_lin_pressure","[test_frac_4spaces_3D]"){
 
 
 //int main(){
-//    int CaseToSim = 5;
+//    int CaseToSim = 7;
 //    RunProblem(CaseToSim);
 //    return 0;
 //}
@@ -175,7 +175,9 @@ void RunProblem( const int &caseToSim){
     TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
     mixAnalisys->SetDataTransfer(&sim_data);
     mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+    REAL mass=0.0;
     if(caseToSim == 4 || caseToSim == 5 || caseToSim == 6 || caseToSim == 7){
+        modifyBCsForInletOutletFracTransport(aspace.GetGeometry());
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
         
@@ -202,6 +204,7 @@ void RunProblem( const int &caseToSim){
         std::ofstream fileCilamce("IntegratedSat.txt");
         TPZFastCondensedElement::fSkipLoadSolution = false;
         bool first=true;
+        REAL InntMassFrac=0.0;
         for (int it = 1; it <= n_steps; it++) {
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
@@ -219,10 +222,10 @@ void RunProblem( const int &caseToSim){
                 current_report_time =reporting_times[pos];
                 
                 // computes integral of saturation for elements of certain matid
-                REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(aspace.FractureMatId());
+                InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(aspace.FractureMatId());
                 fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
                
-                REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+                mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
                 std::cout << "Mass integral :  " << mass << std::endl;
             }
@@ -257,6 +260,13 @@ void RunProblem( const int &caseToSim){
         REQUIRE( integratedflux == Approx( 8./3. ) ); // Approx is from catch2 lib
     if (caseToSim == 0 || caseToSim == 2 || caseToSim == 4 || caseToSim == 6)  // cte pressure
         REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
+    if(caseToSim==5)
+        REQUIRE( mass == Approx(1.2876).epsilon(1.e-3) ); // Approx is from catch2 lib
+    if(caseToSim==7)
+        REQUIRE( mass == Approx(1.37505).epsilon(1.e-3) ); // Approx is from catch2 lib
+    if(caseToSim == 4 || caseToSim == 6)
+        REQUIRE( mass == Approx( 0.) ); // Approx is from catch2 lib
+    
     
     // ----- Cleaning up -----
     delete gmeshfine;
@@ -308,13 +318,15 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     sim_data.mTGeometry.mIterface_material_idFracBound = 104;
     
 //    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(5);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,D_Type,1.);
-    sim_data.mTGeometry.mIterface_material_idFracBound = EFracNoFlux;
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(7);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracNoFlux,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(EFracInlet,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[6] = std::make_tuple(EFracOutlet,5,1.);
+    sim_data.mTGeometry.mIterface_material_idFracBound = 104;
     
  
     
@@ -345,7 +357,13 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     std::vector<std::pair<int, REAL>> idPerm(1);
     idPerm[0]= std::make_pair(id1,kappa);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
-    sim_data.mTFracProperties.m_Permeability = 1.0;
+    
+    REAL resPorosity = 0.2;
+    REAL fracPorosity = 0.1;
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor.resize(3);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[0] = std::make_tuple(EVolume, resPorosity,1.0);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[1] = std::make_tuple(EFracture, fracPorosity, 0.2);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[2] = std::make_tuple(EIntersection, fracPorosity, 0.2*0.2);
     
     
     // PostProcess controls
@@ -481,6 +499,22 @@ void modifyBCsForInletOutlet(TPZGeoMesh* gmesh) {
         }
     }
 }
+void modifyBCsForInletOutletFracTransport(TPZGeoMesh* gmesh) {
+    
+    const REAL cmin = -1, cmax = 1.;
+    const int pos = 1;
+    for (auto gel : gmesh->ElementVec()) {
+        const int gelmatid = gel->MaterialId();
+        if(gelmatid == EFracInlet){
+            gel->SetMaterialId(EInlet);
+        }
+        if(gelmatid == EFracOutlet){
+            gel->SetMaterialId(EOutlet);
+        }
+    }
+}
+
+
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
