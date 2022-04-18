@@ -51,13 +51,12 @@ TEST_CASE("constant_pressure_frac_at_dom_bound","[onefrac_test]"){
 }
 
 // ---- Test 3 ----
-//TODOJOSE
-//TEST_CASE("linear_pressure_transport","[onefrac_test]"){
-//    onefractest::TestOneFrac(3);
-//}
+TEST_CASE("linear_pressure_transport","[onefrac_test]"){
+    onefractest::TestOneFrac(3);
+}
 
 //int main(){
-//    onefractest::TestOneFrac(3);
+//    onefractest::TestOneFrac(2);
 //    return 0;
 //}
 
@@ -83,7 +82,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q = false;
-    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
+    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     
     // ----- Setting gmesh -----
     aspace.SetGeometry(gmesh);
@@ -102,7 +101,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
     
-    
+    REAL mass =0.0;
     if(caseToSim == 3){
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
@@ -143,7 +142,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
                 current_report_time =reporting_times[pos];
                 REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
                 fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
-                REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+                mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
                 std::cout << "Mass integral :  " << mass << std::endl;
             }
@@ -168,7 +167,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
     const int dimToPost = 3;
     mixAnalisys->PostProcessTimeStep(dimToPost);
- 
+    }
     // ----- Checking if results match -----
     gmesh->ResetReference();
     mixed_operator->LoadReferences();
@@ -186,19 +185,25 @@ void onefractest::TestOneFrac(const int& caseToSim)
             const STATE pInCentOfEl = GetPressureAtCenter(celgr,xcent);
             if (caseToSim == 0 || caseToSim == 2) {
                 REQUIRE( pInCentOfEl == Approx( 1.0 ) );
-                //TODOJOSE: Test if saturation is correct
             }
             else if (caseToSim == 1){
                 const STATE pexact = 2. - (xcent[2]+1);
                 Approx targetCase1 = Approx(pexact).epsilon(1.e-3); //from catch2 lib
                 REQUIRE( pInCentOfEl == targetCase1 );
             }
+            else if (caseToSim == 3){
+                const STATE pexact = 2. - (xcent[2]+1);
+                Approx targetCase1 = Approx(pexact).epsilon(1.e-3); //from catch2 lib
+                REQUIRE( pInCentOfEl == targetCase1 );
+                const STATE massExact = 1.67997;
+                Approx targetCaseSat = Approx(massExact).epsilon(1.e-3); //from catch2 lib
+                REQUIRE( mass == targetCaseSat );
+            }
             else{
-//                DebugStop(); //TODOJOSE
             }
         } // ellist
     } // elementvec
-    }
+    
    
     // ----- Cleaning up -----
     delete gmesh;
@@ -376,11 +381,12 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EPressure,N_Type,zero_flux);
         
         sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(4);
-        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,2.);
-        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,0.);
-        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
-        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,1.);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,1.);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,N_Type,0.);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,5,zero_flux);
+        sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,5,1.);
         sim_data.mTGeometry.mIterface_material_idFracBound = EPressure;
+        
         
     }
     else {
@@ -407,8 +413,6 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 1 ;
-    sim_data.mTNumerics.m_dt      = 1.0; //*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -417,7 +421,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     sim_data.mTNumerics.m_n_steps = 10;
-    sim_data.mTNumerics.m_dt      = 0.005;//*day;
+    sim_data.mTNumerics.m_dt      = 0.5;//*day;
     sim_data.mTNumerics.m_max_iter_sfi=1;
     sim_data.mTNumerics.m_max_iter_mixed=1;
     sim_data.mTNumerics.m_max_iter_transport=1;
@@ -431,6 +435,13 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     std::vector<std::pair<int, REAL>> idPerm(1);
     idPerm[0]= std::make_pair(id1,kappa);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
+    
+    REAL resPorosity = 0.2;
+    REAL fracPorosity = 0.1;
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor.resize(2);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[0] = std::make_tuple(EVolume, resPorosity,1.0);
+    sim_data.mTReservoirProperties.mPorosityAndVolFactor[1] = std::make_tuple(globFracID, fracPorosity, 0.2);
+    
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
