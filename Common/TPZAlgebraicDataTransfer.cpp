@@ -16,9 +16,12 @@
 #include "pzshapetriang.h"
 #include "pzshapequad.h"
 #include "pzshapecube.h"
+#include "pzshapeprism.h"
 #include "pzshapelinear.h"
 #include "pzelementgroup.h"
 #include "TPZInterfaceEl.h"
+#include "pzshapetetra.h"
+#include "pzshapepiram.h"
 #include "TPZLagrangeMultiplier.h"         // for TPZLagrangeMultiplier
 /// Default constructor
 TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer() : fFluxMesh(0), fTransportMesh(0)
@@ -27,7 +30,7 @@ TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer() : fFluxMesh(0), fTransportM
 }
 
 /// Copy constructor
-TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer(const TPZAlgebraicDataTransfer & other) : fFluxMesh(other.fFluxMesh), fTransportMesh(other.fTransportMesh), fInterfaceGelIndexes(other.fInterfaceGelIndexes), fVolumeElements(other.fVolumeElements)
+TPZAlgebraicDataTransfer::TPZAlgebraicDataTransfer(const TPZAlgebraicDataTransfer & other) : fFluxMesh(other.fFluxMesh), fTransportMesh(other.fTransportMesh), fInterfaceGelIndexes(other.fInterfaceGelIndexes), fVolumeElements(other.fVolumeElements), fConnectsByInterfaceMatID(other.fVolumeElements)
 {
 }
 
@@ -37,6 +40,7 @@ const TPZAlgebraicDataTransfer & TPZAlgebraicDataTransfer::operator=(const TPZAl
     fTransportMesh = other.fTransportMesh;
     fInterfaceGelIndexes = other.fInterfaceGelIndexes;
     fVolumeElements = other.fVolumeElements;
+    fConnectsByInterfaceMatID=other.fConnectsByInterfaceMatID;
     return *this;
     
 }
@@ -49,7 +53,7 @@ TPZAlgebraicDataTransfer::~TPZAlgebraicDataTransfer(){
 // compute the data transfer data structures between the fluxmesh and transport class
 void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport &transport){
     IdentifyInterfaceGeometricElements();
-    IdentifyVolumeGeometricElements();
+    IdentifyVolumeGeometricElements2();
     BuildMixedToTransportDataStructures(fFluxMesh);
     TPZVec<int64_t> Volume_Index;
     BuildTransportToMixedCorrespondenceDatastructure(fFluxMesh, Volume_Index);
@@ -220,22 +224,13 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
         {
             int64_t celindex = facevec[iface].fInterface_celindex;
             TPZCompEl *cel = fTransportMesh->Element(celindex);
-            TPZMultiphysicsInterfaceElement *intface = dynamic_cast<TPZMultiphysicsInterfaceElement *>(cel);
-            TPZInterfaceElement *intface2 = dynamic_cast<TPZInterfaceElement *>(cel);
-            if(!intface && !intface2){
+            TPZInterfaceElement *intface = dynamic_cast<TPZInterfaceElement *>(cel);
+            if(!intface){
                 DebugStop();
             }
-            TPZCompElSide leftside;
-            TPZCompElSide rightside;
-            if(intface){
-                leftside = intface->Left();
-                rightside = intface->Right();
-            }
-            else{
-                leftside = intface2->LeftElementSide();
-                rightside = intface2->RightElementSide();
-            }
             
+            TPZCompElSide leftside = intface->LeftElementSide();
+            TPZCompElSide rightside = intface->RightElementSide();
             TPZCompEl *left = leftside.Element();
             TPZGeoEl *leftgel = left->Reference();
             int leftorient = 0;
@@ -243,6 +238,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             TakeOrientationAndLowerIndex(leftside,  leftorient,  lowerindex, it->first);
             TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
             fInterfaceByGeom(leftgel->Index(),lowerindex) = iface;
+            
             int64_t leftindex = left->Index();
             if(VolumeElementIndex[leftindex] == -1 && (left->NConnects() == 1 ))
             {
@@ -261,12 +257,12 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
             fInterfaceByGeom(rightgel->Index(),lowerindex) = iface;
             if(VolumeElementIndex[rightindex] == -1 && right->NConnects() == 1)
             {
+//                DebugStop();
                 VolumeElementIndex[rightindex] = volumecount;
                 volumecount++;
+                std::cout<<"VolCountR: "<< volumecount<<std::endl;
             }
-            std::cout<<"LeftGelMatID: "<<leftgel->MaterialId()<<" orientL: "<<leftorient<<" GeoEl: "<<leftgel->Index()<<std::endl;
-            std::cout<<"RightGelMatID: "<<rightgel->MaterialId()<<" orient: "<<right_orient<<" GeoEl: "<<rightgel->Index()<<std::endl;
-            std::cout<<"********************************************************************************************"<<std::endl;
+            
             
             if(leftorient == 1)
             {
@@ -274,9 +270,16 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                     facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
                     facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
                     facevec[iface].fLeftRightGelIndex = {leftgel->Index(), rightgel->Index()};
+                    std::cout<<"LeftGelMatID: "<<leftgel->MaterialId()<<" orientL: "<<leftorient<<" GeoEl: "<<leftgel->Index()<<std::endl;
+                    std::cout<<"RightGelMatID: "<<rightgel->MaterialId()<<" orient: "<<right_orient<<" GeoEl: "<<rightgel->Index()<<std::endl;
+                    std::cout<<"********************************************************************************************"<<std::endl;
                 }
                 else{
-                    DebugStop();
+                    facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
+                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
+                    facevec[iface].fLeftRightGelIndex = { rightgel->Index(),leftgel->Index()};
+                
+//                    DebugStop();
                 }
             }
             else
@@ -284,7 +287,14 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
                 facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
                 facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
                 facevec[iface].fLeftRightGelIndex = { rightgel->Index(),leftgel->Index()};
+                std::cout<<"LeftGelMatID: "<<rightgel->MaterialId()<<" orientL: "<<right_orient<<" GeoEl: "<<rightgel->Index()<<std::endl;
+                std::cout<<"RightGelMatID: "<<leftgel->MaterialId()<<" orient: "<<leftorient<<" GeoEl: "<<leftgel->Index()<<std::endl;
+                std::cout<<"********************************************************************************************"<<std::endl;
             }
+//            else
+//            {
+//                DebugStop();
+//            }
             
         }
     }
@@ -299,49 +309,63 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements()
     }
 }
 void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndex(TPZCompElSide &celSide, int &orientation, int &lowerIndex, int matId){
+    
     TPZCompEl *cel = celSide.Element();
     if(cel->NConnects() > 1) DebugStop();
     TPZGeoEl *gel = cel->Reference();
     int Side =celSide.Side();
     int nsidesm = gel->NSides();
     orientation = 0;
-    if(Side < nsidesm-1){
-        orientation = gel->NormalOrientation(celSide.Side());
-    }
-  
-//    fTransportMesh->Reference()->ResetReference();
-//    fFluxMesh->LoadReferences();
     TPZCompEl *auxel = gel->Reference();
     TPZMultiphysicsElement *celmult =dynamic_cast<TPZMultiphysicsElement *>(auxel);
     if(!celmult){
         std::cout<<"TransportElement Without fluxelement: INTERESECTION?"<<std::endl;
         orientation = gel->NormalOrientation(Side);
+        std::cout<<"Orientacion: "<< orientation<<std::endl;
         lowerIndex = SideLowerIndex(gel,Side);
         return;
     }
-//    fFluxMesh->Reference()->ResetReference();
-//    fTransportMesh->LoadReferences();
     TPZCompEl *hdivBound = celmult->Element(0);
     TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivbound = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>*>(hdivBound);
     TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivboundT = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(hdivBound);
-    //
+    TPZCompElHDiv<pzshape::TPZShapeCube> *hdivboundC = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(hdivBound);
+    TPZCompElHDiv<pzshape::TPZShapeTetra> *hdivboundP = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTetra> *>(hdivBound);
+    if(hdivboundC){
+        orientation = hdivboundC->GetSideOrient(Side);
+    }
+    if(hdivboundP){
+        orientation = hdivboundP->GetSideOrient(Side);
+    }
+  
+//    fTransportMesh->Reference()->ResetReference();
+//    fFluxMesh->LoadReferences();
+  
+//    fFluxMesh->Reference()->ResetReference();
+//    fTransportMesh->LoadReferences();
+
     int matid=gel->MaterialId();
     bool is_collapsed = false;
     if (hdivbound) {
         is_collapsed=true;
-        if(matId==101){
+        if(matId==102){
             orientation = hdivbound->GetSideOrient(Side+1);
         }
-        if(matId==102){
+        else if(matId==101){
+            orientation = hdivbound->GetSideOrient(Side);
+        }
+        else{
             orientation = hdivbound->GetSideOrient(Side);
         }
     }
     if(hdivboundT){
         is_collapsed=true;
-        if(matId==101){
+        if(matId==102){
             orientation = hdivboundT->GetSideOrient(Side+1);
         }
-        if(matId==102){
+        if(matId==101){
+            orientation = hdivboundT->GetSideOrient(Side);
+        }
+        else{
             orientation = hdivboundT->GetSideOrient(Side);
         }
     }
@@ -358,6 +382,446 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndex(TPZCompElSide &celSi
     if(fInterfaceByGeom(gel->Index(),lowerIndex)!=-1){
         DebugStop();
     }
+}
+// Identify volume information to the interface data structure (TInterfaceWithVolume)
+void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements2()
+{
+    TPZGeoMesh *gmesh = fTransportMesh->Reference();
+    
+    int64_t nel = gmesh->NElements();
+    fInterfaceByGeom.Redim(nel,6);
+    for(int64_t el = 0; el<nel; el++)
+    {
+        for(int f=0; f<6; f++)
+        {
+            fInterfaceByGeom(el,f) = -1;
+        }
+    }
+    int globcount=0;
+    TPZVec<int64_t> geometricvolume(nel,0);
+    int64_t volumecount = 0;
+    TPZVec<int64_t> VolumeElementIndex(fTransportMesh->NElements(),-1);
+    fFluxMesh->LoadReferences();
+    fConnectsByInterfaceMatID.resize(fFluxMesh->NConnects());
+    for (int ipos=0; ipos<fFluxMesh->NConnects(); ipos++) {
+        fConnectsByInterfaceMatID[ipos]=-1;
+    }
+    
+    for(auto it = fInterfaceGelIndexes.begin(); it != fInterfaceGelIndexes.end(); it++)
+    {
+        TPZVec<TInterfaceWithVolume> &facevec = it->second;
+        int64_t nfaces = facevec.size();
+        for(int64_t iface = 0; iface<nfaces; iface++)
+        {
+            int64_t celindex = facevec[iface].fInterface_celindex;
+            TPZCompEl *cel = fTransportMesh->Element(celindex);
+            int meshdim = fTransportMesh->Dimension();
+            TPZInterfaceElement *intface = dynamic_cast<TPZInterfaceElement *>(cel);
+            if(!intface){
+                DebugStop();
+            }
+            
+            TPZCompElSide leftside = intface->LeftElementSide();
+            TPZCompElSide rightside = intface->RightElementSide();
+            TPZCompEl *left = leftside.Element();
+            TPZGeoEl *leftgel = left->Reference();
+            TPZGeoElSideIndex leftgelside(leftgel->Index(),leftside.Side());
+            int dimL = leftgel->Dimension();
+            
+            TPZCompEl *right = rightside.Element();
+            if(right->NConnects() > 1) DebugStop();
+            TPZGeoEl *rightgel = right->Reference();
+            TPZGeoElSideIndex rightgelside(rightgel->Index(),rightside.Side());
+            int64_t rightindex = right->Index();
+            int dimR = rightgel->Dimension();
+            if(it->first == 101){
+                int ok=0;
+            }
+            int orientationL=0,  lowerIndexL=0,   orientationR=0,  lowerIndexR=0;
+            if(dimL>dimR){
+                TakeOrientationAndLowerIndexDimVolDimFrac(leftside, rightside, orientationL, lowerIndexL, orientationR, lowerIndexR,it->first);
+            }else if(dimL<dimR) {
+                TakeOrientationAndLowerIndexDimVolDimFrac(rightside, leftside, orientationR, lowerIndexR, orientationL, lowerIndexL,it->first);
+            }else if ((dimL == dimR) &&  (dimR== meshdim)){
+                TakeOrientationAndLowerIndexDimDim(rightside, leftside, orientationR, lowerIndexR, orientationL, lowerIndexL,it->first);
+            }
+            else if ((dimL == dimR) && dimR == meshdim-1){
+                TakeOrientationAndLowerIndexFracFrac(rightside, leftside, orientationR, lowerIndexR, orientationL, lowerIndexL,it->first);
+//                DebugStop();
+            } else{
+                DebugStop();
+            }
+            fInterfaceByGeom(leftgel->Index(),lowerIndexL) = iface;
+            int64_t leftindex = left->Index();
+            if(VolumeElementIndex[leftindex] == -1 && (left->NConnects() == 1 ))
+            {
+                VolumeElementIndex[leftindex] = volumecount;
+                volumecount++;
+            }
+            fInterfaceByGeom(rightgel->Index(),lowerIndexR) = iface;
+            if(VolumeElementIndex[rightindex] == -1 && right->NConnects() == 1)
+            {
+                VolumeElementIndex[rightindex] = volumecount;
+                volumecount++;
+            }
+            if(orientationL == 1)
+            {
+                if(orientationR ==-1 || orientationR ==0 ){
+                    facevec[iface].fLeftRightGelSideIndex = {leftgelside,rightgelside};
+                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[leftindex], VolumeElementIndex[rightindex]};
+                    facevec[iface].fLeftRightGelIndex = {leftgel->Index(), rightgel->Index()};
+                }
+                else{
+                    std::cout<<"Warning"<<std::endl;
+                    facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
+                    facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
+                    facevec[iface].fLeftRightGelIndex = { rightgel->Index(),leftgel->Index()};
+//                    DebugStop();
+                }
+            }
+            else
+            {
+                facevec[iface].fLeftRightGelSideIndex = {rightgelside,leftgelside};
+                facevec[iface].fLeftRightVolIndex = {VolumeElementIndex[rightindex], VolumeElementIndex[leftindex]};
+                facevec[iface].fLeftRightGelIndex = { rightgel->Index(),leftgel->Index()};
+            }
+            globcount++;
+        }
+    }
+    fVolumeElements.Resize(volumecount);
+
+    int64_t nelcomp = fTransportMesh->NElements();
+    for(int64_t el = 0; el<nelcomp; el++)
+    {
+        if(VolumeElementIndex[el] == -1) continue;
+        int64_t cellindex = VolumeElementIndex[el];
+        fVolumeElements[cellindex] = el;
+    }
+    
+    int ncon = fFluxMesh->NConnects();
+    int count=0;
+    for (int icon =0; icon<ncon; icon++) {
+        if(fConnectsByInterfaceMatID[icon]!=-1){
+            count++;
+        }
+//        std::cout<<"conect: "<<icon<<" material: "<<fConnectsByInterfaceMatID[icon]<<std::endl;
+    }
+    if(count!=globcount){
+        DebugStop();
+    }
+    int nnterfaces = fInterfaceByGeom.Rows();
+}
+void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimVolDimFrac(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matID){
+    
+    TPZCompEl *celL = celSideL.Element();
+    if(celL->NConnects() > 1) DebugStop();
+    TPZGeoEl *gelL = celL->Reference();
+    int SideL =celSideL.Side();
+    int nsidesm = gelL->NSides();
+    orientationL = 0;
+    
+    TPZCompEl *CompelMixedL = gelL->Reference();
+    TPZMultiphysicsElement *celmultL =dynamic_cast<TPZMultiphysicsElement *>(CompelMixedL);
+    TPZCompEl *hdivBoundL = celmultL->Element(0);
+    
+    TPZCompElHDiv<pzshape::TPZShapeCube> *hdivboundC = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(hdivBoundL);
+    TPZCompElHDiv<pzshape::TPZShapeTetra> *hdivboundT = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTetra> *>(hdivBoundL);
+    TPZCompElHDiv<pzshape::TPZShapePrism> *hdivboundP = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapePrism> *>(hdivBoundL);
+    TPZCompElHDiv<pzshape::TPZShapeQuad> *hdivboundQ = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeQuad> *>(hdivBoundL);
+    TPZCompElHDiv<pzshape::TPZShapeTriang> *hdivboundTrian = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTriang> *>(hdivBoundL);
+    int connect_index =1;
+    int firstsideL = gelL->NSides() - gelL->NSides(2) -1;
+    lowerIndexL = SideLowerIndex(gelL, SideL);
+    if(hdivboundC){
+        connect_index = hdivboundC->ConnectIndex(SideL - firstsideL);
+        orientationL = hdivboundC->SideOrient(SideL - firstsideL);
+    }
+    else if(hdivboundT){
+        connect_index = hdivboundT->ConnectIndex(SideL - firstsideL);
+        orientationL = hdivboundT->SideOrient(SideL - firstsideL);
+    }
+    else if (hdivboundP) {
+        connect_index = hdivboundP->ConnectIndex(SideL - firstsideL);
+        orientationL = hdivboundP->SideOrient(SideL - firstsideL);
+    }
+    else if(hdivboundQ){
+        firstsideL= gelL->NSides() - gelL->NSides(1)-1;
+        connect_index = hdivboundQ->ConnectIndex(SideL - firstsideL);
+        orientationL = hdivboundQ->SideOrient(SideL - firstsideL);
+    }
+    else if(hdivboundTrian){
+        firstsideL= gelL->NSides() - gelL->NSides(1)-1;
+        connect_index = hdivboundTrian->ConnectIndex(SideL - firstsideL);
+        orientationL = hdivboundTrian->SideOrient(SideL - firstsideL);
+    }
+    
+    TPZCompEl *celR = celSideR.Element();
+    if(celR->NConnects() > 1) DebugStop();
+    TPZGeoEl *gelR = celR->Reference();
+    int SideR =celSideR.Side();
+    orientationR = 0;
+    TPZCompEl *CompelMixedR = gelR->Reference();
+    TPZMultiphysicsElement *celmultR =dynamic_cast<TPZMultiphysicsElement *>(CompelMixedR);
+    if(!celmultR){
+        std::cout<<"TransportElement Without fluxelement: INTERESECTION?"<<std::endl;
+        orientationR = gelR->NormalOrientation(SideR);
+        orientationR = 0.0; //-orientationL;
+        std::cout<<"orientation"<<orientationR <<std::endl;
+        lowerIndexR = SideLowerIndex(gelR,SideR);
+        if(fConnectsByInterfaceMatID[connect_index]>0){
+            DebugStop();
+        }
+        else{
+        fConnectsByInterfaceMatID[connect_index] = matID;
+        }
+        return;
+    }
+    TPZCompEl *hdivBoundR = celmultR->Element(0);
+    TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivCollapsedCR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *>(hdivBoundR);
+    TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivCollapsedTR= dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *>(hdivBoundR);
+    
+    TPZCompElHDivBound2<pzshape::TPZShapeQuad> *hdivBoundCR = dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeQuad> *>(hdivBoundR);
+    TPZCompElHDivBound2<pzshape::TPZShapeTriang> *hdivBoundTR= dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeTriang> *>(hdivBoundR);
+    TPZCompElHDivBound2<pzshape::TPZShapeLinear> *hdivBoundLinR= dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeLinear> *>(hdivBoundR);
+    
+    lowerIndexR = SideLowerIndex(gelR,SideR);
+    bool found = false;
+    int connect_indexR =-1;
+    if(hdivCollapsedCR){
+        int index2 = hdivCollapsedCR->ConnectIndex(5);
+        if(index2 == connect_index){
+            orientationR = hdivCollapsedCR->GetSideOrient(gelR->NSides()-1);
+            connect_indexR = hdivCollapsedCR->ConnectIndex(5);
+            lowerIndexR = 4;
+            found = true;
+        }
+        int index3 = hdivCollapsedCR->ConnectIndex(6);
+        if(index3 == connect_index){
+            orientationR = hdivCollapsedCR->GetSideOrient(gelR->NSides());
+            connect_indexR = hdivCollapsedCR->ConnectIndex(6);
+            lowerIndexR = 5;
+            found = true;
+        }
+    }
+    else if(hdivCollapsedTR){
+        int index2 = hdivCollapsedTR->ConnectIndex(4);
+        if(index2 == connect_index){
+            orientationR = hdivCollapsedTR->GetSideOrient(gelR->NSides()-1);
+            connect_indexR = hdivCollapsedTR->ConnectIndex(4);
+            lowerIndexR = 3;
+            found = true;
+        }
+        int index3 = hdivCollapsedTR->ConnectIndex(5);
+        if(index3 == connect_index){
+            orientationR = hdivCollapsedTR->GetSideOrient(gelR->NSides());
+            connect_indexR = hdivCollapsedTR->ConnectIndex(5);
+            lowerIndexR = 4;
+            found = true;
+        }
+    } else if(hdivBoundCR ){
+            orientationR=0;
+            connect_indexR = hdivBoundCR->ConnectIndex(0);
+            int ncon = hdivBoundCR->NConnects();
+            lowerIndexR = SideLowerIndex(gelR,SideR);
+            found = true;
+    }
+    else if(hdivBoundTR){
+            orientationR=0;
+            connect_indexR = hdivBoundTR->ConnectIndex(0);
+            lowerIndexR = SideLowerIndex(gelR,SideR);
+            found = true;
+        
+    }
+    else if(hdivBoundLinR ){
+            orientationR=0;
+            connect_indexR = hdivBoundLinR->ConnectIndex(0);
+            lowerIndexR = SideLowerIndex(gelR,SideR);
+            found = true;
+        
+    }
+    else{
+        DebugStop();
+    }
+    if(!found){
+        DebugStop();
+    }
+    if(fInterfaceByGeom(gelL->Index(),lowerIndexL)!=-1){
+        DebugStop();
+    }  if(fInterfaceByGeom(gelR->Index(),lowerIndexR)!=-1){
+        DebugStop();
+    }
+    if (connect_index!=connect_indexR) {
+        DebugStop();
+    }
+    if(fConnectsByInterfaceMatID[connect_index]>0){
+        DebugStop();
+    }
+    else{
+    fConnectsByInterfaceMatID[connect_index] = matID;
+    }
+}
+void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimDim(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matID){
+    
+    TPZCompEl *celL = celSideL.Element();
+    if(celL->NConnects() > 1) DebugStop();
+    TPZGeoEl *gelL = celL->Reference();
+    int SideL =celSideL.Side();
+    int nsidesm = gelL->NSides();
+    orientationL = 0;
+    
+    TPZCompEl *CompelMixedL = gelL->Reference();
+    TPZMultiphysicsElement *celmultL =dynamic_cast<TPZMultiphysicsElement *>(CompelMixedL);
+    TPZCompEl *hdivL = celmultL->Element(0);
+    
+    TPZCompElHDiv<pzshape::TPZShapeCube> *hdivCL = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(hdivL);
+    TPZCompElHDiv<pzshape::TPZShapeTetra> *hdivTL = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTetra> *>(hdivL);
+    TPZCompElHDiv<pzshape::TPZShapePrism> *hdivPL= dynamic_cast<TPZCompElHDiv<pzshape::TPZShapePrism> *>(hdivL);
+    lowerIndexL = SideLowerIndex(gelL, SideL);
+    int firstsideL = gelL->NSides() - gelL->NSides(2)-1;
+    int connect_indexL =-1;
+    if(hdivCL){
+        orientationL = hdivCL->SideOrient(SideL - firstsideL);
+        connect_indexL = hdivCL->ConnectIndex(SideL - firstsideL);
+    }
+    else if(hdivTL){
+        int node = gelL->NSides() - gelL->NSides(2);
+        orientationL = hdivTL->SideOrient(SideL - firstsideL);
+        connect_indexL = hdivTL->ConnectIndex(SideL - firstsideL);
+    }
+    else if (hdivPL) {
+        int node = gelL->NSides() - gelL->NSides(2);
+        orientationL = hdivPL->SideOrient(SideL - firstsideL);
+        connect_indexL = hdivPL->ConnectIndex(SideL - firstsideL);
+    }
+    else{
+        DebugStop();
+    }
+    
+    int connect_indexR =-2;
+    TPZCompEl *celR = celSideR.Element();
+    if(celR->NConnects() > 1) DebugStop();
+    TPZGeoEl *gelR = celR->Reference();
+    int SideR =celSideR.Side();
+    int nsidesmR = gelR->NSides();
+    orientationR = 0;
+    lowerIndexR = SideLowerIndex(gelR, SideR);
+    TPZCompEl *CompelMixedR = gelR->Reference();
+    TPZMultiphysicsElement *celmultR =dynamic_cast<TPZMultiphysicsElement *>(CompelMixedR);
+    TPZCompEl *hdivR = celmultR->Element(0);
+    
+    TPZCompElHDiv<pzshape::TPZShapeCube> *hdivCR = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(hdivR);
+    TPZCompElHDiv<pzshape::TPZShapeTetra> *hdivTR = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTetra> *>(hdivR);
+    TPZCompElHDiv<pzshape::TPZShapePrism> *hdivPR = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapePrism> *>(hdivR);
+    
+    int firstsideR = gelR->NSides() - gelR->NSides(2)-1;
+    if(hdivCR){
+        orientationR = hdivCR->SideOrient(SideR - firstsideR);
+        connect_indexR = hdivCR->ConnectIndex(SideR - firstsideR);
+    }
+    else if(hdivTR){
+        orientationR = hdivTR->SideOrient(SideR - firstsideR);
+        connect_indexR = hdivTR->ConnectIndex(SideR - firstsideR);
+    }
+    else if (hdivPR) {
+        orientationR = hdivPR->SideOrient(SideR - firstsideR);
+        connect_indexR = hdivPR->ConnectIndex(SideR - firstsideR);
+    }
+    else{
+        DebugStop();
+    }
+    if(fInterfaceByGeom(gelL->Index(),lowerIndexL)!=-1){
+        DebugStop();
+    }  if(fInterfaceByGeom(gelR->Index(),lowerIndexR)!=-1){
+        DebugStop();
+    }
+    
+    if(connect_indexR!=connect_indexL){
+        DebugStop();
+    }
+    if(fConnectsByInterfaceMatID[connect_indexL]>0){
+        DebugStop();
+    }
+    else{
+    fConnectsByInterfaceMatID[connect_indexL] = matID;
+    }
+}
+void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexFracFrac(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matID){
+    
+    TPZCompEl *celL = celSideL.Element();
+    if(celL->NConnects() > 1) DebugStop();
+    TPZGeoEl *gelL = celL->Reference();
+    int SideL =celSideL.Side();
+    int nsidesm = gelL->NSides();
+    orientationL = 0;
+    
+    TPZCompEl *CompelMixedL = gelL->Reference();
+    TPZMultiphysicsElement *celmultL =dynamic_cast<TPZMultiphysicsElement *>(CompelMixedL);
+    TPZCompEl *hdivBoundL = celmultL->Element(0);
+    
+    TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivCollapsedCL = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *>(hdivBoundL);
+    TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivCollapsedTL= dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *>(hdivBoundL);
+    
+    int connect_index =1;
+    int firstsideL = gelL->NSides() - gelL->NSides(1) -1;
+    int connect_indexL =-1;
+    if(hdivCollapsedCL){
+        orientationL = hdivCollapsedCL->SideOrient(SideL - firstsideL);
+        connect_indexL = hdivCollapsedCL->ConnectIndex(SideL - firstsideL);
+    }
+    else if(hdivCollapsedTL){
+        orientationL = hdivCollapsedTL->SideOrient(SideL - firstsideL);
+        connect_indexL = hdivCollapsedTL->ConnectIndex(SideL - firstsideL);
+    }
+    else{
+        DebugStop();
+    }
+    lowerIndexL =SideLowerIndex(gelL, SideL);
+    
+    TPZCompEl *celR = celSideR.Element();
+    if(celR->NConnects() > 1) DebugStop();
+    TPZGeoEl *gelR = celR->Reference();
+    int SideR =celSideR.Side();
+    orientationR = 0;
+    int connect_indexR =-2;
+    TPZCompEl *CompelMixedR = gelR->Reference();
+    TPZMultiphysicsElement *celmultR =dynamic_cast<TPZMultiphysicsElement *>(CompelMixedR);
+    TPZCompEl *hdivBoundR = celmultR->Element(0);
+    TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivCollapsedCR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *>(hdivBoundR);
+    TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivCollapsedTR= dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *>(hdivBoundR);
+    
+    TPZCompElHDivBound2<pzshape::TPZShapeQuad> *hdivBoundCR = dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeQuad> *>(hdivBoundR);
+    TPZCompElHDivBound2<pzshape::TPZShapeTriang> *hdivBoundTR= dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeTriang> *>(hdivBoundR);
+    TPZCompElHDivBound2<pzshape::TPZShapeLinear> *hdivBoundLinR= dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeLinear> *>(hdivBoundR);
+
+    int firstsideR = gelR->NSides() - gelL->NSides(1) -1;
+    if(hdivCollapsedCR){
+        orientationR = hdivCollapsedCR->SideOrient(SideR - firstsideR);
+        connect_indexR = hdivCollapsedCR->ConnectIndex(SideR - firstsideR);
+    }
+    else if(hdivCollapsedTR){
+        orientationR = hdivCollapsedTR->SideOrient(SideR - firstsideR);
+        connect_indexR = hdivCollapsedTR->ConnectIndex(SideR - firstsideR);
+    }
+    else{
+        DebugStop();
+    }
+    
+    lowerIndexR =SideLowerIndex(gelR, SideR);
+    if(fInterfaceByGeom(gelL->Index(),lowerIndexL)!=-1){
+        DebugStop();
+    }  if(fInterfaceByGeom(gelR->Index(),lowerIndexR)!=-1){
+        DebugStop();
+    }
+    if(connect_indexR!=connect_indexL){
+        DebugStop();
+    }
+    if(fConnectsByInterfaceMatID[connect_indexL]>0){
+        DebugStop();
+    }
+    else{
+    fConnectsByInterfaceMatID[connect_indexL] = matID;
+    }
+    
 }
 // identify material of a face which is connected to a given geometric element
 std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex gelindex, int64_t faceindex)
@@ -604,20 +1068,16 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                         side = side-1;
                     }
                     TPZGeoElSide gelside(gel,side);
-                    std::vector<int> matidvec = IdentifyMaterial(gelside);
-                    
-                    //corregir connect_Index_solo si existe fluxo mortar
-//                    int64_t mortarExist = mortarExist
                     int nshape = cel->Connect(ic).NShape();
                     int64_t cindex = cel->ConnectIndex(ic);
+                    
                     if(shouldtransfer[cindex] != 0) continue;
-                    int matid =matidvec[0];
-                    if (warning && collapsedTriangle && side == 7) {
-                        matid = matidvec[1];
-                    }
-                    if (warning && collapsedQuad && side == 9) {
-                        matid = matidvec[1];
-                    }
+                    
+                    int matid = fConnectsByInterfaceMatID[cindex];
+//                    if(matid==-1){
+//                        DebugStop();
+//                    }
+
                     if(ncontransfer.find(matid) == ncontransfer.end())
                     {
                         ncontransfer[matid].Resize(4, 0);
@@ -630,6 +1090,8 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                         ncontransfer[matid][is]++;
                     }
                     shouldtransfer[cindex] = 1;
+                    
+                    
                     TPZGeoElSide refside = IdentifyInterfaceElement(gelside);
                     int64_t elindex = refside.Element()->Index();
                     int sidelower = SideLowerIndex(refside.Element(),refside.Side());
@@ -1008,37 +1470,9 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int matId = gel->MaterialId();
         
         REAL volume = gel->Volume();
-        REAL fracFactor = 0.01;
-        transport.fCellsData.fporosity[i]=0.25;
-        //SetarCorretamente
-        if(matId==2){
-            transport.fCellsData.fporosity[i]=0.25;
-        }
-        if(matId==1){
-            transport.fCellsData.fporosity[i]=0.20;
-        }
-        if(matId==10){
-            volume=volume*fracFactor;
-            transport.fCellsData.fporosity[i]=0.4;
-        }
-        if(matId==14){
-            transport.fCellsData.fporosity[i]=0.25;
-        }
-        //@TODO crear metodo de acceso
-        
-        int matid = gel->MaterialId();
         int side = gel->NSides()-1;
-        if (matid==10) {
-            volume = gel->SideArea(gel->NSides()-1);
-            volume=volume*fracFactor;
-        }
-        if (matid==11) {
-            volume = gel->SideArea(gel->NSides()-1);
-            volume=volume*fracFactor;
-            transport.fCellsData.fporosity[i]=0.4;
-        }
         transport.fCellsData.fVolume[i]=volume;
-        transport.fCellsData.fMatId[i]=matid;
+        transport.fCellsData.fMatId[i]=matId;
         if (cel->NConnects()!=1) {
             DebugStop();
         }

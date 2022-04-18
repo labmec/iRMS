@@ -80,6 +80,7 @@ public:
         
         std::vector<REAL> fEqNumber;
         std::vector<REAL> fVolume;
+        std::vector<REAL> fVolumefactor;
         std::vector<REAL> fMatId;
         std::vector<REAL> fPressure;
         std::vector<REAL> fSaturation;
@@ -116,7 +117,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fsim_data(0), fEqNumber(0),fVolume(0), fMatId(0),fSaturation(0), fPressure(0), fSaturationLastState(0),  fDensityOil(0),fdDensityOildp(0), fDensityOilLastState(0),fDensityWater(0), fdDensityWaterdp(0),fDensityWaterLastState(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCoordinate(0),
+        TCellData() : fsim_data(0), fEqNumber(0),fVolume(0), fVolumefactor(0),fMatId(0),fSaturation(0), fPressure(0), fSaturationLastState(0),  fDensityOil(0),fdDensityOildp(0), fDensityOilLastState(0),fDensityWater(0), fdDensityWaterdp(0),fDensityWaterLastState(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCoordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -126,6 +127,7 @@ public:
         {
             fsim_data=copy.fsim_data;
             fVolume = copy.fVolume;
+            fVolumefactor = copy.fVolumefactor;
             fMatId=copy.fMatId;
             fEqNumber=copy.fEqNumber;
             fSaturation= copy.fSaturation;
@@ -160,6 +162,7 @@ public:
         {
              fsim_data=copy.fsim_data;
             fVolume = copy.fVolume;
+            fVolumefactor = copy.fVolumefactor;
             fMatId=copy.fMatId;
             fEqNumber=copy.fEqNumber;
             fSaturation= copy.fSaturation;
@@ -194,6 +197,7 @@ public:
         void SetNumCells(int64_t ncells)
         {
             fVolume.resize(ncells);
+            fVolumefactor.resize(ncells);
             fMatId.resize(ncells);
             fEqNumber.resize(ncells);
             fSaturation.resize(ncells);
@@ -234,7 +238,6 @@ public:
     
     
     REAL fdt = 0.1;
-    REAL factor = 1.0;
     std::map<int, std::pair<int ,REAL>> fboundaryCMatVal;
     std::vector<REAL> fgravity;
     int fNFluxCoefficients;
@@ -251,8 +254,6 @@ public:
     
     // Interface data structure, by material, element and side
     std::map<int, TInterfaceDataTransport> fInterfaceData;
-
-    
 public:
     
      /// Default constructor

@@ -73,7 +73,7 @@ void TPZAlgebraicTransport::ContributeResidual(int index, TPZFMatrix<double> &ef
 void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId){
     
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceId].fLeftRightVolIndex[index];
-    REAL fluxint  = fInterfaceData[interfaceId].fIntegralFlux[index];
+    REAL fluxint  = 1.0*fInterfaceData[interfaceId].fIntegralFlux[index];
     REAL fw_L = fCellsData.fWaterfractionalflow[lr_index.first];
     REAL fw_R = fCellsData.fWaterfractionalflow[lr_index.second];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
@@ -84,13 +84,13 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
         beta = 1.0;
     }
     
-    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint*factor* fdt;
-    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint*factor* fdt;
+    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint* fdt;
+    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
     
-    ek(0,0) = +1.0*dfwSw_L  * beta * fluxint*factor* fdt;
-    ek(0,1) = +1.0*dfwSw_R * (1-beta) * fluxint*factor* fdt;
-    ek(1,0) = -1.0*dfwSw_L* beta * fluxint*factor* fdt;
-    ek(1,1) = -1.0*dfwSw_R * (1-beta)*fluxint*factor* fdt;
+    ek(0,0) = +1.0*dfwSw_L  * beta * fluxint*fdt;
+    ek(0,1) = +1.0*dfwSw_R * (1-beta) * fluxint*fdt;
+    ek(1,0) = -1.0*dfwSw_L* beta * fluxint*fdt;
+    ek(1,1) = -1.0*dfwSw_R * (1-beta)*fluxint* fdt;
    
 //    Gravity fluxes contribution
 //    ContributeInterfaceIHU(index, ek, ef);
@@ -110,8 +110,8 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
         beta = 1.0;
     }
     
-    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint*factor* fdt;
-    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint*factor* fdt;
+    ef(0) = +1.0*(beta*fw_L + (1-beta)*fw_R)*fluxint* fdt;
+    ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
     
 // Gravity fluxes contribution
 //    ContributeInterfaceIHUResidual(index, ef);
@@ -326,26 +326,26 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
 
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef, int inId){
    
-    REAL s_inlet =1.0;// fboundaryCMatVal[inId].second;;
-    REAL fluxint  = fInterfaceData[inId].fIntegralFlux[index];
-    ef(0,0) = 1.0*s_inlet*fluxint*factor* fdt;
+    REAL s_inlet = 1.0;// fboundaryCMatVal[inId].second;;
+    REAL fluxint  = 1.0*fInterfaceData[inId].fIntegralFlux[index];
+    ef(0,0) = 1.0*s_inlet*fluxint* fdt;
 }
 void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int outID){
   
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outID].fLeftRightVolIndex[index];
-    REAL fluxint  =  1.0*fInterfaceData[outID].fIntegralFlux[index];
+    REAL fluxint  = 1.0*fInterfaceData[outID].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
-    ef(0,0) = fw_L*fluxint*factor* fdt;
-    ek(0,0) = dfwSw_L*fluxint*factor* fdt;
+    ef(0,0) = fw_L*fluxint* fdt;
+    ek(0,0) = dfwSw_L*fluxint* fdt;
 }
 
 void TPZAlgebraicTransport::ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef, int outId){
   
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outId].fLeftRightVolIndex[index];
-    REAL fluxint  = 1.0*fInterfaceData[outId].fIntegralFlux[index];
+    REAL fluxint  = -1.0*fInterfaceData[outId].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
-    ef(0,0) = fw_L*fluxint*factor* fdt;
+    ef(0,0) = fw_L*fluxint* fdt;
 }
 
 void TPZAlgebraicTransport::TCellData::Print(std::ostream &out){

@@ -319,7 +319,7 @@ public:
     class TReservoirProperties : public TMRSSavable {
         
     public:
-        REAL mPorosity;
+        std::vector<std::tuple<int,REAL, REAL>> mPorosityAndVolFactor;
         bool fPropsFromPreProcess = false;
         std::function<std::vector<REAL>(const TPZVec<REAL> & )> kappa_phi;
         std::vector<std::pair<int, REAL>> m_permeabilitiesbyId;
@@ -328,7 +328,9 @@ public:
         std::string mPropsFileName="";
         /** @brief Default constructor */
         TReservoirProperties(){
-            mPorosity=1.0;
+            
+            mPorosityAndVolFactor.resize(1);
+            mPorosityAndVolFactor[0] = std::make_tuple(1, 1.0, 0.1);
             fPropsFromPreProcess = false;
         }
         
@@ -339,7 +341,7 @@ public:
         
         /** @brief Copy constructor */
         TReservoirProperties(const TReservoirProperties &other){
-            mPorosity = other.mPorosity;
+            mPorosityAndVolFactor = other.mPorosityAndVolFactor;
             fPropsFromPreProcess = other.fPropsFromPreProcess;
             kappa_phi = other.kappa_phi;
             s0=other.s0;
@@ -349,7 +351,7 @@ public:
         
         /** @brief Copy assignment operator*/
         TReservoirProperties &operator=(const TReservoirProperties &other){
-            mPorosity = other.mPorosity;
+            mPorosityAndVolFactor = other.mPorosityAndVolFactor;
             fPropsFromPreProcess = other.fPropsFromPreProcess;
             kappa_phi = other.kappa_phi;
             s0=other.s0;

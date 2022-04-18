@@ -280,8 +280,8 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     NewtonIteration();
     x += Solution();
     
-    std::cout<<"SOLUTION: "<<std::endl;
-    std::cout<<x<<std::endl;
+//    std::cout<<"SOLUTION: "<<std::endl;
+//    std::cout<<x<<std::endl;
     LoadSolution(x);
     if(cmesh){
         cmesh->LoadSolutionFromMultiPhysics();

@@ -136,10 +136,15 @@ public:
     // for each algebraic cell
     TPZVec<int64_t> fVolumeElements;
     
+    // The index of the computational volume elements in the transport mesh identified by material id
+    TPZVec<int64_t> fConnectsByInterfaceMatID;
+    
     /// Interface element associated with each volumetric geometric element/side when applicable
     // the size of this data structure is Number Geometric Elements x 6
     // the interface index is related to the algebraic data structure
     TPZFMatrix<int64_t> fInterfaceByGeom;
+    
+    
     
     /// List of transfer information from the mixed mesh to the transport mesh
     std::map<int,std::list<TFromMixedToTransport>> fTransferMixedToTransport;
@@ -186,6 +191,7 @@ public:
     // will loop over the interface elements, identify left and right elements and
     // initialize the fInterfaceByGeom data structure
     void IdentifyVolumeGeometricElements();
+    void IdentifyVolumeGeometricElements2();
     
     // print the datastructure
     void Print(std::ostream &out = std::cout);
@@ -229,6 +235,9 @@ public:
     // verify the correspondence of the mixed elements and the algebraic cells
     void CheckDataTransferTransportToMixed();
     void TakeOrientationAndLowerIndex(TPZCompElSide &celSide, int &orientation, int &lowerIndex, int matId);
+    void TakeOrientationAndLowerIndexDimVolDimFrac(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matid);
+    void TakeOrientationAndLowerIndexDimDim(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matid);
+    void TakeOrientationAndLowerIndexFracFrac(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matid);
     TPZMultiphysicsElement* findMultiphysics(TPZElementGroup *group);
     
     std::pair<int, int> FindMortar(TPZGeoElSide &gelside);

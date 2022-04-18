@@ -1297,9 +1297,9 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
         TPZBndCond * face5 = volume->CreateBC(volume,fracbounId,dimension-2,val1,val2);
         mTransportOperator->InsertMaterialObject(face5);
         boundaryId.insert(fracbounId);
-//        if(isThereFracIntersection()){ TODO: implement interfaces for fracture intersections
-//            volIds.insert(mSimData.mTFracIntersectProperties.m_IntersectionId);
-//        }
+        if(isThereFracIntersection()){ 
+            volIds.insert(mSimData.mTFracIntersectProperties.m_IntersectionId);
+        }
     }
   
     // ---------------> Adding Interface materials between volume/volume
@@ -1334,11 +1334,12 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
     {
         mTransportOperator->Reference()->ResetReference();
         mTransportOperator->LoadReferences();
-
-       
+        std::ofstream file2("TransportWithOutInterfaces.vtk");
+        TPZVTKGeoMesh::PrintCMeshVTK(mTransportOperator, file2);
         CreateInterfaces(mTransportOperator); // Here is where the interface elements are actually created!
-        std::string name("geo");
-        PrintGeometry(name);
+        std::ofstream file("TransportWithInterfaces.vtk");
+        TPZVTKGeoMesh::PrintCMeshVTK(mTransportOperator, file);
+        
     }
  
 #ifdef PZDEBUG
@@ -2460,7 +2461,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     mesh_vec[1] = DiscontinuousCmesh(order,0);
     mesh_vec[2] = DiscontinuousCmesh(0,0);
     mesh_vec[3] = DiscontinuousCmesh(0,0);
-    mesh_vec[4] = TransportCmesh();
+    mesh_vec[4] = DiscontinuousCmesh(0,0);
 
     // ========================================================
     // Hybridize flux mesh in case there are intersections
@@ -3760,7 +3761,9 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
         int bc_id   = get<0>(chunk);
         FracBoundary.insert(bc_id);
     }
-    
+    FracBoundary.insert(2);
+    FracBoundary.insert(3);
+   // FracBoundary.insert(mSimData.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue)
     for (int iside = ncoord; iside < nsides; iside++) {
         TPZGeoElSide gelside(gel,iside);
         std::vector<TPZGeoElSide> gelneigVec;
@@ -3777,6 +3780,7 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                         matid = mSimData.mTGeometry.mInterface_material_idFracInf;
                     }
                     CreateInterfaceElements(gelneig, gelside, matid);
+                   
                 }
             }
         }
@@ -3787,7 +3791,6 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
             FracNeihVec.insert(11);
             findNeighElementbyMatId(gelside,gelneigVec,FracNeihVec);
             int nneih=gelneigVec.size();
-            
             //Frac-Frac intersecttion
             if (nneih>1){
                 std::set<int> FracNeihVec2;
@@ -3800,34 +3803,35 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                 TPZGeoElSide gelneig =gelneigVec2[0];
                 int matid=100;
                 CreateInterfaceElements(gelside, gelneig, matIdIntersecId);
-                
             }
             //Frac-Frac Interfaces
             if (nneih==1) {
                 TPZGeoElSide gelneig =gelneigVec[0];
                 if (gel->Id() < gelneig.Element()->Id()) {
-
                     int matid = matIdFracFrac;
                     CreateInterfaceElements(gelside, gelneig, matid);
-
                 }
             }
-            
             //Frac - Bound Interfaces
             if(nneih==0){
                 std::vector<TPZGeoElSide > boundaries;
-                
                 findNeighElementbyMatId(gelside,boundaries,FracBoundary);
                 int nneihbound=boundaries.size();
-                if(nneihbound==1){
-                    TPZGeoElSide gelneig = boundaries[0];
-                    int mid=104;
-//                    if(gelneig.Element()->MaterialId()==7){
-//                        mid= 3;
-//                    }
-//                    if(gelneig.Element()->MaterialId()==6){
-//                        mid= 2;
-//                    }
+                if(nneihbound>=1){ //If fracBound material = Vol Boundary Material
+                    TPZGeoElSide gelneig;
+                    int nboundneih =boundaries.size();
+                    bool found = false;
+                    for (auto gelsid:boundaries) {
+                        if (gelsid.Element()->Dimension()<gelside.Element()->Dimension()) {
+                            gelneig=gelsid;
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (!found) {
+                        DebugStop();
+                    }
+                    int mid=gelneig.Element()->MaterialId();
                     CreateInterfaceElements(gelside, gelneig, mid);
                 }
                 else{
