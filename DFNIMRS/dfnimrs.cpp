@@ -90,7 +90,7 @@ int main(){
     // 7: Flemisch case 4 with much less fractures (for debugging)
     // 8: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 9: IP3D mesh (Initially idealized just for generating a beautiful mesh)
-    int simcase = 3;
+    int simcase = 4;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -208,7 +208,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     // ----- Approximation space -----
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q = false;
+    sim_data.mTNumerics.m_mhm_mixed_Q = true;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     
     // ----- Setting gmesh -----
@@ -218,17 +218,22 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     sim_data.mTFracProperties.m_matid = EFracture;
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
+	{
+		std::ofstream name("GeoMesh_Fine_AfterMergeMeshes.vtk");
+		TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
+	}
+	
     
-//    if(isRefineMesh){
-//        cout << "\n---------------------- Uniformly refining geomesh ----------------------" << endl;
-//        gRefDBase.InitializeUniformRefPattern(ECube);
-//        gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
-//        gRefDBase.InitializeUniformRefPattern(EOned);
-//        for (auto gel : aspace.mGeometry->ElementVec()){
-//            TPZManVector<TPZGeoEl*,10> children;
-//            gel->Divide(children);
-//        }
-//    }
+    if(isRefineMesh){
+        cout << "\n---------------------- Uniformly refining geomesh ----------------------" << endl;
+        gRefDBase.InitializeUniformRefPattern(ECube);
+        gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
+        gRefDBase.InitializeUniformRefPattern(EOned);
+        for (auto gel : aspace.mGeometry->ElementVec()){
+            TPZManVector<TPZGeoEl*,10> children;
+            gel->Divide(children);
+        }
+    }
     
 //    aspace.SetGeometry(gmeshfine);
     
@@ -248,7 +253,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
     
-    if(simcase == 2 ||simcase == 3 ||simcase == 4){
+    if((simcase == 2 ||simcase == 3 || simcase == 4) && 1){
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
         std::string name("mesh");
@@ -508,7 +513,7 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     int D_Type = 0;
     int N_Type = 1;
     int Mixed_Type = 2;
-    REAL zero_flux = 0.0, inlet_pressure = 1.0, outlet_flux = 1.0;
+    REAL zero_flux = 0.0, inlet_pressure = 1.0, outlet_flux = -1.0;
     
     // Domain material
     sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
@@ -583,10 +588,8 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     
     //FracAndReservoirProperties
     // There are two cases, one with very condutive fracture (1e4) and other with very NON conductive fracture (1e-4)
-    sim_data.mTFracProperties.m_Permeability = 1.0;
-//    sim_data.mTFracProperties.m_Permeability = 1.e4;
-//    REAL kappa1=1.0;
-//    REAL kappa2=1.0;
+    sim_data.mTFracProperties.m_Permeability = 1.e4;
+//	sim_data.mTFracProperties.m_Permeability = 1.e-4;
     REAL kappa1=1.0;
     REAL kappa2=0.1;
     int id1 = EVolume;

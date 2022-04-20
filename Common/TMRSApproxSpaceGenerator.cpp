@@ -556,6 +556,16 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
     cmesh->ApproxSpace().CreateDisconnectedElements(false);
     cmesh->AutoBuild(bcids);
     cmesh->CleanUpUnconnectedNodes();
+	
+	// ===> Fix blocks
+	if(mSimData.mTNumerics.m_mhm_mixed_Q){
+		std::set<int> buildmatids(matids);
+		buildmatids.insert(mSimData.mTGeometry.m_skeletonMatId);
+		TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_skeletonMatId,2,1);
+		cmesh->InsertMaterialObject(nullmat);
+		cmesh->ApproxSpace().CreateDisconnectedElements(true);
+		cmesh->AutoBuild(buildmatids);
+	}
     
     // ===> Fix blocks
     cmesh->SetDimModel(dim);
@@ -2380,6 +2390,12 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
         MatsWitOuthmem.insert(mHybridizer->fInterfaceMatid.first);
         MatsWitOuthmem.insert(mHybridizer->fInterfaceMatid.second);
     }
+	
+	if(mSimData.mTNumerics.m_mhm_mixed_Q){
+		TPZNullMaterialCS<STATE> *volume2 = new TPZNullMaterialCS(mSimData.mTGeometry.m_skeletonMatId,2,1);
+		mMixedOperator->InsertMaterialObject(volume2);
+		MatsWitOuthmem.insert(mSimData.mTGeometry.m_skeletonMatId);
+	}
     
     mMixedOperator->SetDimModel(dimension);
 }
@@ -2509,7 +2525,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 //    ofstream out("mphysics.vtk");
 //    TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, out);
     std::ofstream sout("mixed_cmesh_four_spaces.txt");
-//    mMixedOperator->Print(sout);
+    mMixedOperator->Print(sout);
 #endif
     
     // ========================================================
@@ -4090,7 +4106,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     }
     
     int fine_skeleton_matid = 18;
-    int coarse_skeleton_matid = 19;
+    int coarse_skeleton_matid = mSimData.mTGeometry.m_skeletonMatId;
     std::map<int,int64_t> MatFinetoCoarseElIndex;
 //    std::map<int64_t,int64_t> NodeCoarseToNodeFine;
     std::vector<int64_t> NodeCoarseToNodeFine(coarsemesh->NNodes(),-1);
