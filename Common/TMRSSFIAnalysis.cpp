@@ -497,7 +497,7 @@ void TMRSSFIAnalysis::SFIIteration(){
             if(std::abs(sumel)> 1.0e-8 ){
                 DebugStop();
             }
-            std::cout<<"Gel Index: "<< cel->Reference()->Index() <<" SumEl: "<<sumel<<std::endl;
+//            std::cout<<"Gel Index: "<< cel->Reference()->Index() <<" SumEl: "<<sumel<<std::endl;
         }
         
         isLinear = false; // so it leaves after this iteration

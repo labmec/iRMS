@@ -343,7 +343,7 @@ void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<dou
 void TPZAlgebraicTransport::ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef, int outId){
   
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outId].fLeftRightVolIndex[index];
-    REAL fluxint  = -1.0*fInterfaceData[outId].fIntegralFlux[index];
+    REAL fluxint  = 1.0*fInterfaceData[outId].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
     ef(0,0) = fw_L*fluxint* fdt;
 }
@@ -625,11 +625,11 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
             int rightIndex = transport.fLeftRightVolIndex[iel].second;
             if(IndexGels[leftIndex]==-1){
                 IndexGels[leftIndex]=1;
-                std::cout<<"IndexVec: "<<leftIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].first<<std::endl;
+//                std::cout<<"IndexVec: "<<leftIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].first<<std::endl;
             }
             if(IndexGels[rightIndex]==-1){
                 IndexGels[rightIndex]=1;
-                std::cout<<"IndexVec: "<<rightIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].second<<std::endl;
+//                std::cout<<"IndexVec: "<<rightIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].second<<std::endl;
             }
                 
             REAL fluxInt =transport.fIntegralFlux[iel];

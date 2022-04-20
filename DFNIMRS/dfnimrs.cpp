@@ -68,6 +68,9 @@ static TPZLogger mainlogger("cubicdomain");
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
 int main(){
+
+    
+  
     string basemeshpath(FRACMESHES);
 #ifdef PZ_LOG
     string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
@@ -79,7 +82,6 @@ int main(){
     }
 #endif
     
-    
     // 0: two elements, 1 frac
     // 1: 4 elements, 2 frac, w/ intersection
     // 2: Flemisch case 1
@@ -90,7 +92,7 @@ int main(){
     // 7: Flemisch case 4 with much less fractures (for debugging)
     // 8: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 9: IP3D mesh (Initially idealized just for generating a beautiful mesh)
-    int simcase = 4;
+    int simcase = 2;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -223,7 +225,6 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
 		TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
 	}
 	
-    
     if(isRefineMesh){
         cout << "\n---------------------- Uniformly refining geomesh ----------------------" << endl;
         gRefDBase.InitializeUniformRefPattern(ECube);
@@ -253,7 +254,9 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
     
-    if((simcase == 2 ||simcase == 3 || simcase == 4) && 1){
+
+    if((simcase == 2 ||simcase == 3 || simcase == 4) && 0){
+
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
         std::string name("mesh");
@@ -532,20 +535,7 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
 
-    sim_data.mTGeometry.mInterface_material_id = 100;
-    sim_data.mTGeometry.mInterface_material_idFracInf = 101;
-    sim_data.mTGeometry.mInterface_material_idFracSup = 102;
-    sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
-    sim_data.mTGeometry.mIterface_material_idFracBound = 104;
-    
-//    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(5);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFracOutlet,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracInlet,5,1.);
-    sim_data.mTGeometry.mIterface_material_idFracBound = EFracNoFlux;
+ 
     
     sim_data.mTGeometry.mInterface_material_id = 100;
     sim_data.mTGeometry.mInterface_material_idFracInf = 101;
@@ -555,8 +545,8 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(7);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,0,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,1,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,N_Type,1.);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,5,1.);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,5,1.);
     sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracNoFlux,5,1.);
