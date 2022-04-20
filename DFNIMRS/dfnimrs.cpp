@@ -90,7 +90,7 @@ int main(){
     // 7: Flemisch case 4 with much less fractures (for debugging)
     // 8: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 9: IP3D mesh (Initially idealized just for generating a beautiful mesh)
-    int simcase = 4;
+    int simcase = 3;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -276,19 +276,21 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         std::ofstream fileCilamce("IntegratedSat.txt");
         TPZFastCondensedElement::fSkipLoadSolution = false;
         bool first=true;
+		const int typeToPPinit = 1; // 0: both, 1: p/flux, 2: saturation
+		const int typeToPPsteps = 2; // 0: both, 1: p/flux, 2: saturation
         for (int it = 1; it <= n_steps; it++) {
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
             sfi_analysis->RunTimeStep();
             if(it==1){
-                sfi_analysis->PostProcessTimeStep(1);
+                sfi_analysis->PostProcessTimeStep(typeToPPinit);
             }
             mixed_operator->LoadSolution(mixed_operator->Solution());
             if (sim_time >=  current_report_time) {
-                std::cout << "Time step number:  " << it << std::endl;
+				cout << "\n---------------------- SFI Step " << it << " ----------------------" << endl;
                 std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
                 mixed_operator->UpdatePreviousState(-1.);
-                sfi_analysis->PostProcessTimeStep(2);
+                sfi_analysis->PostProcessTimeStep(typeToPPsteps);
                 pos++;
                 current_report_time =reporting_times[pos];
                 REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);

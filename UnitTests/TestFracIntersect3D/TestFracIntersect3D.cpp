@@ -37,35 +37,35 @@ enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
 static TPZLogger mainlogger("cubicdomain");
 #endif
 
-//// ----- Test cases -----
-//// ---- Test 0 ----
-//TEST_CASE("Two_El_One_Frac_cte_pressure","[test_frac_4spaces_3D]"){
-//    RunProblem(0);
-//}
-//// ---- Test 1 ----
-//TEST_CASE("Two_El_One_Frac_lin_pressure","[test_frac_4spaces_3D]"){
-//    RunProblem(1);
-//}
-//// ---- Test 2 ----
-//TEST_CASE("Four_El_Two_Frac_cte_pressure","[test_frac_4spaces_3D]"){
-//    RunProblem(2);
-//}
-//// ---- Test 3 ----
-//TEST_CASE("Four_El_Two_Frac_lin_pressure","[test_frac_4spaces_3D]"){
-//    RunProblem(3);
-//}
-//// ---- Test 4 ----
-//TEST_CASE("Two_El_One_Frac_cte_pressure_Transp","[test_frac_4spaces_3D]"){
-//    RunProblem(4);
-//}
-//// ---- Test 5 ----
-//TEST_CASE("Two_El_One_Frac_lin_pressure_Transp","[test_frac_4spaces_3D]"){
-//    RunProblem(5);
-//}
-//// ---- Test 6 ----
-//TEST_CASE("Four_El_Two_Frac_cte_pressure_Transp","[test_frac_4spaces_3D]"){
-//    RunProblem(6);
-//}
+// ----- Test cases -----
+// ---- Test 0 ----
+TEST_CASE("Two_El_One_Frac_cte_pressure","[test_frac_4spaces_3D]"){
+    RunProblem(0);
+}
+// ---- Test 1 ----
+TEST_CASE("Two_El_One_Frac_lin_pressure","[test_frac_4spaces_3D]"){
+    RunProblem(1);
+}
+// ---- Test 2 ----
+TEST_CASE("Four_El_Two_Frac_cte_pressure","[test_frac_4spaces_3D]"){
+    RunProblem(2);
+}
+// ---- Test 3 ----
+TEST_CASE("Four_El_Two_Frac_lin_pressure","[test_frac_4spaces_3D]"){
+    RunProblem(3);
+}
+// ---- Test 4 ----
+TEST_CASE("Two_El_One_Frac_cte_pressure_Transp","[test_frac_4spaces_3D]"){
+    RunProblem(4);
+}
+// ---- Test 5 ----
+TEST_CASE("Two_El_One_Frac_lin_pressure_Transp","[test_frac_4spaces_3D]"){
+    RunProblem(5);
+}
+// ---- Test 6 ----
+TEST_CASE("Four_El_Two_Frac_cte_pressure_Transp","[test_frac_4spaces_3D]"){
+    RunProblem(6);
+}
 // ---- Test 7 ----
 TEST_CASE("Four_El_Two_Frac_lin_pressure_Transp","[test_frac_4spaces_3D]"){
     RunProblem(7);
