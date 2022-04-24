@@ -71,6 +71,13 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
         if (!cel) {
             continue;
         }
+        
+        TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
+        if(subcmesh)
+        {
+            CondenseElements(subcmesh, LagrangeLevelNotCondensed, keepmatrix);
+            continue;
+        }
       
         int nc = cel->NConnects();
         bool found = false;
@@ -102,10 +109,13 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
             }
             break;
         }
+        // we can condense if there is a connect without dependency or a connect with more than one element connected
+        // maybe we should condense as a function of the material id?
         bool cancondense = (ic != (nc));
         if(cancondense)
         {
 //            if(LagrangeLevelNotCondensed >= 0 && !found) DebugStop();
+            TPZGeoEl *gel = cel->Reference();
             TPZFastCondensedElement *cond = new TPZFastCondensedElement(cel, keepmatrix);
             cond->SetLambda(1.0);
         }
@@ -457,5 +467,56 @@ void TPZReservoirTools::PutFluxElementsinSubdomain(TPZCompMesh *fluxCmesh, TPZVe
             subdomain[gelindex2] = dom2;
             
         }
+    }
+}
+
+/// push the connect with LagrangeLevel with highest sequence number to LagrangeDest and apply saddle permute
+void TPZReservoirTools::PushConnectBackward(TPZCompMesh *cmesh, char LagrangeStart, char LagrangeDest)
+{
+    // apply the method to all subcompmeshes
+    int64_t nel = cmesh->NElements();
+    for (int64_t el = 0; el<nel; el++) {
+        TPZCompEl *cel = cmesh->Element(el);
+        TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
+        if(subcmesh)
+        {
+            PushConnectBackward(subcmesh, LagrangeStart, LagrangeDest);
+        }
+    }
+    
+    
+    // renumber the connects
+    {
+        TPZLinearAnalysis an(cmesh,true);
+    }
+    // look for the connect with lagrange level LagrangeStart and highest sequance number
+    int64_t nc = cmesh->NConnects();
+    int64_t pushconnect = -1;
+    int64_t pushconnectSeqnum = -1;
+    for (int64_t ic = 0; ic<nc; ic++) {
+        TPZConnect &c = cmesh->ConnectVec()[ic];
+        if(c.NElConnected() && c.LagrangeMultiplier() == LagrangeStart)
+        {
+            int64_t seqnum = c.SequenceNumber();
+            if(seqnum > pushconnectSeqnum)
+            {
+                pushconnect = ic;
+                pushconnectSeqnum = seqnum;
+            }
+        }
+    }
+    if(pushconnect == -1) return;
+//    TPZConnect &c = cmesh->ConnectVec()[pushconnect];
+//    c.SetLagrangeMultiplier(LagrangeDest);
+    // Renumber the connect such that the ordering is consistent
+    cmesh->SaddlePermute();
+    // If the mesh is a SubCompMesh put the external connects last
+    TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cmesh);
+    if(subcmesh)
+    {
+        subcmesh->PermuteExternalConnects();
+        auto subanalysis = subcmesh->Analysis();
+        auto solver = subanalysis->Solver();
+        solver->ResetMatrix();
     }
 }

@@ -29,6 +29,9 @@ public:
     static void CreatedCondensedElements(TPZCompMesh *cmesh, bool KeepOneLagrangian, bool keepmatrix);
     static void CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix);
     static void CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelNotCondensed, bool keepmatrix, std::set<int> matids);
+    /// push the connect with LagrangeLevel with highest sequence number to LagrangeDest and apply saddle permute
+    static void PushConnectBackward(TPZCompMesh *cmesh, char LagrangeStart, char LagrangeDest);
+    
     static void AddDependency(std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons);
     static void TakeFatherSonsCorrespondence(TPZCompMesh *fluxCmesh, TPZVec<int64_t> &subdomain, std::vector<std::pair<TPZGeoEl*, std::vector<TPZGeoEl*>>> &fatherAndSons);
     // duplicate the flux elements and put each of them in a separate subdomain
