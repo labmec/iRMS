@@ -223,6 +223,8 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
 	{
 		std::ofstream name("GeoMesh_Fine_AfterMergeMeshes.vtk");
 		TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
+        std::ofstream name2("GeoMesh_MHM_domain.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
 	}
 	
     if(isRefineMesh){
@@ -314,10 +316,43 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         // -------------- Running problem --------------
         TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
         mixAnalisys->SetDataTransfer(&sim_data);
+        n_threads = 0;
         mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
         mixAnalisys->Assemble();
-        mixAnalisys->Solve();
-        mixed_operator->UpdatePreviousState(-1.);
+        if(0)
+        {
+            int64_t nc = mixed_operator->NConnects();
+            TPZFMatrix<STATE> &sol = mixed_operator->Solution();
+            for (int64_t ic = 0; ic<nc; ic++) {
+                TPZConnect &c = mixed_operator->ConnectVec()[ic];
+                int64_t seqnum = c.SequenceNumber();
+                if(seqnum < 0) continue;
+                unsigned char lagrange = c.LagrangeMultiplier();
+                STATE fill = 0.;
+                if(lagrange == 0 || lagrange == 2 || lagrange == 6)
+                {
+                }
+                else {
+                    fill = 4.;
+                }
+                int ndof = c.NShape();
+                for (int idf = 0; idf < ndof ; idf++) {
+                    int64_t index = mixed_operator->Block().Index(seqnum, idf);
+                    sol(index,0) = fill;
+                }
+
+            }
+        }
+        else
+        {
+            mixAnalisys->Solve();
+
+        }
+        {
+            std::ofstream out("mixedCMesh.txt");
+            mixed_operator->Print(out);
+        }
+//        mixed_operator->UpdatePreviousState(-1.);
         TPZFastCondensedElement::fSkipLoadSolution = false;
         mixed_operator->LoadSolution(mixed_operator->Solution());
         
@@ -460,9 +495,9 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
 //    sim_data.mTFracProperties.m_Permeability = 1.0;
 //    REAL kappa1=1.0;
 //    REAL kappa2=1.0;
-    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
-    REAL kappa1=1.0e-5;
-    REAL kappa2=1.0e-6;
+    sim_data.mTFracProperties.m_Permeability = 1.0e-3*1000000;
+    REAL kappa1=1.0e-5*1000000;
+    REAL kappa2=1.0e-6*1000000;
     int id1 = EVolume2;
     int id2 = EVolume;
     std::vector<std::pair<int, REAL>> idPerm(2);
