@@ -36,7 +36,7 @@ private:
         
     void AddMultiphysicsMaterialsToCompMesh(const int order, std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem);
     void GetTransportMaterials(std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem);
-    void SetLagrangeMultiplier4Spaces(TPZManVector<TPZCompMesh *, 5>& mesh_vec);
+    void SetLagrangeMultiplier4Spaces(TPZVec<TPZCompMesh *>& mesh_vec);
     void AddAtomicMaterials(const int dim, TPZCompMesh* cmesh,
                             std::set<int>& matids,
                             std::set<int>& bcmatids,
@@ -61,6 +61,7 @@ public:
     
     TPZCompMesh * mTransportOperator;
     
+    /// this vector contains the MHM domain index for each geometric element
     TPZVec<int64_t> mSubdomainIndexGel;
     
     TPZHybridizeHDiv* mHybridizer;
@@ -159,6 +160,9 @@ public:
     
     /// create a discontinuous mesh
     TPZCompMesh * DiscontinuousCmesh(int order, char lagrange);
+    
+    /// group the connects of the discontinuous mesh such that all connects of a subdomain are identical
+    void GroupConnectsBySubdomain(TPZCompMesh *cmesh);
     
     /// create a discontinuous mesh
     TPZCompMesh * TransportCmesh();

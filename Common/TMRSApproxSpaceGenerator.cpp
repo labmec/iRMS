@@ -1121,6 +1121,36 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagra
     return cmesh;
 }
 
+/// group the connects of the discontinuous mesh such that all connects of a subdomain are identical
+void TMRSApproxSpaceGenerator::GroupConnectsBySubdomain(TPZCompMesh *cmesh)
+{
+    std::map<int,int> domaintoconnect;
+    int64_t nel = cmesh->NElements();
+    int count = 0;
+    for(int64_t el = 0; el<nel; el++)
+    {
+        TPZCompEl *cel = cmesh->Element(el);
+        if(!cel || cel->NConnects() != 1) DebugStop();
+        TPZGeoEl *gel = cel->Reference();
+        int64_t gelindex = gel->Index();
+        int mhm_domain = mSubdomainIndexGel[gelindex];
+        int condensed = -1;
+        if(domaintoconnect.find(mhm_domain) == domaintoconnect.end())
+        {
+            condensed = count;
+            domaintoconnect[mhm_domain] = count++;
+        }
+        else
+        {
+            condensed = domaintoconnect[mhm_domain];
+        }
+        cel->SetConnectIndex(0, condensed);
+    }
+    cmesh->ComputeNodElCon();
+    cmesh->CleanUpUnconnectedNodes();
+}
+
+
 TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     
     if (!mGeometry) {
@@ -2444,27 +2474,19 @@ void TMRSApproxSpaceGenerator::GetTransportMaterials(std::set<int> &MatsWithmem,
     }
 }
 
-void TMRSApproxSpaceGenerator::SetLagrangeMultiplier4Spaces(TPZManVector<TPZCompMesh *, 5>& mesh_vec) {
-    // First is pressure mesh
-    int ncon = mesh_vec[1]->NConnects();
-    for(int i=0; i<ncon; i++){
-        TPZConnect &newnod = mesh_vec[1]->ConnectVec()[i];
-        newnod.SetLagrangeMultiplier(1);
-    }
-    
-    // Second is distribute flux mesh
-    ncon = mesh_vec[2]->NConnects();
-    for(int i=0; i<ncon; i++){
-        TPZConnect &newnod = mesh_vec[2]->ConnectVec()[i];
-        newnod.SetLagrangeMultiplier(2);
-    }
-    
-    // Third is constant pressure mesh
-    ncon = mesh_vec[3]->NConnects();
-    for(int i=0; i<ncon; i++){
-        TPZConnect &newnod = mesh_vec[3]->ConnectVec()[i];
-        newnod.SetLagrangeMultiplier(3);
-        newnod.IncrementElConnected();
+void TMRSApproxSpaceGenerator::SetLagrangeMultiplier4Spaces(TPZVec<TPZCompMesh *>& mesh_vec) {
+    int nmesh = mesh_vec.size();
+    if(nmesh > 6) nmesh = 6;
+    for (int imesh = 0; imesh < nmesh; imesh++)
+    {
+        char lagrange = imesh;
+        if(imesh == 5) lagrange = 6;
+        // First is pressure mesh
+        int64_t ncon = mesh_vec[imesh]->NConnects();
+        for(int64_t i=0; i<ncon; i++){
+            TPZConnect &newnod = mesh_vec[imesh]->ConnectVec()[i];
+            newnod.SetLagrangeMultiplier(lagrange);
+        }
     }
 }
 
@@ -2472,12 +2494,16 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
             
     // ========================================================
     // Creating atomic comp meshes
-    TPZManVector<TPZCompMesh *, 5> mesh_vec(5);
+    TPZManVector<TPZCompMesh *, 7> mesh_vec(7);
     mesh_vec[0] = HdivFluxCmesh(order);
     mesh_vec[1] = DiscontinuousCmesh(order,0);
     mesh_vec[2] = DiscontinuousCmesh(0,0);
     mesh_vec[3] = DiscontinuousCmesh(0,0);
     mesh_vec[4] = DiscontinuousCmesh(0,0);
+    GroupConnectsBySubdomain(mesh_vec[4]);
+    mesh_vec[5] = DiscontinuousCmesh(0,0);
+    GroupConnectsBySubdomain(mesh_vec[5]);
+    mesh_vec[6] = DiscontinuousCmesh(0,0);
 
     // ========================================================
     // Hybridize flux mesh in case there are intersections
@@ -2497,12 +2523,14 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     
     // ========================================================
     // Setting active spaces
-    TPZManVector<int,5> active_approx_spaces(5);
+    TPZManVector<int,7> active_approx_spaces(7);
     active_approx_spaces[0] = 1;
     active_approx_spaces[1] = 1;
     active_approx_spaces[2] = 1;
     active_approx_spaces[3] = 1;
-    active_approx_spaces[4] = 0;
+    active_approx_spaces[4] = 1;
+    active_approx_spaces[5] = 1;
+    active_approx_spaces[6] = 0;
     
     // ========================================================
     // Build multiphysics comp mesh
@@ -2527,10 +2555,20 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::ofstream sout("mixed_cmesh_four_spaces.txt");
     mMixedOperator->Print(sout);
 #endif
-    
+    // put the elements in submeshes
+    // verify the integrity of the subdomain indices
+    HideTheElements(mMixedOperator);
     // ========================================================
     // Condensing elements
-    TPZReservoirTools::CreatedCondensedElements(mMixedOperator, false, true);
+    TPZReservoirTools::CondenseElements(mMixedOperator, 3, true);
+    
+    TPZReservoirTools::PushConnectBackward(mMixedOperator, 3, 7);
+#ifdef PZDEBUG
+    {
+        std::ofstream out("SubStructuredMesh.txt");
+        mMixedOperator->Print(out);
+    }
+#endif
 }
 
 void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
@@ -3898,6 +3936,7 @@ void TMRSApproxSpaceGenerator::CreateTransportElement(int p_order, TPZCompMesh *
 }
 void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     int KeepOneLagrangian = 6;
+    cmesh->ComputeNodElCon();
     //    if (fHybridize) {
     //        KeepOneLagrangian = false;
     //    }
@@ -3913,13 +3952,15 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     cmesh->LoadReferences();
     //    TPZGeoMesh *gmesh = fCMesh->Reference();
     //    gmesh->ResetReference();
+    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+    
     int64_t nel = mSubdomainIndexGel.size();
     for (int64_t el=0; el<nel; el++) {
         TPZGeoEl *gel = gmesh->Element(el);
         if(!gel){
             continue;
         }
-        TPZCompEl *cel =gel->Reference();
+        TPZCompEl *cel = gel->Reference();
         if(!cel){continue;}
         int indexel = cel->Index();
         
@@ -3929,7 +3970,7 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         //        }
         int64_t domain = mSubdomainIndexGel[el];
         if (domain == -1) {
-            std::cout<<"matId: "<<gel->MaterialId()<<std::endl;
+            std::cout<<"matId of element not condensed "<<gel->MaterialId()<<std::endl;
             continue;
         }
         ElementGroups[domain].insert(indexel);
@@ -3971,6 +4012,13 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     cmesh->ComputeNodElCon();
     cmesh->CleanUpUnconnectedNodes();
     
+    for(auto it : submeshindices)
+    {
+        TPZCompEl *cel = cmesh->Element(it.second);
+        TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
+        TPZAutoPointer<TPZGuiInterface> gui;
+        subcmesh->SetAnalysisSkyline(0, 0, gui);
+    }
     //    GroupandCondenseElements();
     //    GroupandCondenseElementsEigen();
     
