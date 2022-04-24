@@ -82,7 +82,7 @@ void TMRSDarcyFlowWithMem<TMEM>::SetDataTransfer(TMRSDataTransfer & SimData){
 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::Print(std::ostream &out) const{
-    TPZMatWithMem<TMEM>::Print(out);
+//    TPZMatWithMem<TMEM>::Print(out);
     out << m_dimension << std::endl;
     out << m_scale_pressure << std::endl;
     out << m_scale_flux << std::endl;
@@ -347,6 +347,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
         }
         
     }
+    if(mSimData.mTNumerics.m_four_approx_spaces_Q && datavec.size() < 4) DebugStop();
     
     if(mSimData.mTNumerics.m_four_approx_spaces_Q){
         ContributeFourSpaces(datavec,weight,ek,ef);
@@ -358,44 +359,53 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeFourSpaces(const TPZVec<TPZMaterialDa
     
     int qb = 0;
     int pb = 1;
-    int g_avgb = 2;
-    int p_avgb = 3;
-    
-    TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;
+    int numactive = 0;
+    for(auto &it : datavec) if(it.fActiveApproxSpace) numactive++;
+    if(numactive%2 != 0) DebugStop();
+    int numaverage = (numactive-2)/2;
+    TPZFMatrix<REAL> &phi_ps = datavec[pb].phi;
     int nphi_q       = datavec[qb].fVecShapeIndex.NElements();
     int nphi_p       = phi_ps.Rows();
-    
-    int nphi_gb = datavec[g_avgb].phi.Rows();
-    int nphi_pb = datavec[p_avgb].phi.Rows();
-    if(nphi_q+nphi_p+nphi_gb+nphi_pb != ek.Rows())
+    if(nphi_q+nphi_p+numaverage*2 != ek.Rows())
     {
         DebugStop();
     }
-    
-    STATE p     = datavec[pb].sol[0][0];
-    STATE g_avg = datavec[g_avgb].sol[0][0];
-    STATE p_avg = datavec[p_avgb].sol[0][0];
-    
-    for(int ip=0; ip<nphi_p; ip++)
+    for(int iavg = 0; iavg<numaverage; iavg++)
     {
-        ef(nphi_q+ip,0) += weight * g_avg * phi_ps(ip,0);
-        ek(nphi_q+ip,nphi_q+nphi_p) += weight * phi_ps(ip,0);
+        int g_avgb = 2+2*iavg;
+        int p_avgb = 3+2*iavg;
+    
+    
+        int nphi_gb = datavec[g_avgb].phi.Rows();
+        int nphi_pb = datavec[p_avgb].phi.Rows();
+    
+        if(nphi_gb != 1 || nphi_pb != 1) DebugStop();
+    
+    
+        STATE p     = datavec[pb].sol[0][0];
+        STATE g_avg = datavec[g_avgb].sol[0][0];
+        STATE p_avg = datavec[p_avgb].sol[0][0];
+    
+        for(int ip=0; ip<nphi_p; ip++)
+        {
+            ef(nphi_q+ip,0) += weight * g_avg * phi_ps(ip,0);
+            ek(nphi_q+ip,nphi_q+nphi_p+2*iavg) += weight * phi_ps(ip,0);
+            ek(nphi_q+nphi_p+2*iavg,nphi_q+ip) += weight * phi_ps(ip,0);
+        }
         
-        ek(nphi_q+nphi_p,nphi_q+ip) += weight * phi_ps(ip,0);
+        ef(nphi_q+nphi_p+1+2*iavg,0) += -weight * g_avg;
+        ek(nphi_q+nphi_p+1+2*iavg,nphi_q+nphi_p+2*iavg) += -weight;
+        
+        ef(nphi_q+nphi_p+2*iavg,0) += weight * (p - p_avg);
+        ek(nphi_q+nphi_p+2*iavg,nphi_q+nphi_p+1+2*iavg) += -weight;
     }
-    
-    ef(nphi_q+nphi_p+1,0) += -weight * g_avg;
-    ek(nphi_q+nphi_p+1,nphi_q+nphi_p) += -weight;
-    
-    ef(nphi_q+nphi_p,0) += weight * (p - p_avg);
-    ek(nphi_q+nphi_p,nphi_q+nphi_p+1) += -weight;
-    
 }
 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ef){
     TPZFMatrix<STATE> ekfake(ef.Rows(),ef.Rows(),0.0);
 //    this->Contribute(datavec, weight, ekfake, ef);
+    // circular call?
     this->Contribute(datavec, weight, ef);
     
     if(TPZMatWithMem<TMEM>::fUpdateMem){
