@@ -404,7 +404,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements2()
     fFluxMesh->LoadReferences();
     fConnectsByInterfaceMatID.resize(fFluxMesh->NConnects());
     for (int ipos=0; ipos<fFluxMesh->NConnects(); ipos++) {
-        fConnectsByInterfaceMatID[ipos]=-1;
+        fConnectsByInterfaceMatID[ipos]=-10000;
     }
     
     for(auto it = fInterfaceGelIndexes.begin(); it != fInterfaceGelIndexes.end(); it++)
@@ -501,7 +501,7 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements2()
     int ncon = fFluxMesh->NConnects();
     int count=0;
     for (int icon =0; icon<ncon; icon++) {
-        if(fConnectsByInterfaceMatID[icon]!=-1){
+        if(fConnectsByInterfaceMatID[icon]!=-10000){
             count++;
         }
 //        std::cout<<"conect: "<<icon<<" material: "<<fConnectsByInterfaceMatID[icon]<<std::endl;
@@ -1073,10 +1073,25 @@ void TPZAlgebraicDataTransfer::BuildMixedToTransportDataStructures(TPZCompMesh *
                     
                     if(shouldtransfer[cindex] != 0) continue;
                     
-                    int matid = fConnectsByInterfaceMatID[cindex];
-//                    if(matid==-1){
-//                        DebugStop();
-//                    }
+					TPZSubCompMesh* scmesh = dynamic_cast<TPZSubCompMesh*>(fluxmesh);
+					int matid = -10000;
+					if (scmesh){
+						std::map<int64_t,int64_t>::iterator it = scmesh->LocalToFather().find(cindex);
+						if (it != scmesh->LocalToFather().end()) {
+							const int fatherConnect = it->second;
+							matid = fConnectsByInterfaceMatID[fatherConnect];
+						}
+						else{
+							DebugStop();
+						}
+						
+					}
+					else
+						matid = fConnectsByInterfaceMatID[cindex];
+                    
+                    if(matid==-10000){
+                        DebugStop();
+                    }
 
                     if(ncontransfer.find(matid) == ncontransfer.end())
                     {
