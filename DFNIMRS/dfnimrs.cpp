@@ -153,7 +153,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = true;
+	const bool isRunWithTranport = false;
     
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
