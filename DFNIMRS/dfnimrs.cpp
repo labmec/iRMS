@@ -83,16 +83,16 @@ int main(){
 #endif
     
     // 0: two elements, 1 frac
-    // 1: 4 elements, 2 frac, w/ intersection
-    // 2: Flemisch case 1
-    // 3: Flemisch case 2
-    // 4: Flemisch case 3
-    // 5: Flemisch case 4
-    // 6: Flemisch case 4 with less fractures (and no overlap)
-    // 7: Flemisch case 4 with much less fractures (for debugging)
-    // 8: Well mesh (Initially idealized just for generating a beautiful mesh)
-    // 9: IP3D mesh (Initially idealized just for generating a beautiful mesh)
-    int simcase = 2;
+    // 1: Flemisch case 1
+    // 2: Flemisch case 2
+    // 3: Flemisch case 3
+    // 4: Flemisch case 4
+    // 5: Flemisch case 4 with less fractures (and no overlap)
+    // 6: Flemisch case 4 with much less fractures (for debugging)
+    // 7: Well mesh (Initially idealized just for generating a beautiful mesh)
+    // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
+	// 9: 4 elements, 2 frac, w/ intersection
+    int simcase = 3;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -100,43 +100,43 @@ int main(){
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/twoElFine.msh";
             break;
         case 1:
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/intersectCoarse.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/intersectFine.msh";
-            break;
-        case 2:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case1_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case1_fine_NotSoFine.msh";
 //            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case1_fine.msh";
             break;
-        case 3:
+        case 2:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case2_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case2_fine.msh";
             break;
-        case 4:
+        case 3:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case3_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case3_fine.msh";
             break;
-        case 5:
+        case 4:
             DebugStop(); // Need to generate mesh without overlap or need to treat overlap
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case4_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case4_fine.msh";
             break;
-        case 6:
+        case 5:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case4_coarse_lf.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case4_fine_lf.msh";
             break;
-        case 7:
+        case 6:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case4_coarse_debug.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case4_fine_debug.msh";
             break;
-        case 8:
+        case 7:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/wellmesh_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/wellmesh_fine.msh";
             break;
-        case 9:
+        case 8:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/ip3dmesh_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/ip3dmesh_fine.msh";
             break;
+		case 9:
+			filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/intersectCoarse.msh";
+			filenameFine = basemeshpath + "/verificationMHMNoHybrid/intersectFine.msh";
+			break;
         default:
             break;
     }
@@ -153,28 +153,29 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     bool isRefineMesh = false;
     const bool isPostProc = true;
+	const bool isRunWithTranport = true;
     
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
-    if (simcase < 2)
+    if (simcase == 0 || simcase == 9)
         ReadMeshes(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 2)
+    else if (simcase == 1)
         ReadMeshesFlemischCase1(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 3){
+    else if (simcase == 2){
         isRefineMesh = false;
         ReadMeshesFlemischCase2(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     }
-    else if (simcase == 4)
+    else if (simcase == 3)
         ReadMeshesFlemischCase3(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 5)
+    else if (simcase == 4)
         DebugStop();
-    else if (simcase == 6)
+    else if (simcase == 5)
         ReadMeshesFlemischCase4LF(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 7)
+    else if (simcase == 6)
         ReadMeshesFlemischCase4Debug(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 8)
+    else if (simcase == 7)
         ReadMeshesWell(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 9)
+    else if (simcase == 8)
         ReadMeshesIP3D(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else
         DebugStop();
@@ -184,15 +185,17 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     TMRSDataTransfer sim_data;
     
-    if (simcase == 2)
+    if (simcase == 1)
         FillDataTransferCase1(sim_data);
-    else if (simcase == 3)
+    else if (simcase == 2)
         FillDataTransferCase2(sim_data);
-    else if (simcase == 4)
+    else if (simcase == 3)
         FillDataTransferCase3(sim_data);
-    else
+    else if (simcase == 0 || simcase == 9)
         FillDataTransfer(sim_data);
-    
+	else
+		DebugStop();
+	
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
     const bool printgmesh = true;
@@ -210,7 +213,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     // ----- Approximation space -----
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q = true;
+    sim_data.mTNumerics.m_mhm_mixed_Q = false;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     
     // ----- Setting gmesh -----
@@ -255,9 +258,8 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     bool UsePardiso_Q = true;
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-    
 
-    if((simcase == 2 ||simcase == 3 || simcase == 4) && 0){
+    if((simcase == 1 ||simcase == 2 || simcase == 3) && isRunWithTranport){
 
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
@@ -410,7 +412,6 @@ void FillDataTransfer(TMRSDataTransfer& sim_data){
     
     // Simulation properties
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     
     //FracAndReservoirProperties
@@ -484,7 +485,6 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
     sim_data.mTNumerics.m_n_steps = 1 ;
     sim_data.mTNumerics.m_dt      = 1.0; //*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
     grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
@@ -500,9 +500,9 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
 //    sim_data.mTFracProperties.m_Permeability = 1.0;
 //    REAL kappa1=1.0;
 //    REAL kappa2=1.0;
-    sim_data.mTFracProperties.m_Permeability = 1.0e-3*1000000;
-    REAL kappa1=1.0e-5*1000000;
-    REAL kappa2=1.0e-6*1000000;
+    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
+    REAL kappa1=1.0e-5;
+	REAL kappa2=1.0e-6;
     int id1 = EVolume2;
     int id2 = EVolume;
     std::vector<std::pair<int, REAL>> idPerm(2);
@@ -604,7 +604,6 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     sim_data.mTNumerics.m_n_steps = 1 ;
     sim_data.mTNumerics.m_dt      = 1.0; //*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = false;
     std::vector<REAL> grav(3,0.0);
     grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
@@ -714,7 +713,6 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     sim_data.mTNumerics.m_n_steps = 1 ;
     sim_data.mTNumerics.m_dt      = 1.0; //*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = false;
     std::vector<REAL> grav(3,0.0);
     grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;

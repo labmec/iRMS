@@ -2555,9 +2555,14 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::ofstream sout("mixed_cmesh_four_spaces.txt");
     mMixedOperator->Print(sout);
 #endif
-    // put the elements in submeshes
-    // verify the integrity of the subdomain indices
-    HideTheElements(mMixedOperator);
+
+	// ========================================================
+	// In case MHM, put the elements in submeshes
+    // Verify the integrity of the subdomain indices
+	if (mSimData.mTNumerics.m_mhm_mixed_Q)
+		HideTheElements(mMixedOperator);
+    
+	
     // ========================================================
     // Condensing elements
     TPZReservoirTools::CondenseElements(mMixedOperator, 3, true);
