@@ -352,9 +352,14 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
             std::ofstream out("mixedCMesh.txt");
             mixed_operator->Print(out);
         }
-//        mixed_operator->UpdatePreviousState(-1.);
         TPZFastCondensedElement::fSkipLoadSolution = false;
         mixed_operator->LoadSolution(mixed_operator->Solution());
+		
+		// The problem is linear, and therefore, we can just call assemble and solve once.
+		// However, the system is assembled in a "nonlinear" fashion, thus, the solution represents
+		// -DeltaU. So, to obtain the correct solution, we multiply it by -1.
+		// Note: This has to be done after LoadSolution()!
+		mixed_operator->UpdatePreviousState(-1.);
         
         // ----- Post processing -----
         if (isPostProc) {
