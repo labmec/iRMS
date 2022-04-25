@@ -92,7 +92,7 @@ int main(){
     // 7: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
 	// 9: 4 elements, 2 frac, w/ intersection
-    int simcase = 3;
+    int simcase = 1;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -213,7 +213,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     // ----- Approximation space -----
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q = false;
+    sim_data.mTNumerics.m_mhm_mixed_Q = true;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     
     // ----- Setting gmesh -----
