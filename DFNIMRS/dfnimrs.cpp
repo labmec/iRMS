@@ -92,7 +92,7 @@ int main(){
     // 7: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
 	// 9: 4 elements, 2 frac, w/ intersection
-    int simcase = 1;
+    int simcase = 9;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -153,7 +153,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = true;
+	const bool isRunWithTranport = false;
     
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
