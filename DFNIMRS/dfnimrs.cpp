@@ -215,14 +215,17 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     }
 #endif
     
-    
     // ----- Setting gmesh -----
     // Code takes a fine and a coarse mesh to generate MHM data structure
     TMRSApproxSpaceGenerator aspace;
     aspace.InitMatIdForMergeMeshes() = EInitVolumeMatForMHM;
     sim_data.mTFracProperties.m_matid = EFracture;
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
-    aspace.SetGeometry(gmeshfine,gmeshcoarse);
+	
+	// ----- Setting the global data transfer -----
+	aspace.SetDataTransfer(sim_data);
+	
+	aspace.SetGeometry(gmeshfine,gmeshcoarse);
 	{
 		std::ofstream name("GeoMesh_Fine_AfterMergeMeshes.vtk");
 		TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
@@ -242,9 +245,6 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     }
     
 //    aspace.SetGeometry(gmeshfine);
-    
-    // ----- Setting the global data transfer -----
-    aspace.SetDataTransfer(sim_data);
     
     // ----- Creates the multiphysics compmesh -----
     int order = 1;

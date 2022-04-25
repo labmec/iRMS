@@ -3139,27 +3139,27 @@ void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){
     boost::posix_time::ptime LoadMesh1 = boost::posix_time::microsec_clock::local_time();
 #endif
     
-    if(!mGeometry){
-        if (file) {
-            std::cout<<"The geometric mesh will be loaded from the " + mSimData.mTGeometry.mGmeshFileName + " file."<<std::endl;
-            std::string filename = mSimData.mTGeometry.mGmeshFileName;
-            TPZPersistenceManager::OpenRead(filename);
-            TPZSavable *restore = TPZPersistenceManager::ReadFromFile();
-            mGeometry = dynamic_cast<TPZGeoMesh *>(restore);
-            PrintGeometry(mSimData.mSimulationName,1,0);
-            std::cout<<"The geometric mesh has been loaded successfully."<<std::endl;
-#ifdef USING_BOOST
-            boost::posix_time::ptime LoadMesh2 = boost::posix_time::microsec_clock::local_time();
-            auto delta_LoadMesh = LoadMesh2-LoadMesh1;
-            std::cout << "Load GMesh time " << delta_LoadMesh << std::endl;;
-#endif
-        }
-        else{
-            std::cout<<" Geometric mesh information has not been entered. Please enter the mesh in a text file or set it in the approximation space object."<<std::endl;
-            DebugStop();
-        }
-        
-    }
+//    if(!mGeometry){
+//        if (file) {
+//            std::cout<<"The geometric mesh will be loaded from the " + mSimData.mTGeometry.mGmeshFileName + " file."<<std::endl;
+//            std::string filename = mSimData.mTGeometry.mGmeshFileName;
+//            TPZPersistenceManager::OpenRead(filename);
+//            TPZSavable *restore = TPZPersistenceManager::ReadFromFile();
+//            mGeometry = dynamic_cast<TPZGeoMesh *>(restore);
+//            PrintGeometry(mSimData.mSimulationName,1,0);
+//            std::cout<<"The geometric mesh has been loaded successfully."<<std::endl;
+//#ifdef USING_BOOST
+//            boost::posix_time::ptime LoadMesh2 = boost::posix_time::microsec_clock::local_time();
+//            auto delta_LoadMesh = LoadMesh2-LoadMesh1;
+//            std::cout << "Load GMesh time " << delta_LoadMesh << std::endl;;
+//#endif
+//        }
+//        else{
+//            std::cout<<" Geometric mesh information has not been entered. Please enter the mesh in a text file or set it in the approximation space object."<<std::endl;
+//            DebugStop();
+//        }
+//        
+//    }
     
     
 }
@@ -3957,7 +3957,7 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     cmesh->LoadReferences();
     //    TPZGeoMesh *gmesh = fCMesh->Reference();
     //    gmesh->ResetReference();
-    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+//    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
     
     int64_t nel = mSubdomainIndexGel.size();
     for (int64_t el=0; el<nel; el++) {
@@ -4448,27 +4448,27 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     // complement the domain of the lower dimensional elements. If all volumetric neighbours share
     // the same subdomain, the element belongs to "that" domain
     {
-    int64_t nel = finemesh->NElements();
-    int dim = finemesh->Dimension();
-    for (int64_t el = 0; el<nel; el++) {
-        TPZGeoEl *gel = finemesh->Element(el);
-        if(!gel || gel->HasSubElement()) continue;
-        int geldim = gel->Dimension();
-        int64_t domain = mSubdomainIndexGel[el];
-        if(geldim == dim && domain == -1) DebugStop();
-        if(geldim < dim && domain != -1) continue;
-        TPZGeoElSide gelside(gel);
-        TPZGeoElSide neighbour = gelside.Neighbour();
-        std::set<int64_t> neighdomains;
-        while(neighbour != gelside){
-            int64_t locdomain = mSubdomainIndexGel[neighbour.Element()->Index()];
-            if(locdomain != -1) neighdomains.insert(locdomain);
-            neighbour = neighbour.Neighbour();
-        }
-        if(neighdomains.size() == 1){
-            mSubdomainIndexGel[el] = *neighdomains.begin();
-        }
-    }
+		int64_t nel = finemesh->NElements();
+		int dim = finemesh->Dimension();
+		for (int64_t el = 0; el<nel; el++) {
+			TPZGeoEl *gel = finemesh->Element(el);
+			if(!gel || gel->HasSubElement()) continue;
+			int geldim = gel->Dimension();
+			int64_t domain = mSubdomainIndexGel[el];
+			if(geldim == dim && domain == -1) DebugStop();
+			if(geldim < dim && domain != -1) continue;
+			TPZGeoElSide gelside(gel);
+			TPZGeoElSide neighbour = gelside.Neighbour();
+			std::set<int64_t> neighdomains;
+			while(neighbour != gelside){
+				int64_t locdomain = mSubdomainIndexGel[neighbour.Element()->Index()];
+				if(locdomain != -1) neighdomains.insert(locdomain);
+				neighbour = neighbour.Neighbour();
+			}
+			if(neighdomains.size() == 1){
+				mSubdomainIndexGel[el] = *neighdomains.begin();
+			}
+		}
     }
     // set the boundary of the fractures to no flow **** WATCH OUT FOR THIS **** TO BE ADJUSTED
 //    {
@@ -4485,6 +4485,55 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 //            gel->SetMaterialId(matid);
 //        }
 //    }
+	
+	// TODO: Find a better way to set the mSubDomainIndex of the fracture and intersection elements
+	// For now, just to make it work, we are assigning the subdomaindex of the first
+	// higher dimensional element it finds.
+	for (auto gel: finemesh->ElementVec()) {
+		if(!gel) continue;
+		if(gel->MaterialId() != FractureMatId()) continue;
+		
+		TPZGeoElSide gelside(gel);
+		TPZGeoElSide neigh = gelside.Neighbour();
+		while (neigh != gelside) {
+			TPZGeoEl* neighel = neigh.Element();
+			if (neighel->Dimension() == 3) {
+				const int64_t neighelindex = neighel->Index();
+				const int64_t domainSubIndex = mSubdomainIndexGel[neighelindex];
+				if (mSubdomainIndexGel[gel->Index()] != -1)
+					break; // this guy is already good
+				mSubdomainIndexGel[gel->Index()] = domainSubIndex;
+				break;
+			}
+			neigh++;
+		}
+		if (neigh == gelside)
+			DebugStop();
+	}
+	
+	for (auto gel: finemesh->ElementVec()) {
+		if(!gel) continue;
+		if(gel->MaterialId() != mSimData.mTFracIntersectProperties.m_IntersectionId) continue;
+		
+		TPZGeoElSide gelside(gel);
+		TPZGeoElSide neigh = gelside.Neighbour();
+		while (neigh != gelside) {
+			TPZGeoEl* neighel = neigh.Element();
+			if (neighel->Dimension() == 2 && neighel->MaterialId() == FractureMatId()) {
+				const int64_t neighelindex = neighel->Index();
+				const int64_t domainSubIndex = mSubdomainIndexGel[neighelindex];
+				if (mSubdomainIndexGel[gel->Index()] != -1)
+					DebugStop(); // how was this already set?
+				mSubdomainIndexGel[gel->Index()] = domainSubIndex;
+				break;
+			}
+			neigh++;
+		}
+		if (neigh == gelside)
+			DebugStop();
+	}
+	
+	
 #ifdef PZDEBUG
     {
         int64_t nel = finemesh->NElements();
