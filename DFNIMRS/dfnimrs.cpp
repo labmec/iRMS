@@ -320,6 +320,10 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         mixAnalisys->SetDataTransfer(&sim_data);
         n_threads = 0;
         mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+        {
+            std::ofstream out("mixedCMesh.txt");
+            mixed_operator->Print(out);
+        }
         mixAnalisys->Assemble();
         if(0)
         {
@@ -349,10 +353,6 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         {
             mixAnalisys->Solve();
 
-        }
-        {
-            std::ofstream out("mixedCMesh.txt");
-            mixed_operator->Print(out);
         }
         TPZFastCondensedElement::fSkipLoadSolution = false;
         mixed_operator->LoadSolution(mixed_operator->Solution());

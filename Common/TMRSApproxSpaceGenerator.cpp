@@ -699,6 +699,8 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
 //
     buildmatids.clear();
     
+    // WHO CARES WHAT MATID 19 MEANS!!!
+    // BEAUTIFUL PROGRAMMING STYLE TO PUT THIS HARDCODED!!
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
         buildmatids.insert(19);
         TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(19,2,1);
@@ -2504,6 +2506,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     mesh_vec[5] = DiscontinuousCmesh(0,0);
     GroupConnectsBySubdomain(mesh_vec[5]);
     mesh_vec[6] = DiscontinuousCmesh(0,0);
+    TPZGeoMesh *gmesh = mGeometry;
+    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
 
     // ========================================================
     // Hybridize flux mesh in case there are intersections
@@ -2516,7 +2520,11 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
         }
         HybridizeIntersections(mesh_vec);
     }
-    
+    // assign a subdomain to the lower level elements
+    IdentifySubdomainForLowdimensionElements(mesh_vec[0]);
+
+    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+
     // ========================================================
     // Setting lagrange multiplier order
     SetLagrangeMultiplier4Spaces(mesh_vec);
@@ -2538,30 +2546,39 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::set<int> matsWithMem, matsWithOutMem;
     AddMultiphysicsMaterialsToCompMesh(order,matsWithMem, matsWithOutMem);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec,matsWithMem, matsWithOutMem );
-    std::ofstream file("MixOpew.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
+    {
+        std::ofstream file("MixOpew.vtk");
+        TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
+    }
+    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
     // ========================================================
     // Creates interface elements for hybridized intersections
     if (mHybridizer)
+    {
         CreateIntersectionInterfaceElements(mesh_vec);
-    
+    }
+    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+
     // ========================================================
     // Initialize all fractures properties (TMRSMemory)
     InitializeFracProperties(mMixedOperator);
     
 #ifdef PZDEBUG
+    {
 //    ofstream out("mphysics.vtk");
 //    TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, out);
-    std::ofstream sout("mixed_cmesh_four_spaces.txt");
-    mMixedOperator->Print(sout);
+        std::ofstream sout("mixed_cmesh_four_spaces.txt");
+        mMixedOperator->Print(sout);
+    }
 #endif
 
 	// ========================================================
 	// In case MHM, put the elements in submeshes
     // Verify the integrity of the subdomain indices
 	if (mSimData.mTNumerics.m_mhm_mixed_Q)
+    {
 		HideTheElements(mMixedOperator);
-    
+    }
 	
     // ========================================================
     // Condensing elements
@@ -3957,7 +3974,7 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     cmesh->LoadReferences();
     //    TPZGeoMesh *gmesh = fCMesh->Reference();
     //    gmesh->ResetReference();
-//    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
     
     int64_t nel = mSubdomainIndexGel.size();
     for (int64_t el=0; el<nel; el++) {
@@ -4061,6 +4078,7 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
     
     TPZGeoMesh* gmesh = fluxmesh->Reference();
     fluxmesh->LoadReferences();
+    // what does this do??? In how many spaces do you insert material objects???
     mHybridizer->InsertPeriferalMaterialObjects(meshvec_Hybrid);
     
     int dimfrac = 2;
@@ -4073,6 +4091,7 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
         if (gel->Dimension() != 1) {
             DebugStop();
         }
+        int geldomain = mSubdomainIndexGel[gel->Index()];
         const bool isIntersectEnd = false; // this was used to set pressure at an intersection end. TODO: Delete?
         // Search for first neighbor that that is domain
         TPZGeoElSide gelside(gel);
@@ -4092,31 +4111,37 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
 #endif
         TPZGeoElSide neigh = gelside.Neighbour();
         
+        // loop over the neighbours of the 1d intersection element
         while(neigh != gelside){
             TPZGeoEl* gelneigh = neigh.Element();
             int neighmatid = gelneigh->MaterialId();
             int neighdim = gelneigh->Dimension();
-            
+            // is there only one matidfrac????
             if (neighmatid == matidfrac && neighdim == dimfrac) {
 #ifdef PZDEBUG
 //                cout << "\nElement with ID " << gel->Id() << " and index " << gel->Index() << " is an intersection element" << endl;
 //                cout << "===> Trying to split the connects of the flux mesh and create pressure element..." << endl;
 #endif
+                // the neighbour has to be a fracture element
                 TPZCompEl* celneigh = gelneigh->Reference();
                 TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *> (celneigh);
                 if (!intel)
                     DebugStop();
                 
                 const int side = neigh.Side();
+                // same as neigh.Reference()
                 TPZCompElSide celsideleft(intel, side);
+                // why pass three redundant parameters : celsideleft, intel, side?
                 bool isNewInterface = mHybridizer->HybridizeInterface(celsideleft,intel,side,meshvec_Hybrid,isIntersectEnd);
                 if (isNewInterface) {
 #ifdef PZDEBUG
 //                    cout << "=====> Connects splitted succesfuly!" << endl;
 #endif
+                    // break out of the while loop
                     break;
                 }
                 else{
+                    // just make sure an interface is split only once??
                     DebugStop();
                 }
             }
@@ -4137,6 +4162,7 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZVec<TPZCom
     cmeshpressure->LoadReferences();
     const int lagrangematid = mHybridizer->lagrangeInterfaceMatId();
     const int lagrangematidend = mHybridizer->lagrangeInterfaceEndMatId();
+    TPZStack<int64_t> pressureindices;
     for (auto cel : cmeshpressure->ElementVec()) {
         if(!cel) continue;
         const int celmatid = cel->Material()->Id();
@@ -4144,8 +4170,11 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZVec<TPZCom
             continue;
         }
         TPZGeoEl* gel = cel->Reference();
+        pressureindices.Push(gel->Index());
         mHybridizer->CreateInterfaceElementsForGeoEl(mMixedOperator, meshvec_Hybrid, gel);
     }
+    // identify the domain indices of the interface elements
+    SetInterfaceDomains(pressureindices,mHybridizer->fInterfaceMatid);
 }
 
 
@@ -4550,4 +4579,176 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 #endif
     
     cout << "\n---------------------- Finished MergeMeshes for MHM data structure ----------------------\n" << endl;
+}
+
+// assign a subdomain to the lower level elements
+void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompMesh *fluxmesh)
+{
+    if(mGeometry->Reference() != fluxmesh)
+    {
+        mGeometry->ResetReference();
+        fluxmesh->LoadReferences();
+    }
+    const int skeletonmatid = mSimData.mTGeometry.m_skeletonMatId;
+    // LOOK AT THIS BEAUTIFUL PROGRAMMING!!
+    const int fineskeletonmatid = 18;
+    mSubdomainIndexGel.Resize(mGeometry->NElements(), -1);
+    int dim = mGeometry->Dimension();
+    for(int lowdim = dim-1; lowdim >= 0; lowdim--)
+    {
+        for(auto gel : mGeometry->ElementVec())
+        {
+            if(!gel || gel->Dimension() != lowdim) continue;
+            // need to modify a domain of a skeleton element
+            if(gel->MaterialId() == skeletonmatid) continue;
+            if(gel->MaterialId() == fineskeletonmatid) continue;
+            auto index = gel->Index();
+            // if the element has a subdomain index already, do nothing
+            if(mSubdomainIndexGel[index] != -1) continue;
+            TPZCompEl *cel = gel->Reference();
+            if(!cel)
+            {
+                // we have a pressure lagrange element or an interface element
+                // identify the domain indices of all geometric elements coupled to it
+                // if there is only one domain index, then this is the domain index of the element
+                // else the domain index is -1
+                std::set<int> neighdomains;
+                TPZGeoElSide gelside(gel);
+                TPZGeoElSide neighbour = gelside.Neighbour();
+                while(neighbour != gelside)
+                {
+                    TPZGeoEl *neighgel = neighbour.Element();
+                    if(neighgel->Dimension() == lowdim+1)
+                    {
+                        TPZCompEl *neighcel = neighgel->Reference();
+                        if(neighcel && neighcel->NConnects() != 1) {
+                            neighdomains.insert(mSubdomainIndexGel[neighgel->Index()]);
+                        }
+                    }
+                    neighbour = neighbour.Neighbour();
+                }
+                if(neighdomains.size() == 1)
+                {
+                    mSubdomainIndexGel[index] = *neighdomains.begin();
+                }
+            }
+            else
+            {
+                // we have either an HDivBound, or a fracture element
+                int nc = cel->NConnects();
+                if(nc == 1)
+                {
+                    int64_t connectindex = cel->ConnectIndex(0);
+                    // working an hdivbound element that is not a skeleton element
+                    // look for a neighbour of higher dimension that shares this connect
+                    // if found the domain index is equal to the domain index of the higher dimension element
+                    TPZGeoElSide gelside(gel);
+                    TPZGeoElSide neighbour(gelside.Neighbour());
+                    while(neighbour != gelside)
+                    {
+                        TPZCompEl *neighcel = neighbour.Element()->Reference();
+                        if(neighbour.Element()->Dimension() == lowdim+1 && neighcel)
+                        {
+                            TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(neighcel);
+                            if(!intel) DebugStop();
+                            int neighside = neighbour.Side();
+                            int nc = intel->NConnects();
+                            if(nc != 1) // exclude hdiv bound neighbours
+                            {
+                                int64_t sideconnectindex = intel->SideConnectIndex(0, neighside);
+                                if(sideconnectindex == connectindex)
+                                {
+                                    int subdomain = mSubdomainIndexGel[neighbour.Element()->Index()];
+                                    mSubdomainIndexGel[index] = subdomain;
+                                }
+                            }
+                        }
+                        neighbour = neighbour.Neighbour();
+                    }
+                } else // nc != 1
+                {
+                    // we have a lower dimensional flux element, we assume of dimension dim-1
+                    if(lowdim != dim-1) DebugStop();
+                    // look for the flux elements connected to both connects and accumulate the domain ids
+                    std::set<int> domidlower, domidupper;
+                    int64_t connectlower = cel->ConnectIndex(nc-2);
+                    int64_t connectupper = cel->ConnectIndex(nc-1);
+                    TPZGeoElSide gelside(gel);
+                    TPZGeoElSide neighbour(gelside.Neighbour());
+                    while(neighbour != gelside)
+                    {
+                        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(neighbour.Element()->Reference());
+                        if(!intel) DebugStop();
+                        int neighside = neighbour.Side();
+                        int64_t neighindex = neighbour.Element()->Index();
+                        int64_t sideconnectindex = intel->SideConnectIndex(0, neighside);
+                        if(sideconnectindex == connectlower)
+                        {
+                            domidlower.insert(mSubdomainIndexGel[neighindex]);
+                        }
+                        if(sideconnectindex == connectupper)
+                        {
+                            domidupper.insert(mSubdomainIndexGel[neighindex]);
+                        }
+                        neighbour = neighbour.Neighbour();
+                    }
+                    if(domidlower.size() > 1 && domidlower.find(skeletonmatid) == domidlower.end()) DebugStop();
+                    if(domidupper.size() > 1 && domidupper.find(skeletonmatid) == domidupper.end()) DebugStop();
+                    int domidL = -1;
+                    if(domidlower.size() == 1) domidL = *domidlower.begin();
+                    int domidU = -1;
+                    if(domidupper.size() == 1) domidU = *domidupper.begin();
+                    if(domidL != -1 && domidU != -1 && domidL != domidU) DebugStop();
+                    if(domidL != -1)
+                    {
+                        mSubdomainIndexGel[index] = domidL;
+                    }
+                    if(domidU != -1)
+                    {
+                        mSubdomainIndexGel[index] = domidU;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// identify the domain indices of the interface elements
+void TMRSApproxSpaceGenerator::SetInterfaceDomains(TPZStack<int64_t> &pressureindices,std::pair<int,int> &interfacematids)
+{
+    TPZCompMesh *cmesh = mMixedOperator;
+    TPZGeoMesh *gmesh = cmesh->Reference();
+    mSubdomainIndexGel.Resize(gmesh->NElements(), -1);
+    for(auto index : pressureindices)
+    {
+        int dompressure = mSubdomainIndexGel[index];
+        TPZGeoEl *gel = gmesh->Element(index);
+        TPZGeoElSide gelside(gel);
+        TPZGeoElSide neighbour(gelside.Neighbour());
+        while(neighbour != gelside)
+        {
+            int neighmatid = neighbour.Element()->MaterialId();
+            if(neighmatid == interfacematids.first || neighmatid == interfacematids.second)
+            {
+                int domneigh = mSubdomainIndexGel[neighbour.Element()->Index()];
+                if(domneigh == dompressure)
+                {
+                    mSubdomainIndexGel[index] = domneigh;
+                }
+                else if(domneigh == -1)
+                {
+                    mSubdomainIndexGel[index] = dompressure;
+                }
+                else if(dompressure == -1)
+                {
+                    mSubdomainIndexGel[index] = domneigh;
+                }
+                else
+                {
+                    DebugStop();
+                }
+            }
+            neighbour = neighbour.Neighbour();
+        }
+    }
 }

@@ -36,6 +36,7 @@ private:
         
     void AddMultiphysicsMaterialsToCompMesh(const int order, std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem);
     void GetTransportMaterials(std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem);
+    // associate a lagrange multiplier level to the connects of the meshes
     void SetLagrangeMultiplier4Spaces(TPZVec<TPZCompMesh *>& mesh_vec);
     void AddAtomicMaterials(const int dim, TPZCompMesh* cmesh,
                             std::set<int>& matids,
@@ -129,7 +130,13 @@ public:
     }
     
     const bool isThereFracIntersection() const;
+    // split the connects of the fluxmesh, create HDivBound elements and pressure elements
     void HybridizeIntersections(TPZVec<TPZCompMesh *>& mesh_vec);
+    // assign a subdomain to the lower level elements
+    void IdentifySubdomainForLowdimensionElements(TPZCompMesh *fluxmesh);
+    // identify the domain indices of the interface elements
+    void SetInterfaceDomains(TPZStack<int64_t> &pressureindices,std::pair<int,int> &interfacematids);
+
     void CreateIntersectionInterfaceElements(TPZVec<TPZCompMesh *>& meshvec_Hybrid);
     void DeleteBCsThatAreOnIntersect(TPZCompMesh* hdivcmesh);
     
