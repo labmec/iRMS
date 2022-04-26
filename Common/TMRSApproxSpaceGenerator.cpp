@@ -4552,7 +4552,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 				const int64_t neighelindex = neighel->Index();
 				const int64_t domainSubIndex = mSubdomainIndexGel[neighelindex];
 				if (mSubdomainIndexGel[gel->Index()] != -1)
-					DebugStop(); // how was this already set?
+					break; // this guy is already good
 				mSubdomainIndexGel[gel->Index()] = domainSubIndex;
 				break;
 			}
@@ -4590,7 +4590,7 @@ void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompM
         fluxmesh->LoadReferences();
     }
     const int skeletonmatid = mSimData.mTGeometry.m_skeletonMatId;
-    // LOOK AT THIS BEAUTIFUL PROGRAMMING!!
+    //TODO: LOOK AT THIS BEAUTIFUL PROGRAMMING!! NATHAN JOSE
     const int fineskeletonmatid = 18;
     mSubdomainIndexGel.Resize(mGeometry->NElements(), -1);
     int dim = mGeometry->Dimension();
@@ -4604,7 +4604,7 @@ void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompM
             if(gel->MaterialId() == fineskeletonmatid) continue;
             auto index = gel->Index();
             // if the element has a subdomain index already, do nothing
-            if(mSubdomainIndexGel[index] != -1) continue;
+//            if(mSubdomainIndexGel[index] != -1) continue;
             TPZCompEl *cel = gel->Reference();
             if(!cel)
             {
@@ -4677,23 +4677,26 @@ void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompM
                     TPZGeoElSide neighbour(gelside.Neighbour());
                     while(neighbour != gelside)
                     {
-                        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(neighbour.Element()->Reference());
-                        if(!intel) DebugStop();
-                        int neighside = neighbour.Side();
-                        int64_t neighindex = neighbour.Element()->Index();
-                        int64_t sideconnectindex = intel->SideConnectIndex(0, neighside);
-                        if(sideconnectindex == connectlower)
-                        {
-                            domidlower.insert(mSubdomainIndexGel[neighindex]);
-                        }
-                        if(sideconnectindex == connectupper)
-                        {
-                            domidupper.insert(mSubdomainIndexGel[neighindex]);
-                        }
+						TPZCompEl* neighcel = neighbour.Element()->Reference();
+                        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(neighcel);
+                        if(intel) {
+							int neighside = neighbour.Side();
+							int64_t neighindex = neighbour.Element()->Index();
+							int64_t sideconnectindex = intel->SideConnectIndex(0, neighside);
+							if(sideconnectindex == connectlower)
+							{
+								domidlower.insert(mSubdomainIndexGel[neighindex]);
+							}
+							if(sideconnectindex == connectupper)
+							{
+								domidupper.insert(mSubdomainIndexGel[neighindex]);
+							}
+						}
                         neighbour = neighbour.Neighbour();
                     }
-                    if(domidlower.size() > 1 && domidlower.find(skeletonmatid) == domidlower.end()) DebugStop();
-                    if(domidupper.size() > 1 && domidupper.find(skeletonmatid) == domidupper.end()) DebugStop();
+					const int noDomain = -1;
+                    if(domidlower.size() > 1 && domidlower.find(noDomain) == domidlower.end()) DebugStop();
+                    if(domidupper.size() > 1 && domidupper.find(noDomain) == domidupper.end()) DebugStop();
                     int domidL = -1;
                     if(domidlower.size() == 1) domidL = *domidlower.begin();
                     int domidU = -1;
