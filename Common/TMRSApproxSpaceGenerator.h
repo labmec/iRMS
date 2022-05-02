@@ -107,6 +107,9 @@ public:
     /// and fills mSubdomainIndexGel vector that will be used to set the macro domains
     void SetGeometry(TPZGeoMesh * gmeshfine, TPZGeoMesh * gmeshcoarse);
     
+	/// Checks if there is a skeleton element between volume elements of different domains
+	void CheckMeshIntegrity(TPZGeoMesh* gmesh);
+	
     void SetSubdomainIndexes(TPZVec<int64_t> &subIndexes){
         mSubdomainIndexGel =subIndexes;
     }

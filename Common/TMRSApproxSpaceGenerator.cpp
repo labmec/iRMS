@@ -1128,12 +1128,17 @@ void TMRSApproxSpaceGenerator::GroupConnectsBySubdomain(TPZCompMesh *cmesh)
 {
     std::map<int,int> domaintoconnect;
     int64_t nel = cmesh->NElements();
+	const int cmeshdim = cmesh->Dimension();
     int count = 0;
     for(int64_t el = 0; el<nel; el++)
     {
         TPZCompEl *cel = cmesh->Element(el);
         if(!cel || cel->NConnects() != 1) DebugStop();
         TPZGeoEl *gel = cel->Reference();
+		if(gel->Dimension() != cmeshdim) {
+			delete cel;
+			continue;
+		}
         int64_t gelindex = gel->Index();
         int mhm_domain = mSubdomainIndexGel[gelindex];
         int condensed = -1;
@@ -2493,7 +2498,10 @@ void TMRSApproxSpaceGenerator::SetLagrangeMultiplier4Spaces(TPZVec<TPZCompMesh *
 }
 
 void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
-            
+         
+	TPZGeoMesh *gmesh = mGeometry;
+	const bool isMHM = mSimData.mTNumerics.m_mhm_mixed_Q;
+	
     // ========================================================
     // Creating atomic comp meshes
     TPZManVector<TPZCompMesh *, 7> mesh_vec(7);
@@ -2501,13 +2509,15 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     mesh_vec[1] = DiscontinuousCmesh(order,0);
     mesh_vec[2] = DiscontinuousCmesh(0,0);
     mesh_vec[3] = DiscontinuousCmesh(0,0);
-    mesh_vec[4] = DiscontinuousCmesh(0,0);
-    GroupConnectsBySubdomain(mesh_vec[4]);
-    mesh_vec[5] = DiscontinuousCmesh(0,0);
-    GroupConnectsBySubdomain(mesh_vec[5]);
-    mesh_vec[6] = DiscontinuousCmesh(0,0);
-    TPZGeoMesh *gmesh = mGeometry;
-    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+	
+	if(isMHM){
+		mesh_vec[4] = DiscontinuousCmesh(0,0);
+		GroupConnectsBySubdomain(mesh_vec[4]);
+		mesh_vec[5] = DiscontinuousCmesh(0,0);
+		GroupConnectsBySubdomain(mesh_vec[5]);
+		mesh_vec[6] = DiscontinuousCmesh(0,0);
+		if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+	}
 
     // ========================================================
     // Hybridize flux mesh in case there are intersections
@@ -2520,6 +2530,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
         }
         HybridizeIntersections(mesh_vec);
     }
+	
     // assign a subdomain to the lower level elements
     IdentifySubdomainForLowdimensionElements(mesh_vec[0]);
 
@@ -2572,6 +2583,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     }
 #endif
 
+	cout << "\nNequations before hiding the elements = " << mMixedOperator->NEquations() << endl;
 	// ========================================================
 	// In case MHM, put the elements in submeshes
     // Verify the integrity of the subdomain indices
@@ -4039,7 +4051,9 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         TPZCompEl *cel = cmesh->Element(it.second);
         TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
         TPZAutoPointer<TPZGuiInterface> gui;
-        subcmesh->SetAnalysisSkyline(0, 0, gui);
+//        subcmesh->SetAnalysisSkyline(0, 0, gui);
+//		subcmesh->SetAnalysisFStruct(0);
+		subcmesh->SetAnalysisSparse(8);
     }
     //    GroupandCondenseElements();
     //    GroupandCondenseElementsEigen();
@@ -4187,8 +4201,8 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         DebugStop();
     }
     
-    int fine_skeleton_matid = 18;
-    int coarse_skeleton_matid = mSimData.mTGeometry.m_skeletonMatId;
+    int fine_skeleton_matid = mSimData.mTGeometry.m_skeletonMatId;
+    int coarse_skeleton_matid = 18;
     std::map<int,int64_t> MatFinetoCoarseElIndex;
 //    std::map<int64_t,int64_t> NodeCoarseToNodeFine;
     std::vector<int64_t> NodeCoarseToNodeFine(coarsemesh->NNodes(),-1);
@@ -4577,8 +4591,40 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         }
     }
 #endif
+	{
+		ofstream out("meshsubdomains.vtk");
+		if(mSubdomainIndexGel.size() != finemesh->NElements()) DebugStop();
+		TPZVTKGeoMesh::PrintGMeshVTK(finemesh, out, mSubdomainIndexGel);
+	}
+	
+	CheckMeshIntegrity(finemesh);
     
     cout << "\n---------------------- Finished MergeMeshes for MHM data structure ----------------------\n" << endl;
+}
+
+void TMRSApproxSpaceGenerator::CheckMeshIntegrity(TPZGeoMesh* gmesh) {
+	for(auto gel : gmesh->ElementVec()) {
+		const int geldim = gel->Dimension();
+		if(geldim != 3) continue;
+		
+		const int64_t mdomainindex = mSubdomainIndexGel[gel->Index()];
+		const int firstsideFace = gel->FirstSide(2);
+		for (int iside = firstsideFace; iside < gel->NSides() - 1; iside++) {
+			std::set<int64_t> neighdomains = {mdomainindex};
+			TPZGeoElSide gelside(gel,iside);
+			TPZGeoElSide neigh = gelside.Neighbour();
+			for( ; neigh != gelside ; neigh++){
+				TPZGeoEl* neighel = neigh.Element();
+				if(neighel->Dimension() != 3) continue;
+				const int64_t neighmdomainindex = mSubdomainIndexGel[neighel->Index()];
+				neighdomains.insert(neighmdomainindex);
+			}
+			if (neighdomains.size() > 1) {
+				auto skel = gelside.HasNeighbour(mSimData.mTGeometry.m_skeletonMatId);
+				if(!skel) DebugStop();
+			}
+		}
+	}
 }
 
 // assign a subdomain to the lower level elements
@@ -4714,6 +4760,16 @@ void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompM
             }
         }
     }
+	
+	const int64_t nsub = mSubdomainIndexGel.size();
+	for(int i = 0 ; i < nsub ; i++) {
+		const int macroindex = mSubdomainIndexGel[i];
+		TPZGeoEl* gel = mGeometry->Element(i);
+		const int eldim = gel->Dimension();
+		if(eldim == 3) continue;
+		const int matid = gel->MaterialId();
+		cout << "Element index " << i << " | dim " << eldim << " | matid " << matid << " | domain " << macroindex << endl;
+	}
 }
 
 // identify the domain indices of the interface elements
@@ -4733,23 +4789,31 @@ void TMRSApproxSpaceGenerator::SetInterfaceDomains(TPZStack<int64_t> &pressurein
             int neighmatid = neighbour.Element()->MaterialId();
             if(neighmatid == interfacematids.first || neighmatid == interfacematids.second)
             {
-                int domneigh = mSubdomainIndexGel[neighbour.Element()->Index()];
+				TPZCompEl* celneigh = neighbour.Element()->Reference();
+				const int64_t neighindex = neighbour.Element()->Index();
+				TPZMultiphysicsInterfaceElement* mpinterface = dynamic_cast<TPZMultiphysicsInterfaceElement*>(celneigh);
+				if(!mpinterface) DebugStop();
+				TPZCompEl* celright = mpinterface->RightElement();
+				TPZGeoEl* gelright = celright->Reference();
+				
+                int domneigh = mSubdomainIndexGel[gelright->Index()];
                 if(domneigh == dompressure)
                 {
-                    mSubdomainIndexGel[index] = domneigh;
+                    mSubdomainIndexGel[neighindex] = domneigh;
                 }
                 else if(domneigh == -1)
                 {
-                    mSubdomainIndexGel[index] = dompressure;
+                    mSubdomainIndexGel[neighindex] = dompressure;
                 }
                 else if(dompressure == -1)
                 {
-                    mSubdomainIndexGel[index] = domneigh;
+                    mSubdomainIndexGel[neighindex] = domneigh;
                 }
                 else
                 {
                     DebugStop();
                 }
+				cout << "Element index " << neighindex << " | dim " << gel->Dimension() << " | matid " << gel->MaterialId() << " | domain " << mSubdomainIndexGel[neighindex] << endl;
             }
             neighbour = neighbour.Neighbour();
         }

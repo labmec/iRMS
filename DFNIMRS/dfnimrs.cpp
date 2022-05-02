@@ -13,7 +13,7 @@ using namespace std;
 // ----- End of namespaces -----
 
 // ----- Functions -----
-void RunProblem(string& filenameFine, string& filenameCoarse, const int simcase);
+void RunProblem(string& filenameFine, string& filenameCoarse, const int simucase);
 void FillDataTransfer(TMRSDataTransfer& sim_data);
 void FillDataTransferCase1(TMRSDataTransfer& sim_data);
 void FillDataTransferCase2(TMRSDataTransfer& sim_data);
@@ -92,7 +92,7 @@ int main(){
     // 7: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
 	// 9: 4 elements, 2 frac, w/ intersection
-    int simcase = 9;
+    int simcase = 0;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -318,7 +318,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         // -------------- Running problem --------------
         TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
         mixAnalisys->SetDataTransfer(&sim_data);
-        n_threads = 0;
+        n_threads = 8;
         mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
         {
             std::ofstream out("mixedCMesh.txt");
@@ -489,7 +489,7 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
     grav[1] = 0.0;//-9.8*(1.0e-6); // hor
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     sim_data.mTNumerics.m_n_steps = 100;
     sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
     sim_data.mTNumerics.m_max_iter_sfi=1;
