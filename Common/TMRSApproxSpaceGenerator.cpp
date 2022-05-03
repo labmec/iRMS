@@ -4122,7 +4122,6 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
         if (gel->Dimension() != 1) {
             DebugStop();
         }
-        int geldomain = mSubdomainIndexGel[gel->Index()];
         const bool isIntersectEnd = false; // this was used to set pressure at an intersection end. TODO: Delete?
         // Search for first neighbor that that is domain
         TPZGeoElSide gelside(gel);
