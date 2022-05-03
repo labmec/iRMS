@@ -39,7 +39,7 @@ private:
     TPZFMatrix<STATE> m_x_transport;
     
     /// Boolean that indicates if the problem is linear. If so, does not need to run newton iterations to converge
-    bool isLinear = true;
+    bool isLinearTracer = true;
     
 public:
     
@@ -82,7 +82,7 @@ public:
     void Configure(int n_threads, bool UsePardiso_Q, bool UsePZ=false);
     
     /// Set data transfer object
-    void SetDataTransfer(TMRSDataTransfer * sim_data);
+    void SetDataTransferAndBuildAlgDatStruct(TMRSDataTransfer * sim_data);
     
     /// Get data transfer object
     TMRSDataTransfer * GetDataTransfer();
@@ -98,6 +98,8 @@ public:
     
     /// Perform a SFI iteration
     void SFIIteration();
+    void UpdateAllFluxInterfaces();
+    void VerifyElementFluxes();
     
     void TransferToTransportModule();
     

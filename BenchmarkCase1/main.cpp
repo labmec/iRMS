@@ -606,7 +606,7 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTGeometry.mInterface_material_idFracInf = 101;
     sim_data.mTGeometry.mInterface_material_idFracSup = 102;
     sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
-    sim_data.mTGeometry.mIterface_material_idFracBound = 104;
+    sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
     int D_Type = 0;
     int N_Type = 1;
@@ -654,8 +654,8 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     sim_data.mTNumerics.m_max_iter_transport = 1;
     sim_data.mTNumerics.m_max_iter_sfi = 1;
     //BorderElementOrder
-    sim_data.mTNumerics.m_BorderElementPresOrder=1;
-    sim_data.mTNumerics.m_BorderElementFluxOrder=1;
+    sim_data.mTNumerics.m_MortarBorderElementPresOrder=1;
+    sim_data.mTNumerics.m_MortarBorderElementFluxOrder=1;
     
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
@@ -681,9 +681,9 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     
     int  id1=1;
     int  id2=2;
-    std::vector<std::pair<int, REAL>> idPerm(2);
-    idPerm[0]= std::make_pair(id1,kappa1);
-    idPerm[1]= std::make_pair(id2,kappa2);
+    std::map<int, REAL>idPerm;
+    idPerm[id1]= kappa1;
+    idPerm[id2]= kappa2;
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     
@@ -698,8 +698,8 @@ TMRSDataTransfer SettingBenchmarkCase1(){
         scalnames.Push("p_average");
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
-    sim_data.mTPostProcess.m_vecnames = vecnames;
-    sim_data.mTPostProcess.m_scalnames = scalnames;
+    sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
+    sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
     
     int n_steps = sim_data.mTNumerics.m_n_steps;
     REAL dt = sim_data.mTNumerics.m_dt;
@@ -797,7 +797,7 @@ void BenchmarkCase1()
     TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, file);
     
     TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
-    sfi_analysis->SetDataTransfer(&sim_data);
+    sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
     
     bool usingpzSparse = false;
     sfi_analysis->Configure(n_threads, UsePardiso_Q, usingpzSparse);

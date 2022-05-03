@@ -72,10 +72,9 @@ TEST_CASE("linear_pressure","[test_nofrac_3D]"){
 
 // ---- Test 3 ----
 // 2x1x1 domain with a coarse and a fine mesh to generate MHM structure. Linear pressure and transport
-//TODOJOSE: Esse caso nao esta passando nos unit tests automaticos do github. Pode checar?
-//TEST_CASE("transport_linear_pressure","[test_nofrac_3D]"){
-//    RunTest(3);
-//}
+TEST_CASE("transport_linear_pressure","[test_nofrac_3D]"){
+    RunTest(3);
+}
 
 //int main(){
 //    RunTest(3);
@@ -137,13 +136,13 @@ void RunTest(const int caseToSim)
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    
+    REAL mass=0.0;
     if(caseToSim == 3){
         ModifyBcsForTransport(aspace.mGeometry, EInlet,  EOutlet);
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
         TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
-        sfi_analysis->SetDataTransfer(&sim_data);
+        sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
         sfi_analysis->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
         int n_steps = sim_data.mTNumerics.m_n_steps;
         REAL dt = sim_data.mTNumerics.m_dt;
@@ -178,7 +177,7 @@ void RunTest(const int caseToSim)
                 current_report_time = reporting_times[pos];
                 REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
                
-                REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
+                mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
                 std::cout << "Mass integral :  " << mass << std::endl;
             }
@@ -224,7 +223,7 @@ void RunTest(const int caseToSim)
         REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
     }
     else if(caseToSim == 3){
-        
+        REQUIRE( mass == Approx( 0.8) ); // Approx is from catch2 lib
     }
     else{
         DebugStop();
@@ -322,8 +321,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     //FracAndReservoirProperties
     REAL kappa=1.0;
     int  id1=EVolume;
-    std::vector<std::pair<int, REAL>> idPerm(1);
-    idPerm[0]= std::make_pair(id1,kappa);
+    std::map<int, REAL> idPerm;
+    idPerm[id1]= kappa;
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     // PostProcess controls
@@ -336,8 +335,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_vecnames = vecnames;
-    sim_data.mTPostProcess.m_scalnames = scalnames;
+    sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
+    sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
     
     int n_steps = sim_data.mTNumerics.m_n_steps;
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;

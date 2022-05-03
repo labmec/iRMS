@@ -68,11 +68,11 @@ public:
         /** @brief
          MaterialID of the interface element that will be inserted in the transport mesh
          */
-        int mInterface_material_id = 100;
-        int mInterface_material_idFracSup = 101;
-        int mInterface_material_idFracInf = 102;
-        int mInterface_material_idFracFrac = 103;
-        int mIterface_material_idFracBound = 104;
+        int mInterface_material_id = 100; //Interface material Volumetric-Volumetric
+        int mInterface_material_idFracSup = 101; //Interface material Fracture-Volumetric1
+        int mInterface_material_idFracInf = 102; //Interface material Fracture-Volumetric2
+        int mInterface_material_idFracFrac = 103; //Interface material Fracture-Fracture
+        int mInterface_material_idFracBound = 104; //Interface material Fracture-Boundary
         
         
         /// number of times the skeleton elements should be refined
@@ -121,7 +121,7 @@ public:
             mInterface_material_idFracSup = other.mInterface_material_idFracSup;
             mInterface_material_idFracInf = other.mInterface_material_idFracInf;
             mInterface_material_idFracFrac = other.mInterface_material_idFracFrac;
-            mIterface_material_idFracBound=other.mIterface_material_idFracBound;
+            mInterface_material_idFracBound=other.mInterface_material_idFracBound;
             
             mSkeletonDiv = other.mSkeletonDiv;
             mnLayers = other.mnLayers;
@@ -152,7 +152,7 @@ public:
                 mInterface_material_idFracSup = other.mInterface_material_idFracSup;
                 mInterface_material_idFracInf = other.mInterface_material_idFracInf;
                 mInterface_material_idFracFrac = other.mInterface_material_idFracFrac;
-                mIterface_material_idFracBound=other.mIterface_material_idFracBound;
+                mInterface_material_idFracBound=other.mInterface_material_idFracBound;
                 mSkeletonDiv = other.mSkeletonDiv;
                 mnLayers = other.mnLayers;
                 mnref = other.mnref;
@@ -327,26 +327,27 @@ public:
     class TReservoirProperties : public TMRSSavable {
         
     public:
-        // @TODO associates with a material id the porosity and volume factor (what is volume factor? Is it a constant?)
+        // associates with a material id the porosity and volume scale (volume scale is a constant, 1 for volume elements and lenght for fractures)
         // the volume factor is the property of a fluid and the porosity is a property of the reservoir
         // why are these properties not defined by a map?
-        std::vector<std::tuple<int,REAL, REAL>> mPorosityAndVolFactor;
+        std::vector<std::tuple<int,REAL, REAL>> mPorosityAndVolumeScale;
         bool fPropsFromPreProcess = false;
-        // @TODO what does kappa_phi mean. What kind of function is this???
-        // kappa stands for permeability???
-        // phi stands for porosity???
-        std::function<std::vector<REAL>(const TPZVec<REAL> & )> kappa_phi;
-        //@TODO why is the permeability not defined by a map?
-        std::vector<std::pair<int, REAL>> m_permeabilitiesbyId;
         
-        // @TODO why is there no documentation for a generic name as s0???
+        //Function that given a point (x,y,z) returns kx, ky, kz and porosity
+        //This is used in the transport problem for very heterogeneous cases.
+        std::function<std::vector<REAL>(const TPZVec<REAL> & )> kappa_phi;
+       
+
+        std::map<int, REAL> m_permeabilitiesbyId;
+        
+        //Function that given a point (x,y,z) returns s0 (initial saturation)
         std::function<REAL(const TPZVec<REAL> & )> s0;
         std::string mPropsFileName="";
         /** @brief Default constructor */
         TReservoirProperties(){
             
-            mPorosityAndVolFactor.resize(1);
-            mPorosityAndVolFactor[0] = std::make_tuple(1, 1.0, 0.1);
+            mPorosityAndVolumeScale.resize(1);
+            mPorosityAndVolumeScale[0] = std::make_tuple(1, 1.0, 0.1);
             fPropsFromPreProcess = false;
         }
         
@@ -357,7 +358,7 @@ public:
         
         /** @brief Copy constructor */
         TReservoirProperties(const TReservoirProperties &other){
-            mPorosityAndVolFactor = other.mPorosityAndVolFactor;
+            mPorosityAndVolumeScale = other.mPorosityAndVolumeScale;
             fPropsFromPreProcess = other.fPropsFromPreProcess;
             kappa_phi = other.kappa_phi;
             s0=other.s0;
@@ -367,7 +368,7 @@ public:
         
         /** @brief Copy assignment operator*/
         TReservoirProperties &operator=(const TReservoirProperties &other){
-            mPorosityAndVolFactor = other.mPorosityAndVolFactor;
+            mPorosityAndVolumeScale = other.mPorosityAndVolumeScale;
             fPropsFromPreProcess = other.fPropsFromPreProcess;
             kappa_phi = other.kappa_phi;
             s0=other.s0;
@@ -379,68 +380,7 @@ public:
         
     };
     
-    /**
-     * @brief Class that stores multiphase functions
-     */
-    class TMultiphaseFunctions : public TMRSSavable {
-        
-    public:
-        
-        /**
-         * contains the fractional flow of water for each layer
-         */
-        std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_fw;
-        /**
-         * contains the fractional flow of oil for each layer
-         */
-        std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_fo;
-        
-        /**
-         * contains the mobility (lambda) for each layer
-         */
-        std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_lambda;
-        
-        /**
-         * contains the Gravitational term (Glambda) for each layer
-         */
-        std::map<int, std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> > mLayer_Glambda;
-        
-        /** @brief Default constructor */
-        TMultiphaseFunctions(){
-            mLayer_fw.clear();
-            mLayer_fo.clear();
-            mLayer_lambda.clear();
-            mLayer_Glambda.clear();
-        }
-        
-        /** @brief Destructor */
-        ~TMultiphaseFunctions(){
-            
-        }
-        
-        /** @brief Copy constructor */
-        TMultiphaseFunctions(const TMultiphaseFunctions &other){
-            mLayer_fw = other.mLayer_fw;
-            mLayer_fo = other.mLayer_fo;
-            mLayer_lambda = other.mLayer_lambda;
-            mLayer_Glambda = other.mLayer_Glambda;
-            
-        }
-        
-        /** @brief Copy assignment operator*/
-        TMultiphaseFunctions &operator=(const TMultiphaseFunctions &other){
-            if (this != & other) // prevent self-assignment
-                {
-                mLayer_fw = other.mLayer_fw;
-                mLayer_fo = other.mLayer_fo;
-                mLayer_lambda = other.mLayer_lambda;
-                mLayer_Glambda = other.mLayer_Glambda;
-                }
-            return *this;
-        }
-        
-        
-    };
+   
     
     /**
      * @brief Class that stores the boundary conditions of the problem
@@ -570,9 +510,10 @@ public:
          */
         int m_n_steps;
         
-        // @TODO what does this value mean? The numerics class defines the order of interpolation?
-        int m_BorderElementPresOrder;
-        int m_BorderElementFluxOrder;
+        // Order of approximation for the border of the Pressure element
+        int m_MortarBorderElementPresOrder;
+        // Order of approximation for the border of the Flux element
+        int m_MortarBorderElementFluxOrder;
         /**
          * @brief Directive for the use of four spaces
          */
@@ -617,8 +558,8 @@ public:
             m_gravity[2] = -10.0;
             m_ISLinearKrModelQ = true;
             m_nThreadsMixedProblem  =0;
-            m_BorderElementPresOrder = 0;
-            m_BorderElementFluxOrder = 0;
+            m_MortarBorderElementPresOrder = 0;
+            m_MortarBorderElementFluxOrder = 0;
             m_UseSubstructures_Q = false;
             
         }
@@ -646,8 +587,8 @@ public:
             m_gravity               = other.m_gravity;
             m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
-            m_BorderElementPresOrder = other.m_BorderElementPresOrder;
-            m_BorderElementFluxOrder = other.m_BorderElementFluxOrder;
+            m_MortarBorderElementPresOrder = other.m_MortarBorderElementPresOrder;
+            m_MortarBorderElementFluxOrder = other.m_MortarBorderElementFluxOrder;
             m_UseSubstructures_Q       = other.m_UseSubstructures_Q;
         }
         
@@ -675,8 +616,8 @@ public:
             m_gravity               = other.m_gravity;
             m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
-            m_BorderElementPresOrder = other.m_BorderElementPresOrder;
-            m_BorderElementFluxOrder = other.m_BorderElementFluxOrder;
+            m_MortarBorderElementPresOrder = other.m_MortarBorderElementPresOrder;
+            m_MortarBorderElementFluxOrder = other.m_MortarBorderElementFluxOrder;
             m_UseSubstructures_Q       = other.m_UseSubstructures_Q;
             return *this;
         }
@@ -705,8 +646,8 @@ public:
             m_gravity               == other.m_gravity&&
             m_ISLinearKrModelQ      == other.m_ISLinearKrModelQ&&
             m_nThreadsMixedProblem  == other.m_nThreadsMixedProblem&&
-            m_BorderElementPresOrder == other.m_BorderElementPresOrder&&
-            m_BorderElementFluxOrder == other.m_BorderElementFluxOrder&&
+            m_MortarBorderElementPresOrder == other.m_MortarBorderElementPresOrder&&
+            m_MortarBorderElementFluxOrder == other.m_MortarBorderElementFluxOrder&&
             m_UseSubstructures_Q       == other.m_UseSubstructures_Q;
         }
         
@@ -799,11 +740,17 @@ public:
         /**
          * @brief Contains scalar variables that will be postprocessed
          */
-        TPZStack<std::string,10> m_scalnames;
+        TPZStack<std::string,10> m_scalnamesDarcy;
+        
+        /**
+         * @brief Contains scalar variables that will be postprocessed
+         */
+        TPZStack<std::string,10> m_scalnamesTransport;
+        
         /**
          * @brief Contains vector variables that will be postprocessed
          */
-        TPZStack<std::string,10> m_vecnames;
+        TPZStack<std::string,10> m_vecnamesDarcy;
         
         /**
          * @brief Period of time post-processed data is printed
@@ -822,8 +769,11 @@ public:
             
             m_file_name_mixed       = "";
             m_file_name_transport   = "";
-            m_scalnames.Resize(0);
-            m_vecnames.Resize(0);
+            m_scalnamesDarcy.Resize(0);
+            m_scalnamesDarcy.Resize(0);
+            m_scalnamesTransport.Resize(2);
+            m_scalnamesTransport.Push("Sw");
+            m_scalnamesTransport.Push("So");
             m_file_time_step = 0.0;
             m_vec_reporting_times.Resize(0);
             
@@ -841,8 +791,9 @@ public:
         TPostProcess(const TPostProcess & other){
             m_file_name_mixed       = other.m_file_name_mixed;
             m_file_name_transport   = other.m_file_name_transport;
-            m_vecnames              = other.m_vecnames;
-            m_scalnames             = other.m_scalnames;
+            m_scalnamesDarcy        = other.m_scalnamesDarcy;
+            m_scalnamesDarcy        = other.m_scalnamesDarcy;
+            m_scalnamesTransport    = other.m_scalnamesTransport;
             m_file_time_step        = other.m_file_time_step;
             m_vec_reporting_times   = other.m_vec_reporting_times;
             
@@ -859,8 +810,9 @@ public:
             
             m_file_name_mixed       = other.m_file_name_mixed;
             m_file_name_transport   = other.m_file_name_transport;
-            m_vecnames              = other.m_vecnames;
-            m_scalnames             = other.m_scalnames;
+            m_vecnamesDarcy         = other.m_vecnamesDarcy;
+            m_scalnamesDarcy        = other.m_scalnamesDarcy;
+            m_scalnamesTransport    = other.m_scalnamesTransport;
             m_file_time_step        = other.m_file_time_step;
             m_vec_reporting_times   = other.m_vec_reporting_times;
             
@@ -877,8 +829,9 @@ public:
             return
             m_file_name_mixed       == other.m_file_name_mixed &&
             m_file_name_transport   == other.m_file_name_transport&&
-            m_vecnames              == other.m_vecnames&&
-            m_scalnames             == other.m_scalnames&&
+            m_vecnamesDarcy         == other.m_vecnamesDarcy&&
+            m_scalnamesDarcy        == other.m_scalnamesDarcy&&
+            m_scalnamesTransport    == other.m_scalnamesTransport&&
             m_file_time_step        == other.m_file_time_step&&
             m_vec_reporting_times   == other.m_vec_reporting_times;
             
@@ -888,8 +841,9 @@ public:
         void Write(TPZStream &buf, int withclassid) const{ //ok
             buf.Write(&m_file_name_mixed);
             buf.Write(&m_file_name_transport);
-            buf.Write(m_vecnames);
-            buf.Write(m_scalnames);
+            buf.Write(m_vecnamesDarcy);
+            buf.Write(m_scalnamesDarcy);
+            buf.Write(m_scalnamesTransport);
             buf.Write(&m_file_time_step);
             buf.Write(m_vec_reporting_times);
         }
@@ -897,8 +851,9 @@ public:
         void Read(TPZStream &buf, void *context){ //ok
             buf.Read(&m_file_name_mixed);
             buf.Read(&m_file_name_transport);
-            buf.Read(m_vecnames);
-            buf.Read(m_scalnames);
+            buf.Read(m_vecnamesDarcy);
+            buf.Read(m_scalnamesDarcy);
+            buf.Read(m_scalnamesTransport);
             buf.Read(&m_file_time_step);
             buf.Read(m_vec_reporting_times);
         }
@@ -1106,8 +1061,7 @@ public:
     // describes the volume factor (?) by material id
     //
     TReservoirProperties mTReservoirProperties;
-    // @TODO this ALSO stores the values of the relative permeabilities???
-    TMultiphaseFunctions mTMultiphaseFunctions;
+  
     // defines the matids and values associated with the boundary conditions
     TBoundaryConditions mTBoundaryConditions;
     /*

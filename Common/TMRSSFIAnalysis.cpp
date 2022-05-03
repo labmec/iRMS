@@ -167,7 +167,7 @@ void TMRSSFIAnalysis::FillProperties(){
                 m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
                 int matid = m_transport_module->fAlgebraicTransport.fCellsData.fMatId[icell];
                 bool fountmat = false;
-                for (auto i:m_sim_data->mTReservoirProperties.mPorosityAndVolFactor) {
+                for (auto i:m_sim_data->mTReservoirProperties.mPorosityAndVolumeScale) {
                     int id = std::get<0>(i);
                     REAL porosity =std::get<1>(i);
                     REAL volfactor =std::get<2>(i);
@@ -323,8 +323,8 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport, 
     
 }
 
-// TODOJOSE: Modify name
-void TMRSSFIAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
+
+void TMRSSFIAnalysis::SetDataTransferAndBuildAlgDatStruct(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
     m_mixed_module->SetDataTransfer(sim_data);
     m_transport_module->SetDataTransfer(sim_data);
@@ -438,87 +438,12 @@ void TMRSSFIAnalysis::SFIIteration(){
     std::cout << "Transfer from transport to mixed time: " << deltat << std::endl;
 #endif
     
-    if(isLinear){
+    if(isLinearTracer){
         m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
-        TPZMultiphysicsCompMesh *mixedmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_mixed_module->Mesh()) ;
-        TPZCompMesh *cmesh =mixedmesh->MeshVector()[0];
-        std::ofstream file("fuxmesh.txt");
-        const TPZFMatrix<STATE> &meshSol = cmesh->Solution();
-        mixedmesh->MeshVector()[0]->Print(file);
-        int nels =mixedmesh->MeshVector()[0]->NElements();
-        for (int iel =0; iel<nels-1; iel++) {
-            TPZCompEl *cel = mixedmesh->MeshVector()[0]->Element(iel);
-//            if(cel->Dimension() != cmesh->Dimension()) continue;
-            TPZCompElHDiv<pzshape::TPZShapeCube> *hdivel = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(cel);
-            TPZCompElHDiv<pzshape::TPZShapeQuad> *hdivelq = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeQuad> *>(cel);
-            TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivCollaps = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *>(hdivelq);
-            if (!hdivel && !hdivCollaps) {
-                continue;
-            }
-            if (!cel) continue;
-            int ncon = cel->NConnects();
-            int nCorners = cel->Reference()->NCornerNodes();
-            int nsides1 = cel->Reference()->NSides(1);
-            int nsides = cel->Reference()->NSides();
-            REAL sumel=0.0;
-            for (int icon=0; icon<ncon-1; icon++) {
-                TPZConnect &con = cel->Connect(icon);
-                int sideOrient =0;
-                if(!hdivCollaps){
-                     sideOrient = hdivel->GetSideOrient(nCorners+nsides1+icon);
-                }
-                else{
-                    if (hdivCollaps && icon < 5) {
-                        sideOrient = hdivCollaps->GetSideOrient(nCorners+icon);
-                    }
-                     
-                }
-                if (hdivCollaps && icon == 4) {
-                    ncon++;
-                    continue;
-                }
-                if (hdivCollaps && icon == 5) {
-                    sideOrient = hdivCollaps->GetSideOrient(8);
-                }
-                if (hdivCollaps && icon == 6) {
-                    sideOrient = hdivCollaps->GetSideOrient(9);
-                }
-                
-               
-                int sequence =con.fSequenceNumber;
-                int64_t pos = cmesh->Block().Position(sequence);
-                if(sequence==-1) continue;
-                int blocksize = cmesh->Block().Size(sequence);
-                for(int ieq=0; ieq< blocksize; ieq++)
-                {
-                sumel += sideOrient*meshSol.GetVal(cmesh->Block().Index(sequence,ieq),0);
-                }
-            }
-            if(std::abs(sumel)> 1.0e-8 ){
-                DebugStop();
-            }
-//            std::cout<<"Gel Index: "<< cel->Reference()->Index() <<" SumEl: "<<sumel<<std::endl;
-        }
-        
-        isLinear = false; // so it leaves after this iteration
-        // Now, we transfer the mixed problem dofs to the transport problem. These will be used
-        // to compute the transport of saturations in an algebraic way
-        fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
-        //TODOJOSE: wrap all these in a function
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(100); //TODOJOSE: PUT MATID FROM DATATRANSFER
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracInf);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracSup);
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(103);  //TODOJOSE: PUT MATID FROM DATATRANSFER
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(104); //TODOJOSE: PUT MATID FROM DATATRANSFER
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_transport_module->fAlgebraicTransport.inletmatid); //TODOJOSE: PUT MATID FROM DATATRANSFER
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_transport_module->fAlgebraicTransport.outletmatid); //TODOJOSE: PUT MATID FROM DATATRANSFER
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(4); //TODOJOSE: PUT MATID FROM DATATRANSFER
-        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(5); //TODOJOSE: PUT MATID FROM DATATRANSFER
-        m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
+        VerifyElementFluxes();
+        UpdateAllFluxInterfaces();
+        isLinearTracer = false; // so it leaves after this iteration
     }
-    
-   
-  
 //    fAlgebraicDataTransfer.TransferPressures();
 //    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
     
@@ -539,6 +464,82 @@ void TMRSSFIAnalysis::SFIIteration(){
 //    TransferToMixedModule(); // Transfer to mixed
 }
 
+void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
+    // to compute the transport of saturations in an algebraic way
+    fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_id);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracInf);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracSup);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracFrac);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracBound);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_transport_module->fAlgebraicTransport.inletmatid);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_transport_module->fAlgebraicTransport.outletmatid);
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(4); //Mat With No Flux
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(5);//Mat With No Flux
+    m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
+}
+
+void TMRSSFIAnalysis::VerifyElementFluxes(){
+    TPZMultiphysicsCompMesh *mixedmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_mixed_module->Mesh()) ;
+    TPZCompMesh *cmesh =mixedmesh->MeshVector()[0];
+    std::ofstream file("fuxmesh.txt");
+    const TPZFMatrix<STATE> &meshSol = cmesh->Solution();
+    mixedmesh->MeshVector()[0]->Print(file);
+    int nels =mixedmesh->MeshVector()[0]->NElements();
+    for (int iel =0; iel<nels-1; iel++) {
+        TPZCompEl *cel = mixedmesh->MeshVector()[0]->Element(iel);
+//            if(cel->Dimension() != cmesh->Dimension()) continue;
+        TPZCompElHDiv<pzshape::TPZShapeCube> *hdivel = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(cel);
+        TPZCompElHDiv<pzshape::TPZShapeQuad> *hdivelq = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeQuad> *>(cel);
+        TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivCollaps = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *>(hdivelq);
+        if (!hdivel && !hdivCollaps) {
+            continue;
+        }
+        if (!cel) continue;
+        int ncon = cel->NConnects();
+        int nCorners = cel->Reference()->NCornerNodes();
+        int nsides1 = cel->Reference()->NSides(1);
+        int nsides = cel->Reference()->NSides();
+        REAL sumel=0.0;
+        for (int icon=0; icon<ncon-1; icon++) {
+            TPZConnect &con = cel->Connect(icon);
+            int sideOrient =0;
+            if(!hdivCollaps){
+                 sideOrient = hdivel->GetSideOrient(nCorners+nsides1+icon);
+            }
+            else{
+                if (hdivCollaps && icon < 5) {
+                    sideOrient = hdivCollaps->GetSideOrient(nCorners+icon);
+                }
+                 
+            }
+            if (hdivCollaps && icon == 4) {
+                ncon++;
+                continue;
+            }
+            if (hdivCollaps && icon == 5) {
+                sideOrient = hdivCollaps->GetSideOrient(8);
+            }
+            if (hdivCollaps && icon == 6) {
+                sideOrient = hdivCollaps->GetSideOrient(9);
+            }
+            
+           
+            int sequence =con.fSequenceNumber;
+            int64_t pos = cmesh->Block().Position(sequence);
+            if(sequence==-1) continue;
+            int blocksize = cmesh->Block().Size(sequence);
+            for(int ieq=0; ieq< blocksize; ieq++)
+            {
+            sumel += sideOrient*meshSol.GetVal(cmesh->Block().Index(sequence,ieq),0);
+            }
+        }
+        if(std::abs(sumel)> 1.0e-8 ){
+            DebugStop();
+        }
+//            std::cout<<"Gel Index: "<< cel->Reference()->Index() <<" SumEl: "<<sumel<<std::endl;
+    }
+}
 
 void TMRSSFIAnalysis::TransferToTransportModule(){
     

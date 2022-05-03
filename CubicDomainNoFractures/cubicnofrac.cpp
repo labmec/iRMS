@@ -205,8 +205,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     //FracAndReservoirProperties
     REAL kappa=1.0;
     int  id1=EVolume;
-    std::vector<std::pair<int, REAL>> idPerm(1);
-    idPerm[0]= std::make_pair(id1,kappa);
+    std::map<int, REAL> idPerm;
+    idPerm[id1]= kappa;
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     // PostProcess controls
@@ -219,8 +219,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
-    sim_data.mTPostProcess.m_vecnames = vecnames;
-    sim_data.mTPostProcess.m_scalnames = scalnames;
+    sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
+    sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
     return sim_data;
 }
 

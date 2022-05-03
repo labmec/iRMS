@@ -274,7 +274,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTGeometry.mInterface_material_idFracInf = 101;
     sim_data.mTGeometry.mInterface_material_idFracSup = 102;
     sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
-    sim_data.mTGeometry.mIterface_material_idFracBound = 104;
+    sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
 
     
@@ -335,8 +335,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTNumerics.m_max_iter_sfi = 1;
     
     // BorderElementOrder
-    sim_data.mTNumerics.m_BorderElementPresOrder=1;
-    sim_data.mTNumerics.m_BorderElementFluxOrder=1;
+    sim_data.mTNumerics.m_MortarBorderElementPresOrder=1;
+    sim_data.mTNumerics.m_MortarBorderElementFluxOrder=1;
     
     // Other properties?
     sim_data.mTGeometry.mSkeletonDiv = 0;
@@ -357,8 +357,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     REAL kappa=1.0;
     int  id1=EVolume;
 //    int  id2=2;
-    std::vector<std::pair<int, REAL>> idPerm(1);
-    idPerm[0]= std::make_pair(id1,kappa);
+    std::map<int, REAL> idPerm;
+    idPerm[id1]= kappa;
 //    idPerm[1]= std::make_pair(id2,kappa);
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
@@ -375,8 +375,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
         scalnames.Push("p_average");
     }
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
-    sim_data.mTPostProcess.m_vecnames = vecnames;
-    sim_data.mTPostProcess.m_scalnames = scalnames;
+    sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
+    sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
     return sim_data;
 }
 
