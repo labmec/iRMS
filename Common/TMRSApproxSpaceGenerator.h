@@ -192,8 +192,15 @@ public:
     // algebraic transport mesh. The order is always 0
     TPZCompMesh * DiscontinuousCmesh(TPZAlgebraicDataTransfer &Atransfer);
     
+	
+	/// Builds the multiphysics cmesh and atomics cmeshes based on booleans previously set
+	/// @param order approximation order
     void BuildMixedMultiPhysicsCompMesh(int order);
     
+	
+	/// Generates a pressure/flow problem with H(div) space for flow and L2 space for pressure.
+	/// May 2022: Only works for problems without fractures and is only tested for 2D domains living in 3D
+	/// @param order approximation order
     void BuildMixed2SpacesMultiPhysicsCompMesh(int order);
     
     void BuildMixed4SpacesMultiPhysicsCompMesh(int order);

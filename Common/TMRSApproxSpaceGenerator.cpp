@@ -1516,10 +1516,20 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
 }
 
 void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
+		
+	// This function is currently only being used to test 2-D domains living in 3-D.
+	// We use it mainly to check if we can reproduce cte pressure for two 2-D domains intersecting each other
+	// perpendicularly. This generates an intersection that needs to be hybridized to reproduce cte pressure.
+	// Note that even though the domains are 2-D, we do not treat them as fractures. They thus receive a volume material TMRSDarcyFlowWithMem
+	
     int dimension = mGeometry->Dimension();
+	if(dimension != 2) DebugStop(); // This code is only being tested for 2D. It should work for 3D without any fractures. If you do run with 3D domain, be aware that is not tested for that!
+	if(isFracSim()) DebugStop(); // Not implemented to have fractures (i.e. elements of one lower dimension than the mesh's dimension)
+	
+	
     mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-    //    TPZMixedDarcyFlow *volume = nullptr;
+    
     mMixedOperator->SetDefaultOrder(order);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
     for (int d = 0; d <= dimension; d++) {
@@ -1550,22 +1560,6 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
         mMixedOperator->InsertMaterialObject(face);
     }
     
-    TMRSDarcyFractureFlowWithMem<TMRSMemory> * fracmat = nullptr;
-    for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[dimension-1])
-    {
-        std::string material_name = chunk.first;
-        std::cout << "physical name = " << material_name <<
-        " material id " << chunk.second << " dimension " << dimension-1 << std::endl;
-        int materia_id = chunk.second;
-//        matsWithMem.insert(materia_id);
-        fracmat = new TMRSDarcyFractureFlowWithMem<TMRSMemory>(materia_id,dimension-1);
-        TMRSMemory defaultmem;
-        fracmat->SetDataTransfer(mSimData);
-        mMixedOperator->InsertMaterialObject(fracmat);
-
-    }
-    // @TODO where are the material objects inserted with respect to fracture boundary conditions?
-
     TPZManVector<TPZCompMesh *, 3> mesh_vec(3);
     mesh_vec[0] = HdivFluxCmesh(order);
     mesh_vec[1] = DiscontinuousCmesh(order,1);
