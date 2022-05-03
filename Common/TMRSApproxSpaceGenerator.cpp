@@ -1564,7 +1564,7 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
         mMixedOperator->InsertMaterialObject(fracmat);
 
     }
-    
+    // @TODO where are the material objects inserted with respect to fracture boundary conditions?
 
     TPZManVector<TPZCompMesh *, 3> mesh_vec(3);
     mesh_vec[0] = HdivFluxCmesh(order);
@@ -2220,6 +2220,7 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
 #endif
     if(dim == mGeometry->Dimension())
     {
+        // @TODO why not use the reservoir property datastructure?
         std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
         for (auto chunk : DomainDimNameAndPhysicalTag[dim]) {
 #ifdef PZDEBUG
