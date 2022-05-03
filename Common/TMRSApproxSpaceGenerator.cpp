@@ -4066,9 +4066,10 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         TPZCompEl *cel = cmesh->Element(it.second);
         TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
         TPZAutoPointer<TPZGuiInterface> gui;
-        subcmesh->SetAnalysisSkyline(0, 0, gui);
+//        subcmesh->SetAnalysisSkyline(0, 0, gui);
 //		subcmesh->SetAnalysisFStruct(0);
-//		subcmesh->SetAnalysisSparse(8);
+		// MATRIX HAS TO BE SPARSE TO DO PIVOTING
+		subcmesh->SetAnalysisSparse(8);
     }
     //    GroupandCondenseElements();
     //    GroupandCondenseElementsEigen();

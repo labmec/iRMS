@@ -153,7 +153,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     
     bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = true;
+	const bool isRunWithTranport = false;
     
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
@@ -185,7 +185,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     TMRSDataTransfer sim_data;
 	// ----- Approximation space -----
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-	sim_data.mTNumerics.m_mhm_mixed_Q = false;
+	sim_data.mTNumerics.m_mhm_mixed_Q = true;
 	sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
 
     if (simcase == 1)

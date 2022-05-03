@@ -129,8 +129,13 @@ void RunProblem(const int simcase)
     
     
     TMRSDataTransfer sim_data;
-    FillDataTransfer(sim_data);
+	// ----- Approximation space -----
+	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
+	sim_data.mTNumerics.m_mhm_mixed_Q = GENERATE(false,true);
+	sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     
+	FillDataTransfer(sim_data);
+	
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
     const bool printgmesh = true;
@@ -146,10 +151,7 @@ void RunProblem(const int simcase)
     }
 #endif
     
-    // ----- Approximation space -----
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q = false;
-    sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
+
     
     // ----- Setting gmesh -----
     // Code takes a fine and a coarse mesh to generate MHM data structure
@@ -157,11 +159,15 @@ void RunProblem(const int simcase)
     aspace.InitMatIdForMergeMeshes() = EInitVolumeMatForMHM;
     sim_data.mTFracProperties.m_matid = EFracture;
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
+	
+	// ----- Setting the global data transfer -----
+	aspace.SetDataTransfer(sim_data);
+	
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
+		
 //    aspace.SetGeometry(gmeshfine);
     
-    // ----- Setting the global data transfer -----
-    aspace.SetDataTransfer(sim_data);
+
     
     // ----- Creates the multiphysics compmesh -----
     int order = 1;
@@ -187,10 +193,11 @@ void RunProblem(const int simcase)
     cout << "\n--------------------- Solving ---------------------\n" << endl;
     mixAnalisys->Solve();
     
-    // The system is solve as non linear, so have to multiply by -1
-    mixed_operator->UpdatePreviousState(-1.);
     TPZFastCondensedElement::fSkipLoadSolution = false; // So we can postprocess variables correctly
     mixed_operator->LoadSolution(mixed_operator->Solution());
+	
+	// The system is solve as non linear, so have to multiply by -1
+	mixed_operator->UpdatePreviousState(-1.);
     
     // ----- Post processing -----
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
@@ -210,7 +217,7 @@ void RunProblem(const int simcase)
     
     const std::string qvarname = "Flux";
     STATE integratedflux = ComputeIntegralOverDomain(mixed_operator,qvarname);
-    if (fabs(integratedflux) < 1.e-12 ) integratedflux = 0.; // to make Approx(0.) work
+    if (fabs(integratedflux) < 1.e-11 ) integratedflux = 0.; // to make Approx(0.) work
     if(simcase == 4){ // case has a HUGE domain
         if (fabs(integratedflux) < 1.e-7 ) integratedflux = 0.; // to make Approx(0.) work
     }
@@ -266,11 +273,8 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
     sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
 
-    
-    // Simulation properties
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_mhm_mixed_Q          = true;
-    
+	sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
+        
     //FracAndReservoirProperties
     REAL kappa=1.0;
     int  id1=EVolume;
