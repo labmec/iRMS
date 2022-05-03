@@ -257,21 +257,21 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
     REAL zero_flux = 0.0, unit_pressure = 1.0, zero_pressure = 0.;
     
     // Domain material
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainDimNameAndMatId[3]["Volume"] = EVolume;
     
     // Domain boundary conditions
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,unit_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,zero_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,unit_pressure);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(EInlet,D_Type,unit_pressure);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[1] = std::make_tuple(EOutlet,D_Type,zero_pressure);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,unit_pressure);
             
     // Fracture material
-    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = EFracture;
+    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = EFracture;
     
     // Fracture boundary conditions
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(1);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(1);
+    sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
 
 	sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
         

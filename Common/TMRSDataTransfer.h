@@ -57,13 +57,13 @@ public:
          Contains the  name and material for elements of a certain dimension.
          @TODO why is there a dimension here? Are we going to simulate 2D problems?
          */
-        std::vector<std::map<std::string,int>> mDomainDimNameAndPhysicalTag;
+        std::vector<std::map<std::string,int>> mDomainDimNameAndMatId;
         
         /** @brief
          Contains the material id of the fractures by dimension.
          @TODO why is there a dimension here? Are there 1D fractures?
          */
-        std::vector<std::map<std::string,int>> mDomainFracDimNameAndPhysicalTag;
+        std::vector<std::map<std::string,int>> mDomainFracDimNameAndMatId;
         
         /** @brief
          MaterialID of the interface element that will be inserted in the transport mesh
@@ -104,8 +104,8 @@ public:
         /** @brief Default constructor */
         TGeometry(){
             
-            mDomainDimNameAndPhysicalTag.resize(4);
-            mDomainFracDimNameAndPhysicalTag.resize(3);
+            mDomainDimNameAndMatId.resize(4);
+            mDomainFracDimNameAndMatId.resize(3);
         }
         
         /** @brief Destructor */
@@ -115,8 +115,8 @@ public:
         
         /** @brief Copy constructor */
         TGeometry(const TGeometry &other){
-            mDomainDimNameAndPhysicalTag = other.mDomainDimNameAndPhysicalTag;
-            mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
+            mDomainDimNameAndMatId = other.mDomainDimNameAndMatId;
+            mDomainFracDimNameAndMatId = other.mDomainFracDimNameAndMatId;
             mInterface_material_id=other.mInterface_material_id;
             mInterface_material_idFracSup = other.mInterface_material_idFracSup;
             mInterface_material_idFracInf = other.mInterface_material_idFracInf;
@@ -146,8 +146,8 @@ public:
         TGeometry &operator=(const TGeometry &other){
             if (this != & other) // prevent self-assignment
                 {
-                mDomainDimNameAndPhysicalTag = other.mDomainDimNameAndPhysicalTag;
-                mDomainFracDimNameAndPhysicalTag = other.mDomainFracDimNameAndPhysicalTag;
+                mDomainDimNameAndMatId = other.mDomainDimNameAndMatId;
+                mDomainFracDimNameAndMatId = other.mDomainFracDimNameAndMatId;
                 mInterface_material_id=other.mInterface_material_id;
                 mInterface_material_idFracSup = other.mInterface_material_idFracSup;
                 mInterface_material_idFracInf = other.mInterface_material_idFracInf;
@@ -175,9 +175,9 @@ public:
             return *this;
         }
         
-        const bool isThereFracture() const {return mDomainFracDimNameAndPhysicalTag[0].size() ||
-            mDomainFracDimNameAndPhysicalTag[1].size() ||
-            mDomainFracDimNameAndPhysicalTag[2].size();}
+        const bool isThereFracture() const {return mDomainFracDimNameAndMatId[0].size() ||
+            mDomainFracDimNameAndMatId[1].size() ||
+            mDomainFracDimNameAndMatId[2].size();}
         
     };
     
@@ -393,33 +393,33 @@ public:
          * @brief Contains the boundary conditions (material_id), condition type and value of the mixed problem
          * @TODO is it PhysicalTag or matid??
          */
-        TPZManVector<std::tuple<int, int, REAL>> mBCMixedPhysicalTagTypeValue;
+        TPZManVector<std::tuple<int, int, REAL>> mBCMixedMatIdTypeValue;
         /**
          * @brief Contains the boundary conditions (material_id), condition type and value of the fractures
          * // @TODO why a separate list for the fractures. In the computational mesh there is only one list of materials
          * // should be we verify if none of the material ids in this vector occurs in the material id vector of the volumes
          */
-        TPZManVector<std::tuple<int, int, REAL>> mBCMixedFracPhysicalTagTypeValue;
+        TPZManVector<std::tuple<int, int, REAL>> mBCMixedFracMatIdTypeValue;
         /**
          * @brief Contains the boundary conditions (material_id), condition type and value of the transport problem
          */
-        TPZManVector<std::tuple<int, int, REAL>> mBCTransportPhysicalTagTypeValue;
+        TPZManVector<std::tuple<int, int, REAL>> mBCTransportMatIdTypeValue;
         
         /**
          * @brief Contains the boundary conditions (material_id), condition type and value of fractures in the transport problem
          */
-        TPZManVector<std::tuple<int, int, REAL>> mBCTransportFracPhysicalTagTypeValue;
+        TPZManVector<std::tuple<int, int, REAL>> mBCTransportFracMatIdTypeValue;
         
         /** @brief Default constructor */
         TBoundaryConditions(){
             
-            mBCMixedPhysicalTagTypeValue.Resize(0);
+            mBCMixedMatIdTypeValue.Resize(0);
             
-            mBCMixedFracPhysicalTagTypeValue.Resize(0);
+            mBCMixedFracMatIdTypeValue.Resize(0);
             
-            mBCTransportPhysicalTagTypeValue.Resize(0);
+            mBCTransportMatIdTypeValue.Resize(0);
             
-            mBCTransportFracPhysicalTagTypeValue.Resize(0);
+            mBCTransportFracMatIdTypeValue.Resize(0);
         }
         
         /** @brief Destructor */
@@ -429,20 +429,20 @@ public:
         
         /** @brief Copy constructor */
         TBoundaryConditions(const TBoundaryConditions &other){
-            mBCMixedPhysicalTagTypeValue = other.mBCMixedPhysicalTagTypeValue;
-            mBCMixedFracPhysicalTagTypeValue = other.mBCMixedFracPhysicalTagTypeValue;
-            mBCTransportPhysicalTagTypeValue = other.mBCTransportPhysicalTagTypeValue;
-            mBCTransportFracPhysicalTagTypeValue = other.mBCTransportFracPhysicalTagTypeValue;
+            mBCMixedMatIdTypeValue = other.mBCMixedMatIdTypeValue;
+            mBCMixedFracMatIdTypeValue = other.mBCMixedFracMatIdTypeValue;
+            mBCTransportMatIdTypeValue = other.mBCTransportMatIdTypeValue;
+            mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
         }
         
         /** @brief Copy assignment operator*/
         TBoundaryConditions &operator=(const TBoundaryConditions &other){
             if (this != & other) // prevent self-assignment
                 {
-                mBCMixedPhysicalTagTypeValue = other.mBCMixedPhysicalTagTypeValue;
-                mBCMixedFracPhysicalTagTypeValue = other.mBCMixedFracPhysicalTagTypeValue;
-                mBCTransportPhysicalTagTypeValue = other.mBCTransportPhysicalTagTypeValue;
-                mBCTransportFracPhysicalTagTypeValue = other.mBCTransportFracPhysicalTagTypeValue;
+                mBCMixedMatIdTypeValue = other.mBCMixedMatIdTypeValue;
+                mBCMixedFracMatIdTypeValue = other.mBCMixedFracMatIdTypeValue;
+                mBCTransportMatIdTypeValue = other.mBCTransportMatIdTypeValue;
+                mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
                 }
             return *this;
         }

@@ -182,16 +182,16 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     int Mixed_Type = 2;
     REAL zero_flux = 0.0;
     
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainDimNameAndMatId[3]["Volume"] = EVolume;
     
     
     // Boundary conditions
     if (caseToSim < 3) {
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,2.);
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,0.);
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,1.);
+        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
+        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(EInlet,D_Type,2.);
+        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[1] = std::make_tuple(EOutlet,D_Type,0.);
+        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,1.);
     }
     else {
         DebugStop();

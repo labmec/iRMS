@@ -163,7 +163,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     
     // Fracture material
     TMRSDataTransfer sim_data;
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[2]["Fractures"] = globFracID;
+    sim_data.mTGeometry.mDomainDimNameAndMatId[2]["Fractures"] = globFracID;
 
     // NS: What are these?
     sim_data.mTGeometry.mInterface_material_id = 100;
@@ -179,8 +179,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     // Boundary conditions
     if (caseToSim == 0) {
         int bcfracid = EPressure;
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(1);
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(bcfracid,D_Type,pressure_in);
+        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(1);
+        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(bcfracid,D_Type,pressure_in);
     }
     else {
         DebugStop();

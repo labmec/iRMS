@@ -286,28 +286,28 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     REAL zero_flux = 0.0, unit_pressure = 1.0, zero_pressure = 0., pressure_two = 2.;
     
     // Domain material
-    sim_data.mTGeometry.mDomainDimNameAndPhysicalTag[3]["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[2]["Fractures"] = EFracture;
-    sim_data.mTGeometry.mDomainFracDimNameAndPhysicalTag[1]["EIntersection"] = EIntersection;
+    sim_data.mTGeometry.mDomainDimNameAndMatId[3]["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = EFracture;
+    sim_data.mTGeometry.mDomainFracDimNameAndMatId[1]["EIntersection"] = EIntersection;
     
     // Domain boundary conditions
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[0] = std::make_tuple(EInlet,D_Type,pressure_two);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,zero_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,unit_pressure);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(EInlet,D_Type,pressure_two);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[1] = std::make_tuple(EOutlet,D_Type,zero_pressure);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,unit_pressure);
     
     // Fracture boundary conditions
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[1] = std::make_tuple(EFracInlet,D_Type,pressure_two);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[2] = std::make_tuple(EFracOutlet,D_Type,zero_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[3] = std::make_tuple(EPLossAtIntersect,Mixed_Type,0.5);
+    sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(4);
+    sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
+    sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[1] = std::make_tuple(EFracInlet,D_Type,pressure_two);
+    sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[2] = std::make_tuple(EFracOutlet,D_Type,zero_pressure);
+    sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[3] = std::make_tuple(EPLossAtIntersect,Mixed_Type,0.5);
     sim_data.mTFracIntersectProperties.m_IntersectionPressureLossId = EPLossAtIntersect;
     
     if (simcase==0 || simcase==2 || simcase==4 || simcase==6 ) {
-        sim_data.mTBoundaryConditions.mBCMixedPhysicalTagTypeValue[1] = std::make_tuple(EOutlet,D_Type,pressure_two);
-        sim_data.mTBoundaryConditions.mBCMixedFracPhysicalTagTypeValue[2] = std::make_tuple(EFracOutlet,D_Type,pressure_two);
+        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[1] = std::make_tuple(EOutlet,D_Type,pressure_two);
+        sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[2] = std::make_tuple(EFracOutlet,D_Type,pressure_two);
     }
     
 
@@ -318,14 +318,14 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
 //    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue.Resize(7);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[2] = std::make_tuple(ENoflux,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[3] = std::make_tuple(EFaceBCPressure,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[4] = std::make_tuple(EFracNoFlux,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[5] = std::make_tuple(EFracInlet,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportPhysicalTagTypeValue[6] = std::make_tuple(EFracOutlet,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue.Resize(7);
+    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
+    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[2] = std::make_tuple(ENoflux,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[3] = std::make_tuple(EFaceBCPressure,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[4] = std::make_tuple(EFracNoFlux,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[5] = std::make_tuple(EFracInlet,5,1.);
+    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[6] = std::make_tuple(EFracOutlet,5,1.);
     sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
  

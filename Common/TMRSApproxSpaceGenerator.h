@@ -276,9 +276,9 @@ public:
     void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh);
     
     
-    const bool isFracSim() const {return mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[0].size() ||
-        mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[1].size() ||
-        mSimData.mTGeometry.mDomainFracDimNameAndPhysicalTag[2].size();}
+    const bool isFracSim() const {return mSimData.mTGeometry.mDomainFracDimNameAndMatId[0].size() ||
+        mSimData.mTGeometry.mDomainFracDimNameAndMatId[1].size() ||
+        mSimData.mTGeometry.mDomainFracDimNameAndMatId[2].size();}
     
     
 };

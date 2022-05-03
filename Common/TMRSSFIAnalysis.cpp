@@ -187,7 +187,7 @@ void TMRSSFIAnalysis::FillProperties(){
             m_transport_module->fAlgebraicTransport.fdt = m_sim_data->mTNumerics.m_dt;
             //Type 0.- InletCondition
             //Type 1.- OutletCondition
-            for (auto cond:m_sim_data->mTBoundaryConditions.mBCTransportPhysicalTagTypeValue){
+            for (auto cond:m_sim_data->mTBoundaryConditions.mBCTransportMatIdTypeValue){
                 REAL idVal = std::get<0>(cond);
                 REAL idType = std::get<1>(cond);
                 REAL idValue = std::get<2>(cond);
