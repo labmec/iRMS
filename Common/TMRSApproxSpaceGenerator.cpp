@@ -708,7 +708,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     }
     buildmatids.insert(mSimData.mTGeometry.m_zeroOrderHdivFluxMatId);
     buildmatids.insert(bcmatids.begin(),bcmatids.end());
-    int borderOrder =mSimData.mTNumerics.m_BorderElementFluxOrder;
+    int borderOrder =mSimData.mTNumerics.m_MortarBorderElementFluxOrder;
     cmesh->SetDefaultOrder(borderOrder);
     cmesh->ApproxSpace().CreateDisconnectedElements(true);
     
@@ -1038,7 +1038,7 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepre
     // create discontinous elements of dimension-1
     cmesh->SetDimModel(dimension-1);
     std::set<int> mortarids = {mSimData.mTGeometry.m_MortarMatId};
-    int borderOrder = mSimData.mTNumerics.m_BorderElementPresOrder;
+    int borderOrder = mSimData.mTNumerics.m_MortarBorderElementPresOrder;
     cmesh->SetDefaultOrder(borderOrder);
     if(borderOrder == 0)
     {
@@ -1332,7 +1332,7 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
         int fracvol1ID = mSimData.mTGeometry.mInterface_material_idFracInf;
         int fracvol2ID = mSimData.mTGeometry.mInterface_material_idFracSup;
         int fracFracID = mSimData.mTGeometry.mInterface_material_idFracFrac;
-        int fracbounId = mSimData.mTGeometry.mIterface_material_idFracBound;
+        int fracbounId = mSimData.mTGeometry.mInterface_material_idFracBound;
         
         // Here, the interface materials are created between fracture/volume, fracture/fracture, and fracture/boundary
         TPZBndCond * face = volume->CreateBC(volume,fracvol1ID,dimension-1,val1,val2);
@@ -2137,8 +2137,6 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
     if(mSimData.mTNumerics.m_mhm_mixed_Q){
         cond2 =subDomainIndexNeig!=-1 && (subDomainIndexNeig > subDomainIndex);
     }
-    
-    // @TODO: Delete cond2?
     if(cond1 )
     {
         first_lagrange = mSimData.mTGeometry.m_negLagrangeMatId;
@@ -2828,8 +2826,8 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     int dimension = mGeometry->Dimension();
     mTransportOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
-    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
-    //    TPZTracerFlow * volume = nullptr;
+//    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
+        TPZTracerFlow * volume = nullptr;
     
     mTransportOperator->SetDefaultOrder(0);
     std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndPhysicalTag;
@@ -2838,9 +2836,9 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
             std::string material_name = chunk.first;
             std::cout << "physical name = " << material_name << std::endl;
             int materia_id = chunk.second;
-            volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
-            volume->SetDataTransfer(mSimData);
-            //               volume = new  TPZTracerFlow(materia_id,d);
+//            volume = new TMRSMultiphaseFlow<TMRSMemory>(materia_id,d);
+//            volume->SetDataTransfer(mSimData);
+              volume = new  TPZTracerFlow(materia_id,d);
             mTransportOperator->InsertMaterialObject(volume);
         }
     }
@@ -2862,13 +2860,13 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     
     int transport_matid = mSimData.mTGeometry.mInterface_material_id;
     {
-        TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
-        interface->SetDataTransfer(mSimData);
-        mTransportOperator->InsertMaterialObject(interface);
+//        TMRSMultiphaseFlow<TMRSMemory> * interface = new TMRSMultiphaseFlow<TMRSMemory>(transport_matid,dimension-1);
+//        interface->SetDataTransfer(mSimData);
+//        mTransportOperator->InsertMaterialObject(interface);
         
-        //        TPZTracerFlow * interface = new TPZTracerFlow(transport_matid,dimension-1);
-        ////        interface->SetDataTransfer(mSimData);
-        //        mTransportOperator->InsertMaterialObject(interface);
+                TPZTracerFlow * interface = new TPZTracerFlow(transport_matid,dimension-1);
+        //        interface->SetDataTransfer(mSimData);
+                mTransportOperator->InsertMaterialObject(interface);
     }
     
     mTransportOperator->SetDimModel(dimension);
@@ -3052,7 +3050,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     int fracvol1ID = mSimData.mTGeometry.mInterface_material_idFracInf;
     int fracvol2ID = mSimData.mTGeometry.mInterface_material_idFracSup;
     int fracFracID = mSimData.mTGeometry.mInterface_material_idFracFrac;
-    int fracbounId = mSimData.mTGeometry.mIterface_material_idFracBound;
+    int fracbounId = mSimData.mTGeometry.mInterface_material_idFracBound;
     
     TPZBndCond * face = volume->CreateBC(volume,fracvol1ID,1,val1,val2);
     mTransportOperator->InsertMaterialObject(face);
@@ -3652,10 +3650,10 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     }
     //
     int n_mats = mSimData.mTReservoirProperties.m_permeabilitiesbyId.size();
-    for(int imat=0; imat<n_mats; imat++){
-        int matId = mSimData.mTReservoirProperties.m_permeabilitiesbyId[imat].first;
-        REAL kappa = mSimData.mTReservoirProperties.m_permeabilitiesbyId[imat].second;
-        
+    for (auto iter = mSimData.mTReservoirProperties.m_permeabilitiesbyId.begin(); iter != mSimData.mTReservoirProperties.m_permeabilitiesbyId.end(); ++iter){
+     
+        int matId = iter->first;
+        REAL kappa = iter->second;
         
         TPZMaterial * material1 = cmesh->FindMaterial(matId); ;
         TPZMatWithMem<TMRSMemory> * mat_with_memory1 = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material1);
@@ -3842,7 +3840,7 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     int matIdFracSup = mSimData.mTGeometry.mInterface_material_idFracSup;
     int matIdFracInf = mSimData.mTGeometry.mInterface_material_idFracInf;
     int matIdFracFrac = mSimData.mTGeometry.mInterface_material_idFracFrac;
-    int matIdFracBound = mSimData.mTGeometry.mIterface_material_idFracBound;
+    int matIdFracBound = mSimData.mTGeometry.mInterface_material_idFracBound;
     
     std::set<int> FracMatID;
     FracMatID.insert(fracmat);
@@ -4068,9 +4066,9 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         TPZCompEl *cel = cmesh->Element(it.second);
         TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
         TPZAutoPointer<TPZGuiInterface> gui;
-//        subcmesh->SetAnalysisSkyline(0, 0, gui);
+        subcmesh->SetAnalysisSkyline(0, 0, gui);
 //		subcmesh->SetAnalysisFStruct(0);
-		subcmesh->SetAnalysisSparse(8);
+//		subcmesh->SetAnalysisSparse(8);
     }
     //    GroupandCondenseElements();
     //    GroupandCondenseElementsEigen();

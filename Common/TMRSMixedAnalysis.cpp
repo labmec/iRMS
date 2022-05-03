@@ -193,8 +193,8 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
         
     TPZStack<std::string,10> scalnames, vecnames;
     
-    scalnames = m_sim_data->mTPostProcess.m_scalnames;
-    vecnames = m_sim_data->mTPostProcess.m_vecnames;
+    scalnames = m_sim_data->mTPostProcess.m_scalnamesDarcy;
+    vecnames = m_sim_data->mTPostProcess.m_vecnamesDarcy;
     
     int div = 0;
     if (dimToPost < 0){

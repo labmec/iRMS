@@ -554,10 +554,7 @@ void TMRSTransportAnalysis::AssembleResidual_Eigen(){
 void TMRSTransportAnalysis::PostProcessTimeStep(){
     
     TPZStack<std::string,10> scalnames, vecnames;
-    // @TODO:: Locate these variables in mTPostProcess
-    scalnames.Push("Sw");
-    scalnames.Push("So");
-    
+    scalnames = m_sim_data->mTPostProcess.m_scalnamesTransport;
     int div = 0;
     int dim = Mesh()->Reference()->Dimension();
     std::string file = m_sim_data->mTPostProcess.m_file_name_transport;

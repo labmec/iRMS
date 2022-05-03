@@ -18,7 +18,6 @@ TMRSDataTransfer::TMRSDataTransfer(const TMRSDataTransfer &other){
     mTPetroPhysics = other.mTPetroPhysics;
     mTFluidProperties = other.mTFluidProperties;
     mTReservoirProperties = other.mTReservoirProperties;
-    mTMultiphaseFunctions = other.mTMultiphaseFunctions;
     mTBoundaryConditions = other.mTBoundaryConditions;
     mTNumerics = other.mTNumerics;
     mTPostProcess = other.mTPostProcess;
@@ -36,7 +35,6 @@ TMRSDataTransfer & TMRSDataTransfer::operator=(const TMRSDataTransfer &other){
         mTPetroPhysics = other.mTPetroPhysics;
         mTFluidProperties = other.mTFluidProperties;
         mTReservoirProperties = other.mTReservoirProperties;
-        mTMultiphaseFunctions = other.mTMultiphaseFunctions;
         mTBoundaryConditions = other.mTBoundaryConditions;
         mTNumerics = other.mTNumerics;
         mTPostProcess = other.mTPostProcess;
