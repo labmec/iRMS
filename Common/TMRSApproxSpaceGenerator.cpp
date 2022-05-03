@@ -4276,7 +4276,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     mSubdomainIndexGel.Fill(-1);
     for (int64_t el = 0; el<nel_fine; el++) {
         auto *gel = finemesh->Element(el);
-        if(!gel) continue;
+        if(!gel || gel->HasSubElement()) continue;
         if(gel->Dimension() != dim) continue;
         int matid = gel->MaterialId();
         mSubdomainIndexGel[el] = matid-fInitMatIdForMergeMeshes+first3DCoarse;
@@ -4534,7 +4534,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 	// For now, just to make it work, we are assigning the subdomaindex of the first
 	// higher dimensional element it finds.
 	for (auto gel: finemesh->ElementVec()) {
-		if(!gel) continue;
+		if(!gel || gel->HasSubElement()) continue;
 		if(gel->MaterialId() != FractureMatId()) continue;
 		
 		TPZGeoElSide gelside(gel);
@@ -4556,7 +4556,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 	}
 	
 	for (auto gel: finemesh->ElementVec()) {
-		if(!gel) continue;
+		if(!gel || gel->HasSubElement()) continue;
 		if(gel->MaterialId() != mSimData.mTFracIntersectProperties.m_IntersectionId) continue;
 		
 		TPZGeoElSide gelside(gel);

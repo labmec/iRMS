@@ -92,7 +92,7 @@ int main(){
     // 7: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
 	// 9: 4 elements, 2 frac, w/ intersection
-    int simcase = 0;
+    int simcase = 1;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -162,7 +162,6 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     else if (simcase == 1)
         ReadMeshesFlemischCase1(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else if (simcase == 2){
-        isRefineMesh = false;
         ReadMeshesFlemischCase2(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     }
     else if (simcase == 3)
@@ -224,6 +223,17 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
 	
 	// ----- Setting the global data transfer -----
 	aspace.SetDataTransfer(sim_data);
+
+	if(isRefineMesh){
+		cout << "\n---------------------- Uniformly refining geomesh ----------------------" << endl;
+		gRefDBase.InitializeUniformRefPattern(ECube);
+		gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
+		gRefDBase.InitializeUniformRefPattern(EOned);
+		for (auto gel : gmeshfine->ElementVec()){
+			TPZManVector<TPZGeoEl*,10> children;
+			gel->Divide(children);
+		}
+	}
 	
 	aspace.SetGeometry(gmeshfine,gmeshcoarse);
 	{
@@ -233,16 +243,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
 	}
 	
-    if(isRefineMesh){
-        cout << "\n---------------------- Uniformly refining geomesh ----------------------" << endl;
-        gRefDBase.InitializeUniformRefPattern(ECube);
-        gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
-        gRefDBase.InitializeUniformRefPattern(EOned);
-        for (auto gel : aspace.mGeometry->ElementVec()){
-            TPZManVector<TPZGeoEl*,10> children;
-            gel->Divide(children);
-        }
-    }
+
     
 //    aspace.SetGeometry(gmeshfine);
     
