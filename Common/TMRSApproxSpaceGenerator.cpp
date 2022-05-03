@@ -2506,6 +2506,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     // ========================================================
     // Creating atomic comp meshes
     TPZManVector<TPZCompMesh *, 7> mesh_vec(7);
+
     mesh_vec[0] = HdivFluxCmesh(order);
     mesh_vec[1] = DiscontinuousCmesh(order,0);
     mesh_vec[2] = DiscontinuousCmesh(0,0);
@@ -2518,6 +2519,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 		GroupConnectsBySubdomain(mesh_vec[5]);
 		mesh_vec[6] = DiscontinuousCmesh(0,0);
 		if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+	}
+	else{
+		mesh_vec.resize(5);
+		mesh_vec[4] = DiscontinuousCmesh(0,0);
 	}
 
     // ========================================================
@@ -2533,9 +2538,11 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     }
 	
     // assign a subdomain to the lower level elements
-    IdentifySubdomainForLowdimensionElements(mesh_vec[0]);
+	if (isMHM){
+		IdentifySubdomainForLowdimensionElements(mesh_vec[0]);
+	}
 
-    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+    if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
 
     // ========================================================
     // Setting lagrange multiplier order
@@ -2547,10 +2554,17 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     active_approx_spaces[0] = 1;
     active_approx_spaces[1] = 1;
     active_approx_spaces[2] = 1;
-    active_approx_spaces[3] = 1;
-    active_approx_spaces[4] = 1;
-    active_approx_spaces[5] = 1;
-    active_approx_spaces[6] = 0;
+	active_approx_spaces[3] = 1;
+	if (isMHM) {
+		active_approx_spaces[4] = 1;
+		active_approx_spaces[5] = 1;
+		active_approx_spaces[6] = 0;
+	}
+	else{
+		active_approx_spaces.resize(5);
+		active_approx_spaces[4] = 0;
+	}
+    
     
     // ========================================================
     // Build multiphysics comp mesh
@@ -2562,14 +2576,16 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
         std::ofstream file("MixOpew.vtk");
         TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
     }
-    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
-    // ========================================================
+	
+    if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+    
+	// ========================================================
     // Creates interface elements for hybridized intersections
     if (mHybridizer)
     {
         CreateIntersectionInterfaceElements(mesh_vec);
     }
-    if(mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
+    if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
 
     // ========================================================
     // Initialize all fractures properties (TMRSMemory)
@@ -2577,10 +2593,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     
 #ifdef PZDEBUG
     {
-//    ofstream out("mphysics.vtk");
-//    TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, out);
-        std::ofstream sout("mixed_cmesh_four_spaces.txt");
-        mMixedOperator->Print(sout);
+//		ofstream out("mphysics.vtk");
+//		TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, out);
+//        std::ofstream sout("mixed_cmesh_four_spaces.txt");
+//        mMixedOperator->Print(sout);
     }
 #endif
 
@@ -2588,16 +2604,16 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 	// ========================================================
 	// In case MHM, put the elements in submeshes
     // Verify the integrity of the subdomain indices
-	if (mSimData.mTNumerics.m_mhm_mixed_Q)
+	if (isMHM)
     {
 		HideTheElements(mMixedOperator);
     }
 	
     // ========================================================
     // Condensing elements
-    TPZReservoirTools::CondenseElements(mMixedOperator, 3, true);
-    
-    TPZReservoirTools::PushConnectBackward(mMixedOperator, 3, 7);
+	TPZReservoirTools::CondenseElements(mMixedOperator, 3, true);
+	TPZReservoirTools::PushConnectBackward(mMixedOperator, 3, 7);
+	
 #ifdef PZDEBUG
     {
         std::ofstream out("SubStructuredMesh.txt");
