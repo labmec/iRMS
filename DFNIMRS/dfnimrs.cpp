@@ -92,7 +92,7 @@ int main(){
     // 7: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
 	// 9: 4 elements, 2 frac, w/ intersection
-    int simcase = 1;
+    int simcase = 2;
     string filenameCoarse, filenameFine;
     switch (simcase) {
         case 0:
@@ -185,7 +185,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     TMRSDataTransfer sim_data;
 	// ----- Approximation space -----
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-	sim_data.mTNumerics.m_mhm_mixed_Q = true;
+	sim_data.mTNumerics.m_mhm_mixed_Q = false;
 	sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
 
     if (simcase == 1)
@@ -644,15 +644,19 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
-    TPZStack<std::string,10> scalnames, vecnames;
+    TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
+    scalnamesTransport.Push("Sw");
+    scalnamesTransport.Push("So");
+    
     sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
     sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
+    sim_data.mTPostProcess.m_scalnamesTransport =scalnamesTransport;
     
     int n_steps = sim_data.mTNumerics.m_n_steps;
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
@@ -752,15 +756,19 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
     sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
-    TPZStack<std::string,10> scalnames, vecnames;
+    TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
     vecnames.Push("Flux");
     scalnames.Push("Pressure");
     if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
         scalnames.Push("g_average");
         scalnames.Push("p_average");
     }
+    scalnamesTransport.Push("Sw");
+    scalnamesTransport.Push("So");
+    
     sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
     sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
+    sim_data.mTPostProcess.m_scalnamesTransport =scalnamesTransport;
     
     int n_steps = sim_data.mTNumerics.m_n_steps;
     sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
