@@ -286,7 +286,7 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     REAL zero_flux = 0.0, unit_pressure = 1.0, zero_pressure = 0., pressure_two = 2.;
     
     // Domain material
-    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
     sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = EFracture;
     sim_data.mTGeometry.mDomainFracDimNameAndMatId[1]["EIntersection"] = EIntersection;
     

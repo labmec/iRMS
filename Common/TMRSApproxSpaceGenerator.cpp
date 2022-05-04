@@ -1195,7 +1195,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     //    TPZTracerFlow * volume = nullptr;
     //    cmesh->SetDefaultOrder(0);
     std::set<int> volIds;
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     
 	for (auto chunk : DomainDimNameAndPhysicalTag) {
 		std::string material_name = chunk.first;
@@ -1280,7 +1280,7 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
     TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
     
     // ---------------> Adding volume materials
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     std::set<int> volIds;
     std::set<int> boundaryId;
 	
@@ -1405,7 +1405,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTrans
     int dimension = mGeometry->Dimension();
     cmesh->SetDefaultOrder(order);
     
-    std::map<std::string,int> &DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> &DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     int nstate = 1;
     TPZVec<STATE> sol;
     
@@ -1529,7 +1529,7 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
     TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
     
     mMixedOperator->SetDefaultOrder(order);
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
 	for (auto chunk : DomainDimNameAndPhysicalTag) {
 		std::string material_name = chunk.first;
 		std::cout << "physical name = " << material_name << std::endl;
@@ -1666,7 +1666,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
     // TPZMixedDarcyFlow *volume = nullptr;
     mMixedOperator->SetDefaultOrder(1);
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     std::cout << "Creating material objects\n";
     
 	for (auto chunk : DomainDimNameAndPhysicalTag) {
@@ -2211,7 +2211,7 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
     {
         // @TODO why not use the reservoir property datastructure?
 		// NS: Do you think we should we save the data in two different data structures? Or just erase this one and keep everything in the reservoir property datastructure
-        std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+        std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
         for (auto chunk : DomainDimNameAndPhysicalTag) {
 #ifdef PZDEBUG
             std::string material_name = chunk.first;
@@ -2343,7 +2343,7 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
     // ---------------> Adding volume materials
     cout << "\n---------------------- Inserting materials in multiphysics cmesh ----------------------" << endl;
     TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     
 	for (auto chunk : DomainDimNameAndPhysicalTag) {
 		std::string material_name = chunk.first;
@@ -2431,7 +2431,7 @@ void TMRSApproxSpaceGenerator::GetTransportMaterials(std::set<int> &MatsWithmem,
     
     const int dimension = mGeometry->Dimension();
     // ---------------> Adding volume materials
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
 
 	for (auto chunk : DomainDimNameAndPhysicalTag) {
 		std::string material_name = chunk.first;
@@ -2633,7 +2633,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
     {
         int dimension = mGeometry->Dimension();
         TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-        std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+        std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
 		for (auto chunk : DomainDimNameAndPhysicalTag) {
 			std::string material_name = chunk.first;
 			std::cout << "physical name = " << material_name << std::endl;
@@ -2700,7 +2700,7 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
     
     {
         std::set<int> matids;
-        for (auto omId:mSimData.mTGeometry.mDomainDimNameAndMatId ) {      //Materials
+        for (auto omId:mSimData.mTGeometry.mDomainNameAndMatId ) {      //Materials
             int valor = omId.second;
             matids.insert(omId.second);
         } ;
@@ -2821,7 +2821,7 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
         TPZTracerFlow * volume = nullptr;
     
     mTransportOperator->SetDefaultOrder(0);
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
 
 	for (auto chunk : DomainDimNameAndPhysicalTag) {
 		std::string material_name = chunk.first;
@@ -3002,7 +3002,7 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     //    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
     TPZTracerFlow * volume = nullptr;
     mTransportOperator->SetDefaultOrder(0);
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     
 	for (auto chunk : DomainDimNameAndPhysicalTag) {
 		std::string material_name = chunk.first;
@@ -3118,7 +3118,7 @@ TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(TPZAl
     //    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
     TPZPostProcessResProp * volume = nullptr;
     auxmesh->SetDefaultOrder(0);
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     
 	for (auto chunk : DomainDimNameAndPhysicalTag) {
 		std::string material_name = chunk.first;
@@ -3221,7 +3221,7 @@ void TMRSApproxSpaceGenerator::LinkMemory(TPZMultiphysicsCompMesh * MixedOperato
 //        DebugStop();
 //    }
 //    AdjustMemory(MixedOperator, mult);
-//    for (auto item : mSimData.mTGeometry.mDomainDimNameAndMatId[2]) {
+//    for (auto item : mSimData.mTGeometry.mDomainNameAndMatId[2]) {
 //        int material_id = item.second;
 //        UnifyMaterialMemory(material_id, MixedOperator, mult);
 //        FillMaterialMemory(material_id, MixedOperator, mult);
@@ -3524,9 +3524,9 @@ void TMRSApproxSpaceGenerator::SetUpdateMaterialMemory(int material_id, TPZMulti
 
 void TMRSApproxSpaceGenerator::SetUpdateMemory(int dimension, TMRSDataTransfer & sim_data, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q){
 	if (dimension != 3) {
-		DebugStop(); //mDomainDimNameAndMatId only knows about 3D materials
+		DebugStop(); //mDomainNameAndMatId only knows about 3D materials
 	}
-    for (auto item : sim_data.mTGeometry.mDomainDimNameAndMatId) {
+    for (auto item : sim_data.mTGeometry.mDomainNameAndMatId) {
         int material_id = item.second;
         SetUpdateMaterialMemory(material_id, cmesh, update_memory_Q);
     }
@@ -3561,7 +3561,7 @@ void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
 //    TPZMixedDarcyFlow * volume = nullptr;
 //
 //    MixedFluxPressureCmesh->SetDefaultOrder(order);
-//    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag =   mSimData.mTGeometry.mDomainDimNameAndMatId;
+//    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag =   mSimData.mTGeometry.mDomainNameAndMatId;
 //    for (int d = 0; d <= dimension; d++) {
 //        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
 //            std::string material_name = chunk.first;
@@ -3607,7 +3607,7 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
     //    TPZMixedDarcyWithFourSpaces *volume = nullptr;
     TPZDarcyFlowWithMem *volume = nullptr;
     
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     
 	for (auto chunk : DomainDimNameAndPhysicalTag) {
 		std::string material_name = chunk.first;
@@ -3847,7 +3847,7 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     }
     
     // ---------------> Adding volume materials
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainDimNameAndMatId;
+    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     std::set<int> VolMatIds;
     int dimen = gel->Mesh()->Dimension();
     

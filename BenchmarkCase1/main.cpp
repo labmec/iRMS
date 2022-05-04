@@ -599,8 +599,8 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     //    dim_name_and_physical_tagCoarse[2]["outlet"] = -4;
     //    dim_name_and_physical_tagCoarse[2]["noflux"] = -1;
     
-    sim_data.mTGeometry.mDomainDimNameAndMatId["k33"] = 1;
-    sim_data.mTGeometry.mDomainDimNameAndMatId["k31"] = 2;
+    sim_data.mTGeometry.mDomainNameAndMatId["k33"] = 1;
+    sim_data.mTGeometry.mDomainNameAndMatId["k31"] = 2;
     sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = 10;
     sim_data.mTGeometry.mInterface_material_id = 100;
     sim_data.mTGeometry.mInterface_material_idFracInf = 101;
@@ -750,7 +750,7 @@ void BenchmarkCase1()
     sim_data.mTNumerics.m_mhm_mixed_Q = false;
     sim_data.mTNumerics.m_UseSubstructures_Q = false ;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4SpaceMortar;
-    //mSimData.mTGeometry.mDomainDimNameAndMatId
+    //mSimData.mTGeometry.mDomainNameAndMatId
     aspace.SetGeometry(gmesh);
   
     aspace.SetSubdomainIndexes(subdomain);

@@ -393,8 +393,8 @@ void FillDataTransfer(TMRSDataTransfer& sim_data){
     REAL zero_flux = 0.0, unit_pressure = 1.0, zero_pressure = 0.;
     
     // Domain material
-    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume2"] = EVolume2;
+    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainNameAndMatId["Volume2"] = EVolume2;
     
     // Domain boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
@@ -447,8 +447,8 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
     REAL zero_flux = 0.0, inlet_pressure = 4.0, outlet_pressure = 1.0;
     
     // Domain material
-    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume2"] = EVolume2;
+    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainNameAndMatId["Volume2"] = EVolume2;
     
     // Domain boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
@@ -564,8 +564,8 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     REAL zero_flux = 0.0, inlet_pressure = 1.0, outlet_flux = -1.0;
     
     // Domain material
-    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume2"] = EVolume2;
+    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainNameAndMatId["Volume2"] = EVolume2;
     
     // Domain boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
@@ -683,7 +683,7 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     REAL zero_flux = 0.0, outlet_pressure = 0.0, inlet_flux = -1.0;
     
     // Domain material
-    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
     
     // Domain boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);

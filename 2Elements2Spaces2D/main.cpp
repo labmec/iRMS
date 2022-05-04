@@ -56,7 +56,7 @@ void CaseSimple2Frac()
     sim_data.mTNumerics.m_four_approx_spaces_Q = false;
     sim_data.mTNumerics.m_mhm_mixed_Q = false;
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E2Space;
-    //mSimData.mTGeometry.mDomainDimNameAndMatId
+    //mSimData.mTGeometry.mDomainNameAndMatId
     aspace.SetGeometry(gmesh);
     aspace.SetSubdomainIndexes(subdomain);
     //    std::ofstream name("fractureTest.vtk");
@@ -94,8 +94,8 @@ void CaseSimple2Frac()
 TMRSDataTransfer Setting2Fractures(){
     
     TMRSDataTransfer sim_data;
-    sim_data.mTGeometry.mDomainDimNameAndMatId["k33"] = 1;
-//    sim_data.mTGeometry.mDomainDimNameAndMatId[3]["k31"] = 2;
+    sim_data.mTGeometry.mDomainNameAndMatId["k33"] = 1;
+//    sim_data.mTGeometry.mDomainNameAndMatId[3]["k31"] = 2;
 //    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = 10;
     sim_data.mTGeometry.mInterface_material_id = 100;
     sim_data.mTGeometry.mInterface_material_idFracInf = 101;

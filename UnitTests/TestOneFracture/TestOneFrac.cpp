@@ -343,7 +343,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     REAL pressure_in = 1.0 ;
     REAL zero_flux = 0.0;
     
-    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
     sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = globFracID;
 
     sim_data.mTGeometry.mInterface_material_id = 100;
