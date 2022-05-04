@@ -182,7 +182,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     int Mixed_Type = 2;
     REAL zero_flux = 0.0;
     
-    sim_data.mTGeometry.mDomainDimNameAndMatId[3]["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume"] = EVolume;
     
     
     // Boundary conditions

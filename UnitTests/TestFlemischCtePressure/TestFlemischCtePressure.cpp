@@ -257,7 +257,7 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
     REAL zero_flux = 0.0, unit_pressure = 1.0, zero_pressure = 0.;
     
     // Domain material
-    sim_data.mTGeometry.mDomainDimNameAndMatId[3]["Volume"] = EVolume;
+    sim_data.mTGeometry.mDomainDimNameAndMatId["Volume"] = EVolume;
     
     // Domain boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);

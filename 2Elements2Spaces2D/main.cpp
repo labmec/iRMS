@@ -94,7 +94,7 @@ void CaseSimple2Frac()
 TMRSDataTransfer Setting2Fractures(){
     
     TMRSDataTransfer sim_data;
-    sim_data.mTGeometry.mDomainDimNameAndMatId[2]["k33"] = 1;
+    sim_data.mTGeometry.mDomainDimNameAndMatId["k33"] = 1;
 //    sim_data.mTGeometry.mDomainDimNameAndMatId[3]["k31"] = 2;
 //    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = 10;
     sim_data.mTGeometry.mInterface_material_id = 100;

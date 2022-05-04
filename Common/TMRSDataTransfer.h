@@ -57,7 +57,7 @@ public:
          Contains the  name and material for elements of a certain dimension.
          @TODO why is there a dimension here? Are we going to simulate 2D problems?
          */
-        std::vector<std::map<std::string,int>> mDomainDimNameAndMatId;
+        std::map<std::string,int> mDomainDimNameAndMatId;
         
         /** @brief
          Contains the material id of the fractures by dimension.
@@ -103,8 +103,7 @@ public:
         
         /** @brief Default constructor */
         TGeometry(){
-            
-            mDomainDimNameAndMatId.resize(4);
+                        
             mDomainFracDimNameAndMatId.resize(3);
         }
         
