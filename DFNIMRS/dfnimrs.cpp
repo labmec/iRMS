@@ -22,6 +22,8 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
 void fixPossibleMissingIntersections(TPZGeoMesh* gmesh);
 
+void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes);
+
 void ReadMeshes(string& filenameFine, string& filenameCoarse,
                 TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 
@@ -93,7 +95,8 @@ int main(){
     // 7: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
 	// 9: 4 elements, 2 frac, w/ intersection
-    int simcase = 2;
+	// 10: Automated case 1
+    int simcase = 10;
     string filenameCoarse, filenameFine,filenamejson;
     // @TODO define a root name and extend it with _coarse, _fine, and also .json
     switch (simcase) {
@@ -140,7 +143,10 @@ int main(){
 			filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/intersectCoarse.msh";
 			filenameFine = basemeshpath + "/verificationMHMNoHybrid/intersectFine.msh";
 			break;
-        default:
+		case 10:
+			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
+			break;
+		default:
             break;
     }
     RunProblem(filenameFine,filenameCoarse,filenamejson,simcase);
@@ -157,6 +163,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
     bool isRefineMesh = false;
     const bool isPostProc = true;
 	const bool isRunWithTranport = false;
+	int initVolForMergeMeshes = EInitVolumeMatForMHM;
     
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
@@ -179,6 +186,8 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
         ReadMeshesWell(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else if (simcase == 8)
         ReadMeshesIP3D(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
+	else if (simcase == 10)
+		ReadMeshesDFN(filenamecoarse, gmeshfine, gmeshcoarse, initVolForMergeMeshes);
     else
         DebugStop();
         
@@ -220,7 +229,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
     // ----- Setting gmesh -----
     // Code takes a fine and a coarse mesh to generate MHM data structure
     TMRSApproxSpaceGenerator aspace;
-    aspace.InitMatIdForMergeMeshes() = EInitVolumeMatForMHM;
+	aspace.InitMatIdForMergeMeshes() = initVolForMergeMeshes;
     sim_data.mTFracProperties.m_matid = EFracture;
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
 	
@@ -859,6 +868,116 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
+
+void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes) {
+	using json = nlohmann::json;
+	std::string filenamejson = filenameBase + ".json";
+	
+	std::ifstream filejson(filenamejson);
+	json input = json::parse(filejson,nullptr,true,true); // to ignore comments in json file
+
+	// ===================> Coarse mesh <=======================
+	TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
+	TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
+	
+	std::set<int> allmatids; // use to check for repeated matids
+	
+	if(input.find("Domains") == input.end()) DebugStop();
+	for(auto& domain : input["Domains"]){
+		if(domain.find("matid") == domain.end()) DebugStop();
+		if(domain.find("name") == domain.end()) DebugStop();
+		const int matid = domain["matid"];
+		const string name = domain["name"];
+		dim_name_and_physical_tagCoarse[3][name] = matid;
+		const bool is_in = allmatids.find(matid) != allmatids.end();
+		if(is_in) DebugStop();
+		allmatids.insert(matid);
+	}
+	
+	if(input.find("Boundary") == input.end()) DebugStop();
+	for(auto& bc : input["Boundary"]){
+		if(bc.find("name") == bc.end()) DebugStop();
+		if(bc.find("type") == bc.end()) DebugStop();
+		if(bc.find("value") == bc.end()) DebugStop();
+		const string name = bc["name"];
+		const int matid = bc["matid"];
+		dim_name_and_physical_tagCoarse[2][name] = matid;
+		dim_name_and_physical_tagFine[2][name] = matid;
+		const bool is_in = allmatids.find(matid) != allmatids.end();
+		if(is_in) DebugStop();
+		allmatids.insert(matid);
+	}
+
+	string filenameCoarse = filenameBase + "_coarse.msh";
+	gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
+	
+	// ===================> Fine mesh <=======================
+	// Note that boundary elements have been added previously to the set dim_name_and_physical_tagFine
+		
+	// Check if we should use the same PZ MatId for all the fractures.
+	// 2022 May: that is the only possible case for now
+	int fracUniqueMatId = -10000, bcFracUniqueMatId = -10000;
+	if(input.find("FractureUniqueMatIDForIMRS") != input.end()) {
+		fracUniqueMatId = input["FractureUniqueMatIDForIMRS"];
+		const bool is_in = allmatids.find(fracUniqueMatId) != allmatids.end();
+		if(is_in) DebugStop();
+		allmatids.insert(fracUniqueMatId);
+	} else{
+		DebugStop(); // For now all fractures have to have same matid
+	}
+	if(input.find("FractureBCUniqueMatIDForIMRS") != input.end()) {
+		bcFracUniqueMatId = input["FractureBCUniqueMatIDForIMRS"];
+		const bool is_in = allmatids.find(bcFracUniqueMatId) != allmatids.end();
+		if(is_in) DebugStop();
+		allmatids.insert(bcFracUniqueMatId);
+	} else{
+		DebugStop(); // For now all fractures have to have same matid
+	}
+	
+	if(input.find("FractureInitMatId") == input.end()) DebugStop();
+	const int fracInitMatId = input["FractureInitMatId"];
+
+	
+	// Loop over fractures in Json
+	int fracCounter = 0;
+	if(input.find("Fractures") == input.end()) DebugStop();
+	for(auto& frac : input["Fractures"]){
+		const int matid = fracInitMatId + fracCounter*2;
+		string fracname = "Fracture" + to_string(fracCounter);
+		string bcfracname = "BCfrac" + to_string(fracCounter);
+		if(fracUniqueMatId != -10000){
+			dim_name_and_physical_tagFine[2][fracname] = fracUniqueMatId;
+			dim_name_and_physical_tagFine[1][bcfracname] = bcFracUniqueMatId;
+		}
+		else{
+			const bool is_in = allmatids.find(matid) != allmatids.end();
+			if(is_in) DebugStop();
+			allmatids.insert(matid);
+			dim_name_and_physical_tagFine[2][fracname] = matid;
+		}
+		fracCounter++;
+	}
+
+	
+	// Adding volume physical tags
+	const int maxMatId = *allmatids.rbegin();
+	initVolForMergeMeshes = maxMatId + 1;
+	if(input.find("NCoarseGroups") == input.end()) DebugStop();
+	const int nCoarseGroups = input["NCoarseGroups"];
+	std::string volbase = "c";
+	for (int ivol = 0; ivol <= nCoarseGroups; ivol++) {
+		std::string ivolstring = volbase + to_string(ivol);
+		dim_name_and_physical_tagFine[3][ivolstring] = initVolForMergeMeshes + ivol;
+	}
+	
+	string filenameFine = filenameBase + "_fine.msh";
+	gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 
 void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
                              TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
