@@ -7,13 +7,14 @@
 #include "imrs_config.h"
 #include "pzlog.h"
 #include <tpzgeoelrefpattern.h>
+#include "json.hpp"
 
 // ----- Namespaces -----
 using namespace std;
 // ----- End of namespaces -----
 
 // ----- Functions -----
-void RunProblem(string& filenameFine, string& filenameCoarse, const int simucase);
+void RunProblem(string& filenameFine, string& filenameCoarse, const string &filenamejson, const int simcase);
 void FillDataTransfer(TMRSDataTransfer& sim_data);
 void FillDataTransferCase1(TMRSDataTransfer& sim_data);
 void FillDataTransferCase2(TMRSDataTransfer& sim_data);
@@ -27,7 +28,7 @@ void ReadMeshes(string& filenameFine, string& filenameCoarse,
 void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
                              TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 
-void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse,
+void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse, const string &filenamejson,
                              TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh);
 void ModifyBCsForCase2(TPZGeoMesh* gmesh);
@@ -93,7 +94,8 @@ int main(){
     // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
 	// 9: 4 elements, 2 frac, w/ intersection
     int simcase = 2;
-    string filenameCoarse, filenameFine;
+    string filenameCoarse, filenameFine,filenamejson;
+    // @TODO define a root name and extend it with _coarse, _fine, and also .json
     switch (simcase) {
         case 0:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/twoElCoarse.msh";
@@ -107,6 +109,7 @@ int main(){
         case 2:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case2_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case2_fine.msh";
+            filenamejson = basemeshpath + "/verificationMHMNoHybrid/fl_case2.json";
             break;
         case 3:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case3_coarse.msh";
@@ -140,14 +143,14 @@ int main(){
         default:
             break;
     }
-    RunProblem(filenameFine,filenameCoarse,simcase);
+    RunProblem(filenameFine,filenameCoarse,filenamejson,simcase);
     return 0;
 }
 // ----------------- End of Main -----------------
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
-void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
+void RunProblem(string& filenamefine, string& filenamecoarse, const string &filenamejson, const int simcase)
 {
     auto start_time = std::chrono::steady_clock::now();
     
@@ -162,7 +165,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
     else if (simcase == 1)
         ReadMeshesFlemischCase1(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else if (simcase == 2){
-        ReadMeshesFlemischCase2(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
+        ReadMeshesFlemischCase2(filenamefine,filenamecoarse,filenamejson, gmeshfine,gmeshcoarse);
     }
     else if (simcase == 3)
         ReadMeshesFlemischCase3(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
@@ -914,13 +917,33 @@ void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse,
+void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse, const string &filenamejson,
                              TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
     
     // ===================> Coarse mesh <=======================
     TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
-    
+    TPZGmshReader readcoarse;
+    std::ifstream filecoarse(filenameCoarse);
+    readcoarse.ReadPhysicalProperties4(filecoarse);
     // Domain
+    // @TODO  I dont understand, why cant the coarse element index be an indicator of the subdomain. Isnt that the purpose of the coarse mesh?
+    // the material of the coarse mesh should be the material that will be applied to the fine mesh
+    using json = nlohmann::json;
+
+    json input;
+    std::ifstream filejson(filenamejson);
+    // file >> input;
+    input = json::parse(filejson,nullptr,true,true); // to ignore comments in json file
+
+    auto &domains = input["Domains"];
+    if(domains.find("vol1") != domains.end())
+    {
+        std::cout << "found vol1 \n";
+    }
+    else
+    {
+        std::cout << "did not find vol1\n";
+    }
     std::string volbase = "c";
     for (int ivol = 1; ivol <= 512; ivol++) { // How to set this maximum?
         std::string ivolstring = volbase + to_string(ivol);
@@ -985,6 +1008,7 @@ void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse,
     dim_name_and_physical_tagFine[1]["fracIntersection_7_8"] = EIntersection;
             
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+    // @TODO Nao podemos colocar essas condicoes de contorno no arquivo gmsh?
     ModifyBCsForCase2(gmeshfine);
     
 }
@@ -1505,6 +1529,8 @@ void fixPossibleMissingIntersections(TPZGeoMesh* gmesh){
                 nInterCreated++;
             }
             if ((interEls.size() || nFracElsForSide > 1) && bcEls.size()) {
+                cout << "PLEASE CHECK CAREFULLY! An element may have a boundary even if it intersects\n";
+                DebugStop();
                 if(bcEls.size() > 1)
                     DebugStop(); // This is rather odd. Please check why there are two bcs at the same boundary
                 for (auto bcgeoel : bcEls) {

@@ -2,7 +2,7 @@
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake/")
 
 # This is not the best. Please create (the extense) list of needed files
-file(GLOB common_headers *.h)
+file(GLOB common_headers *.h json.hpp)
 file(GLOB common_sources *.cpp)
 
 # This package is here because iMRS is the only one that uses it
