@@ -478,6 +478,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	// ------------------------ Setting all fracs perm the same for now ------------------------
 	REAL permLastFrac = -1.;
 	const REAL fracFactor = 0.1; // @TODO: NOTE: NS: What is this?????????
+    // @TODO: PHIL: I believe the is the fracture width
 	for(auto& frac : input["Fractures"]){
 		if(frac.find("K") == frac.end()) DebugStop();
 		if(frac.find("phi") == frac.end()) DebugStop();
@@ -485,11 +486,11 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		const REAL phifrac = frac["phi"];
 		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(fracUniqueMatId,phifrac, fracFactor);
 	}
-	
+	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
 	sim_data.mTFracProperties.m_Permeability = permLastFrac;
 	
 	
-	// ------------------------ Setting extra stuff that is still not on JSON ------------------------
+	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
 	const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
 	sim_data.mTGeometry.mInterface_material_id = 100;
 	sim_data.mTGeometry.mInterface_material_idFracInf = 102;
@@ -497,6 +498,8 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
 	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
 	
+    // @TODO: PHIL: this data structure should be a map. The matids are the same as above and the values are all 1
+    // @TODO: PHIL to JOSE: what is type 5?
 	sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue.Resize(5);
 	sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
 	sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
@@ -1076,6 +1079,13 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	string filenameCoarse = filenameBase + "_coarse.msh";
 	gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
 	
+    int ncoarse_vol = 0;
+    int64_t nelcoarse = gmeshcoarse->NElements();
+    for(int64_t el = 0; el<nelcoarse; el++)
+    {
+        TPZGeoEl *gel = gmeshcoarse->Element(el);
+        if(gel && gel->Dimension()==3) ncoarse_vol++;
+    }
 	// ===================> Fine mesh <=======================
 	// Note that boundary elements have been added previously to the set dim_name_and_physical_tagFine
 		
@@ -1108,6 +1118,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	if(input.find("Fractures") == input.end()) DebugStop();
 	for(auto& frac : input["Fractures"]){
 		const int matid = fracInitMatId + fracCounter*2;
+        const int bcmatid = fracInitMatId + fracCounter*2+1;
 		string fracname = "Fracture" + to_string(fracCounter);
 		string bcfracname = "BCfrac" + to_string(fracCounter);
 		if(fracUniqueMatId != -10000){
@@ -1115,10 +1126,13 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 			dim_name_and_physical_tagFine[1][bcfracname] = bcFracUniqueMatId;
 		}
 		else{
-			const bool is_in = allmatids.find(matid) != allmatids.end();
+			bool is_in = allmatids.find(matid) != allmatids.end();
 			if(is_in) DebugStop();
-			allmatids.insert(matid);
-			dim_name_and_physical_tagFine[2][fracname] = matid;
+            is_in = allmatids.find(bcmatid) != allmatids.end();
+            allmatids.insert(matid);
+            if(is_in) DebugStop();
+            allmatids.insert(bcmatid);
+			dim_name_and_physical_tagFine[1][bcfracname] = bcmatid;
 		}
 		fracCounter++;
 	}
@@ -1128,6 +1142,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	initVolForMergeMeshes = maxMatId + 1;
 	if(input.find("NCoarseGroups") == input.end()) DebugStop();
 	const int nCoarseGroups = input["NCoarseGroups"];
+    if(nCoarseGroups != ncoarse_vol) DebugStop();
 	std::string volbase = "c";
 	for (int ivol = 0; ivol <= nCoarseGroups; ivol++) {
 		std::string ivolstring = volbase + to_string(ivol);
