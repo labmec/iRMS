@@ -46,7 +46,7 @@
     "Fractures":[
         {
             "Index": 4,
-            "K" : 1.0e2,
+            "K" : 1.0e4,
             "phi": 0.2,
             "Limit": "Erecovered",
             "Comment": "The lonely vertical one",
@@ -59,7 +59,7 @@
         },
         {
             "Index": 0,
-            "K" : 1.0e2,
+            "K" : 1.0e4,
             "phi": 0.2,
             "Limit": "Erecovered",
             "Comment": "One of the 2 small vertical parallels",
@@ -72,7 +72,7 @@
         },
         {
             "Index": 1,
-            "K" : 1.0e2,
+            "K" : 1.0e4,
             "phi": 0.2,
             "Limit": "Erecovered",
             "Comment": "One of the 2 small vertical parallels",
@@ -85,7 +85,7 @@
         },
         {
             "Index": 7,
-            "K" : 1.0e2,
+            "K" : 1.0e4,
             "phi": 0.2,
             "Limit": "Erecovered",
             "Comment": "The horizontal big one that cuts the domain in half",
@@ -98,7 +98,7 @@
         },
         {
             "Index": 3,
-            "K" : 1.0e2,
+            "K" : 1.0e4,
             "phi": 0.2,
             "Limit": "Erecovered",
             "Comment": "One of the 2 that cross each other",
@@ -111,7 +111,7 @@
         },
         {
             "Index": 2,
-            "K" : 1.0e2,
+            "K" : 1.0e4,
             "phi": 0.2,
             "Limit": "Erecovered",
             "Comment": "One of the 2 that cross each other",
@@ -124,7 +124,7 @@
         },
         {
             "Index": 5,
-            "K" : 1.0e2,
+            "K" : 1.0e4,
             "phi": 0.2,
             "Limit": "Erecovered",
             "Comment": "Big diagonal above",
@@ -137,7 +137,7 @@
         },
         {
             "Index": 6,
-            "K" : 1.0e2,
+            "K" : 1.0e4,
             "phi": 0.2,
             "Limit": "Erecovered",
             "Comment": "Big diagonal below",
