@@ -149,9 +149,7 @@ int main(){
 			// NOTE: filenameCoarse here has the meaning of basefilename!!!!
 
 //			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
-
 			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
-
 			break;
 		default:
             break;
@@ -160,7 +158,6 @@ int main(){
     return 0;
 }
 // ----------------- End of Main -----------------
-
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 void RunProblem(string& filenamefine, string& filenamecoarse, const string &filenamejson, const int simcase)
@@ -193,11 +190,14 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
         ReadMeshesWell(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else if (simcase == 8)
         ReadMeshesIP3D(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-	else if (simcase == 10)
+    else if (simcase == 10){
 		ReadMeshesDFN(filenamecoarse, gmeshfine, gmeshcoarse, initVolForMergeMeshes);
+        ModifyBCsForCase3(gmeshfine);
+        
+    }
     else
         DebugStop();
-        
+    
     fixPossibleMissingIntersections(gmeshfine); // read about this in the function
     TMRSDataTransfer sim_data;
 	// ----- Approximation space -----
@@ -470,9 +470,6 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		DebugStop(); // For now all fractures have to have same matid
 	}
 	
-
-//	sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = fracUniqueMatId;
-
     
     //here modificate
 //	sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = fracUniqueMatId;
@@ -506,8 +503,6 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		if(frac.find("phi") == frac.end()) DebugStop();
 		permLastFrac = frac["K"];
 		const REAL phifrac = frac["phi"];
-
-	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
         //here modificate
 		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(fracUniqueMatId,phifrac, fracFactor);
 	}
@@ -1060,6 +1055,7 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
+
 void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes) {
 	using json = nlohmann::json;
 	std::string filenamejson = filenameBase + ".json";
@@ -1183,7 +1179,6 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	// ------------------------ Generate gmesh fine ------------------------
 	string filenameFine = filenameBase + "_fine.msh";
 	gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
-
     std::ofstream fileprint("meshfine.vtk");
     TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, fileprint);
 
@@ -1495,8 +1490,9 @@ void ModifyBCsForCase3(TPZGeoMesh* gmesh) {
     
     for (auto gel: gmesh->ElementVec()) {
         if (!gel) continue;
-        if (gel->MaterialId() != ENoflux) continue; // 2d faces on boundary only
-        
+//        if (gel->MaterialId() != ENoflux) continue; // 2d faces on boundary only
+        if(gel->Dimension() != 2){continue;}
+        if((gel->MaterialId() != ENoflux) && (gel->MaterialId() != EInlet) && (gel->MaterialId() != EOutlet)){continue;}
         TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
         gel->CenterPoint(gel->NSides()-1, masscent);
         gel->X(masscent, xcenter);
@@ -1505,6 +1501,7 @@ void ModifyBCsForCase3(TPZGeoMesh* gmesh) {
         const bool isYend = fabs(y-2.25) < zerotol;
         
         // Setting inlet BCs
+        gel->SetMaterialId(ENoflux);
         if(isYzero && (z > onethird && z < twothirds))
                 gel->SetMaterialId(EInlet);
     

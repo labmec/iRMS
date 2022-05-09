@@ -209,6 +209,7 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
     
     if (dimToPost == dim-1){
+
         file = file.substr(0, file.find(".")) + "_frac.vtk";
         std::set<int> matids;
         matids.insert(300);
