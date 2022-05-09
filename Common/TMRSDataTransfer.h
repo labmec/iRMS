@@ -880,6 +880,8 @@ public:
         
         REAL m_Permeability;
         int m_matid;
+        std::map<int, REAL> m_fracprops; //Map <matid, Permeability>
+        std::map<int, int> m_fracbcs; //map matid fracbcs<>
         
         /**
          * @brief Default constructor
@@ -888,6 +890,7 @@ public:
             
             m_Permeability=1.0;
             m_matid = -1000;
+           
             
         }
         /**
@@ -903,6 +906,8 @@ public:
         TFracProperties(const TFracProperties & other){
             m_Permeability=other.m_Permeability;
             m_matid = other.m_matid;
+            m_fracprops=other.m_fracprops;
+            m_fracbcs = other.m_fracbcs;
         }
         /**
          * @brief Copy assignment operator
@@ -916,7 +921,8 @@ public:
             
             m_Permeability=other.m_Permeability;
             m_matid = other.m_matid;
-            
+            m_fracprops=other.m_fracprops;
+            m_fracbcs = other.m_fracbcs;
             return *this;
         }
         
@@ -927,7 +933,7 @@ public:
                 return true;
             }
             
-            return (m_Permeability==other.m_Permeability && m_matid == other.m_matid);
+            return (m_Permeability==other.m_Permeability && m_matid == other.m_matid && m_fracprops==other.m_fracprops && m_fracbcs==other.m_fracbcs);
             
         }
         
@@ -952,7 +958,6 @@ public:
         void Print() const {
             std::cout << "m_Permeability: " << m_Permeability << std::endl;
             std::cout << "m_matid: " << m_matid << std::endl;
-            
         }
         
     };

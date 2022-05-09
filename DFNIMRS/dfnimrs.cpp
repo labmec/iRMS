@@ -111,6 +111,7 @@ int main(){
         case 3:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case3_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case3_fine.msh";
+    
             break;
         case 4:
             DebugStop(); // Need to generate mesh without overlap or need to treat overlap
@@ -137,7 +138,11 @@ int main(){
 			filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/intersectCoarse.msh";
 			filenameFine = basemeshpath + "/verificationMHMNoHybrid/intersectFine.msh";
 			break;
-        default:
+		case 10:
+			// NOTE: filenameCoarse here has the meaning of basefilename!!!!
+			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
+			break;
+		default:
             break;
     }
     RunProblem(filenameFine,filenameCoarse,simcase);
@@ -180,8 +185,6 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
         DebugStop();
         
     fixPossibleMissingIntersections(gmeshfine); // read about this in the function
-    
-    
     TMRSDataTransfer sim_data;
 	// ----- Approximation space -----
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -384,6 +387,184 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const int simcase)
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
+
+void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
+	
+	using json = nlohmann::json;
+	std::string filenamejson = filenameBase + ".json";
+	
+	std::ifstream filejson(filenamejson);
+	json input = json::parse(filejson,nullptr,true,true); // to ignore comments in json file
+
+	
+	// ------------------------ Getting number of domains and fractures ------------------------
+	if(input.find("Domains") == input.end()) DebugStop();
+	const int ndom = input["Domains"].size();
+	if(input.find("Fractures") == input.end()) DebugStop();
+	const int nfrac = input["Fractures"].size();
+	sim_data.mTReservoirProperties.mPorosityAndVolumeScale.resize(ndom+nfrac);
+	int countPhi = 0;
+	
+	// ------------------------ Reading 3D Domain matids ------------------------
+	std::map<int, REAL> idPerm;
+	for(auto& domain : input["Domains"]){
+		if(domain.find("matid") == domain.end()) DebugStop();
+		if(domain.find("name") == domain.end()) DebugStop();
+		if(domain.find("K") == domain.end()) DebugStop();
+		if(domain.find("phi") == domain.end()) DebugStop();
+		const int matid = domain["matid"];
+		const string name = domain["name"];
+		const REAL permeability = domain["K"];
+		const REAL phi = domain["phi"];
+		sim_data.mTGeometry.mDomainNameAndMatId[name] = matid;
+		idPerm[matid]= permeability;
+		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(matid,phi, 1.0);
+	}
+	sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
+	
+	// ------------------------ Reading 3D Domain BC matids ------------------------
+	if(input.find("Boundary") == input.end()) DebugStop();
+	const int nbcs = input["Boundary"].size();
+	sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(nbcs);
+	int countBCs = 0;
+	for(auto& bc : input["Boundary"]){
+		if(bc.find("matid") == bc.end()) DebugStop();
+		if(bc.find("type") == bc.end()) DebugStop();
+		if(bc.find("value") == bc.end()) DebugStop();
+		const int matid = bc["matid"];
+		const int type = bc["type"];
+		const REAL value = bc["value"];
+		sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[countBCs++] = std::make_tuple(matid,type,value);
+	}
+	
+	// ------------------------ Reading fractures and fracture bcs matids ------------------------
+	
+	// Check if we should use the same PZ MatId for all the fractures.
+	// 2022 May: that is the only possible case for now
+	int fracUniqueMatId = -10000, bcFracUniqueMatId = -10000;
+	if(input.find("FractureUniqueMatIDForIMRS") != input.end()) {
+		fracUniqueMatId = input["FractureUniqueMatIDForIMRS"];
+	} else{
+		DebugStop(); // For now all fractures have to have same matid
+	}
+	if(input.find("FractureBCUniqueMatIDForIMRS") != input.end()) {
+		bcFracUniqueMatId = input["FractureBCUniqueMatIDForIMRS"];
+	} else{
+		DebugStop(); // For now all fractures have to have same matid
+	}
+	
+    
+    //here modificate
+//	sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = fracUniqueMatId;
+    // Mod
+    int initfracmatid =input["FractureInitMatId"];
+    int actualfracid=initfracmatid;
+    for(auto& fracture : input["Fractures"]){
+        int i = fracture["Index"];
+        std::string name = "Fracture" + std::to_string(i);
+        int matid = actualfracid;
+        REAL permerm = fracture["K"];
+        sim_data.mTGeometry.mDomainFracDimNameAndMatId[2][name] = matid;
+        actualfracid +=2;
+        sim_data.mTFracProperties.m_fracprops[matid] =permerm;
+    }
+    //end mod
+    
+	
+	const REAL zero_flux = 0.;
+	const int bcFracUniqueType_Neumann = 1;
+	sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(1);
+	sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[0] = std::make_tuple(bcFracUniqueMatId,bcFracUniqueType_Neumann,zero_flux);
+	
+	
+	// ------------------------ Setting all fracs perm the same for now ------------------------
+	REAL permLastFrac = -1.;
+	const REAL fracFactor = 0.1; // @TODO: NOTE: NS: What is this?????????
+    // @TODO: PHIL: I believe the is the fracture width
+	for(auto& frac : input["Fractures"]){
+		if(frac.find("K") == frac.end()) DebugStop();
+		if(frac.find("phi") == frac.end()) DebugStop();
+		permLastFrac = frac["K"];
+		const REAL phifrac = frac["phi"];
+        //here modificate
+		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(fracUniqueMatId,phifrac, fracFactor);
+	}
+	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
+    //here modificate
+	sim_data.mTFracProperties.m_Permeability = permLastFrac;
+	
+	
+	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
+	const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
+	sim_data.mTGeometry.mInterface_material_id = 100;
+	sim_data.mTGeometry.mInterface_material_idFracInf = 102;
+	sim_data.mTGeometry.mInterface_material_idFracSup = 101;
+	sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
+	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
+	
+    // @TODO: PHIL: this data structure should be a map. The matids are the same as above and the values are all 1
+    // @TODO: PHIL to JOSE: what is type 5?
+	sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue.Resize(5);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[2] = std::make_tuple(ENoflux,5,1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[3] = std::make_tuple(EFracOutlet,5,1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[4] = std::make_tuple(EFracInlet,5,1.);
+	sim_data.mTGeometry.mInterface_material_idFracBound = EFracNoFlux;
+	
+	// Other properties
+	sim_data.mTGeometry.mSkeletonDiv = 0;
+	sim_data.mTNumerics.m_sfi_tol = 0.0001;
+	sim_data.mTNumerics.m_res_tol_transport = 0.0001;
+	sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+	sim_data.mTNumerics.m_n_steps = 1 ;
+	sim_data.mTNumerics.m_dt      = 1.0; //*day;
+	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
+	std::vector<REAL> grav(3,0.0);
+	grav[1] = 0.0;//-9.8*(1.0e-6); // hor
+	sim_data.mTNumerics.m_gravity = grav;
+	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+	sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
+	sim_data.mTNumerics.m_n_steps = 100;
+	sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
+	sim_data.mTNumerics.m_max_iter_sfi=1;
+	sim_data.mTNumerics.m_max_iter_mixed=1;
+	sim_data.mTNumerics.m_max_iter_transport=1;
+	
+	// PostProcess controls
+	sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
+	sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
+	TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
+	vecnames.Push("Flux");
+	scalnames.Push("Pressure");
+	if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
+		scalnames.Push("g_average");
+		scalnames.Push("p_average");
+	}
+	scalnamesTransport.Push("Sw");
+	scalnamesTransport.Push("So");
+	
+	sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
+	sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
+	sim_data.mTPostProcess.m_scalnamesTransport = scalnamesTransport;
+	
+	int n_steps = sim_data.mTNumerics.m_n_steps;
+	sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
+	REAL dt = sim_data.mTNumerics.m_dt;
+	TPZStack<REAL,100> reporting_times;
+	REAL time = sim_data.mTPostProcess.m_file_time_step;
+	int n_reporting_times =(n_steps)/(time/dt) + 1;
+	REAL r_time =0.0;
+	for (int i =1; i<= n_reporting_times; i++) {
+		r_time += dt*(time/dt);
+		reporting_times.push_back(r_time);
+	}
+	sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 
 void FillDataTransfer(TMRSDataTransfer& sim_data){
     
@@ -848,6 +1029,136 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
+
+
+void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes) {
+	using json = nlohmann::json;
+	std::string filenamejson = filenameBase + ".json";
+	
+	std::ifstream filejson(filenamejson);
+	json input = json::parse(filejson,nullptr,true,true); // to ignore comments in json file
+
+	// ===================> Coarse mesh <=======================
+	TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
+	TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
+	
+	std::set<int> allmatids; // use to check for repeated matids and highest matid
+	
+	// ------------------------ Get matids of 3D domain ------------------------
+	if(input.find("Domains") == input.end()) DebugStop();
+	for(auto& domain : input["Domains"]){
+		if(domain.find("matid") == domain.end()) DebugStop();
+		if(domain.find("name") == domain.end()) DebugStop();
+		const int matid = domain["matid"];
+		const string name = domain["name"];
+		dim_name_and_physical_tagCoarse[3][name] = matid;
+		const bool is_in = allmatids.find(matid) != allmatids.end();
+		if(is_in) DebugStop();
+		allmatids.insert(matid);
+	}
+	
+	// ------------------------ Get matids of BCs of 3D domain ------------------------
+	// NOTE: This might not be needed for the coarse mesh. Please check...
+	if(input.find("Boundary") == input.end()) DebugStop();
+	for(auto& bc : input["Boundary"]){
+		if(bc.find("name") == bc.end()) DebugStop();
+		if(bc.find("matid") == bc.end()) DebugStop();
+		const string name = bc["name"];
+		const int matid = bc["matid"];
+		dim_name_and_physical_tagCoarse[2][name] = matid;
+		dim_name_and_physical_tagFine[2][name] = matid;
+		const bool is_in = allmatids.find(matid) != allmatids.end();
+		if(is_in) DebugStop();
+		allmatids.insert(matid);
+	}
+
+	// ------------------------ Generate gmesh coarse ------------------------
+	string filenameCoarse = filenameBase + "_coarse.msh";
+	gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
+    std::ofstream file("COARSE.VTK");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, file);
+    
+    int ncoarse_vol = 0;
+    int64_t nelcoarse = gmeshcoarse->NElements();
+    for(int64_t el = 0; el<nelcoarse; el++)
+    {
+        TPZGeoEl *gel = gmeshcoarse->Element(el);
+        if(gel && gel->Dimension()==3) ncoarse_vol++;
+    }
+	// ===================> Fine mesh <=======================
+	// Note that boundary elements have been added previously to the set dim_name_and_physical_tagFine
+		
+	// Check if we should use the same PZ MatId for all the fractures.
+	// 2022 May: that is the only possible case for now
+	int fracUniqueMatId = -10000, bcFracUniqueMatId = -10000;
+	if(input.find("FractureUniqueMatIDForIMRS") != input.end()) {
+		fracUniqueMatId = input["FractureUniqueMatIDForIMRS"];
+		const bool is_in = allmatids.find(fracUniqueMatId) != allmatids.end();
+		if(is_in) DebugStop();
+		allmatids.insert(fracUniqueMatId);
+	} else{
+		DebugStop(); // For now all fractures have to have same matid
+	}
+	if(input.find("FractureBCUniqueMatIDForIMRS") != input.end()) {
+		bcFracUniqueMatId = input["FractureBCUniqueMatIDForIMRS"];
+		const bool is_in = allmatids.find(bcFracUniqueMatId) != allmatids.end();
+		if(is_in) DebugStop();
+		allmatids.insert(bcFracUniqueMatId);
+	} else{
+		DebugStop(); // For now all fractures have to have same matid
+	}
+	
+	if(input.find("FractureInitMatId") == input.end()) DebugStop();
+	const int fracInitMatId = input["FractureInitMatId"];
+
+	
+	// ------------------------ Loop over fractures in Json ------------------------
+	int fracCounter = 0;
+	if(input.find("Fractures") == input.end()) DebugStop();
+	for(auto& frac : input["Fractures"]){
+		const int matid = fracInitMatId + fracCounter*2;
+        const int bcmatid = fracInitMatId + fracCounter*2+1;
+		string fracname = "Fracture" + to_string(fracCounter);
+		string bcfracname = "BCfrac" + to_string(fracCounter);
+		if(fracUniqueMatId != -10000){
+//          dim_name_and_physical_tagFine[2][fracname] = fracUniqueMatId;
+            dim_name_and_physical_tagFine[2][fracname] = fracInitMatId + 2 * fracCounter;
+            dim_name_and_physical_tagFine[1][bcfracname] = bcFracUniqueMatId;
+		}
+		else{
+			bool is_in = allmatids.find(matid) != allmatids.end();
+			if(is_in) DebugStop();
+            is_in = allmatids.find(bcmatid) != allmatids.end();
+            allmatids.insert(matid);
+            if(is_in) DebugStop();
+            allmatids.insert(bcmatid);
+			dim_name_and_physical_tagFine[1][bcfracname] = bcmatid;
+		}
+		fracCounter++;
+	}
+	
+	// ------------------------ Adding volume physical tags ------------------------
+	const int maxMatId = *allmatids.rbegin();
+	initVolForMergeMeshes = maxMatId + 1;
+	if(input.find("NCoarseGroups") == input.end()) DebugStop();
+	const int nCoarseGroups = input["NCoarseGroups"];
+    if(nCoarseGroups != ncoarse_vol) DebugStop();
+	std::string volbase = "c";
+	for (int ivol = 0; ivol <= nCoarseGroups; ivol++) {
+		std::string ivolstring = volbase + to_string(ivol);
+		dim_name_and_physical_tagFine[3][ivolstring] = initVolForMergeMeshes + ivol;
+	}
+	
+	// ------------------------ Generate gmesh fine ------------------------
+	string filenameFine = filenameBase + "_fine.msh";
+	gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+    std::ofstream fileprint("meshfine.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, fileprint);
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 
 void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
                              TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
@@ -1497,6 +1808,8 @@ void fixPossibleMissingIntersections(TPZGeoMesh* gmesh){
                 nInterCreated++;
             }
             if ((interEls.size() || nFracElsForSide > 1) && bcEls.size()) {
+//                cout << "PLEASE CHECK CAREFULLY! An element may have a boundary even if it intersects\n";
+//                DebugStop();
                 if(bcEls.size() > 1)
                     DebugStop(); // This is rather odd. Please check why there are two bcs at the same boundary
                 for (auto bcgeoel : bcEls) {

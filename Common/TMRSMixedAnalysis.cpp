@@ -209,10 +209,25 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
     
     if (dimToPost == dim-1){
-        file = file.substr(0, file.find(".")) + "_frac.vtk";
+//        file = file.substr(0, file.find(".")) + "_frac.vtk";
+//        std::set<int> matids;
+//        matids.insert(300);
+//        matids.insert(302);
+//        matids.insert(304);
+//        matids.insert(306);
+//        matids.insert(308);
+//        matids.insert(310);
+//        matids.insert(312);
+//        matids.insert(314);
+//        
+//        DefineGraphMesh(dimToPost, matids, scalnames, vecnames, file);
+////        DefineGraphMesh(dimToPost,scalnames,vecnames,file);
+//        PostProcess(div,dimToPost);
     }
+    else{
     DefineGraphMesh(dimToPost,scalnames,vecnames,file);
     PostProcess(div,dimToPost);
+    }
     
     auto total_time_pp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_pp).count()/1000.;
     cout << "Total time post process = " << total_time_pp << " seconds" << endl;
