@@ -209,18 +209,14 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
     
     if (dimToPost == dim-1){
-
         file = file.substr(0, file.find(".")) + "_frac.vtk";
         std::set<int> matids;
-        matids.insert(300);
-        matids.insert(302);
-        matids.insert(304);
-        matids.insert(306);
-        matids.insert(308);
-        matids.insert(310);
-        matids.insert(312);
-        matids.insert(314);
-        
+        map<int, REAL>::iterator it;
+        for (it = m_sim_data->mTFracProperties.m_fracprops.begin(); it != m_sim_data->mTFracProperties.m_fracprops.end(); it++)
+        {
+            int matfracid = it->first;
+            matids.insert(matfracid);
+        }
         DefineGraphMesh(dimToPost, matids, scalnames, vecnames, file);
 //        DefineGraphMesh(dimToPost,scalnames,vecnames,file);
         PostProcess(div,dimToPost);
