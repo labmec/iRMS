@@ -118,6 +118,7 @@ int main(){
         case 3:
             filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case3_coarse.msh";
             filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case3_fine.msh";
+    
             break;
         case 4:
             DebugStop(); // Need to generate mesh without overlap or need to treat overlap
@@ -146,7 +147,11 @@ int main(){
 			break;
 		case 10:
 			// NOTE: filenameCoarse here has the meaning of basefilename!!!!
-			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
+
+//			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
+
+			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
+
 			break;
 		default:
             break;
@@ -194,8 +199,6 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
         DebugStop();
         
     fixPossibleMissingIntersections(gmeshfine); // read about this in the function
-    
-    
     TMRSDataTransfer sim_data;
 	// ----- Approximation space -----
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -467,7 +470,26 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		DebugStop(); // For now all fractures have to have same matid
 	}
 	
-	sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = fracUniqueMatId;
+
+//	sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = fracUniqueMatId;
+
+    
+    //here modificate
+//	sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = fracUniqueMatId;
+    // Mod
+    int initfracmatid =input["FractureInitMatId"];
+    int actualfracid=initfracmatid;
+    for(auto& fracture : input["Fractures"]){
+        int i = fracture["Index"];
+        std::string name = "Fracture" + std::to_string(i);
+        int matid = actualfracid;
+        REAL permerm = fracture["K"];
+        sim_data.mTGeometry.mDomainFracDimNameAndMatId[2][name] = matid;
+        actualfracid +=2;
+        sim_data.mTFracProperties.m_fracprops[matid] =permerm;
+    }
+    //end mod
+    
 	
 	const REAL zero_flux = 0.;
 	const int bcFracUniqueType_Neumann = 1;
@@ -484,9 +506,13 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		if(frac.find("phi") == frac.end()) DebugStop();
 		permLastFrac = frac["K"];
 		const REAL phifrac = frac["phi"];
+
+	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
+        //here modificate
 		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(fracUniqueMatId,phifrac, fracFactor);
 	}
 	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
+    //here modificate
 	sim_data.mTFracProperties.m_Permeability = permLastFrac;
 	
 	
@@ -1078,7 +1104,9 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	// ------------------------ Generate gmesh coarse ------------------------
 	string filenameCoarse = filenameBase + "_coarse.msh";
 	gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
-	
+    std::ofstream file("COARSE.VTK");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, file);
+    
     int ncoarse_vol = 0;
     int64_t nelcoarse = gmeshcoarse->NElements();
     for(int64_t el = 0; el<nelcoarse; el++)
@@ -1122,8 +1150,11 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 		string fracname = "Fracture" + to_string(fracCounter);
 		string bcfracname = "BCfrac" + to_string(fracCounter);
 		if(fracUniqueMatId != -10000){
-			dim_name_and_physical_tagFine[2][fracname] = fracUniqueMatId;
-			dim_name_and_physical_tagFine[1][bcfracname] = bcFracUniqueMatId;
+
+//          dim_name_and_physical_tagFine[2][fracname] = fracUniqueMatId;
+            dim_name_and_physical_tagFine[2][fracname] = fracInitMatId + 2 * fracCounter;
+            dim_name_and_physical_tagFine[1][bcfracname] = bcFracUniqueMatId;
+
 		}
 		else{
 			bool is_in = allmatids.find(matid) != allmatids.end();
@@ -1152,6 +1183,10 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	// ------------------------ Generate gmesh fine ------------------------
 	string filenameFine = filenameBase + "_fine.msh";
 	gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+
+    std::ofstream fileprint("meshfine.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, fileprint);
+
 }
 
 // ---------------------------------------------------------------------
@@ -1827,8 +1862,8 @@ void fixPossibleMissingIntersections(TPZGeoMesh* gmesh){
                 nInterCreated++;
             }
             if ((interEls.size() || nFracElsForSide > 1) && bcEls.size()) {
-                cout << "PLEASE CHECK CAREFULLY! An element may have a boundary even if it intersects\n";
-                DebugStop();
+//                cout << "PLEASE CHECK CAREFULLY! An element may have a boundary even if it intersects\n";
+//                DebugStop();
                 if(bcEls.size() > 1)
                     DebugStop(); // This is rather odd. Please check why there are two bcs at the same boundary
                 for (auto bcgeoel : bcEls) {

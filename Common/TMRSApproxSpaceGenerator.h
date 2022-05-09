@@ -100,7 +100,7 @@ public:
     const int& InitMatIdForMergeMeshes() const {return fInitMatIdForMergeMeshes;}
     int& InitMatIdForMergeMeshes() {return fInitMatIdForMergeMeshes;}
     const int& FractureMatId() const {return mSimData.mTFracProperties.m_matid;}
-
+    const std::map<int, REAL>& FracturesMatIdsVec() const {return mSimData.mTFracProperties.m_fracprops;}
     
     /// For MHM
     /// Sets the geometry based on a fine and a coarse mesh. It creates a list of subdomains based on that
@@ -280,7 +280,7 @@ public:
         mSimData.mTGeometry.mDomainFracDimNameAndMatId[1].size() ||
         mSimData.mTGeometry.mDomainFracDimNameAndMatId[2].size();}
     
-    
+    bool IsFracMatId(int matiD);
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

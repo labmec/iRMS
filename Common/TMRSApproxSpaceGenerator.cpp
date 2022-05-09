@@ -76,6 +76,8 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * g
     if (InitMatIdForMergeMeshes() == -1000) {
         DebugStop(); // MatId for MHM should be set in main!
     }
+    std::ofstream file("coarse.vtk");
+    TPZVTKGeoMesh::PrintCMeshVTK(gmeshcoarse, file);
     MergeMeshes(gmeshfine, gmeshcoarse); // this fills mSubdomainIndexGel that is used for MHM
 //    ofstream out2("gmesh_after.txt");
 //    gmeshfine->Print(out2);
@@ -374,7 +376,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
     cmesh->SetDimModel(gmeshdim-1);
     for(auto gel : gmesh->ElementVec()) {
         const int matid = gel->MaterialId();
-        if (matid != FractureMatId()) continue;
+        //if (matid != FractureMatId()) continue;
+        if (!IsFracMatId(matid)) continue;
         const int hassubel = gel->HasSubElement();
         if (hassubel) { // the mesh can be uniformly refined
             continue;
@@ -410,7 +413,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         if (!cel) continue;
         TPZGeoEl* gel = cel->Reference();
         const int matid = gel->MaterialId();
-        if (matid != FractureMatId()) continue;
+        //if (matid != FractureMatId()) continue;
+        if (!IsFracMatId(matid)) continue;
         int64_t index;
         TPZInterpolationSpace* hdivcollapsed = nullptr;
         if (gmeshdim == 2) {
@@ -531,7 +535,10 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
         if (!cel) {
             continue;
         }
-        if (cel->Reference()->MaterialId() == FractureMatId()) {
+//        if (cel->Reference()->MaterialId() == FractureMatId()) {
+//            cel->LoadElementReference();
+//        }
+        if (IsFracMatId(cel->Reference()->MaterialId())) {
             cel->LoadElementReference();
         }
     }
@@ -2519,12 +2526,25 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     // Hybridize flux mesh in case there are intersections
     if (isThereFracIntersection()) {
         mHybridizer = new TPZHybridizeHDiv(mesh_vec);
-        mHybridizer->IdToHybridize() = FractureMatId(); // TODO: Make it not hardcoded
-        const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
-        if (intersectionPressureLossId > -10000) {
-            mHybridizer->fHDivWrapMatid = intersectionPressureLossId;
+        
+//        mHybridizer->IdToHybridize() = FractureMatId(); // TODO: Make it not hardcoded
+//        const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
+//        if (intersectionPressureLossId > -10000) {
+//            mHybridizer->fHDivWrapMatid = intersectionPressureLossId;
+//        }
+//        HybridizeIntersections(mesh_vec);
+        map<int, REAL>::iterator it;
+        for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++)
+        {
+            int matToHybrid = it->first;
+            mHybridizer->IdToHybridize() = matToHybrid; // TODO: Make it not hardcoded
+            const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
+            if (intersectionPressureLossId > -10000) {
+                mHybridizer->fHDivWrapMatid = intersectionPressureLossId;
+            }
+            HybridizeIntersections(mesh_vec);
+            
         }
-        HybridizeIntersections(mesh_vec);
     }
 	
     // assign a subdomain to the lower level elements
@@ -3676,35 +3696,72 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     }
     
     
-    TPZMaterial * material = cmesh->FindMaterial(FractureMatId()); //matIdFractures;
-    if (!material) {
-        return;
-    }
-    TPZMatWithMem<TMRSMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material);
-    if (!mat_with_memory) {
-        DebugStop();
-    }
-    
-    // Set initial porosity, permeability, saturations, etc ...
+//    TPZMaterial * material = cmesh->FindMaterial(FractureMatId()); //matIdFractures;
+//    if (!material) {
+//        return;
+//    }
+    TPZMaterial * material = nullptr;
+    map<int, REAL>::iterator it;
+    for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++)
     {
-        std::shared_ptr<TPZAdmChunkVector<TMRSMemory>> & memory_vector = mat_with_memory->GetMemory();
-        int ndata = memory_vector->NElements();
+        int matFrac = it->first;
+        material = cmesh->FindMaterial(matFrac); //matIdFractures;
+        if (!material) {
+            DebugStop();
+        }
+        TPZMatWithMem<TMRSMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material);
+        if (!mat_with_memory) {
+            DebugStop();
+        }
         
-        for (int i = 0; i < ndata; i++) {
-            TMRSMemory &mem = memory_vector.get()->operator [](i);
-            mem.m_sw = 0.0;
-            mem.m_phi = 0.1;
-            REAL kappa = mSimData.mTFracProperties.m_Permeability;
-            mem.m_kappa.Resize(3, 3);
-            mem.m_kappa.Zero();
-            mem.m_kappa_inv.Resize(3, 3);
-            mem.m_kappa_inv.Zero();
-            for (int j = 0; j < 3; j++) {
-                mem.m_kappa(j,j) = kappa;
-                mem.m_kappa_inv(j,j) = 1.0/kappa;
+        // Set initial porosity, permeability, saturations, etc ...
+        {
+            std::shared_ptr<TPZAdmChunkVector<TMRSMemory>> & memory_vector = mat_with_memory->GetMemory();
+            int ndata = memory_vector->NElements();
+            
+            for (int i = 0; i < ndata; i++) {
+                TMRSMemory &mem = memory_vector.get()->operator [](i);
+                mem.m_sw = 0.0;
+                mem.m_phi = 0.1;
+                REAL kappa = it->second;
+                mem.m_kappa.Resize(3, 3);
+                mem.m_kappa.Zero();
+                mem.m_kappa_inv.Resize(3, 3);
+                mem.m_kappa_inv.Zero();
+                for (int j = 0; j < 3; j++) {
+                    mem.m_kappa(j,j) = kappa;
+                    mem.m_kappa_inv(j,j) = 1.0/kappa;
+                }
             }
         }
+        
     }
+    
+//    TPZMatWithMem<TMRSMemory> * mat_with_memory = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material);
+//    if (!mat_with_memory) {
+//        DebugStop();
+//    }
+//
+//    // Set initial porosity, permeability, saturations, etc ...
+//    {
+//        std::shared_ptr<TPZAdmChunkVector<TMRSMemory>> & memory_vector = mat_with_memory->GetMemory();
+//        int ndata = memory_vector->NElements();
+//
+//        for (int i = 0; i < ndata; i++) {
+//            TMRSMemory &mem = memory_vector.get()->operator [](i);
+//            mem.m_sw = 0.0;
+//            mem.m_phi = 0.1;
+//            REAL kappa = mSimData.mTFracProperties.m_Permeability;
+//            mem.m_kappa.Resize(3, 3);
+//            mem.m_kappa.Zero();
+//            mem.m_kappa_inv.Resize(3, 3);
+//            mem.m_kappa_inv.Zero();
+//            for (int j = 0; j < 3; j++) {
+//                mem.m_kappa(j,j) = kappa;
+//                mem.m_kappa_inv(j,j) = 1.0/kappa;
+//            }
+//        }
+//    }
 }
 
 
@@ -4143,7 +4200,8 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
             int neighmatid = gelneigh->MaterialId();
             int neighdim = gelneigh->Dimension();
             // is there only one matidfrac????
-            if (neighmatid == matidfrac && neighdim == dimfrac) {
+//            if (neighmatid == matidfrac && neighdim == dimfrac) {
+            if ( IsFracMatId(neighmatid) && neighdim == dimfrac) {
 #ifdef PZDEBUG
 //                cout << "\nElement with ID " << gel->Id() << " and index " << gel->Index() << " is an intersection element" << endl;
 //                cout << "===> Trying to split the connects of the flux mesh and create pressure element..." << endl;
@@ -4504,7 +4562,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     // the same subdomain, the element belongs to "that" domain
     {
 		int64_t nel = finemesh->NElements();
-		int dim = finemesh->Dimension();
+        int dim = finemesh->Dimension();
 		for (int64_t el = 0; el<nel; el++) {
 			TPZGeoEl *gel = finemesh->Element(el);
 			if(!gel || gel->HasSubElement()) continue;
@@ -4546,8 +4604,8 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 	// higher dimensional element it finds.
 	for (auto gel: finemesh->ElementVec()) {
 		if(!gel || gel->HasSubElement()) continue;
-		if(gel->MaterialId() != FractureMatId()) continue;
-		
+//		if(gel->MaterialId() != FractureMatId()) continue;
+        if(!IsFracMatId(gel->MaterialId())) continue;
 		TPZGeoElSide gelside(gel);
 		TPZGeoElSide neigh = gelside.Neighbour();
 		while (neigh != gelside) {
@@ -4574,7 +4632,8 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 		TPZGeoElSide neigh = gelside.Neighbour();
 		while (neigh != gelside) {
 			TPZGeoEl* neighel = neigh.Element();
-			if (neighel->Dimension() == 2 && neighel->MaterialId() == FractureMatId()) {
+//			if (neighel->Dimension() == 2 && neighel->MaterialId() == FractureMatId()) {
+            if (neighel->Dimension() == 2 &&  IsFracMatId(neighel->MaterialId())) {
 				const int64_t neighelindex = neighel->Index();
 				const int64_t domainSubIndex = mSubdomainIndexGel[neighelindex];
 				if (mSubdomainIndexGel[gel->Index()] != -1)
@@ -4830,4 +4889,8 @@ void TMRSApproxSpaceGenerator::SetInterfaceDomains(TPZStack<int64_t> &pressurein
             neighbour = neighbour.Neighbour();
         }
     }
+}
+bool TMRSApproxSpaceGenerator::IsFracMatId(int matiD){
+    return (mSimData.mTFracProperties.m_fracprops.find(matiD) != mSimData.mTFracProperties.m_fracprops.end());
+//    mSimData.mTFracProperties.m_fracprops(matiD);
 }
