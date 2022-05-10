@@ -211,7 +211,7 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
     if (dimToPost == dim-1){
         file = file.substr(0, file.find(".")) + "_frac.vtk";
         std::set<int> matids;
-        map<int, REAL>::iterator it;
+        map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
         for (it = m_sim_data->mTFracProperties.m_fracprops.begin(); it != m_sim_data->mTFracProperties.m_fracprops.end(); it++)
         {
             int matfracid = it->first;

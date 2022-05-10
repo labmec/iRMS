@@ -363,10 +363,6 @@ void TMRSApproxSpaceGenerator::SplitConnectsAtInterface(TPZCompElSide& compside)
 
 void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh){
     
-    if(FractureMatId() == -1000){
-        cout << "ERROR! Please initialize the fracture matid" << endl;
-        DebugStop();
-    }
     // ===> Create the fracture hdivcollapsed elements
     // These should be unconnected with the 3D elements so we reset references in the gmesh
     // They are, however, connected (with connects) between themselves
@@ -376,7 +372,6 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
     cmesh->SetDimModel(gmeshdim-1);
     for(auto gel : gmesh->ElementVec()) {
         const int matid = gel->MaterialId();
-        //if (matid != FractureMatId()) continue;
         if (!IsFracMatId(matid)) continue;
         const int hassubel = gel->HasSubElement();
         if (hassubel) { // the mesh can be uniformly refined
@@ -510,11 +505,6 @@ void TMRSApproxSpaceGenerator::AdjustOrientBoundaryEls(TPZCompMesh* cmesh, std::
 void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
                                                           std::set<int>& matids, std::set<int>& bcids,
                                                           std::set<int>& matids_dim2, std::set<int>& bcids_dim2){
-    
-    if(FractureMatId() == -1000){
-        cout << "ERROR! Please initialize the fracture matid" << endl;
-        DebugStop();
-    }
     
     TPZGeoMesh* gmesh = cmesh->Reference();
     const int dim = gmesh->Dimension();
@@ -1472,8 +1462,9 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     bool cond2 = mSimData.mTNumerics.m_mhm_mixed_Q;
     
     // Sanity checks
-    if (isFracSim() && FractureMatId() == -1000) {
-        DebugStop(); // if simulation has fractures, it should set the matid
+    if (isFracSim()) {
+		if(mSimData.mTFracProperties.m_fracprops.size() && FractureUniqueMatId() != -1000) DebugStop();
+		if(!mSimData.mTFracProperties.m_fracprops.size() && FractureUniqueMatId() == -1000) DebugStop();
     }
     if (isThereFracIntersection() && mSimData.mTFracIntersectProperties.m_IntersectionId == -10000){
         DebugStop(); // if simulation has frac/frac intersections, this matid should have been set
@@ -1646,7 +1637,14 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
     if (isThereFracIntersection()) {
         mHybridizer = new TPZHybridizeHDiv(meshvec);
-        mHybridizer->IdToHybridize() = 10; // TODO: Make it not hardcoded
+		set<int> fracmatIds;
+		if(mSimData.mTFracProperties.m_fracprops.size()){
+			for (auto el : mSimData.mTFracProperties.m_fracprops) fracmatIds.insert(el.first);
+		}
+		else{
+			fracmatIds.insert(mSimData.mTFracProperties.m_matid);
+		}
+		mHybridizer->IdsToHybridize() = fracmatIds;
         const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
         if (intersectionPressureLossId > -10000) {
             mHybridizer->fHDivWrapMatid = intersectionPressureLossId;
@@ -2527,24 +2525,19 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     if (isThereFracIntersection()) {
         mHybridizer = new TPZHybridizeHDiv(mesh_vec);
         
-//        mHybridizer->IdToHybridize() = FractureMatId(); // TODO: Make it not hardcoded
-//        const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
-//        if (intersectionPressureLossId > -10000) {
-//            mHybridizer->fHDivWrapMatid = intersectionPressureLossId;
-//        }
-//        HybridizeIntersections(mesh_vec);
-        map<int, REAL>::iterator it;
-        for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++)
-        {
-            int matToHybrid = it->first;
-            mHybridizer->IdToHybridize() = matToHybrid; // TODO: Make it not hardcoded
-            const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
-            if (intersectionPressureLossId > -10000) {
-                mHybridizer->fHDivWrapMatid = intersectionPressureLossId;
-            }
-            HybridizeIntersections(mesh_vec);
-            
+		set<int> fracmatIds;
+		if(mSimData.mTFracProperties.m_fracprops.size()){
+			for (auto el : mSimData.mTFracProperties.m_fracprops) fracmatIds.insert(el.first);
+		}
+		else{
+			fracmatIds.insert(mSimData.mTFracProperties.m_matid);
+		}
+		mHybridizer->IdsToHybridize() = fracmatIds;
+		const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
+        if (intersectionPressureLossId > -10000) {
+            mHybridizer->fHDivWrapMatid = intersectionPressureLossId;
         }
+        HybridizeIntersections(mesh_vec);
     }
 	
     // assign a subdomain to the lower level elements
@@ -3701,7 +3694,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
 //        return;
 //    }
     TPZMaterial * material = nullptr;
-    map<int, REAL>::iterator it;
+	map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
     for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++)
     {
         int matFrac = it->first;
@@ -3723,7 +3716,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
                 TMRSMemory &mem = memory_vector.get()->operator [](i);
                 mem.m_sw = 0.0;
                 mem.m_phi = 0.1;
-                REAL kappa = it->second;
+                REAL kappa = it->second.m_perm;
                 mem.m_kappa.Resize(3, 3);
                 mem.m_kappa.Zero();
                 mem.m_kappa_inv.Resize(3, 3);
@@ -4150,7 +4143,6 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
     }
     cout << "\n==> Starting hybridizing intersections..." << endl;
         
-    const int matidfrac = FractureMatId();
     const int matIdIntersection = mSimData.mTFracIntersectProperties.m_IntersectionId;
     TPZCompMesh* fluxmesh = meshvec_Hybrid[0];
 

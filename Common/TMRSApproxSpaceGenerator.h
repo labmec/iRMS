@@ -96,11 +96,12 @@ public:
     
     void SetGeometry(TPZGeoMesh * geometry);
     
-    // Atribute access methods
+    /// Atribute access methods
     const int& InitMatIdForMergeMeshes() const {return fInitMatIdForMergeMeshes;}
     int& InitMatIdForMergeMeshes() {return fInitMatIdForMergeMeshes;}
-    const int& FractureMatId() const {return mSimData.mTFracProperties.m_matid;}
-    const std::map<int, REAL>& FracturesMatIdsVec() const {return mSimData.mTFracProperties.m_fracprops;}
+		
+	/// Backwards compatibility attribute in case all fractures have the same matid
+    const int& FractureUniqueMatId() const {return mSimData.mTFracProperties.m_matid;}    
     
     /// For MHM
     /// Sets the geometry based on a fine and a coarse mesh. It creates a list of subdomains based on that
