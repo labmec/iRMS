@@ -35,7 +35,7 @@ class TPZSymetricSpStructMatrixEigen : public TPZStructMatrixT<STATE>,
     
            
     using TPZStructMatrixT<STATE>::TPZStructMatrixT;
-    std::vector<Triplet3<REAL> > m_triplets;
+    std::vector<Eigen::Triplet<REAL> > m_triplets;
     
 public:
 

@@ -250,7 +250,7 @@ public:
     int hastriplets=0;
 //    void SetFromTriplets(int ok) override;
     
-    mutable std::vector<Triplet3<REAL> > m_triplets;
+    mutable std::vector<Eigen::Triplet<REAL> > m_triplets;
     mutable Eigen::SparseMatrix<REAL> fsparse_eigen;
 
     
@@ -296,7 +296,7 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
     fsparse_eigen.setZero();
     int ncols = IA.size()-1;
     fsparse_eigen.resize(ncols,ncols);
-    std::vector<Triplet3<REAL> > triplets(2*(A.size()-ncols)+ncols);
+    std::vector<Eigen::Triplet<REAL> > triplets(2*(A.size()-ncols)+ncols);
     int count = 0;
     for (int icol = 0; icol < ncols; icol++) {
         
@@ -304,7 +304,7 @@ inline void TPZSYsmpMatrixEigen<TVar>::SetData(const TPZVec<int64_t> &IA,const T
             REAL val = A[ivalk];
             int  c = icol;
             int i = JA[ivalk];
-            Triplet3<REAL> trip(i,c,val);
+            Eigen::Triplet<REAL> trip(i,c,val);
             triplets[count]=trip;
              count++;           
         }

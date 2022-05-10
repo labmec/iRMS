@@ -82,7 +82,7 @@ void TPZSpMatrixEigen<TVar>::AddKel(TPZFMatrix<TVar> & elmat, TPZVec<int64_t> & 
             jpos=destinationindex[j];
             value=elmat.GetVal(i,j);
             if (!isNull(fsparse_eigen, ipos, jpos)) {
-                Triplet3<REAL> triplet(ipos, jpos, value);
+                Eigen::Triplet<REAL> triplet(ipos, jpos, value);
                 ftriplets.push_back(triplet);
 //                fsparse_eigen.coeffRef(ipos, jpos) += value;
             }
@@ -290,7 +290,7 @@ inline void TPZSpMatrixEigen<TVar>::SetData( TPZVec<int64_t> &IA, TPZVec<int64_t
     fsparse_eigen.setZero();
 //    auto valores =fsparse_eigen.innerIndexPtr();
   
-    std::vector<Triplet3<REAL> > triplets(A.size());
+    std::vector<Eigen::Triplet<REAL> > triplets(A.size());
     int nrows = IA.size()-1;
     int count =0;
     for (int irow = 0; irow < nrows; irow++) {
@@ -298,7 +298,7 @@ inline void TPZSpMatrixEigen<TVar>::SetData( TPZVec<int64_t> &IA, TPZVec<int64_t
             int row= irow;
             int col = JA[k];
             REAL val = A[k];
-            Triplet3<REAL> trip(row, col, val);
+            Eigen::Triplet<REAL> trip(row, col, val);
             triplets[count] = trip;
             count++;
         }

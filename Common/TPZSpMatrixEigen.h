@@ -30,14 +30,15 @@
 #include <vector>
 #include <iostream>
 
+/*
 template<typename StorageIndex = typename Eigen::SparseMatrix<REAL>::StorageIndex >
-class Triplet3
+class Eigen::Triplet
 {
 public:
     
-    Triplet3() : m_row(0), m_col(0), m_value(0) {}
+    Eigen::Triplet() : m_row(0), m_col(0), m_value(0) {}
     
-    Triplet3(const StorageIndex& i, const StorageIndex& j, const REAL& v = REAL(0))
+    Eigen::Triplet(const StorageIndex& i, const StorageIndex& j, const REAL& v = REAL(0))
     : m_row(i), m_col(j),m_value(v)
     {}
     
@@ -50,7 +51,7 @@ protected:
     StorageIndex m_row, m_col;
     REAL m_value;
 };
-
+*/
 //
     template<class TVar>
     class TPZSpMatrixEigen : public TPZMatrix<TVar> {
@@ -140,7 +141,7 @@ protected:
     public:
         int ClassId() const override;
         Eigen::SparseMatrix<REAL> fsparse_eigen;
-        mutable std::vector<Triplet3<REAL> > ftriplets;
+        mutable std::vector<Eigen::Triplet<REAL> > ftriplets;
 //        mutable Eigen::PardisoLU<Eigen::SparseMatrix<REAL>> m_analysis;
 //        mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> m_analysis;
         mutable Eigen::SparseLU<Eigen::SparseMatrix<REAL>> m_analysis;
