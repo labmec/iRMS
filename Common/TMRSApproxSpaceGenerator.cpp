@@ -1735,23 +1735,24 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
     {
         TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-        TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracMatIdTypeValue;
-        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-            if(!fracmat) DebugStop();
-            int bc_id   = get<0>(chunk);
-            int bc_type = get<1>(chunk);
-            matsWithOutMem.insert(bc_id);
-            val2[0] = get<2>(chunk);
-            if(bc_type == 2){
-                val2[0] = 0.0;
-                val1(0,0) = get<2>(chunk);
-            }
-            TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
-            if (HasForcingFunctionBC()) {
-                face->SetForcingFunctionBC(mForcingFunctionBC,1);
-            }
-            mMixedOperator->InsertMaterialObject(face);
-        }
+		
+		if(!fracmat) DebugStop();
+		for (auto& chunk : mSimData.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue) {
+			int bc_id   = chunk.first;
+			std::pair<int,REAL>& typeAndVal = chunk.second;
+			int bc_type = typeAndVal.first;
+			matsWithOutMem.insert(bc_id);
+			val2[0] = typeAndVal.second;
+			if(bc_type == 2){
+				val2[0] = 0.0;
+				val1(0,0) = typeAndVal.second;
+			}
+			TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
+			if (HasForcingFunctionBC()) {
+				face->SetForcingFunctionBC(mForcingFunctionBC,1);
+			}
+			mMixedOperator->InsertMaterialObject(face);
+		}
     }
     
     if(mHybridizer) {
@@ -2246,9 +2247,9 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
 #endif
             matids.insert(chunk.second);
         }
-		TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracMatIdTypeValue;
-		for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-			int bc_id   = get<0>(chunk);
+		
+		for (auto& chunk : mSimData.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue) {
+			int bc_id   = chunk.first;
 #ifdef PZDEBUG
 			//                std::cout << "boundary condition matid " << bc_id << std::endl;
 #endif
@@ -2395,25 +2396,25 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
         }
         
         // ---------------> Adding fracture boundary condition materials
-        TPZManVector<std::tuple<int, int, REAL>> &BCFracPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracMatIdTypeValue;
-        for (std::tuple<int, int, REAL> chunk : BCFracPhysicalTagTypeValue) {
-            TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-            if(!fracmat) DebugStop();
-            int bc_id   = get<0>(chunk);
-            int bc_type = get<1>(chunk);
-            val2[0] = get<2>(chunk);
-            if(bc_type == 2){
-                val2[0] = 0.0;
-                val1(0,0) = get<2>(chunk);
-            }
-            TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
-            if (HasForcingFunctionBC()) {
-                face->SetForcingFunctionBC(mForcingFunctionBC,1);
-            }
-            mMixedOperator->InsertMaterialObject(face);
-            std::cout << "Added frac BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
-            MatsWitOuthmem.insert(bc_id);
-        }
+		if(!fracmat) DebugStop();
+		for (auto& chunk : mSimData.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue) {
+			TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
+			int bc_id   = chunk.first;
+			std::pair<int,REAL>& typeAndVal = chunk.second;
+			int bc_type = typeAndVal.first;
+			if(bc_type == 2){
+				val2[0] = 0.0;
+				val1(0,0) = typeAndVal.second;
+			}
+			TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
+			if (HasForcingFunctionBC()) {
+				face->SetForcingFunctionBC(mForcingFunctionBC,1);
+			}
+			mMixedOperator->InsertMaterialObject(face);
+			std::cout << "Added frac BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
+			MatsWitOuthmem.insert(bc_id);
+
+		}
     }
     
     if(mHybridizer){
@@ -2464,12 +2465,9 @@ void TMRSApproxSpaceGenerator::GetTransportMaterials(std::set<int> &MatsWithmem,
 //            DebugStop();
 //        }
         
-        // ---------------> Adding fracture boundary condition materials
-        TPZManVector<std::tuple<int, int, REAL>> &BCFracPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracMatIdTypeValue;
-        for (std::tuple<int, int, REAL> chunk : BCFracPhysicalTagTypeValue) {
-            TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-//            if(!fracmat) DebugStop();
-            int bc_id   = get<0>(chunk);
+        // ---------------> Adding fracture boundary condition material
+        for (auto& chunk : mSimData.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue) {
+            int bc_id   = chunk.first;
             MatsWitOuthmem.insert(bc_id);
         }
     }
@@ -3861,10 +3859,9 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
 		int material_id = chunk.second;
 		VolMatIds.insert(material_id);
 	}
-    
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
+        
+	for (auto& chunk : mSimData.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue) {
+        int bc_id   = chunk.first;
         FracBoundary.insert(bc_id);
     }
     FracBoundary.insert(2);

@@ -395,8 +395,7 @@ public:
         /**
 		 * @brief Contains the fracture boundary conditions for Flow problem in a map. Key = matidOfBC, value = pair<typeOfBC,valueOfBC>
          */
-        TPZManVector<std::tuple<int, int, REAL>> mBCMixedFracMatIdTypeValue;
-//		std::map<int,std::pair<int,REAL>> mBCFlowFracMatIdToTypeValue;
+		std::map<int,std::pair<int,REAL>> mBCFlowFracMatIdToTypeValue;
 		
         /**
 		 * @brief Contains the boundary conditions for Transport problem in a map. Key = matidOfBC, value = pair<typeOfBC,valueOfBC>
@@ -421,10 +420,11 @@ public:
         /** @brief Copy constructor */
         TBoundaryConditions(const TBoundaryConditions &other){
 			mBCFlowMatIdToTypeValue = other.mBCFlowMatIdToTypeValue;
-			mBCMixedFracMatIdTypeValue = other.mBCMixedFracMatIdTypeValue;
+			mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
+			
 			mBCTransportMatIdTypeValue = other.mBCTransportMatIdTypeValue;
 			mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
-//			mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
+						
 //			mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
 //			mBCTransportFracMatIdToTypeValue = other.mBCTransportFracMatIdToTypeValue;
         }
@@ -432,12 +432,13 @@ public:
         /** @brief Copy assignment operator*/
         TBoundaryConditions &operator=(const TBoundaryConditions &other){
             if (this != & other) // prevent self-assignment
-			{				
+			{
 				mBCFlowMatIdToTypeValue = other.mBCFlowMatIdToTypeValue;
-				mBCMixedFracMatIdTypeValue = other.mBCMixedFracMatIdTypeValue;
+				mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
+				
 				mBCTransportMatIdTypeValue = other.mBCTransportMatIdTypeValue;
 				mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
-//				mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
+
 //				mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
 //				mBCTransportFracMatIdToTypeValue = other.mBCTransportFracMatIdToTypeValue;
 			}

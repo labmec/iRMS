@@ -204,20 +204,17 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     if (caseToSim == 0){
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EFaceBCPressure] = std::make_pair(D_Type,1.);
         
-
-        sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(1);
-        sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[0] = std::make_tuple(EFracPressure,D_Type,1.);
+		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracPressure] = std::make_pair(D_Type, 1.);
     }
     else if (caseToSim == 1){
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,2.);
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,0.);
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
-
-        sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(4);
-        sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[0] = std::make_tuple(EFracInlet,D_Type,2.);
-        sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[1] = std::make_tuple(EFracOutlet,D_Type,0.);
-        sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[2] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
-        sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[3] = std::make_tuple(EPLossAtIntersect,Mixed_Type,0.5);
+		
+		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracInlet] = std::make_pair(D_Type, 2.);
+		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracOutlet] = std::make_pair(D_Type, 0.);
+		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux] = std::make_pair(N_Type, zero_flux);
+		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPLossAtIntersect] = std::make_pair(Mixed_Type, 0.5);
         
         sim_data.mTFracIntersectProperties.m_IntersectionPressureLossId = EPLossAtIntersect;
     }

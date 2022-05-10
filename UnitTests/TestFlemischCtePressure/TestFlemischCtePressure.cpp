@@ -270,8 +270,7 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
     sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
     
     // Fracture boundary conditions
-    sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(1);
-    sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
+	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux] = std::make_pair(N_Type, zero_flux);
 
 	sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
         
