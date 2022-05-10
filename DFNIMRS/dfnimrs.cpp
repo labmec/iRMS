@@ -450,9 +450,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	
 	// ------------------------ Reading 3D Domain BC matids ------------------------
 	if(input.find("Boundary") == input.end()) DebugStop();
-	const int nbcs = input["Boundary"].size();
-	sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(nbcs);
-	int countBCs = 0;
+	std::map<int,std::pair<int,REAL>>& BCFlowMatIdToTypeValue = sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue;
 	for(auto& bc : input["Boundary"]){
 		if(bc.find("matid") == bc.end()) DebugStop();
 		if(bc.find("type") == bc.end()) DebugStop();
@@ -460,7 +458,9 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		const int matid = bc["matid"];
 		const int type = bc["type"];
 		const REAL value = bc["value"];
-		sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[countBCs++] = std::make_tuple(matid,type,value);
+		
+		if(BCFlowMatIdToTypeValue.find(matid) != BCFlowMatIdToTypeValue.end()) DebugStop();
+		BCFlowMatIdToTypeValue[matid] = std::make_pair(type, value);
 	}
 	
 	// ------------------------ Reading fractures and fracture bcs matids ------------------------
@@ -609,11 +609,11 @@ void FillDataTransfer(TMRSDataTransfer& sim_data){
     sim_data.mTGeometry.mDomainNameAndMatId["Volume2"] = EVolume2;
     
     // Domain boundary conditions
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(EInlet,D_Type,unit_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[1] = std::make_tuple(EOutlet,D_Type,zero_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,unit_pressure);
+    
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,unit_pressure);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,zero_pressure);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EFaceBCPressure] = std::make_pair(D_Type,unit_pressure);
             
     // Fracture material
     sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
@@ -663,10 +663,9 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
     sim_data.mTGeometry.mDomainNameAndMatId["Volume2"] = EVolume2;
     
     // Domain boundary conditions
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(EInlet,D_Type,inlet_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[1] = std::make_tuple(EOutlet,D_Type,outlet_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,inlet_pressure);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,outlet_pressure);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
             
     // Fracture material
     sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
@@ -780,10 +779,9 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     sim_data.mTGeometry.mDomainNameAndMatId["Volume2"] = EVolume2;
     
     // Domain boundary conditions
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(EInlet,D_Type,inlet_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[1] = std::make_tuple(EOutlet,N_Type,outlet_flux);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,inlet_pressure);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(N_Type,outlet_flux);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
             
     // Fracture material
     sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
@@ -898,10 +896,9 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
     
     // Domain boundary conditions
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(EInlet,N_Type,inlet_flux);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[1] = std::make_tuple(EOutlet,D_Type,outlet_pressure);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(N_Type,inlet_flux);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,outlet_pressure);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
             
     // Fracture material
     sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;

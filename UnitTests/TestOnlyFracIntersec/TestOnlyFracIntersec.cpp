@@ -179,8 +179,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     // Boundary conditions
     if (caseToSim == 0) {
         int bcfracid = EPressure;
-        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(1);
-        sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(bcfracid,D_Type,pressure_in);
+		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[bcfracid] = std::make_pair(D_Type,pressure_in);
     }
     else {
         DebugStop();

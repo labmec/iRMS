@@ -1548,17 +1548,17 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
         DebugStop();
     }
     TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2[0]  = get<2>(chunk);
-        TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        if (HasForcingFunctionBC()) {
-            face->SetForcingFunctionBC(mForcingFunctionBC,1);
-        }
-        mMixedOperator->InsertMaterialObject(face);
-    }
+	for(auto &chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+		int bc_id   = chunk.first;
+		std::pair<int,REAL>& typeAndVal = chunk.second;
+		int bc_type = typeAndVal.first;
+		val2[0]  = typeAndVal.second;
+		TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+		if (HasForcingFunctionBC()) {
+			face->SetForcingFunctionBC(mForcingFunctionBC,1);
+		}
+		mMixedOperator->InsertMaterialObject(face);
+	}
     
     TPZManVector<TPZCompMesh *, 3> mesh_vec(3);
     mesh_vec[0] = HdivFluxCmesh(order);
@@ -1720,17 +1720,17 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
     {
         TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedMatIdTypeValue;
-        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-            int bc_id   = get<0>(chunk);
-            int bc_type = get<1>(chunk);
-            val2[0]  = get<2>(chunk);
-            TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-            if (HasForcingFunctionBC()) {
-                face->SetForcingFunctionBC(mForcingFunctionBC,1);
-            }
-            mMixedOperator->InsertMaterialObject(face);
-        }
+		for(auto &chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+			int bc_id   = chunk.first;
+			std::pair<int,REAL>& typeAndVal = chunk.second;
+			int bc_type = typeAndVal.first;
+			val2[0]  = typeAndVal.second;
+			TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+			if (HasForcingFunctionBC()) {
+				face->SetForcingFunctionBC(mForcingFunctionBC,1);
+			}
+			mMixedOperator->InsertMaterialObject(face);
+		}
     }
     
     {
@@ -2229,9 +2229,9 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
 #endif
             matids.insert(chunk.second);
         }
-        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedMatIdTypeValue;
-        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-            int bc_id   = get<0>(chunk);
+        
+        for (auto& chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+            int bc_id   = chunk.first;
 #ifdef PZDEBUG
 //            std::cout << "boundary condition matid " << bc_id << std::endl;
 #endif
@@ -2364,19 +2364,19 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
     if(!volume) DebugStop();
         
     // ---------------> Adding volume boundary condition materials
-    TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2[0] = get<2>(chunk);
-        TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        if(HasForcingFunctionBC())
-            face->SetForcingFunctionBC(mForcingFunctionBC,1);
-        mMixedOperator->InsertMaterialObject(face);
-        MatsWitOuthmem.insert(bc_id);
-        std::cout << "Added volume BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
-    }
+	for(auto &chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+		TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
+		int bc_id   = chunk.first;
+		std::pair<int,REAL>& typeAndVal = chunk.second;
+		int bc_type = typeAndVal.first;
+		val2[0]  = typeAndVal.second;
+		TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+		if(HasForcingFunctionBC())
+			face->SetForcingFunctionBC(mForcingFunctionBC,1);
+		mMixedOperator->InsertMaterialObject(face);
+		MatsWitOuthmem.insert(bc_id);
+		std::cout << "Added volume BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
+	}
     
     // ---------------> Adding fracture materials
     if (isFracSim()) {
@@ -2448,10 +2448,8 @@ void TMRSApproxSpaceGenerator::GetTransportMaterials(std::set<int> &MatsWithmem,
     if(MatsWithmem.size()==0) DebugStop();
         
     // ---------------> Adding volume boundary condition materials
-    TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-        int bc_id   = get<0>(chunk);
+    for (auto& chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+        int bc_id   = chunk.first;
         MatsWitOuthmem.insert(bc_id);
     }
     
@@ -2664,15 +2662,15 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
         }
         
         TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-        TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedMatIdTypeValue;
-        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-            int bc_id   = get<0>(chunk);
-            int bc_type = get<1>(chunk);
-            val2[0]  = get<2>(chunk);
-            matids.insert(bc_id);
-            TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-            mhm->CMesh()->InsertMaterialObject(face);
-        }
+		for(auto &chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+			int bc_id   = chunk.first;
+			std::pair<int,REAL>& typeAndVal = chunk.second;
+			int bc_type = typeAndVal.first;
+			val2[0]  = typeAndVal.second;
+			matids.insert(bc_id);
+			TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+			mhm->CMesh()->InsertMaterialObject(face);
+		}
         mhm->fMaterialBCIds = matids;
     }
     
@@ -2720,9 +2718,8 @@ void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
         mhm->fMaterialIds = matids;
         matids.clear();
         
-        for (auto omId:mSimData.mTBoundaryConditions.mBCMixedMatIdTypeValue ) {      //BC
-            
-            int MatId = get<0>(omId);
+        for (auto& omId : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue ) {      //BC
+            int MatId = omId.first;
             matids.insert(MatId);
         } ;
         mhm->fMaterialBCIds = matids;
@@ -3563,46 +3560,6 @@ void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
     }
     coarseindices.Resize(count);
 }
-//void  TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMeshControl &control)
-//{
-//    TPZCompMesh &cmesh = control.CMesh();
-//    TPZCompMesh *MixedFluxPressureCmesh = &cmesh;
-//    int order = 1;
-//    const int typeFlux = 1, typePressure = 0;
-//    int dimension =mGeometry->Dimension();
-//    TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-//    TPZMixedDarcyFlow * volume = nullptr;
-//
-//    MixedFluxPressureCmesh->SetDefaultOrder(order);
-//    std::vector<std::map<std::string,int>> DomainDimNameAndPhysicalTag =   mSimData.mTGeometry.mDomainNameAndMatId;
-//    for (int d = 0; d <= dimension; d++) {
-//        for (auto chunk : DomainDimNameAndPhysicalTag[d]) {
-//            std::string material_name = chunk.first;
-//            std::cout << "physical name = " << material_name << std::endl;
-//            int materia_id = chunk.second;
-////            volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,d);
-//            volume = new TPZMixedDarcyFlow(materia_id,d);
-//
-////            volume->SetDataTransfer(mSimData);
-//            MixedFluxPressureCmesh->InsertMaterialObject(volume);
-//        }
-//    }
-//    
-//    if (!volume) {
-//        DebugStop();
-//    }
-//    
-//    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-//    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedMatIdTypeValue;
-//    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-//        int bc_id   = get<0>(chunk);
-//        int bc_type = get<1>(chunk);
-//        val2[0]  = get<2>(chunk);
-//        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-//        MixedFluxPressureCmesh->InsertMaterialObject(face);
-//    }
-//    
-//}
 
 void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &control)
 {
@@ -3640,15 +3597,14 @@ void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &cont
     }
     
     TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2[0]  = get<2>(chunk);
-        //        std::cout<<"val: "<<val2(0,0)<<std::endl;
-        TPZBndCondT<STATE> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        MixedFluxPressureCmesh->InsertMaterialObject(face);
-    }
+	for(auto &chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+		int bc_id   = chunk.first;
+		std::pair<int,REAL>& typeAndVal = chunk.second;
+		int bc_type = typeAndVal.first;
+		val2[0]  = typeAndVal.second;
+		TPZBndCondT<STATE> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+		MixedFluxPressureCmesh->InsertMaterialObject(face);
+	}
     
 }
 void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh * MixedOperator)

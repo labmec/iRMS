@@ -61,7 +61,6 @@ public:
         /** @brief
          Contains the material id of the fractures by dimension.
          */
-//        std::vector<std::map<std::string,int>> mDomainFracDimNameAndMatId;
 		std::map<std::string,int> mDomainFracNameAndMatId;
 		std::map<std::string,int> mDomainFracIntersectionNameAndMatId;
         
@@ -173,11 +172,11 @@ public:
             return *this;
         }
         
-        const bool isThereFracture() const {return mDomainFracNameAndMatId.size();}        
+        const bool isThereFracture() const {return mDomainFracNameAndMatId.size();}
     };
     
     /**
-     * @brief Class that stores PetroPhysics information
+     * @brief Class that stores PetroPhysics information, i.e. Interaction between fluid and rock.
      */
     
     class TPetroPhysics : public TMRSSavable {
@@ -253,7 +252,7 @@ public:
     };
     
     /**
-     * @brief Class that stores Fluid properties
+     * @brief Class that stores Fluid properties. For instance density of water and oil, compressibility of water and oil.
      */
     class TFluidProperties : public TMRSSavable {
         
@@ -319,6 +318,10 @@ public:
         void CreateExponentialDensityFunction();
         
     };
+	
+	/**
+	 * @brief Class that stores Reservoir rock properties. For instance permeability and porosity of the rock
+	 */
     class TReservoirProperties : public TMRSSavable {
         
     public:
@@ -385,37 +388,30 @@ public:
     public:
         
         /**
-         * @brief Contains the boundary conditions (material_id), condition type and value of the mixed problem
-         * @TODO is it PhysicalTag or matid??
+		 * @brief Contains the boundary conditions for Flow problem in a map. Key = matidOfBC, value = pair<typeOfBC,valueOfBC>
          */
-        TPZManVector<std::tuple<int, int, REAL>> mBCMixedMatIdTypeValue;
+		std::map<int,std::pair<int,REAL>> mBCFlowMatIdToTypeValue;
+        
         /**
-         * @brief Contains the boundary conditions (material_id), condition type and value of the fractures
-         * // @TODO why a separate list for the fractures. In the computational mesh there is only one list of materials
-         * // should be we verify if none of the material ids in this vector occurs in the material id vector of the volumes
+		 * @brief Contains the fracture boundary conditions for Flow problem in a map. Key = matidOfBC, value = pair<typeOfBC,valueOfBC>
          */
         TPZManVector<std::tuple<int, int, REAL>> mBCMixedFracMatIdTypeValue;
+//		std::map<int,std::pair<int,REAL>> mBCFlowFracMatIdToTypeValue;
+		
         /**
-         * @brief Contains the boundary conditions (material_id), condition type and value of the transport problem
+		 * @brief Contains the boundary conditions for Transport problem in a map. Key = matidOfBC, value = pair<typeOfBC,valueOfBC>
          */
         TPZManVector<std::tuple<int, int, REAL>> mBCTransportMatIdTypeValue;
+//		std::map<int,std::pair<int,REAL>> mBCTransportMatIdToTypeValue;
         
         /**
-         * @brief Contains the boundary conditions (material_id), condition type and value of fractures in the transport problem
+		 * @brief Contains the fracture boundary conditions for Transport problem in a map. Key = matidOfBC, value = pair<typeOfBC,valueOfBC>
          */
         TPZManVector<std::tuple<int, int, REAL>> mBCTransportFracMatIdTypeValue;
+//		std::map<int,std::pair<int,REAL>> mBCTransportFracMatIdToTypeValue;
         
         /** @brief Default constructor */
-        TBoundaryConditions(){
-            
-            mBCMixedMatIdTypeValue.Resize(0);
-            
-            mBCMixedFracMatIdTypeValue.Resize(0);
-            
-            mBCTransportMatIdTypeValue.Resize(0);
-            
-            mBCTransportFracMatIdTypeValue.Resize(0);
-        }
+        TBoundaryConditions(){}
         
         /** @brief Destructor */
         ~TBoundaryConditions(){
@@ -424,21 +420,27 @@ public:
         
         /** @brief Copy constructor */
         TBoundaryConditions(const TBoundaryConditions &other){
-            mBCMixedMatIdTypeValue = other.mBCMixedMatIdTypeValue;
-            mBCMixedFracMatIdTypeValue = other.mBCMixedFracMatIdTypeValue;
-            mBCTransportMatIdTypeValue = other.mBCTransportMatIdTypeValue;
-            mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
+			mBCFlowMatIdToTypeValue = other.mBCFlowMatIdToTypeValue;
+			mBCMixedFracMatIdTypeValue = other.mBCMixedFracMatIdTypeValue;
+			mBCTransportMatIdTypeValue = other.mBCTransportMatIdTypeValue;
+			mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
+//			mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
+//			mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
+//			mBCTransportFracMatIdToTypeValue = other.mBCTransportFracMatIdToTypeValue;
         }
         
         /** @brief Copy assignment operator*/
         TBoundaryConditions &operator=(const TBoundaryConditions &other){
             if (this != & other) // prevent self-assignment
-                {
-                mBCMixedMatIdTypeValue = other.mBCMixedMatIdTypeValue;
-                mBCMixedFracMatIdTypeValue = other.mBCMixedFracMatIdTypeValue;
-                mBCTransportMatIdTypeValue = other.mBCTransportMatIdTypeValue;
-                mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
-                }
+			{				
+				mBCFlowMatIdToTypeValue = other.mBCFlowMatIdToTypeValue;
+				mBCMixedFracMatIdTypeValue = other.mBCMixedFracMatIdTypeValue;
+				mBCTransportMatIdTypeValue = other.mBCTransportMatIdTypeValue;
+				mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
+//				mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
+//				mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
+//				mBCTransportFracMatIdToTypeValue = other.mBCTransportFracMatIdToTypeValue;
+			}
             return *this;
         }
         

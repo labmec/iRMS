@@ -615,11 +615,10 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     REAL pressure_out = 1.0 ;
     REAL flux_int = -1.5;
     
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[0] = std::make_tuple(-1,N_Type,zero_flux);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[1] = std::make_tuple(-2,D_Type,pressure_in);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(-4,D_Type,pressure_out);
-    sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[3] = std::make_tuple(-5,N_Type,zero_flux);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[-1] = std::make_pair(N_Type, zero_flux);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[-2] = std::make_pair(D_Type,pressure_in);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[-4] = std::make_pair(D_Type,pressure_out);
+	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[-5] = std::make_pair(N_Type,zero_flux);
     
     sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(3);
     sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[0] =
