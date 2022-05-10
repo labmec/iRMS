@@ -275,9 +275,7 @@ public:
     void BuildMultiphysicsSpaceWithMemoryByMatId(TPZVec<int> & active_approx_spaces, TPZVec<TPZCompMesh * > & mesh_vector);
     
     void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh);
-    const bool isFracSim() const {return mSimData.mTGeometry.mDomainFracDimNameAndMatId[0].size() ||
-        mSimData.mTGeometry.mDomainFracDimNameAndMatId[1].size() ||
-        mSimData.mTGeometry.mDomainFracDimNameAndMatId[2].size();}
+    const bool isFracSim() const {return mSimData.mTGeometry.mDomainFracNameAndMatId.size();}
     
     bool IsFracMatId(int matiD);
 };

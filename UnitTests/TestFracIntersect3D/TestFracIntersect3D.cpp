@@ -287,8 +287,8 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     
     // Domain material
     sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = EFracture;
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[1]["EIntersection"] = EIntersection;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
+    sim_data.mTGeometry.mDomainFracIntersectionNameAndMatId["EIntersection"] = EIntersection;
     
     // Domain boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue.Resize(4);

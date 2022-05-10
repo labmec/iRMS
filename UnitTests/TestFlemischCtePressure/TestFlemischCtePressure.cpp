@@ -267,7 +267,7 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,unit_pressure);
             
     // Fracture material
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = EFracture;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
     
     // Fracture boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(1);

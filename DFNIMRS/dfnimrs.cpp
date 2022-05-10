@@ -481,7 +481,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	
     
     //here modificate
-//	sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = fracUniqueMatId;
+//	sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = fracUniqueMatId;
     // Mod
     int initfracmatid =input["FractureInitMatId"];
     int actualfracid=initfracmatid;
@@ -491,7 +491,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
         int matid = actualfracid;
         REAL permerm = fracture["K"];
 		TMRSDataTransfer::TFracProperties::FracProp fracprop;
-        sim_data.mTGeometry.mDomainFracDimNameAndMatId[2][name] = matid;
+        sim_data.mTGeometry.mDomainFracNameAndMatId[name] = matid;
         actualfracid +=2;
 		
 		fracprop.m_perm = permerm;
@@ -616,7 +616,7 @@ void FillDataTransfer(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[3] = std::make_tuple(EFaceBCPressure,D_Type,unit_pressure);
             
     // Fracture material
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = EFracture;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
     
     // Fracture boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(1);
@@ -669,7 +669,7 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
             
     // Fracture material
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = EFracture;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
     
     // Fracture boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(1);
@@ -786,8 +786,8 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
             
     // Fracture material
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = EFracture;
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[1]["Intersection"] = EIntersection;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
+    sim_data.mTGeometry.mDomainFracIntersectionNameAndMatId["Intersection"] = EIntersection;
     // Fracture boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(1);
     sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue[0] = std::make_tuple(EFracNoFlux,N_Type,zero_flux);
@@ -904,8 +904,8 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     sim_data.mTBoundaryConditions.mBCMixedMatIdTypeValue[2] = std::make_tuple(ENoflux,N_Type,zero_flux);
             
     // Fracture material
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = EFracture;
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[1]["Intersection"] = EIntersection;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
+    sim_data.mTGeometry.mDomainFracIntersectionNameAndMatId["Intersection"] = EIntersection;
     
     // Fracture boundary conditions
     sim_data.mTBoundaryConditions.mBCMixedFracMatIdTypeValue.Resize(1);

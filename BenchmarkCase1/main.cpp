@@ -601,7 +601,7 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     
     sim_data.mTGeometry.mDomainNameAndMatId["k33"] = 1;
     sim_data.mTGeometry.mDomainNameAndMatId["k31"] = 2;
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = 10;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = 10;
     sim_data.mTGeometry.mInterface_material_id = 100;
     sim_data.mTGeometry.mInterface_material_idFracInf = 101;
     sim_data.mTGeometry.mInterface_material_idFracSup = 102;

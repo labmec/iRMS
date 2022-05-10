@@ -189,7 +189,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     
     
     sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"] = globFracID;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = globFracID;
 
     // NS: What are these?
     sim_data.mTGeometry.mInterface_material_id = 100;

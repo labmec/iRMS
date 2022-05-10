@@ -1307,15 +1307,20 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
         if(isThereFracIntersection()){
             val = 1;
         }
-        for (int i = 1; i <= val+1; i++) {
-            for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndMatId[dimension-i]){
-                std::string material_name = chunk.first;
-                int material_id = chunk.second;
-                volume = new TPZTracerFlow(material_id,dimension-1);
-                mTransportOperator->InsertMaterialObject(volume);
-                volIds.insert(material_id);
-            }
-        }
+		for(auto chunk : mSimData.mTGeometry.mDomainFracNameAndMatId){
+			std::string material_name = chunk.first;
+			int material_id = chunk.second;
+			volume = new TPZTracerFlow(material_id,dimension-1);
+			mTransportOperator->InsertMaterialObject(volume);
+			volIds.insert(material_id);
+		}
+		for(auto chunk : mSimData.mTGeometry.mDomainFracIntersectionNameAndMatId){
+			std::string material_name = chunk.first;
+			int material_id = chunk.second;
+			volume = new TPZTracerFlow(material_id,dimension-2);
+			mTransportOperator->InsertMaterialObject(volume);
+			volIds.insert(material_id);
+		}
              
         if (!volume)
             DebugStop();
@@ -1690,7 +1695,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 	}
 	
     TMRSDarcyFractureFlowWithMem<TMRSMemory> * fracmat = nullptr;
-    for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndMatId[dimension-1]){
+    for(auto chunk : mSimData.mTGeometry.mDomainFracNameAndMatId){
         std::string material_name = chunk.first;
         std::cout << "physical name = " << material_name <<
         " material id " << chunk.second << " dimension " << dimension-1 << std::endl;
@@ -2234,26 +2239,21 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
         }
     }
     else if (dim == mGeometry->Dimension()-1) {
-        std::vector<std::map<std::string,int>> &DomainDimNameAndPhysicalTag =
-        mSimData.mTGeometry.mDomainFracDimNameAndMatId;
-        for (auto chunk : DomainDimNameAndPhysicalTag[dim]) {
+        for (auto chunk : mSimData.mTGeometry.mDomainFracNameAndMatId) {
 #ifdef PZDEBUG
             std::string material_name = chunk.first;
 //            std::cout << "physical name = " << material_name << " matid " << chunk.second<< std::endl;
 #endif
             matids.insert(chunk.second);
         }
-        if(dim == mGeometry->Dimension()-1)
-        {
-            TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracMatIdTypeValue;
-            for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-                int bc_id   = get<0>(chunk);
+		TPZManVector<std::tuple<int, int, REAL>> &BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCMixedFracMatIdTypeValue;
+		for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
+			int bc_id   = get<0>(chunk);
 #ifdef PZDEBUG
-//                std::cout << "boundary condition matid " << bc_id << std::endl;
+			//                std::cout << "boundary condition matid " << bc_id << std::endl;
 #endif
-                bcmatids.insert(bc_id);
-            }
-        }
+			bcmatids.insert(bc_id);
+		}
         
     }
 }
@@ -2381,7 +2381,7 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
     // ---------------> Adding fracture materials
     if (isFracSim()) {
         TMRSDarcyFractureFlowWithMem<TMRSMemory> * fracmat = nullptr;
-        for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndMatId[dimension-1]){
+        for(auto chunk : mSimData.mTGeometry.mDomainFracNameAndMatId){
             std::string material_name = chunk.first;
             int material_id = chunk.second;
             fracmat = new TMRSDarcyFractureFlowWithMem<TMRSMemory>(material_id,dimension-1);
@@ -2457,7 +2457,7 @@ void TMRSApproxSpaceGenerator::GetTransportMaterials(std::set<int> &MatsWithmem,
     
     // ---------------> Adding fracture materials
     if (isFracSim()) {
-        for(auto chunk : mSimData.mTGeometry.mDomainFracDimNameAndMatId[dimension-1]){
+        for(auto chunk : mSimData.mTGeometry.mDomainFracNameAndMatId){
             std::string material_name = chunk.first;
             int material_id = chunk.second;
             MatsWithmem.insert(material_id);
@@ -3780,7 +3780,7 @@ void TMRSApproxSpaceGenerator::CreateElementInterfaces(TPZGeoEl *gel){
     int nsides = gel->NSides();
     int ncoord = gel->NCornerNodes();
     int transport_matid = mSimData.mTGeometry.mInterface_material_id;
-    auto frac = mSimData.mTGeometry.mDomainFracDimNameAndMatId[2];
+    auto frac = mSimData.mTGeometry.mDomainFracNameAndMatId;
     int fracmat = frac["Fractures"];
     std::set<int> FracMatID;
     FracMatID.insert(fracmat);
@@ -3836,7 +3836,7 @@ void TMRSApproxSpaceGenerator::CreateInterfaces(TPZCompMesh *cmesh){
     
     int nels = cmesh->NElements();
     int dim = cmesh->Dimension();
-    int fracId = mSimData.mTGeometry.mDomainFracDimNameAndMatId[2]["Fractures"];
+    int fracId = mSimData.mTGeometry.mDomainFracNameAndMatId["Fractures"];
     
     // cel_indexes is a vector of vectors that stores the elements by dimension. It also skips
     // elements such as BC elements, so it only selects fracture elements for dim-1. For dim, it selects everything.
@@ -3877,7 +3877,7 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     int nsides = gel->NSides();
     int ncoord = gel->NCornerNodes();
     int transport_matid = mSimData.mTGeometry.mInterface_material_id;
-    auto frac = mSimData.mTGeometry.mDomainFracDimNameAndMatId[2];
+    auto frac = mSimData.mTGeometry.mDomainFracNameAndMatId;
     int fracmat = frac["Fractures"];
     std::set<int> FracBoundary;
 //    FracBoundary.insert(matIdFracBound);

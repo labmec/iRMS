@@ -55,15 +55,15 @@ public:
         
         /** @brief
          Contains the  name and material for elements of a certain dimension.
-         @TODO why is there a dimension here? Are we going to simulate 2D problems?
          */
         std::map<std::string,int> mDomainNameAndMatId;
         
         /** @brief
          Contains the material id of the fractures by dimension.
-         @TODO why is there a dimension here? Are there 1D fractures?
          */
-        std::vector<std::map<std::string,int>> mDomainFracDimNameAndMatId;
+//        std::vector<std::map<std::string,int>> mDomainFracDimNameAndMatId;
+		std::map<std::string,int> mDomainFracNameAndMatId;
+		std::map<std::string,int> mDomainFracIntersectionNameAndMatId;
         
         /** @brief
          MaterialID of the interface element that will be inserted in the transport mesh
@@ -102,10 +102,7 @@ public:
         
         
         /** @brief Default constructor */
-        TGeometry(){
-                        
-            mDomainFracDimNameAndMatId.resize(3);
-        }
+        TGeometry(){}
         
         /** @brief Destructor */
         ~TGeometry(){
@@ -115,7 +112,8 @@ public:
         /** @brief Copy constructor */
         TGeometry(const TGeometry &other){
             mDomainNameAndMatId = other.mDomainNameAndMatId;
-            mDomainFracDimNameAndMatId = other.mDomainFracDimNameAndMatId;
+			mDomainFracNameAndMatId = other.mDomainFracNameAndMatId;
+			mDomainFracIntersectionNameAndMatId = other.mDomainFracIntersectionNameAndMatId;
             mInterface_material_id=other.mInterface_material_id;
             mInterface_material_idFracSup = other.mInterface_material_idFracSup;
             mInterface_material_idFracInf = other.mInterface_material_idFracInf;
@@ -144,9 +142,10 @@ public:
         /** @brief Copy assignment operator*/
         TGeometry &operator=(const TGeometry &other){
             if (this != & other) // prevent self-assignment
-                {
-                mDomainNameAndMatId = other.mDomainNameAndMatId;
-                mDomainFracDimNameAndMatId = other.mDomainFracDimNameAndMatId;
+			{
+				mDomainNameAndMatId = other.mDomainNameAndMatId;
+				mDomainFracNameAndMatId = other.mDomainFracNameAndMatId;
+				mDomainFracIntersectionNameAndMatId = other.mDomainFracIntersectionNameAndMatId;
                 mInterface_material_id=other.mInterface_material_id;
                 mInterface_material_idFracSup = other.mInterface_material_idFracSup;
                 mInterface_material_idFracInf = other.mInterface_material_idFracInf;
@@ -174,10 +173,7 @@ public:
             return *this;
         }
         
-        const bool isThereFracture() const {return mDomainFracDimNameAndMatId[0].size() ||
-            mDomainFracDimNameAndMatId[1].size() ||
-            mDomainFracDimNameAndMatId[2].size();}
-        
+        const bool isThereFracture() const {return mDomainFracNameAndMatId.size();}        
     };
     
     /**
@@ -882,6 +878,7 @@ public:
 			int m_fracbc; // fracture boundary condition matid
 			REAL m_perm; // permeability of the fracture
 			REAL m_width; // fracture opening
+			REAL m_porosity; // porosity of the fracture
 		};
 		
 		/// Backwards compatibility in case all fractures have same permeability. Delete me?
