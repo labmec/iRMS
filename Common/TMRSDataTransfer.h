@@ -400,14 +400,7 @@ public:
         /**
 		 * @brief Contains the boundary conditions for Transport problem in a map. Key = matidOfBC, value = pair<typeOfBC,valueOfBC>
          */
-//        TPZManVector<std::tuple<int, int, REAL>> mBCTransportMatIdTypeValue;
 		std::map<int,std::pair<int,REAL>> mBCTransportMatIdToTypeValue;
-        
-        /**
-		 * @brief Contains the fracture boundary conditions for Transport problem in a map. Key = matidOfBC, value = pair<typeOfBC,valueOfBC>
-         */
-        TPZManVector<std::tuple<int, int, REAL>> mBCTransportFracMatIdTypeValue;
-//		std::map<int,std::pair<int,REAL>> mBCTransportFracMatIdToTypeValue;
         
         /** @brief Default constructor */
         TBoundaryConditions(){}
@@ -422,11 +415,6 @@ public:
 			mBCFlowMatIdToTypeValue = other.mBCFlowMatIdToTypeValue;
 			mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
 			mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
-			
-			mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
-						
-			
-//			mBCTransportFracMatIdToTypeValue = other.mBCTransportFracMatIdToTypeValue;
         }
         
         /** @brief Copy assignment operator*/
@@ -435,12 +423,7 @@ public:
 			{
 				mBCFlowMatIdToTypeValue = other.mBCFlowMatIdToTypeValue;
 				mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
-				mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
-				
-				mBCTransportFracMatIdTypeValue = other.mBCTransportFracMatIdTypeValue;
-
-
-//				mBCTransportFracMatIdToTypeValue = other.mBCTransportFracMatIdToTypeValue;
+				mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;				
 			}
             return *this;
         }
