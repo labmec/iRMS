@@ -122,10 +122,9 @@ TMRSDataTransfer Setting2Fractures(){
     int bc_inlet = 0;
     int bc_outlet = 1;
     REAL sat_in = 1.0;
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue.Resize(3);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[0] = std::make_tuple(-1,bc_outlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[1] = std::make_tuple(-2,bc_inlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[2] = std::make_tuple(-4,bc_outlet,0.0);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[-1] = std::make_pair(bc_outlet, 0.0);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[-2] = std::make_pair(bc_inlet, sat_in);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[-4] = std::make_pair(bc_outlet, 0.0);
     
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.1;

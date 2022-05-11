@@ -291,9 +291,8 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     
     // Boundary conditions Transport Problemm
     if (caseToSim < 4) {
-        sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue.Resize(2);
-        sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[0] = std::make_tuple(EInlet,D_Type,1.);
-        sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[1] = std::make_tuple(EOutlet,N_Type,1.);
+		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(D_Type, 1.);
+		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(N_Type, 1.);
     }
     else {
         DebugStop();

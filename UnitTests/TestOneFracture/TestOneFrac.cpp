@@ -373,14 +373,12 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
 		        
         mBCFlowFracMatIdToTypeValue[EPressure] = std::make_pair(N_Type, zero_flux);
-        
-        sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue.Resize(4);
-        sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[0] = std::make_tuple(EInlet,D_Type,1.);
-        sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[1] = std::make_tuple(EOutlet,N_Type,0.);
-        sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[2] = std::make_tuple(ENoflux,5,zero_flux);
-        sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[3] = std::make_tuple(EFaceBCPressure,5,1.);
-        sim_data.mTGeometry.mInterface_material_idFracBound = EPressure;
-        
+                
+		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(D_Type, 1.);
+		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(N_Type, 0.);
+		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[ENoflux] = std::make_pair(5, zero_flux);
+		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFaceBCPressure] = std::make_pair(5, 1.);
+		sim_data.mTGeometry.mInterface_material_idFracBound = EPressure;
         
     }
     else {

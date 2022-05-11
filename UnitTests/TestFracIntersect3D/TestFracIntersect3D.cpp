@@ -318,18 +318,14 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
 //    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue.Resize(7);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[0] = std::make_tuple(EOutlet,N_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[1] = std::make_tuple(EInlet,D_Type,1.);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[2] = std::make_tuple(ENoflux,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[3] = std::make_tuple(EFaceBCPressure,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[4] = std::make_tuple(EFracNoFlux,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[5] = std::make_tuple(EFracInlet,5,1.);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[6] = std::make_tuple(EFracOutlet,5,1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(N_Type, 1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(D_Type, 1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[ENoflux] = std::make_pair(5, 1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFaceBCPressure] = std::make_pair(5, 1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracNoFlux] = std::make_pair(5, 1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracInlet] = std::make_pair(5, 1.);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracOutlet] = std::make_pair(5, 1.);
     sim_data.mTGeometry.mInterface_material_idFracBound = 104;
-    
- 
-    
     
     // Other properties
     sim_data.mTGeometry.mSkeletonDiv = 0;

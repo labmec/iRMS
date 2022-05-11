@@ -186,20 +186,21 @@ void TMRSSFIAnalysis::FillProperties(){
             
             m_transport_module->fAlgebraicTransport.fdt = m_sim_data->mTNumerics.m_dt;
             //Type 0.- InletCondition
-            //Type 1.- OutletCondition
-            for (auto cond:m_sim_data->mTBoundaryConditions.mBCTransportMatIdTypeValue){
-                REAL idVal = std::get<0>(cond);
-                REAL idType = std::get<1>(cond);
-                REAL idValue = std::get<2>(cond);
-                std::pair<int, REAL> bccond = std::make_pair(idType, idValue);
-                m_transport_module->fAlgebraicTransport.fboundaryCMatVal[idVal] =bccond;
-                if(idType==0){
-                    m_transport_module->fAlgebraicTransport.inletmatid =idVal;
-                }
-                if(idType==1){
-                    m_transport_module->fAlgebraicTransport.outletmatid =idVal;
-                }
-            }
+            //Type 1.- OutletCondition            
+			for (auto& chunk : m_sim_data->mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
+				const int idVal   = chunk.first;
+				std::pair<int,REAL>& typeAndVal = chunk.second;
+				const int idType = typeAndVal.first;
+				const REAL idValue   = typeAndVal.second;
+				std::pair<int, REAL> bccond = std::make_pair(idType, idValue);
+				m_transport_module->fAlgebraicTransport.fboundaryCMatVal[idVal] =bccond;
+				if(idType==0){
+					m_transport_module->fAlgebraicTransport.inletmatid =idVal;
+				}
+				if(idType==1){
+					m_transport_module->fAlgebraicTransport.outletmatid =idVal;
+				}
+			}
             
 //            kappa_phi[3]=1.0;
 //                FillProperties(&m_transport_module->fAlgebraicTransport, kappa_phi);

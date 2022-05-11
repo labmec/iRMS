@@ -1219,15 +1219,16 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     std::set<int> boundaryId;
     TPZFMatrix<STATE> val1(1,1,0.0);
     TPZVec<STATE> val2(1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2[0]   = get<2>(chunk);
-        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        boundaryId.insert(bc_id);
-        cmesh->InsertMaterialObject(face);
-    }
+	for (auto& chunk : mSimData.mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
+		int bc_id   = chunk.first;
+		std::pair<int,REAL>& typeAndVal = chunk.second;
+		int bc_type = typeAndVal.first;
+		val2[0]   = typeAndVal.second;
+		TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+		boundaryId.insert(bc_id);
+		cmesh->InsertMaterialObject(face);
+	}
+	
     //
     cmesh->InitializeBlock();
     cmesh->SetAllCreateFunctionsDiscontinuous();
@@ -1291,15 +1292,16 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
 	}
     
     // ---------------> Adding volume boundary condition materials
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        boundaryId.insert(bc_id);
-        val2[0]  = get<2>(chunk);
-        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        mTransportOperator->InsertMaterialObject(face);
-    }
+	for (auto& chunk : mSimData.mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
+		int bc_id   = chunk.first;
+		std::pair<int,REAL>& typeAndVal = chunk.second;
+		int bc_type = typeAndVal.first;
+		val2[0]   = typeAndVal.second;
+		boundaryId.insert(bc_id);
+		TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+		mTransportOperator->InsertMaterialObject(face);
+	}
+
     
     // ---------------> Adding fracture materials
     if (isFracSim()){
@@ -2847,15 +2849,14 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     }
     
     TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2[0]  = get<2>(chunk);
-        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        mTransportOperator->InsertMaterialObject(face);
-        
-    }
+	for (auto& chunk : mSimData.mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
+		int bc_id   = chunk.first;
+		std::pair<int,REAL>& typeAndVal = chunk.second;
+		int bc_type = typeAndVal.first;
+		val2[0]   = typeAndVal.second;
+		TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+		mTransportOperator->InsertMaterialObject(face);
+	}
     
     int transport_matid = mSimData.mTGeometry.mInterface_material_id;
     {
@@ -2943,12 +2944,12 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
 					}
 					
                     if (condition == false) {
-                        for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-                            int bc_id   = get<0>(chunk);
-                            if (neig.Element()->MaterialId() == bc_id) {
-                                condition = true;
-                            }
-                        }
+						for(auto& chunk : mSimData.mTBoundaryConditions.mBCTransportMatIdToTypeValue){
+							int bc_id   = chunk.first;
+							if (neig.Element()->MaterialId() == bc_id) {
+								condition = true;
+							}
+						}
                     }
                     
                     
@@ -3033,15 +3034,14 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     }
     
     TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2[0]  = get<2>(chunk);
-        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        mTransportOperator->InsertMaterialObject(face);
-        
-    }
+	for (auto& chunk : mSimData.mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
+		int bc_id   = chunk.first;
+		std::pair<int,REAL>& typeAndVal = chunk.second;
+		int bc_type = typeAndVal.first;
+		val2[0]   = typeAndVal.second;
+		TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+		mTransportOperator->InsertMaterialObject(face);
+	}
     //crear controle no simdata
     //    TPZBndCond * face3 = volume->CreateBC(volume,-11,1,val1,val2);
     //    mTransportOperator->InsertMaterialObject(face3);
@@ -3147,14 +3147,14 @@ TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(TPZAl
     }
     
     TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-    TPZManVector<std::tuple<int, int, REAL>> BCPhysicalTagTypeValue =  mSimData.mTBoundaryConditions.mBCTransportMatIdTypeValue;
-    for (std::tuple<int, int, REAL> chunk : BCPhysicalTagTypeValue) {
-        int bc_id   = get<0>(chunk);
-        int bc_type = get<1>(chunk);
-        val2[0]  = get<2>(chunk);
-        TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        auxmesh->InsertMaterialObject(face);
-    }
+	for (auto& chunk : mSimData.mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
+		int bc_id   = chunk.first;
+		std::pair<int,REAL>& typeAndVal = chunk.second;
+		int bc_type = typeAndVal.first;
+		val2[0]   = typeAndVal.second;
+		TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
+		auxmesh->InsertMaterialObject(face);
+	}
     
     auxmesh->SetDimModel(dimension);
     TPZManVector<int,5> active_approx_spaces(5); /// 1 stands for an active approximation spaces
@@ -3866,7 +3866,7 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     }
     FracBoundary.insert(2);
     FracBoundary.insert(3);
-   // FracBoundary.insert(mSimData.mTBoundaryConditions.mBCTransportMatIdTypeValue)
+   
     for (int iside = ncoord; iside < nsides; iside++) {
         TPZGeoElSide gelside(gel,iside);
         std::vector<TPZGeoElSide> gelneigVec;

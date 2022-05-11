@@ -627,15 +627,13 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     //Transport boundary Conditions
     int bc_inlet = 0;
     int bc_outlet = 1;
-    REAL sat_in = 0.01;
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue.Resize(6);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[0] = std::make_tuple(-1,bc_outlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[1] = std::make_tuple(-2,bc_inlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[2] = std::make_tuple(-4,bc_outlet,0.0);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[3] = std::make_tuple(-11,bc_outlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[4] = std::make_tuple(-13,bc_inlet,sat_in);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdTypeValue[5] = std::make_tuple(-12,bc_outlet,0.0);
-    
+    REAL sat_in = 0.01;	
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[-1] = std::make_pair(bc_outlet, 0.0);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[-2] = std::make_pair(bc_inlet, sat_in);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[-4] = std::make_pair(bc_outlet, 0.0);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[-11] = std::make_pair(bc_outlet, sat_in);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[-13] = std::make_pair(bc_inlet, sat_in);
+	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[-12] = std::make_pair(bc_outlet, 0.0);
     
     //Fluid Properties
     sim_data.mTFluidProperties.mWaterViscosity = 0.1;
