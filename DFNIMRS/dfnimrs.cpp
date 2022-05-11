@@ -219,7 +219,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
 		DebugStop();
 	
 	if(simcase != 10){
-		sim_data.mTFracProperties.m_matid = EFracture;
+//		sim_data.mTFracProperties.m_matid = EFracture;
 		sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
 	}
 	else{
@@ -467,17 +467,17 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	
 	// Check if we should use the same PZ MatId for all the fractures.
 	// 2022 May: that is the only possible case for now
-	int fracUniqueMatId = -10000, bcFracUniqueMatId = -10000;
-	if(input.find("FractureUniqueMatIDForIMRS") != input.end()) {
-		fracUniqueMatId = input["FractureUniqueMatIDForIMRS"];
-	} else{
-		DebugStop(); // For now all fractures have to have same matid
-	}
-	if(input.find("FractureBCUniqueMatIDForIMRS") != input.end()) {
-		bcFracUniqueMatId = input["FractureBCUniqueMatIDForIMRS"];
-	} else{
-		DebugStop(); // For now all fractures have to have same matid
-	}
+//	int fracUniqueMatId = -10000, bcFracUniqueMatId = -10000;
+//	if(input.find("FractureUniqueMatIDForIMRS") != input.end()) {
+//		fracUniqueMatId = input["FractureUniqueMatIDForIMRS"];
+//	} else{
+//		DebugStop(); // For now all fractures have to have same matid
+//	}
+//	if(input.find("FractureBCUniqueMatIDForIMRS") != input.end()) {
+//		bcFracUniqueMatId = input["FractureBCUniqueMatIDForIMRS"];
+//	} else{
+//		DebugStop(); // For now all fractures have to have same matid
+//	}
 	
     
     //here modificate
@@ -495,33 +495,35 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
         actualfracid +=2;
 		
 		fracprop.m_perm = permerm;
-		fracprop.m_width = -1.; // @TODO: NEEDS TO BE PUT IN INPUT FILE
-		fracprop.m_fracbc -10000000;  // @TODO: NEEDS TO BE PUT IN INPUT FILE
+		fracprop.m_width = 0.1; // @TODO: NEEDS TO BE PUT IN INPUT FILE
+		fracprop.m_fracbc =matid + 1;  // @TODO: NEEDS TO BE PUT IN INPUT FILE
         sim_data.mTFracProperties.m_fracprops[matid] = fracprop;
+        
+        const REAL zero_flux = 0.;
+        const int bcFracType_Neumann = 1;
+        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[fracprop.m_fracbc] = std::make_pair(bcFracType_Neumann, zero_flux);
     }
     //end mod
     
 	
-	const REAL zero_flux = 0.;
-	const int bcFracUniqueType_Neumann = 1;
-	sim_data.mTFracProperties.m_bcmatid = bcFracUniqueMatId;
-	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[bcFracUniqueMatId] = std::make_pair(bcFracUniqueType_Neumann, zero_flux);
+	
 	
 	// ------------------------ Setting all fracs perm the same for now ------------------------
 	REAL permLastFrac = -1.;
 	const REAL fracFactor = 0.1; // @TODO: NOTE: NS: What is this?????????
     // @TODO: PHIL: I believe the is the fracture width
+    int fraccount=0;
 	for(auto& frac : input["Fractures"]){
 		if(frac.find("K") == frac.end()) DebugStop();
 		if(frac.find("phi") == frac.end()) DebugStop();
 		permLastFrac = frac["K"];
 		const REAL phifrac = frac["phi"];
         //here modificate
-		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(fracUniqueMatId,phifrac, fracFactor);
+		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(initfracmatid + 2*fraccount, phifrac, fracFactor);
 	}
 	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
     //here modificate
-	sim_data.mTFracProperties.m_Permeability = permLastFrac;
+//	sim_data.mTFracProperties.m_Permeability = permLastFrac;
 	
 	
 	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
@@ -666,7 +668,6 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
             
     // Fracture material
     sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
-    
     // Fracture boundary conditions
 	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux] = std::make_pair(N_Type, zero_flux);
 	
@@ -709,7 +710,7 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
 //    sim_data.mTFracProperties.m_Permeability = 1.0;
 //    REAL kappa1=1.0;
 //    REAL kappa2=1.0;
-    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
+    REAL fracPerm = 1.0e-3;
     REAL kappa1=1.0e-5;
 	REAL kappa2=1.0e-6;
     int id1 = EVolume2;
@@ -728,7 +729,11 @@ void FillDataTransferCase1(TMRSDataTransfer& sim_data){
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale[1] = std::make_tuple(EVolume2, resPorosity2,1.0);
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale[2] = std::make_tuple(EFracture, FracPorosity, fracFactor);
     
-    
+    TMRSDataTransfer::TFracProperties::FracProp fracprop;
+    fracprop.m_perm = fracPerm;
+    fracprop.m_width = fracFactor;
+    fracprop.m_fracbc = EFracNoFlux;
+    sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -824,7 +829,7 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     
     //FracAndReservoirProperties
     // There are two cases, one with very condutive fracture (1e4) and other with very NON conductive fracture (1e-4)
-    sim_data.mTFracProperties.m_Permeability = 1.e4;
+    REAL fracPerm = 1.e4;
 //	sim_data.mTFracProperties.m_Permeability = 1.e-4;
     REAL kappa1=1.0;
     REAL kappa2=0.1;
@@ -842,6 +847,12 @@ void FillDataTransferCase2(TMRSDataTransfer& sim_data){
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale[1] = std::make_tuple(EVolume2, resPorosity,1.0);
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale[2] = std::make_tuple(EFracture, fracPorosity, 0.2);
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale[3] = std::make_tuple(EIntersection, fracPorosity, 0.2*0.2);
+    
+    TMRSDataTransfer::TFracProperties::FracProp fracprop;
+    fracprop.m_perm = fracPerm;
+    fracprop.m_width = 0.2;
+    fracprop.m_fracbc = EFracNoFlux;
+    sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -934,7 +945,7 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     
     //FracAndReservoirProperties
     // There are two cases, one with very condutive fracture (1e4) and other with very NON conductive fracture (1e-4)
-    sim_data.mTFracProperties.m_Permeability = 1.e4;
+    REAL fracPerm = 1.e4;
 //    sim_data.mTFracProperties.m_Permeability = 1.e-4;
 //    REAL kappa1=1.0;
 //    REAL kappa2=1.0;
@@ -951,6 +962,12 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale[0] = std::make_tuple(EVolume, resPorosity,1.0);
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale[2] = std::make_tuple(EFracture, fracPorosity, fracLength);
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale[3] = std::make_tuple(EIntersection, fracPorosity, fracLength*fracLength);
+    
+    TMRSDataTransfer::TFracProperties::FracProp fracprop;
+    fracprop.m_perm = fracPerm;
+    fracprop.m_width = fracLength;
+    fracprop.m_fracbc = EFracNoFlux;
+    sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
@@ -1114,23 +1131,23 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 		
 	// Check if we should use the same PZ MatId for all the fractures.
 	// 2022 May: that is the only possible case for now
-	int fracUniqueMatId = -10000, bcFracUniqueMatId = -10000;
-	if(input.find("FractureUniqueMatIDForIMRS") != input.end()) {
-		fracUniqueMatId = input["FractureUniqueMatIDForIMRS"];
-		const bool is_in = allmatids.find(fracUniqueMatId) != allmatids.end();
-		if(is_in) DebugStop();
-		allmatids.insert(fracUniqueMatId);
-	} else{
-		DebugStop(); // For now all fractures have to have same matid
-	}
-	if(input.find("FractureBCUniqueMatIDForIMRS") != input.end()) {
-		bcFracUniqueMatId = input["FractureBCUniqueMatIDForIMRS"];
-		const bool is_in = allmatids.find(bcFracUniqueMatId) != allmatids.end();
-		if(is_in) DebugStop();
-		allmatids.insert(bcFracUniqueMatId);
-	} else{
-		DebugStop(); // For now all fractures have to have same matid
-	}
+//	int fracUniqueMatId = -10000, bcFracUniqueMatId = -10000;
+//	if(input.find("FractureUniqueMatIDForIMRS") != input.end()) {
+//		fracUniqueMatId = input["FractureUniqueMatIDForIMRS"];
+//		const bool is_in = allmatids.find(fracUniqueMatId) != allmatids.end();
+//		if(is_in) DebugStop();
+//		allmatids.insert(fracUniqueMatId);
+//	} else{
+//		DebugStop(); // For now all fractures have to have same matid
+//	}
+//	if(input.find("FractureBCUniqueMatIDForIMRS") != input.end()) {
+//		bcFracUniqueMatId = input["FractureBCUniqueMatIDForIMRS"];
+//		const bool is_in = allmatids.find(bcFracUniqueMatId) != allmatids.end();
+//		if(is_in) DebugStop();
+//		allmatids.insert(bcFracUniqueMatId);
+//	} else{
+//		DebugStop(); // For now all fractures have to have same matid
+//	}
 	
 	if(input.find("FractureInitMatId") == input.end()) DebugStop();
 	const int fracInitMatId = input["FractureInitMatId"];
@@ -1144,22 +1161,14 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
         const int bcmatid = fracInitMatId + fracCounter*2+1;
 		string fracname = "Fracture" + to_string(fracCounter);
 		string bcfracname = "BCfrac" + to_string(fracCounter);
-		if(fracUniqueMatId != -10000){
-
-//          dim_name_and_physical_tagFine[2][fracname] = fracUniqueMatId;
-            dim_name_and_physical_tagFine[2][fracname] = fracInitMatId + 2 * fracCounter;
-            dim_name_and_physical_tagFine[1][bcfracname] = bcFracUniqueMatId;
-
-		}
-		else{
-			bool is_in = allmatids.find(matid) != allmatids.end();
-			if(is_in) DebugStop();
-            is_in = allmatids.find(bcmatid) != allmatids.end();
-            allmatids.insert(matid);
-            if(is_in) DebugStop();
-            allmatids.insert(bcmatid);
-			dim_name_and_physical_tagFine[1][bcfracname] = bcmatid;
-		}
+        dim_name_and_physical_tagFine[2][fracname] = fracInitMatId + 2 * fracCounter;
+        dim_name_and_physical_tagFine[1][bcfracname] = (fracInitMatId + 2 * fracCounter)+1;
+        bool is_in = allmatids.find(fracInitMatId + 2 * fracCounter) != allmatids.end();
+        if(is_in) DebugStop();
+        allmatids.insert((fracInitMatId + 2 * fracCounter));
+        is_in = allmatids.find((fracInitMatId + 2 * fracCounter)+1) != allmatids.end();
+        if(is_in) DebugStop();
+        allmatids.insert((fracInitMatId + 2 * fracCounter)+1);
 		fracCounter++;
 	}
 	

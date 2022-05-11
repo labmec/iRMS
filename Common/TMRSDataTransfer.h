@@ -867,15 +867,6 @@ public:
 			REAL m_porosity; // porosity of the fracture
 		};
 		
-		/// Backwards compatibility in case all fractures have same permeability. Delete me?
-        REAL m_Permeability;
-		
-		/// Backwards compatibility in case all fractures have same matid. Delete me?
-        int m_matid;
-		
-		/// Backwards compatibility in case all fractures have bc matid. Delete me?
-		int m_bcmatid;
-		
 		/// Map <matid, FractureProperties>
         std::map<int, FracProp> m_fracprops;
         
@@ -883,9 +874,7 @@ public:
          * @brief Default constructor
          */
         TFracProperties(){
-            m_Permeability=1.0;
-            m_matid = -1000;
-			m_bcmatid = -1000;
+
         }
         /**
          * @brief Destructor
@@ -896,9 +885,6 @@ public:
          * @brief Copy constructor
          */
         TFracProperties(const TFracProperties & other){
-            m_Permeability=other.m_Permeability;
-            m_matid = other.m_matid;
-			m_bcmatid = other.m_bcmatid;
             m_fracprops=other.m_fracprops;
         }
         /**
@@ -911,36 +897,17 @@ public:
                 return *this;
             }
             
-            m_Permeability=other.m_Permeability;
-            m_matid = other.m_matid;
-			m_bcmatid = other.m_bcmatid;
             m_fracprops=other.m_fracprops;
             return *this;
         }
         
-//        bool operator==(const TFracProperties &other){
-//
-//            // check for self-assignment
-//            if(&other == this){
-//                return true;
-//            }
-//
-//            return (m_Permeability==other.m_Permeability && m_bcmatid == other.m_bcmatid && m_matid == other.m_matid && m_fracprops==other.m_fracprops);
-//
-//        }
         
-        
-        void Write(TPZStream &buf, int withclassid) const{ //ok
-            buf.Write(&m_Permeability);
-            buf.Write(&m_matid);
-			buf.Write(&m_bcmatid);
-            
+        void Write(TPZStream &buf, int withclassid) const{
+            buf.Write(&m_fracprops);
         }
         
         void Read(TPZStream &buf, void *context){ //ok
-            buf.Read(&m_Permeability);
-            buf.Read(&m_matid);
-			buf.Read(&m_bcmatid);
+//            buf.Read(&m_fracprops);
         }
         
         virtual int ClassId() const {
@@ -949,28 +916,38 @@ public:
         
         
         
-        void Print() const {
-            std::cout << "m_Permeability: " << m_Permeability << std::endl;
-            std::cout << "m_matid: " << m_matid << std::endl;
-			std::cout << "m_bcmatid: " << m_matid << std::endl;
+        void Print()  {
+            std::cout<<"NFractures= "<<m_fracprops.size()<<std::endl;
+            std::cout<<"Fractures Information: "<<std::endl;
+            std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
+            for (it = m_fracprops.begin(); it != m_fracprops.end(); it++)
+            {
+                int matfracid = it->first;
+                TFracProperties::FracProp prop = it->second;
+                std::cout<<"Material: "<<matfracid<<std::endl;
+                std::cout<<"bcMaterial: "<<prop.m_fracbc<<std::endl;
+                std::cout<<"Permeability: "<<prop.m_perm<<std::endl;
+                std::cout<<"Width: "<<prop.m_width<<std::endl;
+                std::cout<<"Porosity: "<<prop.m_porosity<<std::endl;
+                std::cout<<"***************************************"<<std::endl;
+
+            }
         }
-		
 		const bool isFracMatId(const int matid) {
-			if(m_matid == -1000){
-				return m_fracprops.find(matid) != m_fracprops.end();
-			}
-			else{
-				return matid == m_matid;
-			}
+            return m_fracprops.find(matid) != m_fracprops.end();
 		}
-        
 		const bool isFracBCMatId(const int matid) {
-			if(m_bcmatid == -1000){
-				DebugStop(); // @TODO: implement me
-			}
-			else{
-				return matid == m_bcmatid;
-			}
+            std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
+            for (it = m_fracprops.begin(); it != m_fracprops.end(); it++)
+            {
+                int matfracid = it->first;
+                TFracProperties::FracProp prop = it->second;
+                int bcid = prop.m_fracbc;
+                if(bcid== matid){
+                    return true;
+                }
+            }
+            return false;
 		}
     };
     

@@ -1470,8 +1470,7 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     
     // Sanity checks
     if (isFracSim()) {
-		if(mSimData.mTFracProperties.m_fracprops.size() && FractureUniqueMatId() != -1000) DebugStop();
-		if(!mSimData.mTFracProperties.m_fracprops.size() && FractureUniqueMatId() == -1000) DebugStop();
+		if(!mSimData.mTFracProperties.m_fracprops.size()) DebugStop();
     }
     if (isThereFracIntersection() && mSimData.mTFracIntersectProperties.m_IntersectionId == -10000){
         DebugStop(); // if simulation has frac/frac intersections, this matid should have been set
@@ -1649,7 +1648,12 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 			for (auto el : mSimData.mTFracProperties.m_fracprops) fracmatIds.insert(el.first);
 		}
 		else{
-			fracmatIds.insert(mSimData.mTFracProperties.m_matid);
+            std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
+            for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++)
+                {
+                    int matfracid = it->first;
+                    fracmatIds.insert(matfracid);
+                }
 		}
 		mHybridizer->IdsToHybridize() = fracmatIds;
         const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
@@ -2528,7 +2532,12 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 			for (auto el : mSimData.mTFracProperties.m_fracprops) fracmatIds.insert(el.first);
 		}
 		else{
-			fracmatIds.insert(mSimData.mTFracProperties.m_matid);
+            std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
+            for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++)
+                {
+                    int matfracid = it->first;
+                    fracmatIds.insert(matfracid);
+                }
 		}
 		mHybridizer->IdsToHybridize() = fracmatIds;
 		const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;

@@ -101,7 +101,7 @@ public:
     int& InitMatIdForMergeMeshes() {return fInitMatIdForMergeMeshes;}
 		
 	/// Backwards compatibility attribute in case all fractures have the same matid
-    const int& FractureUniqueMatId() const {return mSimData.mTFracProperties.m_matid;}    
+//    const int& FractureUniqueMatId() const {return mSimData.mTFracProperties.m_matid;}    
     
     /// For MHM
     /// Sets the geometry based on a fine and a coarse mesh. It creates a list of subdomains based on that

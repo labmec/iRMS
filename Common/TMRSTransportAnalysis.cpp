@@ -560,10 +560,13 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     std::string file = m_sim_data->mTPostProcess.m_file_name_transport;
         
     std::set<int> matidsToPost;
-    
+    std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
     if (m_sim_data->mTGeometry.isThereFracture()) {
-        const int fracMatId = m_sim_data->mTFracProperties.m_matid;
-        matidsToPost.insert(fracMatId);
+        for (it = m_sim_data->mTFracProperties.m_fracprops.begin(); it != m_sim_data->mTFracProperties.m_fracprops.end(); it++)
+        {
+            int matfracid = it->first;
+            matidsToPost.insert(matfracid);
+        }
         std::string file_frac("fracture_s.vtk");
         DefineGraphMesh(2,matidsToPost,scalnames,vecnames,file_frac);
         PostProcess(div,2);

@@ -41,8 +41,8 @@
         
     ],
     "FractureInitMatId": 300,
-    "FractureUniqueMatIDForIMRS": 10,
-    "FractureBCUniqueMatIDForIMRS": 8,
+   // "FractureUniqueMatIDForIMRS": 10,
+   // "FractureBCUniqueMatIDForIMRS": 8,
     "Fractures":[
         {
             "Index": 4,
