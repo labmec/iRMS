@@ -1469,8 +1469,8 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     bool cond2 = mSimData.mTNumerics.m_mhm_mixed_Q;
     
     // Sanity checks
-    if (isFracSim()) {
-		if(!mSimData.mTFracProperties.m_fracprops.size()) DebugStop();
+    if (isFracSim() && !mSimData.mTFracProperties.m_fracprops.size()) {
+		DebugStop();
     }
     if (isThereFracIntersection() && mSimData.mTFracIntersectProperties.m_IntersectionId == -10000){
         DebugStop(); // if simulation has frac/frac intersections, this matid should have been set
@@ -1649,11 +1649,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 		}
 		else{
             std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
-            for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++)
-                {
-                    int matfracid = it->first;
-                    fracmatIds.insert(matfracid);
-                }
+			for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++){
+				int matfracid = it->first;
+				fracmatIds.insert(matfracid);
+			}
 		}
 		mHybridizer->IdsToHybridize() = fracmatIds;
         const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;
@@ -2533,11 +2532,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 		}
 		else{
             std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
-            for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++)
-                {
-                    int matfracid = it->first;
-                    fracmatIds.insert(matfracid);
-                }
+			for (it = mSimData.mTFracProperties.m_fracprops.begin(); it != mSimData.mTFracProperties.m_fracprops.end(); it++){
+				int matfracid = it->first;
+				fracmatIds.insert(matfracid);
+			}
 		}
 		mHybridizer->IdsToHybridize() = fracmatIds;
 		const int intersectionPressureLossId = mSimData.mTFracIntersectProperties.m_IntersectionPressureLossId;

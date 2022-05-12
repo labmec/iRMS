@@ -943,7 +943,7 @@ public:
                 int matfracid = it->first;
                 TFracProperties::FracProp prop = it->second;
                 int bcid = prop.m_fracbc;
-                if(bcid== matid){
+                if(bcid == matid){
                     return true;
                 }
             }

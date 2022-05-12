@@ -496,7 +496,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		
 		fracprop.m_perm = permerm;
 		fracprop.m_width = 0.1; // @TODO: NEEDS TO BE PUT IN INPUT FILE
-		fracprop.m_fracbc =matid + 1;  // @TODO: NEEDS TO BE PUT IN INPUT FILE
+		fracprop.m_fracbc = matid + 1;
         sim_data.mTFracProperties.m_fracprops[matid] = fracprop;
         
         const REAL zero_flux = 0.;
@@ -508,7 +508,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	
 	
 	
-	// ------------------------ Setting all fracs perm the same for now ------------------------
+	// ------------------------ Setting all fracs perm ------------------------
 	REAL permLastFrac = -1.;
 	const REAL fracFactor = 0.1; // @TODO: NOTE: NS: What is this?????????
     // @TODO: PHIL: I believe the is the fracture width
@@ -520,6 +520,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		const REAL phifrac = frac["phi"];
         //here modificate
 		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(initfracmatid + 2*fraccount, phifrac, fracFactor);
+		fraccount++;
 	}
 	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
     //here modificate
