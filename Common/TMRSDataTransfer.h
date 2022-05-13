@@ -862,6 +862,7 @@ public:
 		/// Structure with all fractures properties
 		struct FracProp{
 			int m_fracbc; // fracture boundary condition matid
+            int m_fracIntersectMatID; // material id for intersections
 			REAL m_perm; // permeability of the fracture
 			REAL m_width; // fracture opening
 			REAL m_porosity; // porosity of the fracture
@@ -926,6 +927,7 @@ public:
                 TFracProperties::FracProp prop = it->second;
                 std::cout<<"Material: "<<matfracid<<std::endl;
                 std::cout<<"bcMaterial: "<<prop.m_fracbc<<std::endl;
+                std::cout << "Inersection material id" <<prop.m_fracIntersectMatID << std::endl;
                 std::cout<<"Permeability: "<<prop.m_perm<<std::endl;
                 std::cout<<"Width: "<<prop.m_width<<std::endl;
                 std::cout<<"Porosity: "<<prop.m_porosity<<std::endl;
@@ -954,10 +956,14 @@ public:
     class TFracIntersectProperties : public TMRSSavable {
         
     public:
-        // material id of the intersection
+        // material id of the intersection as given by the mesh generator
         int m_IntersectionId;
+        // fracture ids corresponding to this intersection
+        std::pair<int,int> fractureids;
+        // fracture material ids corresponding to this intersection
+        std::pair<int,int> fracturematids;
         // the material id of the HDiv wrappers
-        int m_IntersectionPressureLossId;
+        std::pair<int,int> m_IntersectionPressureLossId;
         
         /**
          * @brief Default constructor
