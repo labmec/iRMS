@@ -520,3 +520,85 @@ void TPZReservoirTools::PushConnectBackward(TPZCompMesh *cmesh, char LagrangeSta
         solver->ResetMatrix();
     }
 }
+
+/// Split the H(div) connects and create an HDivBound next to the faces with
+/// It is assumed that the H(div) mesh is the mesh referenced by the geometric mesh
+/// @param : gelIntersect geometric element with intersection matid.
+void TPZReservoirTools::SplitConnect(TPZGeoEl *gelIntersect)
+{
+    TPZGeoMesh *gmesh = gelIntersect->Mesh();
+    TPZCompMesh *cmesh = gmesh->Reference();
+    if(!cmesh) DebugStop();
+    // identify the two neighbours
+    auto connected = FindHdiv(gelIntersect);
+    // verify is the side hasn't been hybridized yet
+    TPZCompEl *celIntersect = gelIntersect->Reference();
+    if(celIntersect) DebugStop();
+    // reset the reference for the second neighbour
+    if(connected.second)
+    {
+        TPZGeoElSide gelside = connected.second.Reference();
+        gelside.Element()->ResetReference();
+    }
+    // create the hdivbound for the first element/side
+    {
+        TPZGeoElSide gelside(gelIntersect);
+        TPZGeoElSide volside = connected.first.Reference();
+        // we assume the mesh is "loaded"
+        if(!volside.Element()->Reference()) DebugStop();
+        MakeFirstNeighbour(volside, gelside);
+        cmesh->ApproxSpace().CreateCompEl(gelIntersect, *cmesh);
+        celIntersect = gelIntersect->Reference();
+        volside.Element()->ResetReference();
+        gelside.Element()->ResetReference();
+    }
+    // creat hdivbound for the second element/side
+    if(connected.second);
+    {
+        TPZGeoElSide volside = connected.second.Reference();
+        connected.second.Element()->LoadElementReference();
+        TPZGeoElBC gbc(volside,gelIntersect->MaterialId());
+        TPZGeoElSide gelside(gbc.CreatedElement());
+        cmesh->ApproxSpace().CreateCompEl(gelside.Element(), *cmesh);
+    }
+    // reload the references
+    celIntersect->LoadElementReference();
+    connected.first.Element()->LoadElementReference();
+}
+
+/// Find one or two TPZCompElSides which are neighbour of the geometric element and have a dimension one higher
+std::pair<TPZCompElSide,TPZCompElSide> TPZReservoirTools::FindHdiv(TPZGeoEl *gelintersect)
+{
+    int dim = gelintersect->Dimension();
+    TPZGeoElSide gelside(gelintersect);
+    TPZGeoElSide neighbour = gelside.Neighbour();
+    std::pair<TPZCompElSide,TPZCompElSide> result;
+    int count = 0;
+    while(neighbour != gelside)
+    {
+        TPZGeoEl *neighgel = neighbour.Element();
+        if(neighgel->Reference() && neighgel->Dimension() == dim+1)
+        {
+            if(count == 0) result.first = neighbour.Reference();
+            else if(count == 1) result.second = neighbour.Reference();
+            else DebugStop();
+            count++;
+        }
+        neighbour = neighbour.Neighbour();
+    }
+    if(count == 0) DebugStop();
+    return result;
+}
+
+/// Make the bound element first neighbour of the volume element
+void TPZReservoirTools::MakeFirstNeighbour(TPZGeoElSide &volume, TPZGeoElSide &bound)
+{
+#ifdef PZDEBUG
+    if(!bound.IsNeighbour(volume))
+    {
+        DebugStop();
+    }
+#endif
+    bound.RemoveConnectivity();
+    volume.SetConnectivity(bound);
+}

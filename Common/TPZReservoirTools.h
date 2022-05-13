@@ -41,6 +41,16 @@ public:
     static void GroupNeighbourElements(TPZCompMesh *cmesh, const std::set<int64_t> &seed_elements, std::set<int64_t> &groupindexes);
     static void TakeSeedElements(TPZCompMesh *cmesh,  std::set<int64_t> &seed_elements);
     
+    /// Split the H(div) connects and create an HDivBound next to the faces with
+    /// It is assumed that the H(div) mesh is the mesh referenced by the geometric mesh
+    /// @param : gelIntersect geometric element with intersection matid.
+    static void SplitConnect(TPZGeoEl *gelIntersect);
+    
+    /// Find one or two TPZCompElSides which are neighbour of the geometric element and have a dimension one higher
+    static std::pair<TPZCompElSide,TPZCompElSide> FindHdiv(TPZGeoEl *gelintersect);
+    
+    /// Make the bound element first neighbour of the volume element
+    static void MakeFirstNeighbour(TPZGeoElSide &volume, TPZGeoElSide &bound);
 };
 
 
