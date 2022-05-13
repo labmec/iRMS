@@ -963,7 +963,7 @@ public:
         // fracture material ids corresponding to this intersection
         std::pair<int,int> fracturematids;
         // the material id of the HDiv wrappers
-        std::pair<int,int> m_IntersectionPressureLossId;
+        int m_IntersectionPressureLossId;
         
         /**
          * @brief Default constructor

@@ -1006,6 +1006,10 @@ void FillDataTransferCase3(TMRSDataTransfer& sim_data){
     sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
@@ -1074,6 +1078,25 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
     gmeshFine = GeometryFine.GeometricGmshMesh(filename,nullptr,false);
 
     return gmeshFine;
+}
+
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void MapFractureIntersection(const std::string &filenameBase, int firstfracintersect, std::map<int,std::pair<int,int>> &matidtoFractures)
+{
+    // Creating gmsh reader
+    TPZGmshReader  Geometry;
+    std::string filename = filenameBase + ".msh";
+    std::ifstream input(filename);
+    Geometry.ReadPhysicalProperties4(input);
+    auto physicaltags = Geometry.GetDimPhysicalTagName();
+    // loop over all physical tags of
+    for(auto iter : physicaltags[1])
+    {
+        
+    }
 }
 
 // ---------------------------------------------------------------------
@@ -1157,24 +1180,24 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	
 	if(input.find("FractureInitMatId") == input.end()) DebugStop();
 	const int fracInitMatId = input["FractureInitMatId"];
-
+    const int fracinc = 5;
 	
 	// ------------------------ Loop over fractures in Json ------------------------
 	int fracCounter = 0;
 	if(input.find("Fractures") == input.end()) DebugStop();
 	for(auto& frac : input["Fractures"]){
-		const int matid = fracInitMatId + fracCounter*2;
-        const int bcmatid = fracInitMatId + fracCounter*2+1;
+		const int matid = fracInitMatId + fracCounter*fracinc;
+        const int bcmatid = fracInitMatId + fracCounter*fracinc+1;
 		string fracname = "Fracture" + to_string(fracCounter);
 		string bcfracname = "BCfrac" + to_string(fracCounter);
-        dim_name_and_physical_tagFine[2][fracname] = fracInitMatId + 2 * fracCounter;
-        dim_name_and_physical_tagFine[1][bcfracname] = (fracInitMatId + 2 * fracCounter)+1;
-        bool is_in = allmatids.find(fracInitMatId + 2 * fracCounter) != allmatids.end();
+        dim_name_and_physical_tagFine[2][fracname] = fracInitMatId + fracinc * fracCounter;
+        dim_name_and_physical_tagFine[1][bcfracname] = (fracInitMatId + fracinc * fracCounter)+1;
+        bool is_in = allmatids.find(fracInitMatId + fracinc * fracCounter) != allmatids.end();
         if(is_in) DebugStop();
-        allmatids.insert((fracInitMatId + 2 * fracCounter));
-        is_in = allmatids.find((fracInitMatId + 2 * fracCounter)+1) != allmatids.end();
+        allmatids.insert((fracInitMatId + fracinc * fracCounter));
+        is_in = allmatids.find((fracInitMatId + fracinc * fracCounter)+1) != allmatids.end();
         if(is_in) DebugStop();
-        allmatids.insert((fracInitMatId + 2 * fracCounter)+1);
+        allmatids.insert((fracInitMatId + fracinc * fracCounter)+1);
 		fracCounter++;
 	}
 	
@@ -1192,8 +1215,20 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	
 	// ------------------------ Generate gmesh fine ------------------------
 	string filenameFine = filenameBase + "_fine.msh";
+    
+    /// add the intersection material ids to be read
+    /// read only the header of the msh file
+    /// identify the intersection groups by identify the substring
+    int firstfracintersect = fracInitMatId + fracCounter*fracinc;
+    firstfracintersect = (1+firstfracintersect/100)*100;
+    std::map<int,std::pair<int,int>> matidtoFractures;
+    
+    MapFractureIntersection(filenameBase, firstfracintersect,matidtoFractures);
+    
 	gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
 
+    
+    /// for each intersection element create an intersection element for each fracture specifically
 }
 
 // ---------------------------------------------------------------------
