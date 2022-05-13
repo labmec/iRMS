@@ -480,7 +480,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 //	}
 	
     
-    //here modificate
+    //here modified
 //	sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = fracUniqueMatId;
     // Mod
     int initfracmatid =input["FractureInitMatId"];
@@ -492,11 +492,12 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
         REAL permerm = fracture["K"];
 		TMRSDataTransfer::TFracProperties::FracProp fracprop;
         sim_data.mTGeometry.mDomainFracNameAndMatId[name] = matid;
-        actualfracid +=2;
+        actualfracid +=5;
 		
 		fracprop.m_perm = permerm;
 		fracprop.m_width = 0.1; // @TODO: NEEDS TO BE PUT IN INPUT FILE
 		fracprop.m_fracbc =matid + 1;  // @TODO: NEEDS TO BE PUT IN INPUT FILE
+        fracprop.m_fracIntersectMatID = matid+2;
         sim_data.mTFracProperties.m_fracprops[matid] = fracprop;
         
         const REAL zero_flux = 0.;
@@ -522,9 +523,13 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(initfracmatid + 2*fraccount, phifrac, fracFactor);
 	}
 	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
-    //here modificate
+    //here modified
 //	sim_data.mTFracProperties.m_Permeability = permLastFrac;
 	
+    for(auto& intersect : input["Intersections"])
+    {
+        
+    }
 	
 	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
 	const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
