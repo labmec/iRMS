@@ -198,6 +198,27 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
     else
         DebugStop();
     
+    // ----- Printing gmesh -----
+#ifdef PZDEBUG
+    if (1) {
+        if(gmeshfine){
+            std::ofstream name("GeoMesh_Fine_Initial.vtk");
+            TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
+            std::ofstream name2("GeoMesh_Fine_Initial.txt");
+            gmeshfine->Print(name2);
+            int64_t nel = gmeshfine->NElements();
+            for (int64_t el = 0; el<nel; el++) {
+                TPZGeoEl *gel = gmeshfine->Element(el);
+                if(!gel) continue;
+                if(el != gel->Id()) std::cout << "el = " << el << " id = " << gel->Id() << std::endl;
+            }
+        }
+        if(gmeshcoarse){
+            std::ofstream name("GeoMesh_Coarse_Initial.vtk");
+            TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, name);
+        }
+    }
+#endif
     TMRSDataTransfer sim_data;
 	// ----- Approximation space -----
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -225,14 +246,12 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
 	else{
 		sim_data.mTFracIntersectProperties.m_IntersectionId = -1;
 	}
-	
 	// Creating intersection GeoElBCs
 	fixPossibleMissingIntersections(sim_data,gmeshfine); // read about this in the function itself
 	
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
-    const bool printgmesh = true;
-    if (printgmesh) {
+    if (1) {
         if(gmeshfine){
             std::ofstream name("GeoMesh_Fine_Initial.vtk");
             TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
@@ -526,11 +545,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
     //here modified
 //	sim_data.mTFracProperties.m_Permeability = permLastFrac;
-	
-    for(auto& intersect : input["Intersections"])
-    {
-        
-    }
+
 	
 	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
 	const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
@@ -1076,7 +1091,6 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
     // Reading mesh
     GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
     gmeshFine = GeometryFine.GeometricGmshMesh(filename,nullptr,false);
-
     return gmeshFine;
 }
 
@@ -1084,18 +1098,32 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void MapFractureIntersection(const std::string &filenameBase, int firstfracintersect, std::map<int,std::pair<int,int>> &matidtoFractures)
+void MapFractureIntersection(const std::string &filenameBase, std::map<std::string,int> &matmap, int firstfracintersect, std::map<int,std::pair<int,int>> &matidtoFractures)
 {
     // Creating gmsh reader
     TPZGmshReader  Geometry;
-    std::string filename = filenameBase + ".msh";
+    std::string filename = filenameBase + "_fine.msh";
     std::ifstream input(filename);
     Geometry.ReadPhysicalProperties4(input);
     auto physicaltags = Geometry.GetDimPhysicalTagName();
-    // loop over all physical tags of
+    // loop over all physical tags of dimension 1
+    const std::string begins("fracIntersection");
+    const int beglength = begins.size();
     for(auto iter : physicaltags[1])
     {
-        
+        auto name = iter.second;
+        if(name.compare(0,beglength,begins) == 0)
+        {
+            auto pos1 = name.find_first_of("_",0);
+            auto pos2 = name.find_last_of("_");
+            std::string strfac1 = name.substr(pos1+1,pos2-pos1-1);
+            std::string strfac2 = name.substr(pos2+1);
+            int frac1 = std::stoi(strfac1);
+            int frac2 = std::stoi(strfac2);
+            matmap[name] = firstfracintersect;
+            matidtoFractures[firstfracintersect] = std::pair<int,int>(frac1,frac2);
+            firstfracintersect++;
+        }
     }
 }
 
@@ -1203,7 +1231,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	
 	// ------------------------ Adding volume physical tags ------------------------
 	const int maxMatId = *allmatids.rbegin();
-	initVolForMergeMeshes = maxMatId + 1;
+	initVolForMergeMeshes = (1+maxMatId/100)*100;
 	if(input.find("NCoarseGroups") == input.end()) DebugStop();
 	const int nCoarseGroups = input["NCoarseGroups"];
     if(nCoarseGroups != ncoarse_vol) DebugStop();
@@ -1219,16 +1247,52 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     /// add the intersection material ids to be read
     /// read only the header of the msh file
     /// identify the intersection groups by identify the substring
-    int firstfracintersect = fracInitMatId + fracCounter*fracinc;
+    int firstfracintersect = initVolForMergeMeshes + ncoarse_vol;
     firstfracintersect = (1+firstfracintersect/100)*100;
     std::map<int,std::pair<int,int>> matidtoFractures;
     
-    MapFractureIntersection(filenameBase, firstfracintersect,matidtoFractures);
+    MapFractureIntersection(filenameBase, dim_name_and_physical_tagFine[1], firstfracintersect, matidtoFractures);
     
 	gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
 
-    
     /// for each intersection element create an intersection element for each fracture specifically
+    int64_t nelem = gmeshfine->NElements();
+    for(int64_t el = 0; el<nelem; el++)
+    {
+        TPZGeoEl *gel = gmeshfine->Element(el);
+        if(!gel) continue;
+        int matid = gel->MaterialId();
+        auto it = matidtoFractures.find(matid);
+        if(it != matidtoFractures.end())
+        {
+            if(gel->Dimension() == 3) DebugStop();
+            TPZGeoElSide gelside(gel);
+            int frac1 = it->second.first;
+            int matid1 = fracInitMatId + frac1*fracinc + 2;
+            int frac1bcid = fracInitMatId + frac1*fracinc + 1;
+            auto frac1bc = gelside.HasNeighbour(frac1bcid);
+            if(frac1bc)
+            {
+                frac1bc.Element()->SetMaterialId(matid1);
+            }
+            else
+            {
+                TPZGeoElBC(gelside,matid1);
+            }
+            int frac2 = it->second.second;
+            int matid2 = fracInitMatId + frac2*fracinc + 2;
+            int frac2bcid = fracInitMatId + frac2*fracinc + 1;
+            auto frac2bc = gelside.HasNeighbour(frac2bcid);
+            if(frac2bc)
+            {
+                frac2bc.Element()->SetMaterialId(matid2);
+            }
+            else
+            {
+                TPZGeoElBC(gelside,matid2);
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------
@@ -1862,18 +1926,23 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
         if (!gel || !sim_data.mTFracProperties.isFracMatId(gel->MaterialId())) {
             continue;
         }
+        int gelmatid = gel->MaterialId();
         if (gel->Dimension() != 2) {
             DebugStop(); // Should it work with 2D problems (1d fractures)?
         }
 		
-		const int matidintersect = sim_data.mTFracIntersectProperties.m_IntersectionId;
-        
+        auto fracprop = sim_data.mTFracProperties.m_fracprops[gelmatid];
+//        const int matidintersect = sim_data.mTFracIntersectProperties.m_IntersectionId;
+        const int matidintersect = fracprop.m_fracIntersectMatID;
+
         const int firstedge = gel->FirstSide(1);
         const int lastedge = gel->FirstSide(2);
+        // loop over the sides of dimension 1
         for (int iside = firstedge; iside < lastedge; iside++) {
             TPZStack<TPZGeoEl*> interEls;
             TPZStack<TPZGeoEl*> bcEls;
             int nFracElsForSide = 0;
+            // loop over the neighbours
             TPZGeoElSide gside(gel,iside);
             TPZGeoElSide neig = gside.Neighbour();
             for (; gside != neig; neig++) {
@@ -1882,9 +1951,11 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
                 if (neighelmatid == matidintersect) {
                     interEls.push_back(neigel);
                 }
+                // compute the number of fracture elements linked to this side
                 if (sim_data.mTFracProperties.isFracMatId(neighelmatid)) {
                     nFracElsForSide++;
                 }
+                // compute the number of boundary condition elements linked to this side
                 if (sim_data.mTFracProperties.isFracBCMatId(neighelmatid)) {
                     bcEls.push_back(neigel);
                 }
@@ -1909,14 +1980,26 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
                 nInterCreated++;
             }
             if ((interEls.size() || nFracElsForSide > 1) && bcEls.size()) {
-//                cout << "PLEASE CHECK CAREFULLY! An element may have a boundary even if it intersects\n";
-//                DebugStop();
-                if(bcEls.size() > 1)
-                    DebugStop(); // This is rather odd. Please check why there are two bcs at the same boundary
-                for (auto bcgeoel : bcEls) {
-                    bcgeoel->RemoveConnectivities();
-                    delete bcgeoel;
+                cout << "PLEASE CHECK CAREFULLY! An element may have a boundary even if it intersects\n";
+                cout << "Domains intersecting and boundary through snap\n Intersection matids ";
+                for(auto it : interEls) cout << it->MaterialId() << " ";
+                cout << "\n Boundary condition material ids ";
+                for(auto it : bcEls) cout << it->MaterialId() << " ";
+                cout << std::endl;
+                cout << "matid of all neighbours " << gel->MaterialId();
+                neig = gside.Neighbour();
+                for (; gside != neig; neig++) {
+                    TPZGeoEl* neigel = neig.Element();
+                    const int neighelmatid = neigel->MaterialId();
+                    cout << " " << neighelmatid;
                 }
+                cout << std::endl;
+//                if(bcEls.size() > 1)
+//                    DebugStop(); // This is rather odd. Please check why there are two bcs at the same boundary
+//                for (auto bcgeoel : bcEls) {
+//                    bcgeoel->RemoveConnectivities();
+//                    delete bcgeoel;
+//                }
             }
             
             
@@ -1931,7 +2014,7 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
         cout << "\n====> Ok! No problematic intersections found" << endl;
     }
         
-    gmesh->BuildConnectivity();
+//    gmesh->BuildConnectivity();
 }
 
 // ---------------------------------------------------------------------
