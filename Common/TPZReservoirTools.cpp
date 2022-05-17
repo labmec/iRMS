@@ -553,7 +553,7 @@ void TPZReservoirTools::SplitConnect(TPZGeoEl *gelIntersect)
         gelside.Element()->ResetReference();
     }
     // creat hdivbound for the second element/side
-    if(connected.second);
+    if(connected.second)
     {
         TPZGeoElSide volside = connected.second.Reference();
         connected.second.Element()->LoadElementReference();

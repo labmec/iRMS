@@ -368,31 +368,80 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
     // They are, however, connected (with connects) between themselves
     TPZGeoMesh* gmesh = cmesh->Reference();
     gmesh->ResetReference(); // So it does not try to use connects of neighbor elements
+    gmesh->SetReference(cmesh);
     const int gmeshdim = gmesh->Dimension();
     cmesh->SetDimModel(gmeshdim-1);
-    for(auto gel : gmesh->ElementVec()) {
-        const int matid = gel->MaterialId();
-        if (!IsFracMatId(matid)) continue;
+    cmesh->ApproxSpace().SetAllCreateFunctionsHDiv(gmeshdim-1);
+    // organize the elements by matid
+    std::map<int,TPZStack<int64_t>> matTogelindex;
+    int64_t nelem = gmesh->NElements();
+    for(int64_t el = 0; el < nelem; el++) {
+        TPZGeoEl *gel = gmesh->Element(el);
         const int hassubel = gel->HasSubElement();
         if (hassubel) { // the mesh can be uniformly refined
             continue;
         }
-        TPZInterpolationSpace* hdivcollapsed = nullptr;
-        if (gmeshdim == 2){
-            hdivcollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeLinear>(*cmesh,gel);
+        const int matid = gel->MaterialId();
+        matTogelindex[matid].Push(el);
+    }
+    int nfrac = mSimData.mTFracProperties.m_fracprops.size();
+    for(auto frac : mSimData.mTFracProperties.m_fracprops)
+    {
+        int fracmatid = frac.first;
+        int fracbcid = frac.second.m_fracbc;
+        int fracintersect = frac.second.m_fracIntersectMatID;
+        for(auto gelindex : matTogelindex[fracmatid])
+        {
+            TPZGeoEl *gel = gmesh->Element(gelindex);
+            TPZInterpolationSpace* hdivcollapsed = nullptr;
+            if (gmeshdim == 2){
+                hdivcollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeLinear>(*cmesh,gel);
+            }
+            else {
+                if(gel->Type() == MElementType::ETriangle){
+                    hdivcollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>(*cmesh,gel);
+                }
+                else if (gel->Type() == MElementType::EQuadrilateral){
+                    hdivcollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>(*cmesh,gel);
+                }
+                else{
+                    DebugStop();
+                }
+            }
         }
-        else {
-            if(gel->Type() == MElementType::ETriangle){
-                hdivcollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>(*cmesh,gel);
-            }
-            else if (gel->Type() == MElementType::EQuadrilateral){
-                hdivcollapsed = new TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>(*cmesh,gel);
-            }
-            else{
-                DebugStop();
+        cmesh->AutoBuild(matTogelindex[fracbcid]);
+        for(auto gelindex : matTogelindex[fracintersect])
+        {
+            TPZGeoEl *gel = gmesh->Element(gelindex);
+            TPZReservoirTools::SplitConnect(gel);
+        }
+        for(auto gelindex : matTogelindex[fracmatid])
+        {
+            TPZGeoEl *gel = gmesh->Element(gelindex);
+            if(!gel->Reference()) DebugStop();
+            gel->ResetReference();
+        }
+        for(auto gelindex : matTogelindex[fracbcid])
+        {
+            TPZGeoEl *gel = gmesh->Element(gelindex);
+            if(!gel->Reference()) DebugStop();
+            gel->ResetReference();
+        }
+        for(auto gelindex : matTogelindex[fracintersect])
+        {
+            TPZGeoEl *gel = gmesh->Element(gelindex);
+            if(!gel->Reference()) DebugStop();
+            gel->ResetReference();
+            TPZGeoElSide gelside(gel);
+            for(TPZGeoElSide neigh = gelside.Neighbour(); neigh != gelside; neigh++)
+            {
+                if(neigh.Element()->MaterialId() == fracintersect)
+                {
+                    if(!neigh.Element()->Reference()) DebugStop();
+                    neigh.Element()->ResetReference();
+                }
             }
         }
-        
     }
     
     // ===> Set HdivCollapsed elements connection with adjacent 3d elements
@@ -510,62 +559,53 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
     const int dim = gmesh->Dimension();
     
     // ===> Creating space for 3D elements
+    cmesh->SetDimModel(dim);
     cmesh->SetAllCreateFunctionsHDiv();
     cmesh->ApproxSpace().CreateDisconnectedElements(false); // we need to disconnect by hand at the fracture location later
-    cmesh->AutoBuild(matids);
+    std::set<int> _3dmatids(matids);
+    _3dmatids.insert(bcids.begin(),bcids.end());
+    cmesh->AutoBuild(_3dmatids);
     
+
     // ===> Creating fracture element
     // split the volumetric elements in the flux mesh
     CreateFractureHDivCollapsedEl(cmesh);
     cmesh->CleanUpUnconnectedNodes();
     
     // ===> Create BCs for fracture
-    gmesh->ResetReference();
-    for (auto cel : cmesh->ElementVec()) {
-        if (!cel) {
-            continue;
-        }
-//        if (cel->Reference()->MaterialId() == FractureMatId()) {
-//            cel->LoadElementReference();
-//        }
-        if (IsFracMatId(cel->Reference()->MaterialId())) {
-            cel->LoadElementReference();
-        }
-    }
-    cmesh->SetDimModel(dim-1);
-    cmesh->SetAllCreateFunctionsHDiv();
-    cmesh->AutoBuild(bcids_dim2);
+    cmesh->LoadReferences();
     AdjustOrientBoundaryEls(cmesh,bcids_dim2);
-    
-    // ===> Create BCs for 3D domain
-    gmesh->ResetReference();
-    for (auto cel : cmesh->ElementVec()) {
-        if (!cel) {
-            continue;
-        }
-        const int gelmatid = cel->Reference()->MaterialId();
-        if (matids.find(gelmatid) != matids.end()) {
-            cel->LoadElementReference();
-        }
-    }
-    cmesh->SetDimModel(dim);
-    cmesh->SetAllCreateFunctionsHDiv();
-    cmesh->ApproxSpace().CreateDisconnectedElements(false);
-    cmesh->AutoBuild(bcids);
-    cmesh->CleanUpUnconnectedNodes();
+    cmesh->ApproxSpace().SetAllCreateFunctionsHDiv(3);
 	
+    {
+        std::ofstream out("gmesh.txt");
+        gmesh->Print(out);
+    }
 	// ===> Fix blocks
 	if(mSimData.mTNumerics.m_mhm_mixed_Q){
 		std::set<int> buildmatids(matids);
 		buildmatids.insert(mSimData.mTGeometry.m_skeletonMatId);
 		TPZNullMaterial<STATE> *nullmat = new TPZNullMaterial(mSimData.mTGeometry.m_skeletonMatId,2,1);
 		cmesh->InsertMaterialObject(nullmat);
-		cmesh->ApproxSpace().CreateDisconnectedElements(true);
+		cmesh->ApproxSpace().CreateDisconnectedElements(false);
 		cmesh->AutoBuild(buildmatids);
+        TPZNullMaterial<STATE> *nullmat2 = new TPZNullMaterial(mSimData.mTGeometry.m_skeletonMatId-1,2,1);
+        cmesh->InsertMaterialObject(nullmat2);
+        {
+            int64_t nelem = gmesh->NElements();
+            for(int64_t el = 0; el < nelem; el++)
+            {
+                TPZGeoEl *gel = gmesh->Element(el);
+                int matid = gel->MaterialId();
+                if(matid == mSimData.mTGeometry.m_skeletonMatId-1)
+                {
+                    cmesh->ApproxSpace().CreateCompEl(gel, *cmesh);
+                }
+            }
+        }
 	}
     
     // ===> Fix blocks
-    cmesh->SetDimModel(dim);
     cmesh->InitializeBlock();
     
     

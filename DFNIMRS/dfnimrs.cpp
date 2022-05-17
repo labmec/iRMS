@@ -296,7 +296,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
 //    aspace.SetGeometry(gmeshfine);
     
     // ----- Creates the multiphysics compmesh -----
-    int order = 1;
+	    int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
             
@@ -522,6 +522,9 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
         const REAL zero_flux = 0.;
         const int bcFracType_Neumann = 1;
         sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[fracprop.m_fracbc] = std::make_pair(bcFracType_Neumann, zero_flux);
+        const int bcFracType_Dirichlet = 0;
+        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[fracprop.m_fracIntersectMatID] = std::make_pair(bcFracType_Dirichlet, zero_flux);
+
     }
     //end mod
     
