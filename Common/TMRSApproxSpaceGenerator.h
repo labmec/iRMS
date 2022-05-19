@@ -142,6 +142,8 @@ public:
     void SetInterfaceDomains(TPZStack<int64_t> &pressureindices,std::pair<int,int> &interfacematids);
 
     void CreateIntersectionInterfaceElements(TPZVec<TPZCompMesh *>& meshvec_Hybrid);
+
+    void CreateIntersectionInterfaceElements();
     void DeleteBCsThatAreOnIntersect(TPZCompMesh* hdivcmesh);
     
     void LoadGeometry(std::string geometry_file);

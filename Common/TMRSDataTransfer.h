@@ -120,6 +120,7 @@ public:
             mInterface_material_idFracBound=other.mInterface_material_idFracBound;
             
             mSkeletonDiv = other.mSkeletonDiv;
+            m_pressureMatId = other.m_pressureMatId;
             mnLayers = other.mnLayers;
             mnref = other.mnref;
             /// material id for the Macro fluxes
@@ -151,6 +152,7 @@ public:
                 mInterface_material_idFracFrac = other.mInterface_material_idFracFrac;
                 mInterface_material_idFracBound=other.mInterface_material_idFracBound;
                 mSkeletonDiv = other.mSkeletonDiv;
+                m_pressureMatId = other.m_pressureMatId;
                 mnLayers = other.mnLayers;
                 mnref = other.mnref;
                 /// material id for the Macro fluxes

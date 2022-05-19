@@ -545,6 +545,9 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(initfracmatid + 2*fraccount, phifrac, fracFactor);
 		fraccount++;
 	}
+    int FractureHybridPressureMatId = input["FractureHybridPressureMatId"];
+    // this is the material id of the pressure between hybridized fluxes of intersecting fractures
+    sim_data.mTGeometry.m_pressureMatId = FractureHybridPressureMatId;
 	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
     //here modified
 //	sim_data.mTFracProperties.m_Permeability = permLastFrac;
@@ -1250,6 +1253,9 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     /// add the intersection material ids to be read
     /// read only the header of the msh file
     /// identify the intersection groups by identify the substring
+    if(input.find("FractureHybridPressureMatId") == input.end()) DebugStop();
+    int FractureHybridPressureMatId = input["FractureHybridPressureMatId"];
+    
     int firstfracintersect = initVolForMergeMeshes + ncoarse_vol;
     firstfracintersect = (1+firstfracintersect/100)*100;
     std::map<int,std::pair<int,int>> matidtoFractures;
@@ -1293,6 +1299,12 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
             else
             {
                 TPZGeoElBC(gelside,matid2);
+            }
+            // create the geometric element for receiving the hybridized pressure element
+            auto fracintersect = gelside.HasNeighbour(FractureHybridPressureMatId);
+            if(!fracintersect)
+            {
+                TPZGeoElBC(gelside,FractureHybridPressureMatId);
             }
         }
     }

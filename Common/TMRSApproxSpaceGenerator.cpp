@@ -443,9 +443,11 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         for(auto gelindex : matTogelindex[fracintersect])
         {
             TPZGeoEl *gel = gmesh->Element(gelindex);
+            // SplitConnect will put an element with fracintersect matid as first neighbour of the fracture elements
             TPZReservoirTools::SplitConnect(gel);
             int64_t nel = gmesh->NElements();
             mSubdomainIndexGel.Resize(nel, -1);
+            // not sure this is necessary
             TPZGeoElSide gelside(gel);
             for(auto neigh = gelside.Neighbour(); neigh != gelside; neigh++)
             {
@@ -458,7 +460,21 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
                     mSubdomainIndexGel[bound.Element()->Index()] = domain;
                 }
             }
+            // create a geometric element for interface elements
+            int interfacematid = mSimData.mTGeometry.mInterface_material_id;
+            TPZGeoElBC gbc(gelside,interfacematid);
+            for(auto neigh = gelside.Neighbour(); neigh != gelside; neigh++)
+            {
+                int neighmatid = neigh.Element()->MaterialId();
+                if(neighmatid == fracintersect)
+                {
+                    TPZGeoElBC(neigh,interfacematid);
+                }
+            }
         }
+        mSubdomainIndexGel.Resize(gmesh->NElements(), -1);
+
+        // reset the references of the elements of the fracture
         for(auto gelindex : matTogelindex[fracmatid])
         {
             TPZGeoEl *gel = gmesh->Element(gelindex);
@@ -1159,6 +1175,11 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagra
     const bool isInsertBCs = false; // Pressure mesh does not require BCs
     for (int idim = 0; idim <= dimension; idim++) {
         std::set<int> matids, bcids;
+        // the pressure elements are only created in the original pressure mesh
+        if(idim == 1 && order > 0)
+        {
+            matids.insert(this->mSimData.mTGeometry.m_pressureMatId);
+        }
         AddAtomicMaterials(idim,cmesh,matids,bcids,isInsertBCs);
         if (matids.size() == 0) continue;
         
@@ -2488,7 +2509,15 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
 
 		}
     }
-    
+    {
+        // material of pressure lagrange multiplier
+        int pressureMatId = mSimData.mTGeometry.m_pressureMatId;
+        MatsWitOuthmem.insert(pressureMatId);
+        int dim = 1;
+        int nstate = 1;
+        TPZNullMaterialCS<> *nullmat = new TPZNullMaterialCS<>(pressureMatId,dim,nstate);
+        mMixedOperator->InsertMaterialObject(nullmat);
+    }
     if(mHybridizer){
         mHybridizer->InsertPeriferalMaterialObjects(mMixedOperator);
         MatsWitOuthmem.insert(mHybridizer->fLagrangeInterface);
@@ -2498,9 +2527,12 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
     }
 	
 	if(mSimData.mTNumerics.m_mhm_mixed_Q){
-		TPZNullMaterialCS<STATE> *volume2 = new TPZNullMaterialCS(mSimData.mTGeometry.m_skeletonMatId,2,1);
+		TPZNullMaterialCS<STATE> *volume2 = new TPZNullMaterialCS<>(mSimData.mTGeometry.m_skeletonMatId,2,1);
 		mMixedOperator->InsertMaterialObject(volume2);
 		MatsWitOuthmem.insert(mSimData.mTGeometry.m_skeletonMatId);
+        TPZNullMaterialCS<STATE> *volume3 = new TPZNullMaterialCS<>(mSimData.mTGeometry.m_skeletonMatId-1,2,1);
+        mMixedOperator->InsertMaterialObject(volume3);
+        MatsWitOuthmem.insert(mSimData.mTGeometry.m_skeletonMatId-1);
 	}
     
     mMixedOperator->SetDimModel(dimension);
@@ -2633,10 +2665,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     
 	// ========================================================
     // Creates interface elements for hybridized intersections
-    if (mHybridizer)
-    {
-        CreateIntersectionInterfaceElements(mesh_vec);
-    }
+    CreateIntersectionInterfaceElements();
     if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
 
     // ========================================================
@@ -2653,6 +2682,14 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 #endif
 
 	cout << "\nNequations before hiding the elements = " << mMixedOperator->NEquations() << endl;
+#ifdef PZDEBUG
+    {
+        // visualize the subdomain association of the geometric element
+        ofstream out("gmeshdomain.vtk");
+        //PrintGMeshVTK(TPZGeoMesh *gmesh, std::ofstream &file, TPZVec<int> &elData);
+        TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out,mSubdomainIndexGel);
+    }
+#endif
 	// ========================================================
 	// In case MHM, put the elements in submeshes
     // Verify the integrity of the subdomain indices
@@ -4255,6 +4292,38 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZVec<TPZCom
     }
     // identify the domain indices of the interface elements
     SetInterfaceDomains(pressureindices,mHybridizer->fInterfaceMatid);
+}
+
+
+
+void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements() {
+    // identify the domain indices of the interface elements
+    int interfacematid = mSimData.mTGeometry.mInterface_material_id;
+    TPZLagrangeMultiplierCS<> * mat = new TPZLagrangeMultiplierCS<>(interfacematid, 1);
+    mMixedOperator->InsertMaterialObject(mat);
+    std::set<int> fracintersectmatid;
+    for(auto &frac : mSimData.mTFracProperties.m_fracprops)
+    {
+        fracintersectmatid.insert(frac.second.m_fracIntersectMatID);
+    }
+    int pressurematid = mSimData.mTGeometry.m_pressureMatId;
+    int64_t nelem = mGeometry->NElements();
+    for (int64_t el = 0; el<nelem; el++) {
+        TPZGeoEl *gel = mGeometry->Element(el);
+        if(!gel) continue;
+        int matid = gel->MaterialId();
+        if(fracintersectmatid.find(matid) == fracintersectmatid.end()) continue;
+        TPZGeoElSide gelside(gel);
+        TPZCompElSide celside(gelside.Reference());
+        if(!celside) DebugStop();
+        TPZGeoElSide interface(gelside.Neighbour());
+        if(interface.Element()->MaterialId() != interfacematid) DebugStop();
+        TPZGeoElSide pressure = gelside.HasNeighbour(pressurematid);
+        if(!pressure) DebugStop();
+        TPZCompElSide cpressure(pressure.Reference());
+        if(!cpressure) DebugStop();
+        new TPZMultiphysicsInterfaceElement(*this->mMixedOperator,interface.Element(),celside,cpressure);
+    }
 }
 
 
