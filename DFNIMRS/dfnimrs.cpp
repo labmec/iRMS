@@ -150,7 +150,8 @@ int main(){
 
 //			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
 //			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
-			filenameCoarse = basemeshpath + "/dfnimrs/twoElCoarseNew";
+//			filenameCoarse = basemeshpath + "/dfnimrs/twoElCoarseNew";
+			filenameCoarse = basemeshpath + "/dfnimrs/intersect";
 			break;
 		default:
             break;
