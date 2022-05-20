@@ -455,6 +455,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
                 if(neighmatid == fracmatid)
                 {
                     int domain = mSubdomainIndexGel[neigh.Element()->Index()];
+                    // the fracture element must belong to some subdomain
+                    if(domain == -1) DebugStop();
                     auto bound = neigh.Neighbour();
                     if(bound.Element()->MaterialId() != fracintersect) DebugStop();
                     mSubdomainIndexGel[bound.Element()->Index()] = domain;
@@ -468,7 +470,12 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
                 int neighmatid = neigh.Element()->MaterialId();
                 if(neighmatid == fracintersect)
                 {
-                    TPZGeoElBC(neigh,interfacematid);
+                    int neighdomain = mSubdomainIndexGel[neigh.Element()->Index()];
+                    if(neighdomain == -1) DebugStop();
+                    TPZGeoElBC gbc(neigh,interfacematid);
+                    int64_t nel = gmesh->NElements();
+                    mSubdomainIndexGel.Resize(nel, -1);
+                    mSubdomainIndexGel[gbc.CreatedElement()->Index()] = neighmatid;
                 }
             }
         }
@@ -2676,8 +2683,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     {
 //		ofstream out("mphysics.vtk");
 //		TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, out);
-//        std::ofstream sout("mixed_cmesh_four_spaces.txt");
-//        mMixedOperator->Print(sout);
+        std::ofstream sout("mixed_cmesh_four_spaces.txt");
+        mMixedOperator->Print(sout);
     }
 #endif
 
