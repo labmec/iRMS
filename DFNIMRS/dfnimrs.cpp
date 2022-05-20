@@ -97,7 +97,7 @@ int main(){
     // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
 	// 9: 4 elements, 2 frac, w/ intersection
 	// 10: Automated case 1
-    int simcase = 10;
+    int simcase = 1;
     string filenameCoarse, filenameFine,filenamejson;
     // @TODO define a root name and extend it with _coarse, _fine, and also .json
     switch (simcase) {
@@ -148,8 +148,8 @@ int main(){
 		case 10:
 			// NOTE: filenameCoarse here has the meaning of basefilename!!!!
 
-//			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
-			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
+			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
+//			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
 			break;
 		default:
             break;
@@ -166,7 +166,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
     
     bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = false;
+	const bool isRunWithTranport = true;
 	int initVolForMergeMeshes = EInitVolumeMatForMHM;
     
     // ----- Creating gmesh and data transfer -----
@@ -308,7 +308,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
 
-    if((simcase == 1 ||simcase == 2 || simcase == 3) && isRunWithTranport){
+    if((simcase == 1 ||simcase == 2 || simcase == 3 || simcase == 10) && isRunWithTranport){
 
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();

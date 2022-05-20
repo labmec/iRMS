@@ -243,6 +243,7 @@ public:
     std::pair<int, int> FindMortar(TPZGeoElSide &gelside);
     std::pair<int, int> FindMortar(TPZGeoElSide &gelside, int targetId);
     void TestSideOrient(TPZCompMesh *MultFlux);
+    void IndentifyElements();
     
 };
 #endif /* AlgebraicDataTransfer_h */

@@ -159,6 +159,78 @@ void TPZAlgebraicDataTransfer::IdentifyInterfaceGeometricElements()
 #endif
 }
 
+void TPZAlgebraicDataTransfer::IndentifyElements(){
+    
+    int matidvolvol = 100;
+    int matidvolfrac1 = 101;
+    int matidvolfrac2 = 102;
+    int matidfracfrac= 103;
+    int matidfracbound = 104;
+    int countels = 0;
+    int countintersec = 0;
+    int nels = fFluxMesh->NElements();
+    for (int iel=0; iel<nels; iel++) {
+        TPZCompEl *cel = fFluxMesh->Element(iel);
+        if(!cel) continue;
+        TPZGeoEl *gel = cel->Reference();
+        if(!gel) continue;
+        TPZMultiphysicsElement *multcel = dynamic_cast<TPZMultiphysicsElement *>(cel);
+        if (multcel) continue;
+        TPZCompEl *fluxElement = multcel->Element(0);
+        TPZCompEl *pressureElement = multcel->Element(1);
+        if (pressureElement) {
+            countels++;
+        }
+        if(pressureElement && !fluxElement){
+            countintersec++;
+        }
+    }
+    
+    fInterfaceByGeom.Redim(countels,6);
+    for(int64_t el = 0; el<countels; el++)
+    {
+        for(int f=0; f<6; f++)
+        {
+            fInterfaceByGeom(el,f) = -1;
+        }
+    }
+        
+    for (int iel=0; iel<nels; iel++) {
+        TPZCompEl *cel = fFluxMesh->Element(iel);
+        if(!cel) continue;
+        TPZGeoEl *gel = cel->Reference();
+        if(!gel) continue;
+        TPZMultiphysicsElement *multcel = dynamic_cast<TPZMultiphysicsElement *>(cel);
+        if (multcel) continue;
+        TPZCompEl *fluxElement = multcel->Element(0);
+        TPZCompEl *pressureElement = multcel->Element(1);
+        int nsides = gel->NSides();
+        int dim = gel->Dimension();
+        int nsidesdm1 = gel->NSides(dim-1);
+        int ncords = gel->NCornerNodes();
+        for (int iside = ncords+nsidesdm1; iside<nsides; iside++) {
+            TPZGeoElSide gelside(gel,iside);
+            TPZGeoElSide neig = gelside.Neighbour();
+            while (gelside!=neig) {
+                TPZGeoEl *neigel = neig.Element();
+                TPZCompEl *compneigel = neigel->Reference();
+                if(compneigel){
+                    int lowerindex = SideLowerIndex(gel, iside);
+                    fInterfaceByGeom(iel,i) = -1;
+                }
+            }
+        }
+        
+        
+        if (pressureElement) {
+            countels++;
+        }
+        if(pressureElement && !fluxElement){
+            countintersec++;
+        }
+    }
+}
+
 int SideLowerIndex(TPZGeoEl *gel, int side)
 {
     int dim = gel->Dimension();
@@ -1752,3 +1824,4 @@ void TPZAlgebraicDataTransfer::TestSideOrient(TPZCompMesh *MultFlux){
     }
 //    }
 }
+
