@@ -96,7 +96,7 @@ int main(){
     // 7: Well mesh (Initially idealized just for generating a beautiful mesh)
     // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
 	// 9: 4 elements, 2 frac, w/ intersection
-	// 10: Automated case 1
+	// 10: Automated cases 1 and 3
     int simcase = 10;
     string filenameCoarse, filenameFine,filenamejson;
     // @TODO define a root name and extend it with _coarse, _fine, and also .json
@@ -149,7 +149,8 @@ int main(){
 			// NOTE: filenameCoarse here has the meaning of basefilename!!!!
 
 //			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
-			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
+//			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
+			filenameCoarse = basemeshpath + "/dfnimrs/twoElCoarseNew";
 			break;
 		default:
             break;
@@ -192,7 +193,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
         ReadMeshesIP3D(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
     else if (simcase == 10){
 		ReadMeshesDFN(filenamecoarse, gmeshfine, gmeshcoarse, initVolForMergeMeshes);
-        ModifyBCsForCase3(gmeshfine);
+//        ModifyBCsForCase3(gmeshfine);
         
     }
     else
@@ -1224,14 +1225,15 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
         const int bcmatid = fracInitMatId + fracCounter*fracinc+1;
 		string fracname = "Fracture" + to_string(fracCounter);
 		string bcfracname = "BCfrac" + to_string(fracCounter);
-        dim_name_and_physical_tagFine[2][fracname] = fracInitMatId + fracinc * fracCounter;
-        dim_name_and_physical_tagFine[1][bcfracname] = (fracInitMatId + fracinc * fracCounter)+1;
-        bool is_in = allmatids.find(fracInitMatId + fracinc * fracCounter) != allmatids.end();
+		const int currentFracId = fracInitMatId + fracinc * fracCounter;
+        dim_name_and_physical_tagFine[2][fracname] = currentFracId;
+        dim_name_and_physical_tagFine[1][bcfracname] = (currentFracId)+1;
+        bool is_in = allmatids.find(currentFracId) != allmatids.end();
         if(is_in) DebugStop();
-        allmatids.insert((fracInitMatId + fracinc * fracCounter));
-        is_in = allmatids.find((fracInitMatId + fracinc * fracCounter)+1) != allmatids.end();
+        allmatids.insert((currentFracId));
+        is_in = allmatids.find((currentFracId)+1) != allmatids.end();
         if(is_in) DebugStop();
-        allmatids.insert((fracInitMatId + fracinc * fracCounter)+1);
+        allmatids.insert((currentFracId)+1);
 		fracCounter++;
 	}
 	
@@ -1242,7 +1244,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	const int nCoarseGroups = input["NCoarseGroups"];
     if(nCoarseGroups != ncoarse_vol) DebugStop();
 	std::string volbase = "c";
-	for (int ivol = 0; ivol <= nCoarseGroups; ivol++) {
+	for (int ivol = 0; ivol < nCoarseGroups; ivol++) {
 		std::string ivolstring = volbase + to_string(ivol);
 		dim_name_and_physical_tagFine[3][ivolstring] = initVolForMergeMeshes + ivol;
 	}
