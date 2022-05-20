@@ -667,7 +667,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     
     // -----------> Inserting atomic matrix materials
     std::set<int> matids, bcids;
-    bcids.insert(mSimData.mTGeometry.m_skeletonMatId);
+//    bcids.insert(mSimData.mTGeometry.m_skeletonMatId);
     bcids.insert(mSimData.mTGeometry.m_skeletonMatId-1);
     AddAtomicMaterials(dim,cmesh,matids,bcids);
 
@@ -2527,9 +2527,9 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
     }
 	
 	if(mSimData.mTNumerics.m_mhm_mixed_Q){
-		TPZNullMaterialCS<STATE> *volume2 = new TPZNullMaterialCS<>(mSimData.mTGeometry.m_skeletonMatId,2,1);
-		mMixedOperator->InsertMaterialObject(volume2);
-		MatsWitOuthmem.insert(mSimData.mTGeometry.m_skeletonMatId);
+//		TPZNullMaterialCS<STATE> *volume2 = new TPZNullMaterialCS<>(mSimData.mTGeometry.m_skeletonMatId,2,1);
+//		mMixedOperator->InsertMaterialObject(volume2);
+//		MatsWitOuthmem.insert(mSimData.mTGeometry.m_skeletonMatId);
         TPZNullMaterialCS<STATE> *volume3 = new TPZNullMaterialCS<>(mSimData.mTGeometry.m_skeletonMatId-1,2,1);
         mMixedOperator->InsertMaterialObject(volume3);
         MatsWitOuthmem.insert(mSimData.mTGeometry.m_skeletonMatId-1);
@@ -4786,7 +4786,7 @@ void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompM
             if(gel->MaterialId() == fineskeletonmatid) continue;
             auto index = gel->Index();
             // if the element has a subdomain index already, do nothing
-//            if(mSubdomainIndexGel[index] != -1) continue;
+            if(mSubdomainIndexGel[index] != -1) continue;
             TPZCompEl *cel = gel->Reference();
             if(!cel)
             {
