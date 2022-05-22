@@ -537,6 +537,15 @@ void TPZReservoirTools::SplitConnect(TPZGeoEl *gelIntersect)
     // reset the reference for the second neighbour
     if(connected.second)
     {
+        TPZCompEl *cel = connected.second.Element();
+        TPZConnect &c = cel->Connect(0);
+        c.DecrementElConnected();
+        int64_t cindex = cmesh->AllocateNewConnect(c.NShape(), c.NState(), c.Order());
+        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(cel);
+        int locindex = intel->SideConnectLocId(0, connected.second.Side());
+        intel->SetConnectIndex(locindex, cindex);
+        TPZConnect &c2 = cel->Connect(locindex);
+        c2.IncrementElConnected();
         TPZGeoElSide gelside = connected.second.Reference();
         gelside.Element()->ResetReference();
     }
@@ -564,6 +573,18 @@ void TPZReservoirTools::SplitConnect(TPZGeoEl *gelIntersect)
     // reload the references
     celIntersect->LoadElementReference();
     connected.first.Element()->LoadElementReference();
+#ifdef PZDEBUG
+    auto gelside1 = connected.first.Reference();
+    auto neigh1 = gelside1.Neighbour();
+    if(neigh1.Element()->Dimension() != 1) DebugStop();
+    auto celside2 = connected.second;
+    if(celside2)
+    {
+        auto gelside2 = connected.second.Reference();
+        auto neigh2 = gelside2.Neighbour();
+        if(neigh2.Element()->Dimension() != 1) DebugStop();
+    }
+#endif
 }
 
 /// Find one or two TPZCompElSides which are neighbour of the geometric element and have a dimension one higher
