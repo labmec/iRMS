@@ -138,6 +138,11 @@ public:
     void HybridizeIntersections(TPZVec<TPZCompMesh *>& mesh_vec);
     // assign a subdomain to the lower level elements
     void IdentifySubdomainForLowdimensionElements(TPZCompMesh *fluxmesh);
+    
+    // Adjust the neighbouring information such that the boundary of the fracture elements is the first boundary
+    // verify if the assigned subdomains are consistent
+    void VerifySubdomainIntegrity();
+    
     // identify the domain indices of the interface elements
     void SetInterfaceDomains(TPZStack<int64_t> &pressureindices,std::pair<int,int> &interfacematids);
 
@@ -280,6 +285,15 @@ public:
     const bool isFracSim() const {return mSimData.mTGeometry.mDomainFracNameAndMatId.size();}
     
     bool IsFracMatId(int matiD);
+    
+    bool IsFracBCMatId(int matiD)
+    {
+        return IsFracMatId(matiD-1);
+    }
+    bool IsFracIntersectMatId(int matiD)
+    {
+        return IsFracMatId(matiD-2);
+    }
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */
