@@ -14,45 +14,30 @@ using namespace std;
 // ----- End of namespaces -----
 
 // ----- Functions -----
-void RunProblem(string& filenameFine, string& filenameCoarse, const string &filenamejson, const int simucase);
-void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data);
-void FillDataTransfer(TMRSDataTransfer& sim_data);
-void FillDataTransferCase1(TMRSDataTransfer& sim_data);
-void FillDataTransferCase2(TMRSDataTransfer& sim_data);
-void FillDataTransferCase3(TMRSDataTransfer& sim_data);
+void RunProblem(string& filenameBase, const int simucase);
+void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes);
+void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
+										  std::map<int,std::pair<int,int>>& matidtoFractures,
+										  const int fracInitMatId, const int fracinc, const int FractureHybridPressureMatId);
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
 void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gmesh);
 
-void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes);
+void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data);
 
-void ReadMeshes(string& filenameFine, string& filenameCoarse,
-                TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
-
-void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
-                             TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
-
-void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse, const string &filenamejson,
-                             TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
+// Quick fix functions. Should be deleted in the future (May 2022)
 void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh);
 void ModifyBCsForCase2(TPZGeoMesh* gmesh);
-
-void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
-                             TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 void ModifyBCsForCase3(TPZGeoMesh* gmesh);
-
-void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
-                               TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 void ModifyBCsForCase4(TPZGeoMesh* gmesh);
 
-void ReadMeshesFlemischCase4Debug(string& filenameFine, string& filenameCoarse,
-                                  TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
-
+// Mesh readers for plotting
 void ReadMeshesWell(string& filenameFine, string& filenameCoarse,
                     TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 void ReadMeshesIP3D(string& filenameFine, string& filenameCoarse,
                     TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 
 
+// TODO: Delete this enum? (May 2022)
 enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
     /*5*/EFaceBCPressure, EFracInlet, EFracOutlet, EFracNoFlux, EFracPressure,
     /*10*/EFracture, EIntersection, EIntersectionEnd, EPLossAtIntersect, EVolume2,
@@ -72,9 +57,6 @@ static TPZLogger mainlogger("cubicdomain");
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
 int main(){
-
-    
-  
     string basemeshpath(FRACMESHES);
 #ifdef PZ_LOG
     string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
@@ -86,125 +68,70 @@ int main(){
     }
 #endif
     
-    // 0: two elements, 1 frac
+    // 0: two elements, 1 frac, no intersection
     // 1: Flemisch case 1
     // 2: Flemisch case 2
     // 3: Flemisch case 3
     // 4: Flemisch case 4
-    // 5: Flemisch case 4 with less fractures (and no overlap)
-    // 6: Flemisch case 4 with much less fractures (for debugging)
-    // 7: Well mesh (Initially idealized just for generating a beautiful mesh)
-    // 8: IP3D mesh (Initially idealized just for generating a beautiful mesh)
-	// 9: 4 elements, 2 frac, w/ intersection
-	// 10: Automated cases 1 and 3
-    int simcase = 10;
-    string filenameCoarse, filenameFine,filenamejson;
-    // @TODO define a root name and extend it with _coarse, _fine, and also .json
+    // 5: 4 elements, 2 frac, w/ intersection
+    // 6: Two parallel square fractures very close, but no overlap
+    // 7: Two parallel square fractures very close, WITH overlap
+    // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
+	int simcase = 3;
+    string filenameBase;
     switch (simcase) {
         case 0:
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/twoElCoarse.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/twoElFine.msh";
+			filenameBase = basemeshpath + "/dfnimrs/twoElCoarseNew";
             break;
         case 1:
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case1_coarse.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case1_fine_NotSoFine.msh";
-//            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case1_fine.msh";
+			DebugStop(); // create me
+			filenameBase = basemeshpath + "/dfnimrs/fl_case1";
             break;
         case 2:
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case2_coarse.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case2_fine.msh";
-            filenamejson = basemeshpath + "/verificationMHMNoHybrid/fl_case2.json";
+			DebugStop(); // create me
+			filenameBase = basemeshpath + "/dfnimrs/fl_case2";
             break;
         case 3:
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case3_coarse.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case3_fine.msh";
-    
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3";
             break;
         case 4:
             DebugStop(); // Need to generate mesh without overlap or need to treat overlap
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case4_coarse.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case4_fine.msh";
+			filenameBase = basemeshpath + "/dfnimrs/fl_case4";
             break;
         case 5:
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case4_coarse_lf.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case4_fine_lf.msh";
+			filenameBase = basemeshpath + "/dfnimrs/intersect";
             break;
         case 6:
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/fl_case4_coarse_debug.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/fl_case4_fine_debug.msh";
-            break;
-        case 7:
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/wellmesh_coarse.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/wellmesh_fine.msh";
-            break;
-        case 8:
-            filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/ip3dmesh_coarse.msh";
-            filenameFine = basemeshpath + "/verificationMHMNoHybrid/ip3dmesh_fine.msh";
-            break;
-		case 9:
-			filenameCoarse = basemeshpath + "/verificationMHMNoHybrid/intersectCoarse.msh";
-			filenameFine = basemeshpath + "/verificationMHMNoHybrid/intersectFine.msh";
+			filenameBase = basemeshpath + "/dfnimrs/2parallel";
 			break;
-		case 10:
-			// NOTE: filenameCoarse here has the meaning of basefilename!!!!
-
-//			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
-//			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
-//			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3_overlap";
-//			filenameCoarse = basemeshpath + "/dfnimrs/twoElCoarseNew";
-//			filenameCoarse = basemeshpath + "/dfnimrs/intersect";
-			
-			// NATHAN TO PHIL: Here are the cases to analyze overlap
-			filenameCoarse = basemeshpath + "/dfnimrs/2parallel";
-//			filenameCoarse = basemeshpath + "/dfnimrs/2paralleloverlap";
-			
+        case 7:
+			filenameBase = basemeshpath + "/dfnimrs/2paralleloverlap";
+			break;
+        case 8:
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap";
 			break;
 		default:
             break;
     }
-    RunProblem(filenameFine,filenameCoarse,filenamejson,simcase);
+    RunProblem(filenameBase,simcase);
     return 0;
 }
 // ----------------- End of Main -----------------
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
-void RunProblem(string& filenamefine, string& filenamecoarse, const string &filenamejson, const int simcase)
+void RunProblem(string& filenameBase, const int simcase)
 {
     auto start_time = std::chrono::steady_clock::now();
     
     bool isRefineMesh = false;
     const bool isPostProc = true;
 	const bool isRunWithTranport = false;
-	int initVolForMergeMeshes = EInitVolumeMatForMHM;
+	int initVolForMergeMeshes = -1000000;
     
     // ----- Creating gmesh and data transfer -----
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
-    if (simcase == 0 || simcase == 9)
-        ReadMeshes(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 1)
-        ReadMeshesFlemischCase1(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 2){
-        ReadMeshesFlemischCase2(filenamefine,filenamecoarse,filenamejson, gmeshfine,gmeshcoarse);
-    }
-    else if (simcase == 3)
-        ReadMeshesFlemischCase3(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 4)
-        DebugStop();
-    else if (simcase == 5)
-        ReadMeshesFlemischCase4LF(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 6)
-        ReadMeshesFlemischCase4Debug(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 7)
-        ReadMeshesWell(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 8)
-        ReadMeshesIP3D(filenamefine,filenamecoarse,gmeshfine,gmeshcoarse);
-    else if (simcase == 10){
-		ReadMeshesDFN(filenamecoarse, gmeshfine, gmeshcoarse, initVolForMergeMeshes);
-//        ModifyBCsForCase3(gmeshfine);
-        
-    }
-    else
-        DebugStop();
+	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes);
+	if(simcase == 3) ModifyBCsForCase3(gmeshfine); // Generate the correct mesh and delete!
     
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
@@ -233,43 +160,10 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
 	sim_data.mTNumerics.m_mhm_mixed_Q = true;
 	sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
 
-    if (simcase == 1)
-        FillDataTransferCase1(sim_data);
-    else if (simcase == 2)
-        FillDataTransferCase2(sim_data);
-    else if (simcase == 3)
-        FillDataTransferCase3(sim_data);
-    else if (simcase == 0 || simcase == 9)
-        FillDataTransfer(sim_data);
-	else if (simcase == 10) {
-		FillDataTransferDFN(filenamecoarse, sim_data);
-	}
-	else
-		DebugStop();
+	FillDataTransferDFN(filenameBase, sim_data);
 	
-	if(simcase != 10){
-//		sim_data.mTFracProperties.m_matid = EFracture;
-		sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
-	}
-	else{
-		sim_data.mTFracIntersectProperties.m_IntersectionId = -1;
-	}
 	// Creating intersection GeoElBCs
 	fixPossibleMissingIntersections(sim_data,gmeshfine); // read about this in the function itself
-	
-    // ----- Printing gmesh -----
-#ifdef PZDEBUG
-    if (1) {
-        if(gmeshfine){
-            std::ofstream name("GeoMesh_Fine_Initial.vtk");
-            TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
-        }
-        if(gmeshcoarse){
-            std::ofstream name("GeoMesh_Coarse_Initial.vtk");
-            TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, name);
-        }
-    }
-#endif
     
     // ----- Setting gmesh -----
     // Code takes a fine and a coarse mesh to generate MHM data structure
@@ -286,6 +180,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
 		gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
 		gRefDBase.InitializeUniformRefPattern(EOned);
 		for (auto gel : gmeshfine->ElementVec()){
+			if(!gel) continue;
 			TPZManVector<TPZGeoEl*,10> children;
 			gel->Divide(children);
 		}
@@ -298,10 +193,6 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
         std::ofstream name2("GeoMesh_MHM_domain.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
 	}
-	
-
-    
-//    aspace.SetGeometry(gmeshfine);
     
     // ----- Creates the multiphysics compmesh -----
 	int order = 1;
@@ -491,25 +382,6 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	}
 	
 	// ------------------------ Reading fractures and fracture bcs matids ------------------------
-	
-	// Check if we should use the same PZ MatId for all the fractures.
-	// 2022 May: that is the only possible case for now
-//	int fracUniqueMatId = -10000, bcFracUniqueMatId = -10000;
-//	if(input.find("FractureUniqueMatIDForIMRS") != input.end()) {
-//		fracUniqueMatId = input["FractureUniqueMatIDForIMRS"];
-//	} else{
-//		DebugStop(); // For now all fractures have to have same matid
-//	}
-//	if(input.find("FractureBCUniqueMatIDForIMRS") != input.end()) {
-//		bcFracUniqueMatId = input["FractureBCUniqueMatIDForIMRS"];
-//	} else{
-//		DebugStop(); // For now all fractures have to have same matid
-//	}
-	
-    
-    //here modified
-//	sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = fracUniqueMatId;
-    // Mod
     int initfracmatid =input["FractureInitMatId"];
     int actualfracid=initfracmatid;
     for(auto& fracture : input["Fractures"]){
@@ -534,15 +406,10 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
         sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[fracprop.m_fracIntersectMatID] = std::make_pair(bcFracType_Dirichlet, zero_flux);
 
     }
-    //end mod
     
-	
-	
-	
 	// ------------------------ Setting all fracs perm ------------------------
 	REAL permLastFrac = -1.;
-	const REAL fracFactor = 0.1; // @TODO: NOTE: NS: What is this?????????
-    // @TODO: PHIL: I believe the is the fracture width
+	const REAL fracFactor = 0.1; // fracture width
     int fraccount=0;
 	for(auto& frac : input["Fractures"]){
 		if(frac.find("K") == frac.end()) DebugStop();
@@ -556,10 +423,6 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
     int FractureHybridPressureMatId = input["FractureHybridPressureMatId"];
     // this is the material id of the pressure between hybridized fluxes of intersecting fractures
     sim_data.mTGeometry.m_pressureMatId = FractureHybridPressureMatId;
-	// @TODO: PHIL: this datastructure needs to be adapted such that each fracture can have its own permeability
-    //here modified
-//	sim_data.mTFracProperties.m_Permeability = permLastFrac;
-
 	
 	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
 	const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
@@ -632,468 +495,6 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-
-void FillDataTransfer(TMRSDataTransfer& sim_data){
-    
-    int D_Type = 0;
-    int N_Type = 1;
-    int Mixed_Type = 2;
-    REAL zero_flux = 0.0, unit_pressure = 1.0, zero_pressure = 0.;
-    
-    // Domain material
-    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainNameAndMatId["Volume2"] = EVolume2;
-    
-    // Domain boundary conditions
-    
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,unit_pressure);
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,zero_pressure);
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EFaceBCPressure] = std::make_pair(D_Type,unit_pressure);
-            
-    // Fracture material
-    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
-    
-    // Fracture boundary conditions
-	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux] = std::make_pair(N_Type, zero_flux);
-    
-    // Simulation properties
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
-    
-    //FracAndReservoirProperties
-    REAL kappa=1.0;
-    int  id1=EVolume;
-    std::map<int, REAL> idPerm;
-    idPerm[id1]= kappa;
-    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
-    
-    // PostProcess controls
-    sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
-    sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
-    TPZStack<std::string,10> scalnames, vecnames;
-    vecnames.Push("Flux");
-    scalnames.Push("Pressure");
-    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
-        scalnames.Push("p_average");
-    }
-    sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
-    sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void FillDataTransferCase1(TMRSDataTransfer& sim_data){
-    
-    int D_Type = 0;
-    int N_Type = 1;
-    int Mixed_Type = 2;
-    REAL zero_flux = 0.0, inlet_pressure = 4.0, outlet_pressure = 1.0;
-    
-    // Domain material
-    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainNameAndMatId["Volume2"] = EVolume2;
-    
-    // Domain boundary conditions
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,inlet_pressure);
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,outlet_pressure);
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
-            
-    // Fracture material
-    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
-    // Fracture boundary conditions
-	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux] = std::make_pair(N_Type, zero_flux);
-	
-    sim_data.mTGeometry.mInterface_material_id = 100;
-    sim_data.mTGeometry.mInterface_material_idFracInf = 102;
-    sim_data.mTGeometry.mInterface_material_idFracSup = 101;
-    sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
-    sim_data.mTGeometry.mInterface_material_idFracBound = 104;
-    
-//    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(N_Type, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(D_Type, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[ENoflux] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracOutlet] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracInlet] = std::make_pair(5, 1.);
-    sim_data.mTGeometry.mInterface_material_idFracBound = EFracNoFlux;
-	
-	
-	
-    // Other properties
-    sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 1 ;
-    sim_data.mTNumerics.m_dt      = 1.0; //*day;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    std::vector<REAL> grav(3,0.0);
-    grav[1] = 0.0;//-9.8*(1.0e-6); // hor
-    sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
-    sim_data.mTNumerics.m_n_steps = 100;
-    sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
-    sim_data.mTNumerics.m_max_iter_sfi=1;
-    sim_data.mTNumerics.m_max_iter_mixed=1;
-    sim_data.mTNumerics.m_max_iter_transport=1;
-    
-    //FracAndReservoirProperties
-//    sim_data.mTFracProperties.m_Permeability = 1.0;
-//    REAL kappa1=1.0;
-//    REAL kappa2=1.0;
-    REAL fracPerm = 1.0e-3;
-    REAL kappa1=1.0e-5;
-	REAL kappa2=1.0e-6;
-    int id1 = EVolume2;
-    int id2 = EVolume;
-    std::map<int, REAL> idPerm;
-    idPerm[id1]= kappa1;
-    idPerm[id2]= kappa2;
-    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
-    
-    REAL resPorosity1 = 0.2;
-    REAL resPorosity2 = 0.25;
-    REAL FracPorosity = 0.4;
-    REAL fracFactor = 0.1;
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale.resize(3);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[0] = std::make_tuple(EVolume,resPorosity1, 1.0);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[1] = std::make_tuple(EVolume2, resPorosity2,1.0);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[2] = std::make_tuple(EFracture, FracPorosity, fracFactor);
-    
-    TMRSDataTransfer::TFracProperties::FracProp fracprop;
-    fracprop.m_perm = fracPerm;
-    fracprop.m_width = fracFactor;
-    fracprop.m_fracbc = EFracNoFlux;
-    sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
-    
-    // PostProcess controls
-    sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
-    sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
-    TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
-    vecnames.Push("Flux");
-    scalnames.Push("Pressure");
-    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
-        scalnames.Push("p_average");
-    }
-    scalnamesTransport.Push("Sw");
-    scalnamesTransport.Push("So");
-    
-    sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
-    sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
-    sim_data.mTPostProcess.m_scalnamesTransport = scalnamesTransport;
-    
-    int n_steps = sim_data.mTNumerics.m_n_steps;
-    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
-    REAL dt = sim_data.mTNumerics.m_dt;
-    TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
-    int n_reporting_times =(n_steps)/(time/dt) + 1;
-    REAL r_time =0.0;
-    for (int i =1; i<= n_reporting_times; i++) {
-        r_time += dt*(time/dt);
-        reporting_times.push_back(r_time);
-    }
-    sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void FillDataTransferCase2(TMRSDataTransfer& sim_data){
-    
-    int D_Type = 0;
-    int N_Type = 1;
-    int Mixed_Type = 2;
-    REAL zero_flux = 0.0, inlet_pressure = 1.0, outlet_flux = -1.0;
-    
-    // Domain material
-    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainNameAndMatId["Volume2"] = EVolume2;
-    
-    // Domain boundary conditions
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,inlet_pressure);
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(N_Type,outlet_flux);
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
-            
-    // Fracture material
-    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
-    sim_data.mTGeometry.mDomainFracIntersectionNameAndMatId["Intersection"] = EIntersection;
-	
-    // Fracture boundary conditions
-	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux] = std::make_pair(N_Type, zero_flux);
-    
-    sim_data.mTGeometry.mInterface_material_id = 100;
-    sim_data.mTGeometry.mInterface_material_idFracInf = 101;
-    sim_data.mTGeometry.mInterface_material_idFracSup = 102;
-    sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
-    sim_data.mTGeometry.mInterface_material_idFracBound = 104;
-    
-    sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(D_Type, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(N_Type, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[ENoflux] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFaceBCPressure] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracNoFlux] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracInlet] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracOutlet] = std::make_pair(5, 1.);
-    sim_data.mTGeometry.mInterface_material_idFracBound = 104;
-    
-    // Other properties
-    sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 1 ;
-    sim_data.mTNumerics.m_dt      = 1.0; //*day;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    std::vector<REAL> grav(3,0.0);
-    grav[1] = 0.0;//-9.8*(1.0e-6); // hor
-    sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
-    sim_data.mTNumerics.m_n_steps = 100;
-    sim_data.mTNumerics.m_dt      = 0.25;//*day;
-    sim_data.mTNumerics.m_max_iter_sfi=1;
-    sim_data.mTNumerics.m_max_iter_mixed=1;
-    sim_data.mTNumerics.m_max_iter_transport=1;
-    
-    //FracAndReservoirProperties
-    // There are two cases, one with very condutive fracture (1e4) and other with very NON conductive fracture (1e-4)
-    REAL fracPerm = 1.e4;
-//	sim_data.mTFracProperties.m_Permeability = 1.e-4;
-    REAL kappa1=1.0;
-    REAL kappa2=0.1;
-    int id1 = EVolume;
-    int id2 = EVolume2;
-    std::map<int, REAL> idPerm;
-    idPerm[id1]= kappa1;
-    idPerm[id2]= kappa2;
-    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
-  
-    REAL resPorosity = 0.2;
-    REAL fracPorosity = 0.1;
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale.resize(4);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[0] = std::make_tuple(EVolume, resPorosity,1.0);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[1] = std::make_tuple(EVolume2, resPorosity,1.0);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[2] = std::make_tuple(EFracture, fracPorosity, 0.2);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[3] = std::make_tuple(EIntersection, fracPorosity, 0.2*0.2);
-    
-    TMRSDataTransfer::TFracProperties::FracProp fracprop;
-    fracprop.m_perm = fracPerm;
-    fracprop.m_width = 0.2;
-    fracprop.m_fracbc = EFracNoFlux;
-    sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
-    
-    // PostProcess controls
-    sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
-    sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
-    TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
-    vecnames.Push("Flux");
-    scalnames.Push("Pressure");
-    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
-        scalnames.Push("p_average");
-    }
-    scalnamesTransport.Push("Sw");
-    scalnamesTransport.Push("So");
-    
-    sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
-    sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
-    sim_data.mTPostProcess.m_scalnamesTransport =scalnamesTransport;
-    
-    int n_steps = sim_data.mTNumerics.m_n_steps;
-    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
-    REAL dt = sim_data.mTNumerics.m_dt;
-    TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
-    int n_reporting_times =(n_steps)/(time/dt) + 1;
-    REAL r_time =0.0;
-    for (int i =1; i<= n_reporting_times; i++) {
-        r_time += dt*(time/dt);
-        reporting_times.push_back(r_time);
-    }
-    sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void FillDataTransferCase3(TMRSDataTransfer& sim_data){
-    
-    int D_Type = 0;
-    int N_Type = 1;
-    int Mixed_Type = 2;
-    REAL zero_flux = 0.0, outlet_pressure = 0.0, inlet_flux = -1.0;
-    
-    // Domain material
-    sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
-    
-    // Domain boundary conditions
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(N_Type,inlet_flux);
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,outlet_pressure);
-	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
-            
-    // Fracture material
-    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
-    sim_data.mTGeometry.mDomainFracIntersectionNameAndMatId["Intersection"] = EIntersection;
-    
-    // Fracture boundary conditions
-	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux] = std::make_pair(N_Type, zero_flux);
-	
-    sim_data.mTGeometry.mInterface_material_id = 100;
-    sim_data.mTGeometry.mInterface_material_idFracInf = 101;
-    sim_data.mTGeometry.mInterface_material_idFracSup = 102;
-    sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
-    sim_data.mTGeometry.mInterface_material_idFracBound = 104;
-    
-//    sim_data.mTFracIntersectProperties.m_IntersectionId = EPLossAtIntersect;
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(N_Type, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(D_Type, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[ENoflux] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracOutlet] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracInlet] = std::make_pair(5, 1.);
-	sim_data.mTGeometry.mInterface_material_idFracBound = EFracNoFlux;
-	    
-    // Other properties
-    sim_data.mTGeometry.mSkeletonDiv = 0;
-    sim_data.mTNumerics.m_sfi_tol = 0.0001;
-    sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 1 ;
-    sim_data.mTNumerics.m_dt      = 1.0; //*day;
-    sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-    std::vector<REAL> grav(3,0.0);
-    grav[1] = 0.0;//-9.8*(1.0e-6); // hor
-    sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
-    sim_data.mTNumerics.m_n_steps = 100;
-    sim_data.mTNumerics.m_dt      = 0.01;//*day;
-    sim_data.mTNumerics.m_max_iter_sfi=1;
-    sim_data.mTNumerics.m_max_iter_mixed=1;
-    sim_data.mTNumerics.m_max_iter_transport=1;
-    
-    //FracAndReservoirProperties
-    // There are two cases, one with very condutive fracture (1e4) and other with very NON conductive fracture (1e-4)
-    REAL fracPerm = 1.e4;
-//    sim_data.mTFracProperties.m_Permeability = 1.e-4;
-//    REAL kappa1=1.0;
-//    REAL kappa2=1.0;
-    REAL kappa1=1.0;
-    int id1 = EVolume;
-    std::map<int, REAL> idPerm;
-    idPerm[id1]= kappa1;
-    sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
-    
-    REAL resPorosity = 0.2;
-    REAL fracPorosity = 0.2;
-    REAL fracLength = 0.1;
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale.resize(4);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[0] = std::make_tuple(EVolume, resPorosity,1.0);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[2] = std::make_tuple(EFracture, fracPorosity, fracLength);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[3] = std::make_tuple(EIntersection, fracPorosity, fracLength*fracLength);
-    
-    TMRSDataTransfer::TFracProperties::FracProp fracprop;
-    fracprop.m_perm = fracPerm;
-    fracprop.m_width = fracLength;
-    fracprop.m_fracbc = EFracNoFlux;
-    sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
-    
-    // PostProcess controls
-    sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
-    sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
-    TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
-    vecnames.Push("Flux");
-    scalnames.Push("Pressure");
-    if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
-        scalnames.Push("g_average");
-        scalnames.Push("p_average");
-    }
-    scalnamesTransport.Push("Sw");
-    scalnamesTransport.Push("So");
-    
-    sim_data.mTPostProcess.m_vecnamesDarcy = vecnames;
-    sim_data.mTPostProcess.m_scalnamesDarcy = scalnames;
-    sim_data.mTPostProcess.m_scalnamesTransport =scalnamesTransport;
-    
-    int n_steps = sim_data.mTNumerics.m_n_steps;
-    sim_data.mTPostProcess.m_file_time_step = sim_data.mTNumerics.m_dt;
-    REAL dt = sim_data.mTNumerics.m_dt;
-    TPZStack<REAL,100> reporting_times;
-    REAL time = sim_data.mTPostProcess.m_file_time_step;
-    int n_reporting_times =(n_steps)/(time/dt) + 1;
-    REAL r_time =0.0;
-    for (int i =1; i<= n_reporting_times; i++) {
-        r_time += dt*(time/dt);
-        reporting_times.push_back(r_time);
-    }
-    sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void ReadMeshes(string& filenameFine, string& filenameCoarse,
-                TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse){
-    
-    // ===================> Coarse mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
-    
-    // Domain
-    std::string volbase = "c";
-    for (int ivol = 1; ivol <= 4; ivol++) { // How to set this maximum?
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagCoarse[2]["bc1"] = EFaceBCPressure;
-        
-    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
-    
-    
-    // ===================> Fine mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
-            
-    // Domain
-    for (int ivol = 1; ivol <= 4; ivol++) {
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-1);
-//        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
-    
-    // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture12"] = EFracture;
-    
-    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
-    dim_name_and_physical_tagFine[2]["Fracture11"] = EFracture;
-
-    // Fractures BCs
-    dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracNoFlux;
-    dim_name_and_physical_tagFine[1]["BCfrac1"] = EFracNoFlux;
-    
-    // Intersections
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection;
-            
-    gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine){
             
     // Creating gmsh reader
@@ -1118,7 +519,7 @@ void MapFractureIntersection(const std::string &filenameBase, std::map<std::stri
     TPZGmshReader  Geometry;
     std::string filename = filenameBase + "_fine.msh";
     std::ifstream input(filename);
-    Geometry.ReadPhysicalProperties4(input);
+    Geometry.ReadPhysicalProperties4(input); // There are some automatic associations that are not used. So dont worry if the code alerts about it
     auto physicaltags = Geometry.GetDimPhysicalTagName();
     // loop over all physical tags of dimension 1
     const std::string begins("fracIntersection");
@@ -1199,27 +600,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     }
 	// ===================> Fine mesh <=======================
 	// Note that boundary elements have been added previously to the set dim_name_and_physical_tagFine
-		
-	// Check if we should use the same PZ MatId for all the fractures.
-	// 2022 May: that is the only possible case for now
-//	int fracUniqueMatId = -10000, bcFracUniqueMatId = -10000;
-//	if(input.find("FractureUniqueMatIDForIMRS") != input.end()) {
-//		fracUniqueMatId = input["FractureUniqueMatIDForIMRS"];
-//		const bool is_in = allmatids.find(fracUniqueMatId) != allmatids.end();
-//		if(is_in) DebugStop();
-//		allmatids.insert(fracUniqueMatId);
-//	} else{
-//		DebugStop(); // For now all fractures have to have same matid
-//	}
-//	if(input.find("FractureBCUniqueMatIDForIMRS") != input.end()) {
-//		bcFracUniqueMatId = input["FractureBCUniqueMatIDForIMRS"];
-//		const bool is_in = allmatids.find(bcFracUniqueMatId) != allmatids.end();
-//		if(is_in) DebugStop();
-//		allmatids.insert(bcFracUniqueMatId);
-//	} else{
-//		DebugStop(); // For now all fractures have to have same matid
-//	}
-	
+
 	if(input.find("FractureInitMatId") == input.end()) DebugStop();
 	const int fracInitMatId = input["FractureInitMatId"];
     const int fracinc = 5;
@@ -1273,346 +654,122 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     
 	gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
 
-    /// for each intersection element create an intersection element for each fracture specifically
-    int64_t nelem = gmeshfine->NElements();
-    for(int64_t el = 0; el<nelem; el++)
-    {
-        TPZGeoEl *gel = gmeshfine->Element(el);
-        if(!gel) continue;
-        int matid = gel->MaterialId();
-        auto it = matidtoFractures.find(matid);
-        if(it != matidtoFractures.end())
-        {
-            if(gel->Dimension() == 3) DebugStop();
-            TPZGeoElSide gelside(gel);
-            int frac1 = it->second.first;
-            int matid1 = fracInitMatId + frac1*fracinc + 2;
-            int frac1bcid = fracInitMatId + frac1*fracinc + 1;
-            auto frac1bc = gelside.HasNeighbour(frac1bcid);
-            if(frac1bc)
-            {
-                frac1bc.Element()->SetMaterialId(matid1);
-            }
-            else
-            {
-                TPZGeoElBC(gelside,matid1);
-            }
-            int frac2 = it->second.second;
-            int matid2 = fracInitMatId + frac2*fracinc + 2;
-            int frac2bcid = fracInitMatId + frac2*fracinc + 1;
-            auto frac2bc = gelside.HasNeighbour(frac2bcid);
-            if(frac2bc)
-            {
-                frac2bc.Element()->SetMaterialId(matid2);
-            }
-            else
-            {
-                TPZGeoElBC(gelside,matid2);
-            }
-            // create the geometric element for receiving the hybridized pressure element
-            auto fracintersect = gelside.HasNeighbour(FractureHybridPressureMatId);
-            if(!fracintersect)
-            {
-                TPZGeoElBC(gelside,FractureHybridPressureMatId);
-            }
-        }
-    }
+    // for each intersection element create an intersection element for each fracture specifically
+	CreateIntersectionElementForEachFrac(gmeshfine,matidtoFractures,fracInitMatId,fracinc,FractureHybridPressureMatId);
 }
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-
-void ReadMeshesFlemischCase1(string& filenameFine, string& filenameCoarse,
-                             TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
-    
-    // ===================> Coarse mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
-    
-    // Domain
-    std::string volbase = "c";
-    for (int ivol = 33; ivol <= 36; ivol++) { // How to set this maximum?
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume2;
-    }
-    for (int ivol = 37; ivol <= 44; ivol++) { // How to set this maximum?
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
-    }
-
-    
-    // Domain BC
-    dim_name_and_physical_tagCoarse[2]["bc4"] = EInlet;
-    dim_name_and_physical_tagCoarse[2]["bc5"] = EOutlet;
-    dim_name_and_physical_tagCoarse[2]["bc6"] = ENoflux;
-        
-    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
-    
-    
-    // ===================> Fine mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
-            
-    // Domain
-    for (int ivol = 33; ivol <= 44; ivol++) {
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-33);
-//        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagFine[2]["bc4"] = EInlet;
-    dim_name_and_physical_tagFine[2]["bc5"] = EOutlet;
-    dim_name_and_physical_tagFine[2]["bc6"] = ENoflux;
-     
-    // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
-    
-    // Fractures BCs
-    dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracNoFlux;
-    
-    // Intersections
-    // No intersections in this case!
-            
-    gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
-    
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void ReadMeshesFlemischCase2(string& filenameFine, string& filenameCoarse, const string &filenamejson,
-                             TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
-    
-    // ===================> Coarse mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
-    TPZGmshReader readcoarse;
-    std::ifstream filecoarse(filenameCoarse);
-    readcoarse.ReadPhysicalProperties4(filecoarse);
-    // Domain
-    // @TODO  I dont understand, why cant the coarse element index be an indicator of the subdomain. Isnt that the purpose of the coarse mesh?
-    // the material of the coarse mesh should be the material that will be applied to the fine mesh
-    using json = nlohmann::json;
-
-    json input;
-    std::ifstream filejson(filenamejson);
-    // file >> input;
-    input = json::parse(filejson,nullptr,true,true); // to ignore comments in json file
-
-    auto &domains = input["Domains"];
-    if(domains.find("vol1") != domains.end())
-    {
-        std::cout << "found vol1 \n";
-    }
-    else
-    {
-        std::cout << "did not find vol1\n";
-    }
-    std::string volbase = "c";
-    for (int ivol = 1; ivol <= 512; ivol++) { // How to set this maximum?
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagCoarse[2]["bc1"] = EFaceBCPressure;
-        
-    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
-    ModifyPermeabilityForCase2(gmeshcoarse);
-        
-    // ===================> Fine mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
-            
-    // Domain
-    for (int ivol = 1; ivol <= 512; ivol++) {
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-1);
-//        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
-     
-    // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
-    
-    // Fractures BCs
-    for (int i = 0; i <= 8; i++) {
-        string bcfrac = "BCfrac" + to_string(i);
-        dim_name_and_physical_tagFine[1][bcfrac] = EFracNoFlux;
-    }
-        
-    // Intersections
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_2"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_4"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_5"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_8"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_2"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_3"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_5"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_6"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_8"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_2_3"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_2_4"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_2_6"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_2_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_3_4"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_3_5"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_3_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_3_8"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_4_5"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_4_6"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_4_8"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_5_6"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_5_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_6_7"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_6_8"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_7_8"] = EIntersection;
-            
-    gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
-    // @TODO Nao podemos colocar essas condicoes de contorno no arquivo gmsh?
-    ModifyBCsForCase2(gmeshfine);
-    
+void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
+										  std::map<int,std::pair<int,int>>& matidtoFractures,
+										  const int fracInitMatId, const int fracinc, const int FractureHybridPressureMatId) {
+	int64_t nelem = gmeshfine->NElements();
+	for(int64_t el = 0; el<nelem; el++)
+	{
+		TPZGeoEl *gel = gmeshfine->Element(el);
+		if(!gel) continue;
+		int matid = gel->MaterialId();
+		auto it = matidtoFractures.find(matid);
+		if(it != matidtoFractures.end())
+		{
+			if(gel->Dimension() == 3) DebugStop();
+			TPZGeoElSide gelside(gel);
+			int frac1 = it->second.first;
+			int matid1 = fracInitMatId + frac1*fracinc + 2;
+			int frac1bcid = fracInitMatId + frac1*fracinc + 1;
+			auto frac1bc = gelside.HasNeighbour(frac1bcid);
+			if(frac1bc)
+			{
+				frac1bc.Element()->SetMaterialId(matid1);
+			}
+			else
+			{
+				TPZGeoElBC(gelside,matid1);
+			}
+			int frac2 = it->second.second;
+			int matid2 = fracInitMatId + frac2*fracinc + 2;
+			int frac2bcid = fracInitMatId + frac2*fracinc + 1;
+			auto frac2bc = gelside.HasNeighbour(frac2bcid);
+			if(frac2bc)
+			{
+				frac2bc.Element()->SetMaterialId(matid2);
+			}
+			else
+			{
+				TPZGeoElBC(gelside,matid2);
+			}
+			// create the geometric element for receiving the hybridized pressure element
+			auto fracintersect = gelside.HasNeighbour(FractureHybridPressureMatId);
+			if(!fracintersect)
+			{
+				TPZGeoElBC(gelside,FractureHybridPressureMatId);
+			}
+		}
+	}
 }
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
 void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh) {
-    for (auto gel: gmesh->ElementVec()) {
-        if (!gel) continue;
-        if (gel->MaterialId() != EVolume) continue; // only matrix
-        
-        TPZVec<REAL> masscent(3,0.0), xcenter(3,0.0);
-        gel->CenterPoint(gel->NSides()-1, masscent);
-        gel->X(masscent, xcenter);
-        
-        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-        if (x > 0.5 && y < 0.5)
-            gel->SetMaterialId(EVolume2);
-        
-        if (x > 0.75 && y > 0.5 && y < 0.75 && z > 0.5)
-            gel->SetMaterialId(EVolume2);
-        
-        if (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625 && z > 0.5 && z < 0.75)
-            gel->SetMaterialId(EVolume2);        
-    }
+	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
+//    for (auto gel: gmesh->ElementVec()) {
+//        if (!gel) continue;
+//        if (gel->MaterialId() != EVolume) continue; // only matrix
+//
+//        TPZVec<REAL> masscent(3,0.0), xcenter(3,0.0);
+//        gel->CenterPoint(gel->NSides()-1, masscent);
+//        gel->X(masscent, xcenter);
+//
+//        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+//        if (x > 0.5 && y < 0.5)
+//            gel->SetMaterialId(EVolume2);
+//
+//        if (x > 0.75 && y > 0.5 && y < 0.75 && z > 0.5)
+//            gel->SetMaterialId(EVolume2);
+//
+//        if (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625 && z > 0.5 && z < 0.75)
+//            gel->SetMaterialId(EVolume2);
+//    }
 }
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
 void ModifyBCsForCase2(TPZGeoMesh* gmesh) {
+	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
         
-    const REAL inletDomain = 0.25, outletDomain = 0.875;
-    const REAL zerotol = ZeroTolerance();
-    
-    for (auto gel: gmesh->ElementVec()) {
-        if (!gel) continue;
-        if (gel->MaterialId() != EFaceBCPressure) continue; // 2d faces on boundary only
-        
-        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
-        gel->CenterPoint(gel->NSides()-1, masscent);
-        gel->X(masscent, xcenter);
-        const bool isXzero = fabs(xcenter[0]) < zerotol, isYzero = fabs(xcenter[1]) < zerotol, isZzero = fabs(xcenter[2]) < zerotol;
-        const bool isXone = fabs(xcenter[0]-1.) < zerotol, isYone = fabs(xcenter[1]-1.) < zerotol, isZone = fabs(xcenter[2]-1.) < zerotol;
-
-        gel->SetMaterialId(ENoflux); // Default is no flux
-        // Setting inlet BCs
-        if(isXzero && (xcenter[1] < inletDomain && xcenter[2] < inletDomain))
-                gel->SetMaterialId(EOutlet);
-        if(isYzero && (xcenter[0] < inletDomain && xcenter[2] < inletDomain))
-                gel->SetMaterialId(EOutlet);
-        if(isZzero && (xcenter[0] < inletDomain && xcenter[1] < inletDomain))
-                gel->SetMaterialId(EOutlet);
-
-        // Setting outlet BCs
-        if(isXone && (xcenter[1] > outletDomain && xcenter[2] > outletDomain))
-                gel->SetMaterialId(EInlet);
-        if(isYone && (xcenter[0] > outletDomain && xcenter[2] > outletDomain))
-                gel->SetMaterialId(EInlet);
-        if(isZone && (xcenter[0] > outletDomain && xcenter[1] > outletDomain))
-                gel->SetMaterialId(EInlet);
-    }
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void ReadMeshesFlemischCase3(string& filenameFine, string& filenameCoarse,
-                             TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
-    
-    // ===================> Coarse mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
-    
-    // Domain
-    std::string volbase = "c";
-    const int initc = 229, endc = 444;
-    for (int ivol = initc; ivol <= endc; ivol++) { // How to set this maximum?
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    // bc4: No flux
-    // bc5: imposed flux = -1
-    // bc6: imposed pressure h=0
-    dim_name_and_physical_tagCoarse[2]["bc4"] = ENoflux;
-    dim_name_and_physical_tagCoarse[2]["bc5"] = EInlet;
-    dim_name_and_physical_tagCoarse[2]["bc6"] = EOutlet;
-        
-    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
-        
-    // ===================> Fine mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
-            
-    // Domain
-    for (int ivol = initc; ivol <= endc; ivol++) {
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-initc);
-//        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagFine[2]["bc4"] = ENoflux;
-    dim_name_and_physical_tagFine[2]["bc5"] = ENoflux;
-    dim_name_and_physical_tagFine[2]["bc6"] = ENoflux;
-     
-    // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
-    dim_name_and_physical_tagFine[2]["Fracture11"] = EFracture;
-    dim_name_and_physical_tagFine[2]["Fracture12"] = EFracture;
-    dim_name_and_physical_tagFine[2]["Fracture13"] = EFracture;
-    dim_name_and_physical_tagFine[2]["Fracture14"] = EFracture;
-    dim_name_and_physical_tagFine[2]["Fracture15"] = EFracture;
-    dim_name_and_physical_tagFine[2]["Fracture16"] = EFracture;
-    dim_name_and_physical_tagFine[2]["Fracture17"] = EFracture;
-    
-    // Fractures BCs
-    for (int i = 0; i <= 7; i++) {
-        string bcfrac = "BCfrac" + to_string(i);
-        dim_name_and_physical_tagFine[1][bcfrac] = EFracNoFlux;
-    }
-        
-    // Intersections
-//    dim_name_and_physical_tagFine[1]["fracIntersection_0_7"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_1_7"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_2_7"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_3_7"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_4_7"] = EIntersection;
+//    const REAL inletDomain = 0.25, outletDomain = 0.875;
+//    const REAL zerotol = ZeroTolerance();
 //
-//    dim_name_and_physical_tagFine[1]["fracIntersection_0_7"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_1_7"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_2_3"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_2_7"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_3_7"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_4_7"] = EIntersection;
-//    dim_name_and_physical_tagFine[1]["fracIntersection_5_7"] = EIntersection;
-    
-    gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
-    ModifyBCsForCase3(gmeshfine);
-    
+//    for (auto gel: gmesh->ElementVec()) {
+//        if (!gel) continue;
+//        if (gel->MaterialId() != EFaceBCPressure) continue; // 2d faces on boundary only
+//
+//        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+//        gel->CenterPoint(gel->NSides()-1, masscent);
+//        gel->X(masscent, xcenter);
+//        const bool isXzero = fabs(xcenter[0]) < zerotol, isYzero = fabs(xcenter[1]) < zerotol, isZzero = fabs(xcenter[2]) < zerotol;
+//        const bool isXone = fabs(xcenter[0]-1.) < zerotol, isYone = fabs(xcenter[1]-1.) < zerotol, isZone = fabs(xcenter[2]-1.) < zerotol;
+//
+//        gel->SetMaterialId(ENoflux); // Default is no flux
+//        // Setting inlet BCs
+//        if(isXzero && (xcenter[1] < inletDomain && xcenter[2] < inletDomain))
+//                gel->SetMaterialId(EOutlet);
+//        if(isYzero && (xcenter[0] < inletDomain && xcenter[2] < inletDomain))
+//                gel->SetMaterialId(EOutlet);
+//        if(isZzero && (xcenter[0] < inletDomain && xcenter[1] < inletDomain))
+//                gel->SetMaterialId(EOutlet);
+//
+//        // Setting outlet BCs
+//        if(isXone && (xcenter[1] > outletDomain && xcenter[2] > outletDomain))
+//                gel->SetMaterialId(EInlet);
+//        if(isYone && (xcenter[0] > outletDomain && xcenter[2] > outletDomain))
+//                gel->SetMaterialId(EInlet);
+//        if(isZone && (xcenter[0] > outletDomain && xcenter[1] > outletDomain))
+//                gel->SetMaterialId(EInlet);
+//    }
 }
 
 // ---------------------------------------------------------------------
@@ -1651,73 +808,8 @@ void ModifyBCsForCase3(TPZGeoMesh* gmesh) {
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void ReadMeshesFlemischCase4LF(string& filenameFine, string& filenameCoarse,
-                               TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
-    
-    // ===================> Coarse mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
-    
-    // Domain
-    std::string volbase = "c";
-    const int initc = 1, endc = 1000;
-    for (int ivol = initc; ivol <= endc; ivol++) { // How to set this maximum?
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagCoarse[2]["bc1"] = ENoflux;
-    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
-        
-    // ===================> Fine mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
-            
-    // Domain
-    for (int ivol = initc; ivol <= endc; ivol++) {
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-initc);
-//        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagFine[2]["bc1"] = ENoflux;
-     
-    // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
-    
-    // Fractures BCs
-    for (int i = 0; i <= 36; i++) {
-        string bcfrac = "BCfrac" + to_string(i);
-        dim_name_and_physical_tagFine[1][bcfrac] = EFracNoFlux;
-    }
-        
-    // Intersections
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_25"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_1_31"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_2_25"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_3_5" ] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_4_25"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_5_25"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_6_19"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_6_29"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_7_11"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_8_34"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_17_22"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_25_36"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_26_27"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_29_32"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_30_33"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_30_36"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_31_33"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_31_36"] = EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_34_35"] = EIntersection;
-
-    gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
-    ModifyBCsForCase4(gmeshfine);
-}
-
 void ModifyBCsForCase4(TPZGeoMesh* gmesh) {
-    
+	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
     const REAL zerotol = ZeroTolerance();
     
     for (auto gel: gmesh->ElementVec()) {
@@ -1746,193 +838,6 @@ void ModifyBCsForCase4(TPZGeoMesh* gmesh) {
         if(isXend && (y < 400. && z < 100.))
                 gel->SetMaterialId(EOutlet);
     }
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void ReadMeshesFlemischCase4Debug(string& filenameFine, string& filenameCoarse,
-                                  TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
-    
-    // ===================> Coarse mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
-    
-    // Domain
-    std::string volbase = "c";
-    const int initc = 1, endc = 1000;
-    for (int ivol = initc; ivol <= endc; ivol++) { // How to set this maximum?
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagCoarse[2]["bc1"] = EFaceBCPressure;
-    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
-        
-    // ===================> Fine mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
-            
-    // Domain
-    for (int ivol = initc; ivol <= endc; ivol++) {
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-initc);
-//        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
-     
-    // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
-    
-    // Fractures BCs
-    for (int i = 0; i <= 19; i++) {
-        string bcfrac = "BCfrac" + to_string(i);
-        dim_name_and_physical_tagFine[1][bcfrac] = EFracNoFlux;
-    }
-        
-    // Intersections
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_4_7"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_5_8"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_5_11"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_6_8"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_6_11"] =  EIntersection;
-    dim_name_and_physical_tagFine[1]["fracIntersection_9_10"] =  EIntersection;
-
-
-    gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
-    
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void ReadMeshesWell(string& filenameFine, string& filenameCoarse,
-                    TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse) {
-    
-    // ===================> Coarse mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
-    
-    // Domain
-    std::string volbase = "c";
-    const int initc = 1, endc = 6;
-    for (int ivol = initc; ivol <= endc; ivol++) { // How to set this maximum?
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagCoarse[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagCoarse[2]["bc1"] = EFaceBCPressure;
-    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
-        
-    // ===================> Fine mesh <=======================
-    TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
-            
-    // Domain
-    for (int ivol = initc; ivol <= endc; ivol++) {
-        std::string ivolstring = volbase + to_string(ivol);
-        dim_name_and_physical_tagFine[3][ivolstring] = EInitVolumeMatForMHM + (ivol-initc);
-//        dim_name_and_physical_tagFine[3][ivolstring] = EVolume;
-    }
-    
-    // Domain BC
-    dim_name_and_physical_tagFine[2]["bc1"] = EFaceBCPressure;
-     
-    // Fractures
-    dim_name_and_physical_tagFine[2]["Fracture12"] = EFracture;
-    dim_name_and_physical_tagFine[2]["Fracture13"] = EFracture;
-    
-    // Fractures BCs
-    for (int i = 0; i <= 1; i++) {
-        string bcfrac = "BCfrac" + to_string(i);
-        dim_name_and_physical_tagFine[1][bcfrac] = EFracNoFlux;
-    }
-        
-    // Intersections
-    // No intersections in this mesh
-
-    gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
-    
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void ReadMeshesIP3D(string& filenameFine, string& filenameCoarse,
-                    TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmesh) {
-    
-    string basemeshpath(FRACMESHES);
-    // ===================> Coarse mesh <=======================
-    gmesh = new TPZGeoMesh;
-    const int nnodes = 32 + 1;
-    gmesh->NodeVec().Resize(nnodes);
-    int id = 1;
-    std::ifstream read(basemeshpath + "/verificationMHMNoHybrid/ip3dmesh_nodes.txt");
-    string str;
-    REAL c1, c2, c3;
-    TPZManVector<REAL,3> coord(3,0.);
-    TPZGeoNode nodebog(id++,coord,*gmesh);
-    gmesh->NodeVec()[0] = nodebog;
-    int inod = 1;
-    read >> coord[0];
-    while (read) {
-        cout << "inod = " << inod << endl;
-        read >> coord[1];
-        read >> coord[2];
-        TPZGeoNode node(id++,coord,*gmesh);
-        gmesh->NodeVec()[inod] = node;
-        inod++;
-        read >> coord[0];
-    }
-    
-    int64_t index;
-    // ========> Outer cubes
-    const int outercubematid = 1;
-    TPZManVector<int64_t,8> cubeind = {17,1,5,20,18,3,7,19};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, outercubematid, index);
-    cubeind = {2,21,24,6,4,22,23,8};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, outercubematid, index);
-    cubeind = {3,7,31,32,4,8,30,29};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, outercubematid, index);
-    cubeind = {1,25,26,5,2,28,27,6};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, outercubematid, index);
-    
-    // ========> Inside cubes
-    const int innercubematid = 2;
-    cubeind = {5,7,3,1,13,15,11,9};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
-    cubeind = {5,6,8,7,13,14,16,15};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
-    cubeind = {6,8,4,2,14,16,12,10};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
-    cubeind = {4,3,1,2,12,11,9,10};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
-    cubeind = {6,5,1,2,14,13,9,10};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
-    cubeind = {8,7,3,4,16,15,11,12};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, innercubematid, index);
-
-    // ========> Cube well
-    const int wellcubematid = 10;
-    cubeind = {13,15,11,9,14,16,12,10};
-    gmesh->CreateGeoElement(MElementType::ECube, cubeind, wellcubematid, index);
-    
-    // ========> Prisms
-    const int prismmatid = 3;
-    TPZManVector<int64_t,6> prismind = {17,25,1,20,26,5};
-    gmesh->CreateGeoElement(MElementType::EPrisma, prismind, prismmatid, index);
-    prismind = {27,24,6,28,21,2};
-    gmesh->CreateGeoElement(MElementType::EPrisma, prismind, prismmatid, index);
-    prismind = {4,22,29,8,23,30};
-    gmesh->CreateGeoElement(MElementType::EPrisma, prismind, prismmatid, index);
-    prismind = {7,31,19,3,32,18};
-    gmesh->CreateGeoElement(MElementType::EPrisma, prismind, prismmatid, index);
-    
-    // just so it works...
-    gmeshfine = gmesh;
-    
-    // ===================> Fine mesh <=======================
 }
 
 // ---------------------------------------------------------------------
@@ -2037,8 +942,8 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
     else {
         cout << "\n====> Ok! No problematic intersections found" << endl;
     }
-        
-//    gmesh->BuildConnectivity();
+
+	// No need to buildConnectivity. It is already correct
 }
 
 // ---------------------------------------------------------------------

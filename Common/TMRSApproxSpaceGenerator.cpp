@@ -2700,8 +2700,6 @@ void TMRSApproxSpaceGenerator::SetLagrangeMultiplier4Spaces(TPZVec<TPZCompMesh *
 
 void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
          
-
-
 	TPZGeoMesh *gmesh = mGeometry;
 	const bool isMHM = mSimData.mTNumerics.m_mhm_mixed_Q;
 	
@@ -4239,13 +4237,10 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         }
     }
     
-    
-    
     std::map<int64_t,int64_t> submeshindices;
     TPZCompMeshTools::PutinSubmeshes(cmesh, ElementGroups, submeshindices, KeepOneLagrangian);
     
-    
-    std::cout << "After putting in substructures\n";
+//    std::cout << "After putting in substructures\n";
     //    fMHMtoSubCMesh = submeshindices;
     cmesh->ComputeNodElCon();
     {
@@ -4274,7 +4269,7 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     //    GroupandCondenseElements();
     //    GroupandCondenseElementsEigen();
     
-    std::cout << "Finished substructuring\n";
+    std::cout << "\n\t=======> Finished substructuring\n";
 }
 
 const bool TMRSApproxSpaceGenerator::isThereFracIntersection() const {
@@ -4846,7 +4841,9 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 		TPZVTKGeoMesh::PrintGMeshVTK(finemesh, out, mSubdomainIndexGel);
 	}
 	
+#ifdef PZDEBUG
 	CheckMeshIntegrity(finemesh);
+#endif
     
     cout << "\n---------------------- Finished MergeMeshes for MHM data structure ----------------------\n" << endl;
 }
@@ -5119,6 +5116,7 @@ void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompM
         }
     }
 	
+#ifdef PZDEBUG
 	const int64_t nsub = mSubdomainIndexGel.size();
 	for(int i = 0 ; i < nsub ; i++) {
 		const int macroindex = mSubdomainIndexGel[i];
@@ -5128,6 +5126,7 @@ void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompM
 		const int matid = gel->MaterialId();
 		cout << "Element index " << i << " | dim " << eldim << " | matid " << matid << " | domain " << macroindex << endl;
 	}
+#endif
 }
 
 // identify the domain indices of the interface elements
