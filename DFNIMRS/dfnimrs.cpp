@@ -150,12 +150,13 @@ int main(){
 
 //			filenameCoarse = basemeshpath + "/dfnimrs/fl_case1";
 //			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3";
+//			filenameCoarse = basemeshpath + "/dfnimrs/fl_case3_overlap";
 //			filenameCoarse = basemeshpath + "/dfnimrs/twoElCoarseNew";
 //			filenameCoarse = basemeshpath + "/dfnimrs/intersect";
 			
 			// NATHAN TO PHIL: Here are the cases to analyze overlap
-//			filenameCoarse = basemeshpath + "/dfnimrs/2parallel";
-			filenameCoarse = basemeshpath + "/dfnimrs/2paralleloverlap";
+			filenameCoarse = basemeshpath + "/dfnimrs/2parallel";
+//			filenameCoarse = basemeshpath + "/dfnimrs/2paralleloverlap";
 			
 			break;
 		default:
@@ -303,7 +304,7 @@ void RunProblem(string& filenamefine, string& filenamecoarse, const string &file
 //    aspace.SetGeometry(gmeshfine);
     
     // ----- Creates the multiphysics compmesh -----
-	    int order = 1;
+	int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
             
