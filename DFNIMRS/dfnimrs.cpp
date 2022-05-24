@@ -9,6 +9,8 @@
 #include <tpzgeoelrefpattern.h>
 #include "json.hpp"
 
+#include "DFNMesh.h"
+
 // ----- Namespaces -----
 using namespace std;
 // ----- End of namespaces -----
@@ -67,6 +69,7 @@ int main(){
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
 #endif
+	
     
     // 0: two elements, 1 frac, no intersection
     // 1: Flemisch case 1
