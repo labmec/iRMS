@@ -39,6 +39,12 @@ if(BUILD_UNITTESTING)
   enable_catch2()
 endif()
 
+option(USING_DFN "Whether the DFN library will be linked in" OFF)
+if(USING_DFN)
+    find_package(DFN REQUIRED HINTS "../../dfnResearch/dfnMesh_install/")
+endif()
+
+
 
 # ----- Adding subdirectory of iMRS library -----
 add_subdirectory(Common)

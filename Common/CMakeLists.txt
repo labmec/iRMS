@@ -35,6 +35,10 @@ if(USING_SUPERLU)
     target_link_libraries(iMRS_library PUBLIC ${SUPERLU_LIBRARIES})
 endif(USING_SUPERLU)
 
+# Links with dfn
+target_link_libraries(iMRS_library PUBLIC DFN::dfnlib)
+target_include_directories(iMRS_library PUBLIC ${DFN_INCLUDE_DIRS})
+
 # Includes the directories
 target_include_directories(iMRS_library PUBLIC ${PZ_INCLUDE_DIRS} 
     ${EIGEN3_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
