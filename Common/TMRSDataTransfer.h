@@ -17,6 +17,7 @@
 #include <tuple> // for tuple
 #include "TRSLinearInterpolator.h"
 
+#include "DFNPolygon.h"
 
 /// Object that stores all data required to set up a reservoir problem
 class TMRSDataTransfer : public TMRSSavable {
@@ -868,9 +869,21 @@ public:
 			REAL m_perm; // permeability of the fracture
 			REAL m_width; // fracture opening
 			REAL m_porosity; // porosity of the fracture
+            DFNPolygon m_polydata; // geometry of the fracture
+            
+            FracProp() : m_fracbc(0), m_fracIntersectMatID(0), m_perm(0.), m_width(0.), m_porosity(0.)
+            {
+                
+            }
+            
+            FracProp(const FracProp &copy) = default;
+            
+            FracProp &operator=(const FracProp &copy) = default;
+            
 		};
 		
 		/// Map <matid, FractureProperties>
+        /// index is the fracture material id
         std::map<int, FracProp> m_fracprops;
         
         /**
@@ -960,6 +973,8 @@ public:
     public:
         // material id of the intersection as given by the mesh generator
         int m_IntersectionId;
+        // material id for representing permeability between overlapping fractures
+        int m_FractureGlueId = -10000;
         // fracture ids corresponding to this intersection
         std::pair<int,int> fractureids;
         // fracture material ids corresponding to this intersection
@@ -986,26 +1001,11 @@ public:
         /**
          * @brief Copy constructor
          */
-        TFracIntersectProperties(const TFracIntersectProperties & other){
-            m_IntersectionId=other.m_IntersectionId;
-            m_IntersectionPressureLossId=other.m_IntersectionPressureLossId;
-            
-        }
+        TFracIntersectProperties(const TFracIntersectProperties & other) = default;
         /**
          * @brief Copy assignment operator
          */
-        TFracIntersectProperties & operator=(const TFracIntersectProperties &other){
-            
-            // check for self-assignment
-            if(&other == this){
-                return *this;
-            }
-            
-            m_IntersectionId=other.m_IntersectionId;
-            m_IntersectionPressureLossId=other.m_IntersectionPressureLossId;
-            
-            return *this;
-        }
+        TFracIntersectProperties & operator=(const TFracIntersectProperties &other) = default;
         
         bool operator==(const TFracIntersectProperties &other){
             
@@ -1016,7 +1016,8 @@ public:
             
             return
             m_IntersectionId==other.m_IntersectionId &&
-            m_IntersectionPressureLossId==other.m_IntersectionPressureLossId;
+            m_IntersectionPressureLossId==other.m_IntersectionPressureLossId &&
+            m_FractureGlueId == other.m_FractureGlueId;
             
         }
         
