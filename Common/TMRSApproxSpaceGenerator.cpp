@@ -391,6 +391,15 @@ void TMRSApproxSpaceGenerator::SplitConnectsAtInterface(TPZCompElSide& compside)
     compside.SplitConnect(compsideright);
 }
 
+// return the connect index of the element referenced by geoelside
+static int64_t GeoElSideConnectIndex(const TPZGeoElSide &gelside)
+{
+    TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(gelside.Element()->Reference());
+    if(!intel) DebugStop();
+    if(intel->NSideConnects(gelside.Side()) != 1) DebugStop();
+    return intel->SideConnectIndex(0, gelside.Side());
+}
+
 void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh){
     
     // ===> Create the fracture hdivcollapsed elements
@@ -543,7 +552,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         //if (matid != FractureMatId()) continue;
         if (!IsFracMatId(matid)) continue;
         int64_t index;
-        TPZInterpolationSpace* hdivcollapsed = nullptr;
+        TPZInterpolatedElement* hdivcollapsed = nullptr;
         if (gmeshdim == 2) {
             hdivcollapsed = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeLinear>* >(cel);
         }
@@ -561,7 +570,13 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         }
         
         int nconnects = hdivcollapsed->NConnects();
-        TPZGeoElSide gelside(gel,gel->NSides()-1);
+        // for overlapping fractures the bottom and top connects are initialized all at once
+        try {
+            auto bottomconnectindex = hdivcollapsed->ConnectIndex(nconnects);
+        } catch (...) {
+            continue;
+        }
+        TPZGeoElSide gelside(gel);
         TPZGeoElSide neigh = gelside.Neighbour();
         std::pair<TPZCompElSide,TPZCompElSide> leftright;
         std::pair<int,int> leftrightdomain;
@@ -595,6 +610,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
             }
             neigh++;
         }
+        // this would imply more than 2 3D elements linked to the fracture
         if(icon != 2) DebugStop();
         std::pair<TPZConnect,TPZConnect> cleftright = {cmesh->ConnectVec()[leftrightcindex.first],cmesh->ConnectVec()[leftrightcindex.second]};
         if(cleftright.first.HasDependency() && leftrightdomain.first == leftrightdomain.second) DebugStop();
@@ -625,8 +641,51 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         {
             DebugStop();
         }
-        hdivcollapsed->SetConnectIndex(nconnects, leftrightcindex.first);
-        hdivcollapsed->SetConnectIndex(nconnects+1, leftrightcindex.second);
+        int fracgluematid = mSimData.mTFracIntersectProperties.m_FractureGlueId;
+        if((fracgluematid != -10000) && gelside.HasNeighbour(fracgluematid))
+        {
+            // there are overlapping fracture elements, they have been sorted
+            TPZGeoElSide first3D(leftright.first.Reference());
+            TPZGeoElSide last3D(leftright.second.Reference());
+            int64_t bottomcindex = leftrightcindex.first;
+            neigh = first3D.Neighbour();
+            // create a new connect for the HDivBound elements
+            while(neigh != last3D)
+            {
+                TPZCompEl *cel = neigh.Element()->Reference();
+                int nc = cel->NConnects();
+                if(nc == 1)
+                {
+                    TPZConnect &c = cel->Connect(0);
+                    int64_t cindex = cmesh->AllocateNewConnect(c.NShape(), c.NState(), c.Order());
+                    cel->SetConnectIndex(0, cindex);
+                }
+                neigh++;
+            }
+            TPZGeoElSide prev = first3D;
+            neigh = prev.Neighbour();
+            TPZGeoElSide next = neigh.Neighbour();
+            // establish the connect indices for the HDivCollapsed elements
+            while(neigh != last3D)
+            {
+                TPZCompEl *cel = neigh.Element()->Reference();
+                int nc = cel->NConnects();
+                if(nc != 1)
+                {
+                    int64_t cindexprev = GeoElSideConnectIndex(prev);
+                    int64_t cindexnext = GeoElSideConnectIndex(next);
+                    cel->SetConnectIndex(nc, cindexprev);
+                    cel->SetConnectIndex(nc+1, cindexnext);
+                }
+                prev++;
+                neigh++;
+                next++;
+            }
+        } else
+        {
+            hdivcollapsed->SetConnectIndex(nconnects, leftrightcindex.first);
+            hdivcollapsed->SetConnectIndex(nconnects+1, leftrightcindex.second);
+        }
     }
     
     cmesh->ExpandSolution();
@@ -716,6 +775,12 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
     }
 #endif
     // ===> Creating fracture element
+    // properly order overlapping fracture elements
+    // create fracture glue elements between the fractures
+    OrderOverlappingFractures();
+    // create HDivBound elements corresponding to the fracture glue elements
+    _3dmatids.clear();
+    
     // split the volumetric elements in the flux mesh
     CreateFractureHDivCollapsedEl(cmesh);
     cmesh->CleanUpUnconnectedNodes();
@@ -756,6 +821,8 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     std::set<int> matids, bcids;
 //    bcids.insert(mSimData.mTGeometry.m_skeletonMatId);
     bcids.insert(mSimData.mTGeometry.m_skeletonMatId-1);
+    int gluematid = mSimData.mTFracIntersectProperties.m_FractureGlueId;
+    if(gluematid > 0) bcids.insert(gluematid);
     AddAtomicMaterials(dim,cmesh,matids,bcids);
 
 
@@ -1297,6 +1364,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagra
         else
         {
             cmesh->SetAllCreateFunctionsDiscontinuous();
+            cmesh->ApproxSpace().CreateDisconnectedElements(true);
         }
         cmesh->AutoBuild(matids);
         cmesh->InitializeBlock();
@@ -4774,13 +4842,15 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 	// TODO: Find a better way to set the mSubDomainIndex of the fracture and intersection elements
 	// For now, just to make it work, we are assigning the subdomaindex of the first
 	// higher dimensional element it finds.
+    // @TODO verify if the fracture elements havent been assigned a subdomain in another part of the code
 	for (auto gel: finemesh->ElementVec()) {
 		if(!gel || gel->HasSubElement()) continue;
 //		if(gel->MaterialId() != FractureMatId()) continue;
         if(!IsFracMatId(gel->MaterialId())) continue;
 		TPZGeoElSide gelside(gel);
+        int geldomain = mSubdomainIndexGel[gel->Index()];
 		TPZGeoElSide neigh = gelside.Neighbour();
-		while (neigh != gelside) {
+		while (neigh != gelside && geldomain == -1) {
 			TPZGeoEl* neighel = neigh.Element();
 			if (neighel->Dimension() == 3) {
 				const int64_t neighelindex = neighel->Index();
@@ -4788,6 +4858,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 				if (mSubdomainIndexGel[gel->Index()] != -1)
 					break; // this guy is already good
 				mSubdomainIndexGel[gel->Index()] = domainSubIndex;
+                geldomain = domainSubIndex;
 				break;
 			}
 			neigh++;
@@ -4799,10 +4870,10 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 	for (auto gel: finemesh->ElementVec()) {
 		if(!gel || gel->HasSubElement()) continue;
 		if(gel->MaterialId() != mSimData.mTFracIntersectProperties.m_IntersectionId) continue;
-		
+        auto geldomain = mSubdomainIndexGel[gel->Index()];
 		TPZGeoElSide gelside(gel);
 		TPZGeoElSide neigh = gelside.Neighbour();
-		while (neigh != gelside) {
+		while (neigh != gelside && geldomain == -1) {
 			TPZGeoEl* neighel = neigh.Element();
 //			if (neighel->Dimension() == 2 && neighel->MaterialId() == FractureMatId()) {
             if (neighel->Dimension() == 2 &&  IsFracMatId(neighel->MaterialId())) {
@@ -4811,6 +4882,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 				if (mSubdomainIndexGel[gel->Index()] != -1)
 					break; // this guy is already good
 				mSubdomainIndexGel[gel->Index()] = domainSubIndex;
+                geldomain = domainSubIndex;
 				break;
 			}
 			neigh++;
@@ -5179,4 +5251,139 @@ void TMRSApproxSpaceGenerator::SetInterfaceDomains(TPZStack<int64_t> &pressurein
 bool TMRSApproxSpaceGenerator::IsFracMatId(int matiD){
     return (mSimData.mTFracProperties.m_fracprops.find(matiD) != mSimData.mTFracProperties.m_fracprops.end());
 //    mSimData.mTFracProperties.m_fracprops(matiD);
+}
+
+// order the overlapping fracture elements such that they correspond to the order of the fracture planes
+// this will update the neighbour information between 3D elements and between fracture elements
+void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZGeoElSide> &fracvec)
+{
+    // compute the normal direction of the 3D element with positive side direction
+    TPZManVector<REAL,3> normal(3,0.);
+    int fracdomain = mSubdomainIndexGel[fracvec[0].Element()->Index()];
+    TPZGeoElSide first3D, last3D;
+    {
+        TPZGeoElSide gelside = fracvec[0];
+        for (auto neigh = gelside.Neighbour(); neigh != gelside; neigh++) {
+            if(neigh.Element()->Dimension() == 3)
+            {
+                int direction = neigh.Element()->NormalOrientation(neigh.Side());
+                if(direction == 1)
+                {
+                    TPZManVector<REAL,2> centerksi(2,0.);
+                    neigh.CenterPoint(centerksi);
+                    neigh.Normal(centerksi, normal);
+                    first3D = neigh;
+                }
+                else if(direction == -1)
+                {
+                    last3D = neigh;
+                }
+                else DebugStop();
+            }
+        }
+        if(!first3D || !last3D) DebugStop();
+    }
+    // order the TPZGeoElSide as a function of their position in the normal direction
+    std::multimap<int, TPZGeoElSide> ordered;
+    {
+        TPZManVector<REAL,3> xcenter(3);
+        TPZGeoElSide gelside = fracvec[0];
+        gelside.CenterX(xcenter);
+        for (int i=0; i<fracvec.size(); i++) {
+            int matid = fracvec[i].Element()->MaterialId();
+            auto &dfn = mSimData.mTFracProperties.m_fracprops[matid].m_polydata;
+            TPZManVector<REAL,3> projected(3);
+            projected = dfn.GetProjectedX(xcenter);
+            REAL dist = 0.;
+            for(int c=0; c<3; c++) dist += (projected[c]-xcenter[c])*normal[c];
+            ordered.insert({dist,fracvec[i]});
+        }
+    }
+    last3D.RemoveConnectivity();
+    for (int i = 0; i<fracvec.size(); i++) {
+        fracvec[i].RemoveConnectivity();
+    }
+    int gluematid = mSimData.mTFracIntersectProperties.m_FractureGlueId;
+    if(gluematid < 0) DebugStop();
+    TPZGeoElSide prev = first3D;
+    {
+        TPZCompEl *cel = first3D.Element()->Reference();
+        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(cel);
+        auto cindex = intel->SideConnectIndex(0, first3D.Side());
+        std::cout << "Side connect index first " << cindex << std::endl;
+    }
+    {
+        TPZCompEl *cel = last3D.Element()->Reference();
+        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(cel);
+        auto cindex = intel->SideConnectIndex(0, last3D.Side());
+        std::cout << "Side connect index last " << cindex << std::endl;
+    }
+    for (auto it = ordered.begin(); it != ordered.end(); it++) {
+        if(prev != first3D)
+        {
+            TPZGeoElBC gbc(prev,gluematid);
+            TPZGeoEl *glue = gbc.CreatedElement();
+            auto glueindex = glue->Index();
+            if(glueindex >= mSubdomainIndexGel.size())
+            {
+                mSubdomainIndexGel.Resize(glueindex+1, fracdomain);
+            }
+            mSubdomainIndexGel[glueindex] = fracdomain;
+            {
+                auto cel = fluxmesh->ApproxSpace().CreateCompEl(glue, *fluxmesh);
+                auto cindex = cel->ConnectIndex(0);
+                std::cout << "Glue connect index " << cindex << std::endl;
+            }
+            TPZGeoElSide gels(glue);
+            gels.SetConnectivity(it->second);
+            prev = it->second;
+        }
+        else {
+            prev.SetConnectivity(it->second);
+            prev = it->second;
+        }
+    }
+    prev.SetConnectivity(last3D);
+#ifdef PZDEBUG
+    {
+        int64_t index = first3D.Element()->Index();
+        std::cout << "el index " << first3D.Element()->Index() << " dim " << first3D.Element()->Dimension() <<
+        " matid " << first3D.Element()->MaterialId() <<
+        " domain " << this->mSubdomainIndexGel[index] << std::endl;
+        for(auto neigh = first3D.Neighbour(); neigh != first3D; neigh++)
+        {
+            int64_t index = neigh.Element()->Index();
+            std::cout << "el index " << neigh.Element()->Index() << " dim " << neigh.Element()->Dimension() <<
+            " matid " << neigh.Element()->MaterialId() <<
+            " domain " << this->mSubdomainIndexGel[index] << std::endl;
+        }
+    }
+#endif
+}
+
+// properly order overlapping fracture elements
+void TMRSApproxSpaceGenerator::OrderOverlappingFractures()
+{
+    TPZCompMesh *cmesh = mGeometry->Reference();
+    int64_t nel = mGeometry->NElements();
+    int fracgluematid = mSimData.mTFracIntersectProperties.m_FractureGlueId;
+    for (int64_t el = 0; el<nel; el++) {
+        TPZGeoEl *gel = mGeometry->Element(el);
+        if(!gel) continue;
+        int matid = gel->MaterialId();
+        if(!IsFracMatId(matid)) continue;
+        TPZGeoElSide gelside(gel);
+        // if fracglue elements were inserted, the fracture elements are ordered already
+        if(gelside.HasNeighbour(fracgluematid)) continue;
+        TPZStack<TPZGeoElSide> allfracs;
+        allfracs.Push(gelside);
+        for (auto neigh = gelside.Neighbour(); neigh != gelside; neigh++) {
+            if(IsFracMatId(neigh.Element()->MaterialId())) allfracs.Push(neigh);
+        }
+        if(allfracs.size() > 1)
+        {
+            // this will order the neighbour sequence starting with the 3D element, the fractures till the next 3D element
+            OrderFractures(cmesh, allfracs);
+        }
+    }
 }

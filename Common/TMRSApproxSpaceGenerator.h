@@ -46,6 +46,14 @@ private:
                                     std::set<int>& matids, std::set<int>& bcids,
                                     std::set<int>& matids_dim2, std::set<int>& bcids_dim2);
     
+    // order overlapping fracture elements such that their normal follows their position in the original fractures
+    void OrderOverlappingFractures();
+    
+    // order the overlapping fracture elements such that they correspond to the order of the fracture planes
+    // create HDivBound glue elements between the fractures
+    void OrderFractures(TPZCompMesh *cmesh, TPZVec<TPZGeoElSide> &fracvec);
+    
+    // create the H(div) spaces of the fracture elements
     void CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh);
     void SplitConnectsAtInterface(TPZCompElSide& compside);
     void AdjustOrientBoundaryEls(TPZCompMesh* cmesh, std::set<int>& buildmatids);
