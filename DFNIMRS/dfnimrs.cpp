@@ -9,6 +9,9 @@
 #include <tpzgeoelrefpattern.h>
 #include "json.hpp"
 
+// include dfn filereader
+#include "filereader.h"
+
 #include "DFNMesh.h"
 
 // ----- Namespaces -----
@@ -82,7 +85,7 @@ int main(){
     // 6: Two parallel square fractures very close, but no overlap
     // 7: Two parallel square fractures very close, WITH overlap
     // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
-	int simcase = 8;
+	int simcase = 7;
     string filenameBase;
     switch (simcase) {
         case 0:
@@ -402,6 +405,17 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		fracprop.m_width = 0.1; // @TODO: NEEDS TO BE PUT IN INPUT FILE
 		fracprop.m_fracbc =matid + 1;  // @TODO: NEEDS TO BE PUT IN INPUT FILE
         fracprop.m_fracIntersectMatID = matid+2;
+        
+        int npoints = fracture["Nodes"].size();
+        TPZFMatrix<REAL> polygonmatrix(3,npoints);
+        for(int j=0; j<npoints; j++){
+            for(int k=0; k<3; k++){
+                polygonmatrix(k,j) = (REAL)fracture["Nodes"][j][k];
+            }
+        }
+        fracprop.m_polydata.SetCornersX(polygonmatrix);
+
+        
         sim_data.mTFracProperties.m_fracprops[matid] = fracprop;
         
         const REAL zero_flux = 0.;
@@ -428,6 +442,13 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
     int FractureHybridPressureMatId = input["FractureHybridPressureMatId"];
     // this is the material id of the pressure between hybridized fluxes of intersecting fractures
     sim_data.mTGeometry.m_pressureMatId = FractureHybridPressureMatId;
+    
+    // the material id of the conductivity between fractures
+    if(input.find("FractureGlueMatId") != input.end())
+    {
+        int fractureGlueMatId = input["FractureGlueMatId"];
+        sim_data.mTFracIntersectProperties.m_FractureGlueId = fractureGlueMatId;
+    }
 	
 	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
 	const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
@@ -894,7 +915,7 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
                     bcEls.push_back(neigel);
                 }
             }
-            if(bcEls.size() > 1) DebugStop();
+//            if(bcEls.size() > 1) DebugStop();
             if (interEls.size() > 1) {
                 if (interEls.size() > 2) {
                     DebugStop(); // there are 3 intersection elements in the same place! Please check why...
