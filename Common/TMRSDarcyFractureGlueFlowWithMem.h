@@ -60,7 +60,7 @@ public:
     
     virtual TPZMaterial *NewMaterial() const override
     {
-        return new TMRSDarcyFractureFlowWithMem<TMEM>(*this);
+        return new TMRSDarcyFractureGlueFlowWithMem<TMEM>(*this);
     }
     
     /// Set data transfer object

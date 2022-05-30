@@ -22,6 +22,12 @@ public:
     /// Inver of absolute permeability
     TPZFNMatrix<9,REAL> m_kappa_inv;
     
+    /// normal permeability
+    REAL m_kappa_normal;
+    
+    /// Frac indexes
+    std::pair<int, int> m_fracindexes;
+    
     /// lagrangian porosity
     REAL m_phi;
     
@@ -146,7 +152,29 @@ public:
         m_flux = flux;
     }
     
+    /// Set the normal permeability
+    void SetNormalPermeability(REAL &normal_kappa)
+    {
+        m_kappa_normal = normal_kappa;
+    }
     
+    /// Get the normal permeability
+    REAL GetNormalPermeability()
+    {
+       return m_kappa_normal;
+    }
+    
+    /// Set the normal permeability
+    void SetFracindexes(std::pair<int,int> &fracindexes)
+    {
+        m_fracindexes = fracindexes;
+    }
+    
+    /// Get the normal permeability
+    std::pair<int,int> GetFracindexes()
+    {
+       return m_fracindexes;
+    }
     
 };
 

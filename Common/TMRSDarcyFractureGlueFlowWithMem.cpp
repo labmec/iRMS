@@ -95,7 +95,20 @@ void TMRSDarcyFractureGlueFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDa
 template <class TMEM>
 void TMRSDarcyFractureGlueFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
     
-    //
+    int qb = 0;
+    int pb = 1;
+ 
+    
+    TPZManVector<STATE,3> q  = datavec[qb].sol[0];
+    STATE p                  = datavec[pb].sol[0][0];
+    // Get the data at integrations points
+    long gp_index = datavec[qb].intGlobPtIndex;
+    if(gp_index < 0) DebugStop();
+    TMEM & memory = this->GetMemory().get()->operator[](gp_index);
+    REAL kappaNormal = memory.m_kappa_normal;
+    std::pair<int, int> fractureindexes = memory.m_fracindexes;
+    
+    
     
 }
 
