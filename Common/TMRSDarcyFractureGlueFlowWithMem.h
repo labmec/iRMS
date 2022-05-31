@@ -12,7 +12,7 @@
 #include "TPZBndCondT.h"
 #include "pzaxestools.h"
 #include "TMRSDataTransfer.h"
-#include "TMRSDarcyFlowWithMem.h"
+#include "Projection/TPZL2ProjectionCS.h"
 #include "TPZMaterialDataT.h"
 
 #include "TPZMatBase.h"
@@ -20,23 +20,73 @@
 #include "TPZMatErrorCombinedSpaces.h"
 #include "TPZMaterialDataT.h"
 #include "TPZMatWithMem.h"
-template <class TMEM>
-class TMRSDarcyFractureGlueFlowWithMem : public TMRSDarcyFlowWithMem<TMEM> {
-    using TBase =TMRSDarcyFlowWithMem<TMEM>;
+
+struct TGlueMem
+{
+    TPZManVector<REAL,3> m_xco;
+    std::pair<int,int> m_fracs;
+    REAL m_dist;
     
+    /// Class name
+    const std::string Name() const
+    {
+        return "TGlueMem";
+    }
+    
+    /// Write class attributes
+    virtual void Write(TPZStream &buf, int withclassid) const
+    {
+        DebugStop();
+    }
+    
+    /// Read class attributes
+    virtual void Read(TPZStream &buf, void *context)
+    {
+        DebugStop();
+    }
+    
+    /// Print class attributes
+    virtual void Print(std::ostream &out = std::cout) const
+    {
+        out << "xco = " << m_xco << " dist " << m_dist << " frac ids " << m_fracs.first << " " << m_fracs.second;
+    }
+    
+    /// Print class attributes
+    friend std::ostream & operator<<( std::ostream& out, const TGlueMem & memory ){
+        memory.Print(out);
+        return out;
+    }
+    
+    virtual int ClassId() const
+    {
+        return Hash("TGlueMem");
+
+    }
+
+
+};
+
+
+class TMRSDarcyFractureGlueFlowWithMem : public TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatWithMem<TGlueMem> >{
+    
+    using TBase = TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE>, TPZMatWithMem<TGlueMem> >;
+
+protected:
+    
+    REAL m_permeability;
 public:
     
     /// Default constructor
     TMRSDarcyFractureGlueFlowWithMem();
     
     /// Constructor based on a material id
-    TMRSDarcyFractureGlueFlowWithMem(int mat_id, int dimension);
+    TMRSDarcyFractureGlueFlowWithMem(int mat_id, REAL permeability);
     
     /// Constructor based on a TPBrMatMixedDarcy object
-    TMRSDarcyFractureGlueFlowWithMem(const TMRSDarcyFractureGlueFlowWithMem & other);
+    TMRSDarcyFractureGlueFlowWithMem(const TMRSDarcyFractureGlueFlowWithMem & other) = default;
     
     /// Constructor based on a TPBrMatMixedDarcy object
-    TMRSDarcyFractureGlueFlowWithMem &operator=(const TMRSDarcyFractureGlueFlowWithMem & other);
+    TMRSDarcyFractureGlueFlowWithMem &operator=(const TMRSDarcyFractureGlueFlowWithMem & other) = default;
     
     /// Default destructor
     ~TMRSDarcyFractureGlueFlowWithMem();
@@ -49,18 +99,20 @@ public:
     
     /// Returns the name of the material
     std::string Name() const override {
-        return "TMRSDarcyFlowWithMem";
+        return "TMRSDarcyFractureGlueFlowWithMem";
     }
     
-    /// Returns the integrable dimension of the material */
-    int Dimension() const override {return this->m_dimension;}
+    int Dimension() const override
+    {
+        return 2;
+    }
     
     /// Returns the number of state variables associated with the material
     int NStateVariables() const override {return 1;}
     
     virtual TPZMaterial *NewMaterial() const override
     {
-        return new TMRSDarcyFractureGlueFlowWithMem<TMEM>(*this);
+        return new TMRSDarcyFractureGlueFlowWithMem(*this);
     }
     
     /// Set data transfer object
