@@ -56,6 +56,10 @@ private:
     // create the H(div) spaces of the fracture elements
     void CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh);
     void SplitConnectsAtInterface(TPZCompElSide& compside);
+    
+    // initialize the integration point information for fracture glue
+    void InitializeMemoryFractureGlue();
+    
     void AdjustOrientBoundaryEls(TPZCompMesh* cmesh, std::set<int>& buildmatids);
     
     int fInitMatIdForMergeMeshes = -1000;

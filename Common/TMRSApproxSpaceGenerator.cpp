@@ -16,6 +16,7 @@
 #include "TPZDarcyMemory.h"
 #include "TPZDarcyFlowWithMem.h"
 #include "TMRSDarcyFractureFlowWithMem.h"
+#include "TMRSDarcyFractureGlueFlowWithMem.h"
 #include "TPZLagrangeMultiplierCS.h"
 #include "TPZCompElHDivCollapsed.h"
 #include "TMRSDarcyMemory.h"
@@ -27,6 +28,7 @@
 #include "TPZRefPattern.h"
 #include <pzshapequad.h>
 #include <pzshapelinear.h>
+#include "pzvec_extras.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -2681,6 +2683,11 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
 			MatsWitOuthmem.insert(bc_id);
 
 		}
+        // add the fracture glue material object
+        TMRSDarcyFractureGlueFlowWithMem *mat = new TMRSDarcyFractureGlueFlowWithMem(mSimData.mTFracIntersectProperties.m_FractureGlueId,
+                                                mSimData.mTFracIntersectProperties.m_FractureGluePerm);
+        mMixedOperator->InsertMaterialObject(mat);
+        MatsWithmem.insert(mSimData.mTFracIntersectProperties.m_FractureGlueId);
     }
     {
         // material of pressure lagrange multiplier
@@ -2831,6 +2838,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::set<int> matsWithMem, matsWithOutMem;
     AddMultiphysicsMaterialsToCompMesh(order,matsWithMem, matsWithOutMem);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec,matsWithMem, matsWithOutMem );
+    this->InitializeMemoryFractureGlue();
     {
         std::ofstream file("MixOpew.vtk");
         TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
@@ -5384,6 +5392,53 @@ void TMRSApproxSpaceGenerator::OrderOverlappingFractures()
         {
             // this will order the neighbour sequence starting with the 3D element, the fractures till the next 3D element
             OrderFractures(cmesh, allfracs);
+        }
+    }
+}
+
+// initialize the integration point information for fracture glue
+void TMRSApproxSpaceGenerator::InitializeMemoryFractureGlue()
+{
+    int64_t nel = mMixedOperator->NElements();
+    int matglueid = mSimData.mTFracIntersectProperties.m_FractureGlueId;
+    TMRSDarcyFractureGlueFlowWithMem *matglue = dynamic_cast<TMRSDarcyFractureGlueFlowWithMem *>(mMixedOperator->FindMaterial(matglueid));
+    if(!matglue) DebugStop();
+    std::shared_ptr<TPZAdmChunkVector<TGlueMem>> memvec = matglue->GetMemory();
+    for (int64_t el = 0; el<nel; el++) {
+        TPZCompEl *cel = mMixedOperator->Element(el);
+        TPZMaterial *mat = cel->Material();
+        if(mat == matglue)
+        {
+            TPZGeoEl *gel = cel->Reference();
+            TPZGeoElSide gelside(gel);
+            TPZGeoElSide prev(gelside);
+            prev--;
+            TPZGeoElSide next(gelside);
+            next++;
+            int prevmatid = prev.Element()->MaterialId();
+            int nextmatid = next.Element()->MaterialId();
+            auto &fracprev = mSimData.mTFracProperties.m_fracprops[prevmatid].m_polydata;
+            auto &fracnext = mSimData.mTFracProperties.m_fracprops[nextmatid].m_polydata;
+            TPZManVector<int64_t> memindices;
+            cel->GetMemoryIndices(memindices);
+            const TPZIntPoints &intpoints = cel->GetIntegrationRule();
+            int npoints = intpoints.NPoints();
+            if(memindices.size() != npoints) DebugStop();
+            for (int ip = 0; ip < npoints; ip++) {
+                REAL weight;
+                TPZManVector<REAL,3> pt(gel->Dimension());
+                intpoints.Point(ip, pt, weight);
+                TPZManVector<REAL,3> xco(3), xprev(3), xnext(3);
+                gel->X(pt, xco);
+                xprev = fracprev.GetProjectedX(xco);
+                xnext = fracnext.GetProjectedX(xco);
+                REAL distance = dist(xprev,xnext);
+                int64_t globindex = memindices[ip];
+                (*memvec)[globindex].m_xco = xco;
+                (*memvec)[globindex].m_dist = distance;
+                (*memvec)[globindex].m_fracs = {prevmatid,nextmatid};
+            }
+            
         }
     }
 }
