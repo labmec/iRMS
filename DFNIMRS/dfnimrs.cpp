@@ -448,6 +448,9 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
     {
         int fractureGlueMatId = input["FractureGlueMatId"];
         sim_data.mTFracIntersectProperties.m_FractureGlueId = fractureGlueMatId;
+        if(input.find("FractureGluePerm") == input.end()) DebugStop();
+        REAL fractureGluePerm = input["FractureGluePerm"];
+        sim_data.mTFracIntersectProperties.m_FractureGluePerm = fractureGluePerm;
     }
 	
 	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
