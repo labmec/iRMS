@@ -34,6 +34,7 @@
         }  
     ],        
 	"FractureGlueMatId": 298,
+	"FractureGluePerm" : 1.0, // permeability of the material between overlapping fractures
     "FractureHybridPressureMatId": 299,
     "FractureInitMatId": 300,
     "Fractures":[
