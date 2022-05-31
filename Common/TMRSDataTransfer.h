@@ -975,6 +975,9 @@ public:
         int m_IntersectionId;
         // material id for representing permeability between overlapping fractures
         int m_FractureGlueId = -10000;
+        // permeability of the porous media between the fractures
+        // maybe this value should come from the original problem description
+        REAL m_FractureGluePerm = 0.;
         // fracture ids corresponding to this intersection
         std::pair<int,int> fractureids;
         // fracture material ids corresponding to this intersection
@@ -1017,7 +1020,8 @@ public:
             return
             m_IntersectionId==other.m_IntersectionId &&
             m_IntersectionPressureLossId==other.m_IntersectionPressureLossId &&
-            m_FractureGlueId == other.m_FractureGlueId;
+            m_FractureGlueId == other.m_FractureGlueId &&
+            m_FractureGluePerm == other.m_FractureGluePerm;
             
         }
         
@@ -1025,13 +1029,14 @@ public:
         void Write(TPZStream &buf, int withclassid) const{ //ok
             buf.Write(&m_IntersectionId);
             buf.Write(&m_IntersectionPressureLossId);
+            DebugStop();
             
         }
         
         void Read(TPZStream &buf, void *context){ //ok
             buf.Read(&m_IntersectionId);
             buf.Read(&m_IntersectionPressureLossId);
-            
+            DebugStop();
         }
         
         virtual int ClassId() const {
