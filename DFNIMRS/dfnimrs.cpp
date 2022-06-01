@@ -34,7 +34,7 @@ void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh);
 void ModifyBCsForCase2(TPZGeoMesh* gmesh);
 void ModifyBCsForCase3(TPZGeoMesh* gmesh);
 void ModifyBCsForCase4(TPZGeoMesh* gmesh);
-
+void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh);
 // Mesh readers for plotting
 void ReadMeshesWell(string& filenameFine, string& filenameCoarse,
                     TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
@@ -201,6 +201,14 @@ void RunProblem(string& filenameBase, const int simcase)
         std::ofstream name2("GeoMesh_MHM_domain.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
 	}
+    
+    if(simcase == 6 || simcase == 7){
+        //linear pressure...
+        ModifyBCsFor2ParallelFractures(gmeshfine);
+        std::ofstream name3("ModBCs.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
+    }
+  
     
     // ----- Creates the multiphysics compmesh -----
 	int order = 1;
@@ -869,6 +877,28 @@ void ModifyBCsForCase4(TPZGeoMesh* gmesh) {
     }
 }
 
+void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh) {
+   
+    const REAL zerotol = ZeroTolerance();
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != 2) continue; // 2d faces on boundary only
+        
+        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        gel->X(masscent, xcenter);
+        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+        const bool isXinit = fabs(x) < zerotol;
+        const bool isXend = fabs(x-2) < zerotol;
+        
+        // Default is no flux already set previously
+        // Setting inlet BCs
+        if(isXinit)
+                gel->SetMaterialId(3);
+        if(isXend )
+                gel->SetMaterialId(4);
+    }
+}
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
