@@ -328,7 +328,7 @@ public:
     class TReservoirProperties : public TMRSSavable {
         
     public:
-        // associates with a material id the porosity and volume scale (volume scale is a constant, 1 for volume elements and lenght for fractures)
+        // associates with a material id the porosity and volume scale (volume scale is a constant, 1 for volume elements and lenght (maybe width?) for fractures)
         // the volume factor is the property of a fluid and the porosity is a property of the reservoir
         // why are these properties not defined by a map?
         std::vector<std::tuple<int,REAL, REAL>> mPorosityAndVolumeScale;

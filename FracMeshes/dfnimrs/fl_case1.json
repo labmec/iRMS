@@ -39,14 +39,14 @@
 		
 	],
 
-	"FractureInitMatId": 100,
-	"FractureUniqueMatIDForIMRS": 10,
-	"FractureBCUniqueMatIDForIMRS": 8,
+	"FractureHybridPressureMatId": 299,
+    "FractureInitMatId": 300,
     "Fractures": [
         {
             "Index": 0,
 			"K" : 1.0e-3,
 			"phi": 0.4,
+			"width": 0.1,
             "Limit": "Etruncated",
             "Nodes": [
                 [-20, -20, 92],

@@ -82,14 +82,13 @@ int main(){
     // 6: Two parallel square fractures very close, but no overlap
     // 7: Two parallel square fractures very close, WITH overlap
     // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
-	int simcase = 7;
+	int simcase = 3;
     string filenameBase;
     switch (simcase) {
         case 0:
 			filenameBase = basemeshpath + "/dfnimrs/twoElCoarseNew";
             break;
         case 1:
-			DebugStop(); // create me
 			filenameBase = basemeshpath + "/dfnimrs/fl_case1";
             break;
         case 2:
@@ -404,21 +403,25 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	
 	// ------------------------ Reading fractures and fracture bcs matids ------------------------
     int initfracmatid =input["FractureInitMatId"];
-    int actualfracid=initfracmatid;
+    int actualfracid = initfracmatid;
     for(auto& fracture : input["Fractures"]){
-        int i = fracture["Index"];
+        const int i = fracture["Index"];
         std::string name = "Fracture" + std::to_string(i);
-        int matid = actualfracid;
-        REAL permerm = fracture["K"];
+        const int matid = actualfracid;
+        const REAL permerm = fracture["K"];
+//		const REAL fracWidth = fracture["width"];
+		const REAL fracWidth = 0.1;
 		TMRSDataTransfer::TFracProperties::FracProp fracprop;
         sim_data.mTGeometry.mDomainFracNameAndMatId[name] = matid;
         actualfracid +=5;
 		
+		// Fracture properties
 		fracprop.m_perm = permerm;
-		fracprop.m_width = 0.1; // @TODO: NEEDS TO BE PUT IN INPUT FILE
-		fracprop.m_fracbc =matid + 1;  // @TODO: NEEDS TO BE PUT IN INPUT FILE
-        fracprop.m_fracIntersectMatID = matid+2;
+		fracprop.m_width = fracWidth;
+		fracprop.m_fracbc = matid + 1;
+        fracprop.m_fracIntersectMatID = matid + 2;
         
+		// Fracture polygon
         int npoints = fracture["Nodes"].size();
         TPZFMatrix<REAL> polygonmatrix(3,npoints);
         for(int j=0; j<npoints; j++){
@@ -427,31 +430,24 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
             }
         }
         fracprop.m_polydata.SetCornersX(polygonmatrix);
-
         
+		// Setting data structure
         sim_data.mTFracProperties.m_fracprops[matid] = fracprop;
         
-        const REAL zero_flux = 0.;
-        const int bcFracType_Neumann = 1;
+		// Fracture boundary conditions
+        const REAL zero_flux = 0., zero_pressure = 0.;
+        const int bcFracType_Dirichlet = 0, bcFracType_Neumann = 1;
         sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[fracprop.m_fracbc] = std::make_pair(bcFracType_Neumann, zero_flux);
-        const int bcFracType_Dirichlet = 0;
-        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[fracprop.m_fracIntersectMatID] = std::make_pair(bcFracType_Dirichlet, zero_flux);
+        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[fracprop.m_fracIntersectMatID] = std::make_pair(bcFracType_Dirichlet, zero_pressure);
+		
+		// Setting fracture porosity in reservoir properties data structure
+		// NOTE: Width is stored in two place for now. In mPorosityAndVolumeScale and in fracprop.m_width. Dangerous...
+		if(fracture.find("phi") == fracture.end()) DebugStop();
+		const REAL phifrac = fracture["phi"];
+		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(matid, phifrac, fracWidth);
 
     }
-    
-	// ------------------------ Setting all fracs perm ------------------------
-	REAL permLastFrac = -1.;
-	const REAL fracFactor = 0.1; // fracture width
-    int fraccount=0;
-	for(auto& frac : input["Fractures"]){
-		if(frac.find("K") == frac.end()) DebugStop();
-		if(frac.find("phi") == frac.end()) DebugStop();
-		permLastFrac = frac["K"];
-		const REAL phifrac = frac["phi"];
-        //here modificate
-		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(initfracmatid + 2*fraccount, phifrac, fracFactor);
-		fraccount++;
-	}
+	
     int FractureHybridPressureMatId = input["FractureHybridPressureMatId"];
     // this is the material id of the pressure between hybridized fluxes of intersecting fractures
     sim_data.mTGeometry.m_pressureMatId = FractureHybridPressureMatId;
