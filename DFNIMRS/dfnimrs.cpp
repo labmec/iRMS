@@ -72,9 +72,6 @@ int main(){
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
 #endif
-	
-	DFNMesh dfn;
-	dfn.Print();
     
     // 0: two elements, 1 frac, no intersection
     // 1: Flemisch case 1
