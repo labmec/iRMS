@@ -128,12 +128,15 @@ void RunProblem(string& filenameBase, const int simcase)
 {
     auto start_time = std::chrono::steady_clock::now();
     
-    bool isRefineMesh = false;
+	// ----- Simulation and printing parameters -----
+    const bool isRefineMesh = false;
     const bool isPostProc = true;
 	const bool isRunWithTranport = false;
-	int initVolForMergeMeshes = -1000000;
+	const bool isMHM = true;
+	const int n_threads = 8;
     
     // ----- Creating gmesh and data transfer -----
+	int initVolForMergeMeshes = -1000000;
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes);
 	if(simcase == 3 || simcase == 8) ModifyBCsForCase3(gmeshfine); // Generate the correct mesh and delete!
@@ -146,12 +149,6 @@ void RunProblem(string& filenameBase, const int simcase)
             TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
             std::ofstream name2("GeoMesh_Fine_Initial.txt");
             gmeshfine->Print(name2);
-//            int64_t nel = gmeshfine->NElements();
-//            for (int64_t el = 0; el<nel; el++) {
-//                TPZGeoEl *gel = gmeshfine->Element(el);
-//                if(!gel) continue;
-//                if(el != gel->Id()) std::cout << "el = " << el << " id = " << gel->Id() << std::endl;
-//            }
         }
         if(gmeshcoarse){
             std::ofstream name("GeoMesh_Coarse_Initial.vtk");
@@ -159,26 +156,28 @@ void RunProblem(string& filenameBase, const int simcase)
         }
     }
 #endif
-    TMRSDataTransfer sim_data;
+	
 	// ----- Approximation space -----
+    TMRSDataTransfer sim_data;
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-	sim_data.mTNumerics.m_mhm_mixed_Q = true;
+	sim_data.mTNumerics.m_mhm_mixed_Q = isMHM;
 	sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
 
+	// ----- Filling data transfer from json input file -----
 	FillDataTransferDFN(filenameBase, sim_data);
 	
-	// Creating intersection GeoElBCs
+	// ----- Creating intersection GeoElBCs -----
 	fixPossibleMissingIntersections(sim_data,gmeshfine); // read about this in the function itself
     
-    // ----- Setting gmesh -----
-    // Code takes a fine and a coarse mesh to generate MHM data structure
+	// ----- Creating approximation space creator and manager -----
+	// Code takes a fine and a coarse mesh to generate MHM data structure
     TMRSApproxSpaceGenerator aspace;
 	aspace.InitMatIdForMergeMeshes() = initVolForMergeMeshes;
-
 	
-	// ----- Setting the global data transfer -----
+	// ----- Setting the global data transfer in approximation space -----
 	aspace.SetDataTransfer(sim_data);
 
+	// ----- Refining mesh (always done in fine mesh) -----
 	if(isRefineMesh){
 		cout << "\n---------------------- Uniformly refining geomesh ----------------------" << endl;
 		gRefDBase.InitializeUniformRefPattern(ECube);
@@ -191,6 +190,8 @@ void RunProblem(string& filenameBase, const int simcase)
 		}
 	}
 	
+	// ----- Setting gmesh -----
+	// Code takes a fine and a coarse mesh to generate MHM data structure
 	aspace.SetGeometry(gmeshfine,gmeshcoarse);
 	{
 		std::ofstream name("GeoMesh_Fine_AfterMergeMeshes.vtk");
@@ -199,42 +200,45 @@ void RunProblem(string& filenameBase, const int simcase)
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
 	}
     
+	// ----- Changing BCs for some testing cases -----
     if(simcase == 6 || simcase == 7){
         //linear pressure...
         ModifyBCsFor2ParallelFractures(gmeshfine);
         std::ofstream name3("ModBCs.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
-  
     
     // ----- Creates the multiphysics compmesh -----
-	int order = 1;
+	const int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
             
     // ----- Analysis parameters -----
     bool must_opt_band_width_Q = true; // This makes solving very fast!
-    int n_threads = 8;
     bool UsingPzSparse = true; // Necessary to use multithread for now...
-    bool UsePardiso_Q = true;
+    bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-
     if((simcase == 1 ||simcase == 2 || simcase == 3) && isRunWithTranport){
 
+		// Create transport mesh. TODO: Create transport data structure without the need for a mesh
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
+#ifdef PZDEBUG
         std::string name("mesh");
         aspace.PrintGeometry(name);
         std::ofstream name2("TransportOperator.vtk");
         TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, name2);
+#endif
 
+		// Creating coupled pressure/flow and transport analysis
         TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
         sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
         sfi_analysis->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-        int n_steps = sim_data.mTNumerics.m_n_steps;
-        REAL dt = sim_data.mTNumerics.m_dt;
+        const int n_steps = sim_data.mTNumerics.m_n_steps;
+        const REAL dt = sim_data.mTNumerics.m_dt;
 
+		// Times to report solution
         TPZStack<REAL,100> reporting_times;
         reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
         REAL sim_time = 0.0;
@@ -242,32 +246,36 @@ void RunProblem(string& filenameBase, const int simcase)
         REAL current_report_time = reporting_times[pos];
         int npos = reporting_times.size();
 
+		// Initializing tranport solution
         sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         std::cout << "Mass report at time : " << 0.0 << std::endl;
         std::cout << "Mass integral :  " << initial_mass << std::endl;
         std::ofstream fileCilamce("IntegratedSat.txt");
         TPZFastCondensedElement::fSkipLoadSolution = false;
-        bool first=true;
 		const int typeToPPinit = 1; // 0: both, 1: p/flux, 2: saturation
 		const int typeToPPsteps = 2; // 0: both, 1: p/flux, 2: saturation
+		
+		// Looping over time steps
         for (int it = 1; it <= n_steps; it++) {
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
             sfi_analysis->RunTimeStep();
-            if(it==1){
+            if(it == 1){
                 sfi_analysis->PostProcessTimeStep(typeToPPinit);
             }
             mixed_operator->LoadSolution(mixed_operator->Solution());
+			
+			// Only post process based on reporting times
             if (sim_time >=  current_report_time) {
 				cout << "\n---------------------- SFI Step " << it << " ----------------------" << endl;
                 std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
                 mixed_operator->UpdatePreviousState(-1.);
                 sfi_analysis->PostProcessTimeStep(typeToPPsteps);
                 pos++;
-                current_report_time =reporting_times[pos];
-                REAL InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
-                fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
+                current_report_time = reporting_times[pos];
+                REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
+                fileCilamce << current_report_time/(86400*365) << ", " << InntMassFrac << std::endl;
 
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
@@ -279,14 +287,14 @@ void RunProblem(string& filenameBase, const int simcase)
         // -------------- Running problem --------------
         TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
         mixAnalisys->SetDataTransfer(&sim_data);
-        n_threads = 8;
         mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
         {
             std::ofstream out("mixedCMesh.txt");
             mixed_operator->Print(out);
         }
         mixAnalisys->Assemble();
-        if(0)
+		
+        if(0) // Jun 2022: Can we delete this???
         {
             int64_t nc = mixed_operator->NConnects();
             TPZFMatrix<STATE> &sol = mixed_operator->Solution();
