@@ -119,39 +119,8 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * g
 TPZGeoMesh * TMRSApproxSpaceGenerator::GetGeometry(){
     return mGeometry;
 }
-void TMRSApproxSpaceGenerator::LoadGeometry(std::string geometry_file){
-    
-    TPZGmshReader Geometry;
-    REAL l = 1.0;
-    Geometry.SetCharacteristiclength(l);
-    mGeometry = Geometry.GeometricGmshMesh(geometry_file);
-    Geometry.PrintPartitionSummary(std::cout);
-#ifdef PZDEBUG
-    if (!mGeometry)
-    {
-        std::cout << "The geometrical mesh was not generated." << std::endl;
-        DebugStop();
-    }
-#endif
-}
-void TMRSApproxSpaceGenerator::LoadGeometry(std::string geometry_file,
-                                            TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tag){
-    
-    TPZGmshReader Geometry;
-    REAL l = 1.0;
-    Geometry.SetCharacteristiclength(l);
-//    Geometry.SetFormatVersion("4.1");
-    Geometry.SetDimNamePhysical(dim_name_and_physical_tag);
-    mGeometry = Geometry.GeometricGmshMesh(geometry_file);
-    Geometry.PrintPartitionSummary(std::cout);
-#ifdef PZDEBUG
-    if (!mGeometry)
-    {
-        std::cout << "The geometrical mesh was not generated." << std::endl;
-        DebugStop();
-    }
-#endif
-}
+
+
 void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h, int nz, REAL w){
     
     TPZVec<int> nels(3,0);
@@ -1834,8 +1803,6 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
     active_approx_spaces[2] = 0;
     mMixedOperator->SetDimModel(dimension);
     
-//    DeleteBCsThatAreOnIntersect(mesh_vec[0]);
-    
     if (isThereFracIntersection()) {
         mHybridizer = new TPZHybridizeHDiv(mesh_vec);
         HybridizeIntersections(mesh_vec);
@@ -1855,27 +1822,6 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
     std::ofstream sout(file_name.str().c_str());
     mMixedOperator->Print(sout);
 #endif
-    
-}
-
-void TMRSApproxSpaceGenerator::DeleteBCsThatAreOnIntersect(TPZCompMesh* hdivcmesh) {
-    hdivcmesh->LoadReferences();
-    const int matIdIntersection = mSimData.mTFracIntersectProperties.m_IntersectionId;
-    for (auto cel : hdivcmesh->ElementVec()) {
-        if (!cel)
-            continue;
-        TPZGeoEl *gel = cel->Reference();
-        if (gel->MaterialId() != 5)
-            continue;
-        
-        TPZGeoElSide gelside(gel,gel->NSides()-1);
-        TPZGeoElSide neigh = gelside.HasNeighbour(matIdIntersection);
-        if (neigh) {
-            delete cel;
-        }
-    
-    }
-    hdivcmesh->InitializeBlock();
     
 }
 
@@ -2577,7 +2523,8 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappers()
 
 void TMRSApproxSpaceGenerator::BuildMixed4SpacesHybridized(int order) {
     
-    // Put in the backburner for now
+    // Jun 2022: The idea for this method was conceived but never implemented. At this date,
+	// we are using no hibridization between the 3d elements
     DebugStop();
     
     // ========================================================

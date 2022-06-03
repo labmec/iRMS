@@ -30,65 +30,110 @@
 
 class TPZAlgebraicDataTransfer;
 
+/// Approximation space generator and manager class for iMRS pressure/flow approximation
 class TMRSApproxSpaceGenerator : public TMRSSavable {
     
 private:
-        
+    
+	
+	/// Adds materials to multiphysics compmesh and sets which ones need memory
+	/// @param order order of approximation
+	/// @param MatsWithmem set of materials with memory
+	/// @param MatsWitOuthmem set of materials without memory
     void AddMultiphysicsMaterialsToCompMesh(const int order, std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem);
+	
+	
+	/// Returns the transport materials
+	/// @param MatsWithmem set of materials with memory
+	/// @param MatsWitOuthmem set of materials without memory
     void GetTransportMaterials(std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem);
-    // associate a lagrange multiplier level to the connects of the meshes
+    
+	/// Associates a lagrange multiplier level to the connects of the meshes
     void SetLagrangeMultiplier4Spaces(TPZVec<TPZCompMesh *>& mesh_vec);
+	
+	
+	/// Adds needed materials to the atomic meshes. Mostly creates TPZNullMaterials
+	/// @param dim dimension
+	/// @param cmesh compmesh to receive materials
+	/// @param matids material ids to be added in the atomic cmesh
+	/// @param bcmatids boundary material ids to be added to the cmesh
     void AddAtomicMaterials(const int dim, TPZCompMesh* cmesh,
                             std::set<int>& matids,
                             std::set<int>& bcmatids,
-                            const bool isInsertBCs = true);    
+                            const bool isInsertBCs = true);
+	
+	
+	/// Method to generate the Hdiv compmesh for problems that have fractures
+	/// @param cmesh Hdiv compmesh
+	/// @param matids 3D material ids
+	/// @param bcids 3D boundary material ids
+	/// @param matids_dim2 2D materials ids (fractures)
+	/// @param bcids_dim2 2D boundary material ids (fracture bcs)
     void CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
                                     std::set<int>& matids, std::set<int>& bcids,
                                     std::set<int>& matids_dim2, std::set<int>& bcids_dim2);
     
-    // order overlapping fracture elements such that their normal follows their position in the original fractures
+    /// Order overlapping fracture elements such that their normal follows their position in the original fractures
     void OrderOverlappingFractures();
     
-    // order the overlapping fracture elements such that they correspond to the order of the fracture planes
-    // create HDivBound glue elements between the fractures
+    /// Order the overlapping fracture elements such that they correspond to the order of the fracture planes
+    /// create HDivBound glue elements between the fractures
     void OrderFractures(TPZCompMesh *cmesh, TPZVec<TPZGeoElSide> &fracvec);
     
-    // create the H(div) spaces of the fracture elements
+    /// Creates the H(div) spaces of the fracture elements
     void CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh);
+	
+	
+	/// Splits the connect in a certain element interface. Mostly used for when there is a 2D fracture in between two 3D elements. Then, the connects are
+	/// split with this function, and later (in another methods) an hdivcollapsed is created at that location and the split connects are set as top and bottom of the hdivcollapsed
+	/// @param compside compelside that will have its connect split in two
     void SplitConnectsAtInterface(TPZCompElSide& compside);
     
-    // initialize the integration point information for fracture glue
+    /// Initialize the integration point information for fracture glue
     void InitializeMemoryFractureGlue();
     
+	/// Makes sure all boundary elements of fractures have positive orientation
     void AdjustOrientBoundaryEls(TPZCompMesh* cmesh, std::set<int>& buildmatids);
     
+	/// Initial matid for merge meshes. This is used in MergeMeshes() to set which fine elements belong to a certain coarse element.
+	/// After MergeMeshes(), this is not needed anymore
     int fInitMatIdForMergeMeshes = -1000;
     
 public:
     
+	/// Geometric mesh
     TPZGeoMesh * mGeometry;
     
+	/// Simulation data: stores all the parameters for the simulation (material, numerical, etc.)
     TMRSDataTransfer mSimData;
     
+	/// This is the multiphysics compmesh for the problem
     TPZMultiphysicsCompMesh * mMixedOperator;
     
+	/// Compmesh for the transport problem. Not really needed for computations but helpful for creating and storing data
     TPZCompMesh * mTransportOperator;
     
-    /// this vector contains the MHM domain index for each geometric element
+    /// This vector contains the MHM domain index for each geometric element
     TPZVec<int64_t> mSubdomainIndexGel;
     
+	/// Class that manages hybridization. Used for hybridizing intersections
+	/// NOT USED anymore for BuildMixed4SpacesMultiPhysicsCompMesh only for Mortar mesh because it is overly complicated for our needs
     TPZHybridizeHDiv* mHybridizer;
  
+	/// Forcing function to be applied in boundary condition
+	/// Jun 2022: Check if this is applied everywhere it should be
     ForcingFunctionBCType<STATE> mForcingFunctionBC;
     
 public:
     
+	/// Constructor
     TMRSApproxSpaceGenerator();
     
-    // Copy assignment operator
+    /// Copy assignment operator
     TMRSApproxSpaceGenerator &operator=(const TMRSApproxSpaceGenerator &other);
     
-    // Copy constructor
+    /// Copy constructor
+	///	Should not be called
     TMRSApproxSpaceGenerator(const TMRSApproxSpaceGenerator &copy)
     {
         DebugStop();
@@ -108,13 +153,12 @@ public:
     
     void SetGeometry(TPZGeoMesh * geometry);
     
-    /// Atribute access methods
+    /// Get method for fInitMatIdForMergeMeshes
     const int& InitMatIdForMergeMeshes() const {return fInitMatIdForMergeMeshes;}
+	
+	/// Set method for fInitMatIdForMergeMeshes
     int& InitMatIdForMergeMeshes() {return fInitMatIdForMergeMeshes;}
-		
-	/// Backwards compatibility attribute in case all fractures have the same matid
-//    const int& FractureUniqueMatId() const {return mSimData.mTFracProperties.m_matid;}    
-    
+		    
     /// For MHM
     /// Sets the geometry based on a fine and a coarse mesh. It creates a list of subdomains based on that
     /// and fills mSubdomainIndexGel vector that will be used to set the macro domains
@@ -123,49 +167,61 @@ public:
 	/// Checks if there is a skeleton element between volume elements of different domains
 	void CheckMeshIntegrity(TPZGeoMesh* gmesh);
 	
+	/// Set method for mSubdomainIndexGel
     void SetSubdomainIndexes(TPZVec<int64_t> &subIndexes){
-        mSubdomainIndexGel =subIndexes;
+        mSubdomainIndexGel = subIndexes;
     }
+	
+	/// Get method for mSubdomainIndexGel (creates copy on return)
     TPZVec<int64_t> GetSubdomainIndexes(){
         return mSubdomainIndexGel;
     }
     
+	/// Sets the forcing function for boundary condtions
     void SetForcingFunctionBC(ForcingFunctionBCType<STATE> f){
         mForcingFunctionBC = f;
     }
+	
+	/// Returns true if there is a forcing function for bcs
     bool HasForcingFunctionBC() const {
         return (bool)mForcingFunctionBC;
     }
+	
+	/// Get method for forcing function bc
     const ForcingFunctionBCType<STATE> &ForcingFunctionBC() const
     {
         return mForcingFunctionBC;
     }
+	
+	/// Get/set method for forcing function bc
     ForcingFunctionBCType<STATE> &ForcingFunctionBC()
     {
         return mForcingFunctionBC;
     }
     
+	/// Returns true if there are fracture intersection in the mesh
     const bool isThereFracIntersection() const;
-    // split the connects of the fluxmesh, create HDivBound elements and pressure elements
+	
+    /// Split the connects of the fluxmesh, create HDivBound elements and pressure elements
+	/// NOT USED in 4Space mesh since Junm 2022. Still used in mortar mesh though
     void HybridizeIntersections(TPZVec<TPZCompMesh *>& mesh_vec);
-    // assign a subdomain to the lower level elements
+    
+	/// Assign a subdomain to the lower level elements
     void IdentifySubdomainForLowdimensionElements(TPZCompMesh *fluxmesh);
     
-    // Adjust the neighbouring information such that the boundary of the fracture elements is the first boundary
-    // verify if the assigned subdomains are consistent
+    /// Adjust the neighbouring information such that the boundary of the fracture elements is the first boundary
+    /// Verify if the assigned subdomains are consistent
     void VerifySubdomainIntegrity();
     
-    // identify the domain indices of the interface elements
+    /// Identify the domain indices of the interface elements
     void SetInterfaceDomains(TPZStack<int64_t> &pressureindices,std::pair<int,int> &interfacematids);
 
+	/// Creates interface multiphysics element between L2 pressure 1D element at intersection and flux connect on the border of a fracture
     void CreateIntersectionInterfaceElements(TPZVec<TPZCompMesh *>& meshvec_Hybrid);
 
+	/// Creates interface multiphysics element between L2 pressure 1D element at intersection and flux connect on the border of a fracture
+	/// This function does not use mHybridizer deprecated class for generating hibridization
     void CreateIntersectionInterfaceElements();
-    void DeleteBCsThatAreOnIntersect(TPZCompMesh* hdivcmesh);
-    
-    void LoadGeometry(std::string geometry_file);
-    
-    void LoadGeometry(std::string geometry_file,TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tag);
     
     void CreateUniformMesh(int nx, REAL L, int ny=0, REAL h=0, int nz=0, REAL w=0);
     void ApplyUniformRefinement(int nelref);
