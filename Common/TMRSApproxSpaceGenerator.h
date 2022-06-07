@@ -77,12 +77,12 @@ private:
     void OrderOverlappingFractures();
     
     /// Order the overlapping fracture elements such that they correspond to the order of the fracture planes
+	/// This will update the neighbour information between 3D elements and between fracture elements
     /// create HDivBound glue elements between the fractures
     void OrderFractures(TPZCompMesh *cmesh, TPZVec<TPZGeoElSide> &fracvec);
     
     /// Creates the H(div) spaces of the fracture elements
-    void CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh);
-	
+    void CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh);	
 	
 	/// Splits the connect in a certain element interface. Mostly used for when there is a 2D fracture in between two 3D elements. Then, the connects are
 	/// split with this function, and later (in another methods) an hdivcollapsed is created at that location and the split connects are set as top and bottom of the hdivcollapsed
@@ -134,10 +134,7 @@ public:
     
     /// Copy constructor
 	///	Should not be called
-    TMRSApproxSpaceGenerator(const TMRSApproxSpaceGenerator &copy)
-    {
-        DebugStop();
-    }
+    TMRSApproxSpaceGenerator(const TMRSApproxSpaceGenerator &copy) { DebugStop(); }
     
     /// Destructor
     ~TMRSApproxSpaceGenerator();
@@ -188,14 +185,12 @@ public:
     }
 	
 	/// Get method for forcing function bc
-    const ForcingFunctionBCType<STATE> &ForcingFunctionBC() const
-    {
+    const ForcingFunctionBCType<STATE> &ForcingFunctionBC() const {
         return mForcingFunctionBC;
     }
 	
 	/// Get/set method for forcing function bc
-    ForcingFunctionBCType<STATE> &ForcingFunctionBC()
-    {
+    ForcingFunctionBCType<STATE> &ForcingFunctionBC() {
         return mForcingFunctionBC;
     }
     
@@ -222,38 +217,48 @@ public:
 	/// Creates interface multiphysics element between L2 pressure 1D element at intersection and flux connect on the border of a fracture
 	/// This function does not use mHybridizer deprecated class for generating hibridization
     void CreateIntersectionInterfaceElements();
-    
-    void CreateUniformMesh(int nx, REAL L, int ny=0, REAL h=0, int nz=0, REAL w=0);
+	
+	/// Apply uniform refinements with quantity nelref
     void ApplyUniformRefinement(int nelref);
+	
+	/// Apply uniform refinement with quantity mSimData.mTGeometry.mnref
     void ApplyUniformRefinement();
     
+	/// Helper function to print geomesh to vtk
     void PrintGeometry(std::string name,  bool vtkFile=true, bool textfile=false);
     
-    TPZGeoMesh * GetGeometry();
+	/// Return mGeometry GeoMesh
+	TPZGeoMesh * GetGeometry() { return mGeometry; }
     
+	/// Sets the data transfer
     void SetDataTransfer(TMRSDataTransfer & DataTransfer);
     
+	/// Returns data transfer
     TMRSDataTransfer & GetDataTransfer();
     
+	/// Return the hybridizer class. Only used in Mortar simulations
     const TPZHybridizeHDiv* Hybridizer() const {return mHybridizer;}
+	
+	/// Get/Set the hybridizer class. Only used in Mortar simulations
     TPZHybridizeHDiv* Hybridizer() {return mHybridizer;}
  
-    /// create the HDiv computational mesh
+    /// Create the HDiv computational mesh
     TPZCompMesh * HdivFluxCmesh(int order);
     
-    /// create hybridized hdiv computational mesh
+    /// Create hybridized hdiv computational mesh
     TPZCompMesh * HdivFluxMeshHybridized(int order);
     
-    /// create a discontinuous mesh
+    /// Create a discontinuous mesh
     TPZCompMesh * DiscontinuousCmesh(int order, char lagrange);
     
-    /// group the connects of the discontinuous mesh such that all connects of a subdomain are identical
+    /// Group the connects of the discontinuous mesh such that all connects of a subdomain are identical
     void GroupConnectsBySubdomain(TPZCompMesh *cmesh);
     
-    /// create a discontinuous mesh
+    /// Create a discontinuous mesh for transport
     TPZCompMesh * TransportCmesh();
     
-    void  BuildAuxTransportCmesh();
+	/// Creates auxiliary cmesh for transport. Mostly used to identify interfaces
+    void BuildAuxTransportCmesh();
     
     /// create an HDiv mesh for mortar approximation
     TPZCompMesh *HDivMortarFluxCmesh(char mortarlagrange);
@@ -267,13 +272,11 @@ public:
     // build a discontinuous mesh with the order of the elements according to the
     // algebraic transport mesh. The order is always 0
     TPZCompMesh * DiscontinuousCmesh(TPZAlgebraicDataTransfer &Atransfer);
-    
 	
 	/// Builds the multiphysics cmesh and atomics cmeshes based on booleans previously set
 	/// @param order approximation order
     void BuildMixedMultiPhysicsCompMesh(int order);
     
-	
 	/// Generates a pressure/flow problem with H(div) space for flow and L2 space for pressure.
 	/// May 2022: Only works for problems without fractures and is only tested for 2D domains living in 3D
 	/// @param order approximation order
@@ -288,80 +291,97 @@ public:
     /// build a multiphysics mesh corresponding to a zero order mortar approximation
     void BuildMixed4SpacesMortarMesh();
     
-    /// insert wrapper elements necessary for creating the (hybridized) mortar spaces
+    /// insert wrapper elements necessary for creating the (hybridized) mortar spaces. Only used for building Mortar spaces for now
     void InsertGeoWrappersForMortar();
     
-    /// insert wrapper elements necessary for creating the hybridized spaces
+    /// insert wrapper elements necessary for creating the hybridized spaces. Not used for now
     void InsertGeoWrappers();
     
+	/// Create GeoEl wrappers for a side when building Mortar spaces
     void GeoWrappersForMortarGelSide(TPZGeoElSide &gelside, std::set<int> bcids);
-    int  FindNeighSubDomain(TPZGeoElSide &gelside);
-    void BuildMHMMixed2SpacesMultiPhysicsCompMesh();
-    
-    void BuildMHMMixed4SpacesMultiPhysicsCompMesh();
-    TPZMultiphysicsCompMesh *CreateMixedOperatorMHM();
-    
-    TPZMultiphysicsCompMesh *BuildAuxPosProcessCmesh(TPZAlgebraicDataTransfer &Atransfer);
-    void BuildMixedSCStructures();
-    
+	
+	/// Returns the subdomain of the neighbour element through side gelside
+    int FindNeighSubDomain(TPZGeoElSide &gelside);
+
+	/// Used in TPZMHMixedMeshWithTransportControl::BuildComputationalMesh(). Can we delete it? (Jun 2022)
     void BuildTransportMultiPhysicsCompMesh();
     
+	/// Builds transport computational mesh with 2 spaces. DEPRECATED Jun 2022
     void BuildTransport2SpacesMultiPhysicsCompMesh();
-    
+	
+	/// Builds transport computational mesh with 4 spaces. DEPRECATED Jun 2022
     void BuildTransport4SpacesMultiPhysicsCompMesh();
     
-    /// return the material ids and boundary condition material ids
+    /// Return the material ids and boundary condition material ids
     void GetMaterialIds(int dim, std::set<int> &matids, std::set<int> &bcmatids);
     
-    void InsertMaterialObjects(TPZMHMixedMeshControl &control);
-
-    TPZMultiphysicsCompMesh * GetMixedOperator();
+	/// Returns the multiphysics compmesh
+    TPZMultiphysicsCompMesh * GetMixedOperator() { return mMixedOperator; }
     
-    TPZCompMesh * GetTransportOperator();
+	/// Returns the transport compmesh
+    TPZCompMesh * GetTransportOperator() { return mTransportOperator; }
     
-    // Linking the memory between the operators
+    /// Linking the memory between the operators. DEPRECATED Jun 2022
     void LinkMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZCompMesh * TransportOperator);
     
+	/// Adjust integration rules. DEPRECATED Jun 2022
     static void AdjustMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
     
+	/// Set same memory for both meshes. DEPRECATED Jun 2022
     static void UnifyMaterialMemory(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
     
+	/// Fills memory with data such as permeability, porosity, etc.
     static void FillMaterialMemory(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator);
     
+	/// Fills memory with data such as permeability, porosity, etc.
     static void FillMaterialMemoryDarcy(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZAlgebraicTransport *algebraicTranspor);
     
+	/// Sets to update (true or false depending on update_memory_Q) the memory of material with matid = material_id
     static void SetUpdateMaterialMemory(int material_id, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q = true);
     
+	/// Sets to update (true or false depending on update_memory_Q) the memory of all 3D materials on the mesh
     static void SetUpdateMemory(int dimension, TMRSDataTransfer & sim_data, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q = true);
 
+	/// Initialize all fracture properties (TMRSMemory)
     void InitializeFracProperties(TPZMultiphysicsCompMesh * MixedOperator);
    
-    //
+    /// Returns in vector neihside all the neighbour elements of gelside that have matid equal to any matid in VolMatIds
     void findNeighElementbyMatId(TPZGeoElSide &gelside, std::vector<TPZGeoElSide > &neihside, std::set<int> VolMatIds);
-    void CreateElementInterfaces(TPZGeoEl *gel);
+		
+	/// Creates interface elements between elements. Used by transport model to calculate flux between elements
     void CreateInterfaces(TPZCompMesh *cmesh);
+
+	/// Creates interface elements between 3D elements and 3D elements and boundaries. Used by transport model to calculate flux between elements
+	void CreateElementInterfaces(TPZGeoEl *gel);
+
+	/// Creates interface elements between 2D elements and 2D elements and boundaries. Used by transport model to calculate flux between elements
     void CreateFracInterfaces(TPZGeoEl *gel);
+		
+	/// Wrapper function to create a interface element based on two geoelsides
     void CreateInterfaceElements(TPZGeoElSide &gelside, TPZGeoElSide &gelneig, int matid);
+	
+	/// Creates a compel for the transport model
     void CreateTransportElement(int p_order, TPZCompMesh *cmesh, TPZGeoEl *gel, bool is_BC);
-    void TestSideOrient(TPZCompMesh *MultFlux);
-    void TakeElementsbyID(std::map<int, std::vector<TPZGeoEl* >> &, std::vector<int> & );
-    void VerifySideOrientsCoarseFine(TPZCompMesh *fluxCmesh);
+	
+	/// Groups the elements belonging to a same subdomain and put them in subcompmeshes
     void HideTheElements(TPZCompMesh *cmesh);
-    void BuildMultiphysicsSpaceWithMemoryByMatId(TPZVec<int> & active_approx_spaces, TPZVec<TPZCompMesh * > & mesh_vector);
     
+	/// Takes a fine and coarse mesh and
+	/// 1) Creates the parenthood data structure between macro and micro elements -- stores in mSubdomainIndexGel
+	/// 2) Creates skeleton elements between macro domains
     void MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh);
+	
+	/// Returns true if there are any fractures in the model
     const bool isFracSim() const {return mSimData.mTGeometry.mDomainFracNameAndMatId.size();}
     
+	/// Returns true if the matid is a fracture matid
     bool IsFracMatId(int matiD);
     
-    bool IsFracBCMatId(int matiD)
-    {
-        return IsFracMatId(matiD-1);
-    }
-    bool IsFracIntersectMatId(int matiD)
-    {
-        return IsFracMatId(matiD-2);
-    }
+	/// Returns true if the matid is a fracture bc matid
+    bool IsFracBCMatId(int matiD) { return IsFracMatId(matiD-1); }
+	
+	/// Returns true if the matid is a fracture intersection matid
+    bool IsFracIntersectMatId(int matiD) { return IsFracMatId(matiD-2); }
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

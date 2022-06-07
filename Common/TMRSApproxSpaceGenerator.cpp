@@ -37,6 +37,9 @@ using namespace std;
 
 void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices);
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator()
 {
     mGeometry = nullptr;
@@ -44,9 +47,16 @@ TMRSApproxSpaceGenerator::TMRSApproxSpaceGenerator()
     mTransportOperator = nullptr;
     mHybridizer = nullptr;
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 TMRSApproxSpaceGenerator &TMRSApproxSpaceGenerator::operator=(const TMRSApproxSpaceGenerator &other){
     DebugStop();
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 TMRSApproxSpaceGenerator::~TMRSApproxSpaceGenerator(){
     if (mHybridizer){
@@ -55,22 +65,37 @@ TMRSApproxSpaceGenerator::~TMRSApproxSpaceGenerator(){
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::Write(TPZStream &buf, int withclassid) const{
     DebugStop();
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::Read(TPZStream &buf, void *context){
     DebugStop();
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 int TMRSApproxSpaceGenerator::ClassId() const{
     DebugStop();
     return -1;
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * geometry){
     mGeometry = geometry;
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * gmeshcoarse){
 //    ofstream out1("gmesh_before.txt");
@@ -116,161 +141,8 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * g
 #endif
 }
 
-TPZGeoMesh * TMRSApproxSpaceGenerator::GetGeometry(){
-    return mGeometry;
-}
-
-
-void TMRSApproxSpaceGenerator::CreateUniformMesh(int nx, REAL L, int ny, REAL h, int nz, REAL w){
-    
-    TPZVec<int> nels(3,0);
-    nels[0]=nx;         //Elements over x
-    nels[1]=ny;         //Elements over y
-    
-    TPZVec<REAL> x0(3,0.0);
-    TPZVec<REAL> x1(3,0.0);
-    x1[0]=L;
-    
-    if (ny!=0) {
-        x1[1]=h;
-    }
-    
-    TPZGeoMesh *gmesh = new TPZGeoMesh;
-    TPZGenGrid2D gen(nels,x0,x1);
-    
-    gen.SetRefpatternElements(true);
-    
-    //    if (ny!=0) {
-    //
-    //    }
-    bool IsQuad= true;
-    if (IsQuad) {
-        gen.SetElementType(MMeshType::EQuadrilateral);
-    }
-    else{
-        gen.SetElementType(MMeshType::ETriangular);
-    }
-    gen.Read(gmesh);
-    if (nz!=0 ) {
-        double var = w/nz;
-        TPZExtendGridDimension extend(gmesh,var);
-        extend.SetElType(1);
-        gmesh = extend.ExtendedMesh(nz);
-    }
-    if (nz!=0) {
-        for (auto gel:gmesh->ElementVec()) {
-            TPZFMatrix<REAL> coordinates;
-            gel->NodesCoordinates(coordinates);
-            if(coordinates(2,0)==0){
-                if(IsQuad){
-                    gel->CreateBCGeoEl(20, -1);
-                }
-                else{
-                    gel->CreateBCGeoEl(15, -1);
-                }
-            }
-            
-            if(coordinates(2,4)==w){
-                if(IsQuad){
-                    gel->CreateBCGeoEl(25, -1);
-                }
-                else{
-                    gel->CreateBCGeoEl(19, -1);
-                }
-                
-            }
-            REAL sum_cords =coordinates(0,0)+coordinates(0,2)+coordinates(0,3)+coordinates(0,5);
-            if(coordinates(0,0)==0.0 ){
-                if (IsQuad) {
-                    gel->CreateBCGeoEl(24, -4);
-                }
-                else if(sum_cords==0){
-                    
-                    gel->CreateBCGeoEl(18, -4);
-                }
-                
-            }
-            sum_cords =coordinates(1,0)+coordinates(1,1)+coordinates(1,3)+coordinates(1,4);
-            if(coordinates(1,0)==0.0 ){
-                if (IsQuad) {
-                    gel->CreateBCGeoEl(21, -3);
-                }
-                else if (sum_cords==0){
-                    
-                    gel->CreateBCGeoEl(16, -3);
-                }
-            }
-            sum_cords =coordinates(0,1)+coordinates(0,2)+coordinates(0,4)+coordinates(0,5);
-            if(coordinates(0,1)== L ){
-                if (IsQuad) {
-                    gel->CreateBCGeoEl(22, -2);
-                }
-                else if (sum_cords==4*L)
-                {
-                    
-                    gel->CreateBCGeoEl(17, -2);
-                }
-            }
-            if(coordinates(1,1)==h){
-                if (IsQuad) {
-                    gel->CreateBCGeoEl(23, -3);
-                }
-                else{
-                    std::cout<<"Cords: "<<std::endl;
-                    coordinates.Print(std::cout);
-                    gel->CreateBCGeoEl(17, -3);
-                }
-            }
-        };
-        gmesh->SetDimension(3);
-    }
-    
-    if (ny!=0 && nz==0) {
-        gen.SetBC(gmesh, 4, -1);
-        gen.SetBC(gmesh, 5, -2);
-        gen.SetBC(gmesh, 6, -3);
-        gen.SetBC(gmesh, 7, -4);
-        gmesh->SetDimension(2);
-    }
-    
-    if (ny==0 && nz==0) {
-        double dh = L/nx;
-        int Domain_Mat_Id = 1;
-        int Inlet_bc_Id = -1;
-        int Outletbc_Id = -2;
-        TPZVec<REAL> xp(3,0.0);   //Creates vector nodes
-        
-        gmesh->NodeVec().Resize(nx+1);
-        for (int64_t i=0; i<nx+1; i++) {
-            xp[0] =(i)*dh;
-            gmesh->NodeVec()[i]= TPZGeoNode(i, xp, *gmesh);
-        }
-        
-        TPZVec<int64_t> cornerindexes(2);   //Creates elements
-        for (int64_t iel=0; iel<nx; iel++) {
-            cornerindexes[0]=iel;
-            cornerindexes[1]=iel+1;
-            gmesh->CreateGeoElement(EOned, cornerindexes, Domain_Mat_Id, iel);
-        }
-        gmesh->Element(0)->CreateBCGeoEl(0, Inlet_bc_Id);     //Sets BC
-        gmesh->Element(nx-1)->CreateBCGeoEl(1, Outletbc_Id);
-        gmesh->SetDimension(1);
-        gmesh->BuildConnectivity();
-    }
-    
-    gmesh->BuildConnectivity();
-    
-    mGeometry = gmesh;
-    
-    
-#ifdef PZDEBUG
-    if (!mGeometry)
-    {
-        std::cout << "The geometrical mesh was not generated." << std::endl;
-        DebugStop();
-    }
-#endif
-}
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::ApplyUniformRefinement(int nelref){
     
@@ -291,11 +163,19 @@ void TMRSApproxSpaceGenerator::ApplyUniformRefinement(int nelref){
     }
     
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::ApplyUniformRefinement(){
     std::cout << "Applying uniform refinement numref = " << mSimData.mTGeometry.mnref << "\n";
     
     ApplyUniformRefinement(mSimData.mTGeometry.mnref);
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::PrintGeometry(std::string name, bool vtkFile, bool textfile)
 {
     if (!mGeometry) {
@@ -314,6 +194,9 @@ void TMRSApproxSpaceGenerator::PrintGeometry(std::string name, bool vtkFile, boo
         mGeometry->Print(textfile);
     }
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::AddAtomicMaterials(const int dim, TPZCompMesh* cmesh,
                                                   std::set<int>& matids,
@@ -335,6 +218,9 @@ void TMRSApproxSpaceGenerator::AddAtomicMaterials(const int dim, TPZCompMesh* cm
         }
     }
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::SplitConnectsAtInterface(TPZCompElSide& compside) {
     
@@ -362,6 +248,9 @@ void TMRSApproxSpaceGenerator::SplitConnectsAtInterface(TPZCompElSide& compside)
     compside.SplitConnect(compsideright);
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 // return the connect index of the element referenced by geoelside
 static int64_t GeoElSideConnectIndex(const TPZGeoElSide &gelside)
 {
@@ -370,6 +259,9 @@ static int64_t GeoElSideConnectIndex(const TPZGeoElSide &gelside)
     if(intel->NSideConnects(gelside.Side()) != 1) DebugStop();
     return intel->SideConnectIndex(0, gelside.Side());
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh){
     
@@ -677,6 +569,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
 #endif
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::AdjustOrientBoundaryEls(TPZCompMesh* cmesh, std::set<int>& buildmatids) {
     for (auto cel : cmesh->ElementVec()) {
@@ -705,6 +599,8 @@ void TMRSApproxSpaceGenerator::AdjustOrientBoundaryEls(TPZCompMesh* cmesh, std::
     }
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
                                                           std::set<int>& matids, std::set<int>& bcids,
@@ -771,9 +667,10 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
     
     // ===> Fix blocks
     cmesh->InitializeBlock();
-    
-    
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     
@@ -834,6 +731,9 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
 
     return cmesh;
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 #include "pzshapequad.h"
 
@@ -1222,7 +1122,9 @@ TPZCompMesh *TMRSApproxSpaceGenerator::HDivMortarFluxCmesh(char fluxmortarlagran
     return cmesh;
 }
 
-/// create a pressure with mortar elements
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepressure,char lagrangepressure, char lagrangemortar)
 {
     std::set<int> matids, bcmatids;
@@ -1302,6 +1204,8 @@ TPZCompMesh *TMRSApproxSpaceGenerator::PressureMortarCmesh(char firstlagrangepre
     return cmesh;
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagrange){
     
@@ -1352,7 +1256,9 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(int order, char lagra
     return cmesh;
 }
 
-/// group the connects of the discontinuous mesh such that all connects of a subdomain are identical
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::GroupConnectsBySubdomain(TPZCompMesh *cmesh)
 {
     std::map<int,int> domaintoconnect;
@@ -1386,6 +1292,8 @@ void TMRSApproxSpaceGenerator::GroupConnectsBySubdomain(TPZCompMesh *cmesh)
     cmesh->CleanUpUnconnectedNodes();
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     
@@ -1494,6 +1402,10 @@ TPZCompMesh * TMRSApproxSpaceGenerator::TransportCmesh(){
     TPZVTKGeoMesh::PrintCMeshVTK(cmesh, file);
     return cmesh;
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
     
     // Basically, this mesh creates interface elements between volumes, fractures, intersections.
@@ -1630,6 +1542,10 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
 #endif
 
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTransfer &Atransfer){
     
     if (!mGeometry) {
@@ -1692,6 +1608,8 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTrans
     return cmesh;
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     
@@ -1720,16 +1638,6 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
             //            if(!cond2) DebugStop();
             BuildMixed4SpacesMultiPhysicsCompMesh(order);
             break;
-        case TMRSDataTransfer::TNumerics::E2SpaceMHM:
-            if(!cond2) DebugStop();
-            if(cond1) DebugStop();
-            BuildMHMMixed2SpacesMultiPhysicsCompMesh();
-            break;
-        case TMRSDataTransfer::TNumerics::E4SpaceMHM:
-            if(!cond1) DebugStop();
-            if(!cond2) DebugStop();
-            BuildMHMMixed4SpacesMultiPhysicsCompMesh();
-            break;
         case TMRSDataTransfer::TNumerics::E4SpaceMortar:
             if(!cond1) DebugStop();
             //            if(cond2) DebugStop();
@@ -1748,6 +1656,9 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     //    std::string name_ref = "mhm_geo";
     //    PrintGeometry(name_ref);
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
 		
@@ -1824,6 +1735,9 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
 #endif
     
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     int dimension = mGeometry->Dimension();
@@ -2175,7 +2089,9 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
     
 }
 
-/// insert the necessary interface elements
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::InsertInterfaceElements()
 {
     int dim = mGeometry->Dimension();
@@ -2276,7 +2192,9 @@ void TMRSApproxSpaceGenerator::InsertInterfaceElements()
     }
 }
 
-/// insert wrapper elements necessary for creating the (hybridized) mortar spaces
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
 {
     int dimension = mGeometry->Dimension();
@@ -2326,9 +2244,11 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappersForMortar()
         std::ofstream out("gmesh_withwrap.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out);
     }
-    
-    
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside, std::set<int> bcmatids){
     
     TPZGeoEl *gel = gelside.Element();
@@ -2403,10 +2323,11 @@ void TMRSApproxSpaceGenerator::GeoWrappersForMortarGelSide(TPZGeoElSide &gelside
             mSubdomainIndexGel.Resize(size + nBCCreated +1,-1);
             mSubdomainIndexGel[size + nBCCreated]=subDomainIndex;
         }
-        
     }
-    
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 int TMRSApproxSpaceGenerator::FindNeighSubDomain(TPZGeoElSide &gelside){
     TPZGeoEl *gel = gelside.Element();
@@ -2426,7 +2347,9 @@ int TMRSApproxSpaceGenerator::FindNeighSubDomain(TPZGeoElSide &gelside){
     return subdomainIndex;
 }
 
-/// return the material ids and boundary condition material ids
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, std::set<int> &bcmatids)
 {
 #ifdef PZDEBUG
@@ -2473,7 +2396,9 @@ void TMRSApproxSpaceGenerator::GetMaterialIds(int dim, std::set<int> &matids, st
     }
 }
 
-// insert wrapper elements necessary for creating the (hybridized) mortar spaces
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::InsertGeoWrappers()
 {
     int dimension = mGeometry->Dimension();
@@ -2521,6 +2446,9 @@ void TMRSApproxSpaceGenerator::InsertGeoWrappers()
     
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::BuildMixed4SpacesHybridized(int order) {
     
     // Jun 2022: The idea for this method was conceived but never implemented. At this date,
@@ -2555,6 +2483,9 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesHybridized(int order) {
 //    mMixedOperator = new TPZMultiphysicsCompMesh(mGeometry);
     
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int order, std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem) {
     
@@ -2664,6 +2595,11 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
     
     mMixedOperator->SetDimModel(dimension);
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+
 void TMRSApproxSpaceGenerator::GetTransportMaterials(std::set<int> &MatsWithmem, std::set<int> &MatsWitOuthmem){
     
     const int dimension = mGeometry->Dimension();
@@ -2704,6 +2640,9 @@ void TMRSApproxSpaceGenerator::GetTransportMaterials(std::set<int> &MatsWithmem,
     }
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::SetLagrangeMultiplier4Spaces(TPZVec<TPZCompMesh *>& mesh_vec) {
     int nmesh = mesh_vec.size();
     if(nmesh > 6) nmesh = 6;
@@ -2719,6 +2658,9 @@ void TMRSApproxSpaceGenerator::SetLagrangeMultiplier4Spaces(TPZVec<TPZCompMesh *
         }
     }
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
          
@@ -2826,10 +2768,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 	// ========================================================
 	// In case MHM, put the elements in submeshes
     // Verify the integrity of the subdomain indices
-	if (isMHM)
-    {
-		HideTheElements(mMixedOperator);
-    }
+	if (isMHM) HideTheElements(mMixedOperator);
 	
     // ========================================================
     // Condensing elements
@@ -2844,182 +2783,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 #endif
 }
 
-void TMRSApproxSpaceGenerator::BuildMHMMixed2SpacesMultiPhysicsCompMesh(){
-    
-    TPZGeoMesh *gmeshcoarse = GetGeometry();
-    
-    TPZGeoMesh * gmeshauto = gmeshcoarse; //Autopointer2
-    
-    TPZMHMixedMeshWithTransportControl *mhm = new TPZMHMixedMeshWithTransportControl(gmeshauto);
-    TPZVec<int64_t> coarseindices;
-    ComputeCoarseIndices(gmeshauto, coarseindices); //operator->()
-    
-    //        gmeshauto->AddInterfaceMaterial(1, 2, interface_mat_id);
-    //        gmeshauto->AddInterfaceMaterial(2, 1, interface_mat_id);
-    
-    
-    mhm->DefinePartitionbyCoarseIndices(coarseindices);
-    std::set<int> matids;
-    
-    //Insert Material Objects
-    {
-        int dimension = mGeometry->Dimension();
-        TMRSDarcyFlowWithMem<TMRSMemory> * volume = nullptr;
-        std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
-		for (auto chunk : DomainDimNameAndPhysicalTag) {
-			std::string material_name = chunk.first;
-			std::cout << "physical name = " << material_name << std::endl;
-			int materia_id = chunk.second;
-			matids.insert(materia_id);
-			volume = new TMRSDarcyFlowWithMem<TMRSMemory>(materia_id,dimension);
-			volume->SetDataTransfer(mSimData);
-			mhm->CMesh()->InsertMaterialObject(volume);
-		}
-		
-        mhm->fMaterialIds = matids;
-        matids.clear();
-        if (!volume) {
-            DebugStop();
-        }
-        
-        TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-		for(auto &chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
-			int bc_id   = chunk.first;
-			std::pair<int,REAL>& typeAndVal = chunk.second;
-			int bc_type = typeAndVal.first;
-			val2[0]  = typeAndVal.second;
-			matids.insert(bc_id);
-			TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-			mhm->CMesh()->InsertMaterialObject(face);
-		}
-        mhm->fMaterialBCIds = matids;
-    }
-    
-    mhm->SetInternalPOrder(1);
-    mhm->SetSkeletonPOrder(1);
-    
-    mhm->DivideSkeletonElements(mSimData.mTGeometry.mSkeletonDiv);
-    mhm->DivideBoundarySkeletonElements();
-    
-    bool substructure = true;
-    
-    mhm->SetApproxSpaceGenerator(this);
-    mhm->BuildComputationalMesh(substructure);
-    
-    std::cout << "MHM Hdiv Computational meshes created\n";
-    
-    std::cout << "Number of equations MHMixed " << mhm->CMesh()->NEquations() << std::endl;
-    
-    TPZCompMesh *MixedMesh = mhm->CMesh().operator->();
-    
-    TPZMultiphysicsCompMesh *cmeshtest = dynamic_cast<TPZMultiphysicsCompMesh*>(MixedMesh);
-    
-    mMixedOperator = cmeshtest;
-    
-    std::cout << "WHAT WILL HAPPEN WITH THE mhm VARIABLE????\n";
-    
-}
-
-void TMRSApproxSpaceGenerator::BuildMHMMixed4SpacesMultiPhysicsCompMesh(){
-    
-    int dimension = mGeometry->Dimension();
-    TPZMHMixedMesh4SpacesControl *mhm = new TPZMHMixedMesh4SpacesControl(mGeometry);
-    TPZVec<int64_t> coarseindices;
-    ComputeCoarseIndices(mGeometry, coarseindices);
-    
-    mhm->DefinePartitionbyCoarseIndices(coarseindices);
-    // Create geometric elements
-    
-    {
-        std::set<int> matids;
-        for (auto omId:mSimData.mTGeometry.mDomainNameAndMatId ) {      //Materials
-            int valor = omId.second;
-            matids.insert(omId.second);
-        } ;
-        mhm->fMaterialIds = matids;
-        matids.clear();
-        
-        for (auto& omId : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue ) {      //BC
-            int MatId = omId.first;
-            matids.insert(MatId);
-        } ;
-        mhm->fMaterialBCIds = matids;
-    }
-    
-    InsertMaterialObjects(*mhm);
-    
-    mhm->SetInternalPOrder(1);
-    mhm->SetSkeletonPOrder(1);
-    
-    mhm->DivideSkeletonElements(mSimData.mTGeometry.mSkeletonDiv);
-    mhm->DivideBoundarySkeletonElements();
-    if (0) {
-        std::ofstream file_geo("geometry.txt");
-        mhm->CMesh()->Reference()->Print(file_geo);
-    }
-    
-    bool substructure = true;
-    
-    mhm->BuildComputationalMesh(substructure);
-    std::cout << "Number of equations MHMixed " << mhm->CMesh()->NEquations() << std::endl;
-    
-    
-    TPZCompMesh *MixedMesh = mhm->CMesh().operator->();
-    mMixedOperator = dynamic_cast<TPZMultiphysicsCompMesh *>(MixedMesh);
-    std::cout << "Changing the analysis to sparse\n";
-    {
-        int64_t nel = MixedMesh->NElements();
-        for(int64_t el = 0; el<nel; el++)
-        {
-            TPZCompEl *cel = MixedMesh->Element(el);
-            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
-            if(sub)
-            {
-                //                                TPZSymetricSpStructMatrixEigen matrix(sub);
-                ////                                TPZSymetricSpStructMatrix matrix(sub);
-                //                                int numinternal = sub->NumInternalEquations();
-                //                                matrix.EquationFilter().SetMinMaxEq(0, numinternal);
-                //                                TPZAutoPointer<TPZMatrix<STATE> > mat = matrix.Create();
-                //                                matrix.EquationFilter().Reset();
-                //                                matrix.SetNumThreads(0);
-                //                                sub->Analysis()->SetStructuralMatrix(matrix);
-                //                                TPZStepSolver<STATE> step;
-                //                                step.SetDirect(ELDLt);
-                //                                sub->Analysis()->SetSolver(step);
-            }
-        }
-    }
-    
-}
-
-void TMRSApproxSpaceGenerator::BuildMixedSCStructures(){
-    
-    std::cout << "DoF:: Before SC = " << mMixedOperator->NEquations() << std::endl;
-    
-    mMixedOperator->ComputeNodElCon();
-    if (mSimData.mTNumerics.m_four_approx_spaces_Q) {
-        int dim = mMixedOperator->Dimension();
-        int64_t nel = mMixedOperator->NElements();
-        for (int64_t el =0; el<nel; el++) {
-            TPZCompEl *cel = mMixedOperator->Element(el);
-            if(!cel) continue;
-            TPZGeoEl *gel = cel->Reference();
-            if(!gel) continue;
-            if(gel->Dimension() != dim) continue;
-            int nc = cel->NConnects();
-            cel->Connect(nc-1).IncrementElConnected();
-        }
-    }
-    
-    // Created condensed elements for the elements that have internal nodes
-    bool KeepOneLagrangianQ = true;
-    bool KeepMatrixQ = true;
-    TPZCompMeshTools::CreatedCondensedElements(mMixedOperator, KeepOneLagrangianQ, KeepMatrixQ);
-    mMixedOperator->ComputeNodElCon();
-    mMixedOperator->InitializeBlock();
-    std::cout << "DoF:: After SC = " << mMixedOperator->NEquations() << std::endl;
-}
-
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     
@@ -3028,8 +2793,10 @@ void TMRSApproxSpaceGenerator::BuildTransportMultiPhysicsCompMesh(){
     }else{
         BuildTransport2SpacesMultiPhysicsCompMesh();
     }
-    
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     
@@ -3210,6 +2977,9 @@ void TMRSApproxSpaceGenerator::BuildTransport2SpacesMultiPhysicsCompMesh(){
     
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
     
     if (!mMixedOperator || !mGeometry) {
@@ -3325,69 +3095,9 @@ void TMRSApproxSpaceGenerator::BuildTransport4SpacesMultiPhysicsCompMesh(){
 #endif
     
 }
-TPZMultiphysicsCompMesh *TMRSApproxSpaceGenerator::BuildAuxPosProcessCmesh(TPZAlgebraicDataTransfer &Atransfer){
-    
-    if (!mGeometry) {
-        DebugStop();
-    }
-    
-    //    TPZManVector<TPZCompMesh *,5> mixed_meshvec = mMixedOperator->MeshVector();
-    TPZManVector<TPZCompMesh *,5> transport_meshvec(5);
-    
-    transport_meshvec[0] = DiscontinuousCmesh(Atransfer);
-    transport_meshvec[1] = DiscontinuousCmesh(Atransfer);
-    transport_meshvec[2] = DiscontinuousCmesh(Atransfer);
-    transport_meshvec[3] = DiscontinuousCmesh(Atransfer);
-    transport_meshvec[4] = DiscontinuousCmesh(Atransfer);
-    
-    
-    int dimension = mGeometry->Dimension();
-    TPZMultiphysicsCompMesh *auxmesh = new TPZMultiphysicsCompMesh(mGeometry);
-    
-    //    TMRSMultiphaseFlow<TMRSMemory> * volume = nullptr;
-    TPZPostProcessResProp * volume = nullptr;
-    auxmesh->SetDefaultOrder(0);
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
-    
-	for (auto chunk : DomainDimNameAndPhysicalTag) {
-		std::string material_name = chunk.first;
-		std::cout << "physical name = " << material_name << std::endl;
-		int material_id = chunk.second;
-		//            volume = new TMRSMultiphaseFlow<TMRSMemory>(material_id,d);
-		//            volume->SetDataTransfer(mSimData);
-		
-		volume = new TPZPostProcessResProp(material_id,dimension);
-		//            volume->SetDataTransfer(mSimData);
-		
-		auxmesh->InsertMaterialObject(volume);
-	}
-    
-    
-    if (!volume) {
-        DebugStop();
-    }
-    
-    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-	for (auto& chunk : mSimData.mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
-		int bc_id   = chunk.first;
-		std::pair<int,REAL>& typeAndVal = chunk.second;
-		int bc_type = typeAndVal.first;
-		val2[0]   = typeAndVal.second;
-		TPZBndCond * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-		auxmesh->InsertMaterialObject(face);
-	}
-    
-    auxmesh->SetDimModel(dimension);
-    TPZManVector<int,5> active_approx_spaces(5); /// 1 stands for an active approximation spaces
-    active_approx_spaces[0] = 0;
-    active_approx_spaces[1] = 0;
-    active_approx_spaces[2] = 0;
-    active_approx_spaces[3] = 0;
-    active_approx_spaces[4] = 1;
-    //    mTransportOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,transport_meshvec);
-    auxmesh->BuildMultiphysicsSpace(active_approx_spaces,transport_meshvec);
-    return auxmesh;
-}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){
     mSimData = SimData;
@@ -3428,17 +3138,15 @@ void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){
     
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 TMRSDataTransfer & TMRSApproxSpaceGenerator::GetDataTransfer(){
     return mSimData;
 }
 
-TPZMultiphysicsCompMesh * TMRSApproxSpaceGenerator::GetMixedOperator(){
-    return mMixedOperator;
-}
-
-TPZCompMesh * TMRSApproxSpaceGenerator::GetTransportOperator(){
-    return mTransportOperator;
-}
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::LinkMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZCompMesh * TransportOperator){
     
@@ -3456,6 +3164,9 @@ void TMRSApproxSpaceGenerator::LinkMemory(TPZMultiphysicsCompMesh * MixedOperato
 //        FillMaterialMemory(material_id, MixedOperator, mult);
 //    }
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator){
     
@@ -3540,6 +3251,9 @@ void TMRSApproxSpaceGenerator::AdjustMemory(TPZMultiphysicsCompMesh * MixedOpera
     
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::UnifyMaterialMemory(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator) {
     
     if (!MixedOperator || !TransportOperator) {
@@ -3564,6 +3278,9 @@ void TMRSApproxSpaceGenerator::UnifyMaterialMemory(int material_id, TPZMultiphys
     
     mat_with_memory_d->SetMemory(mat_with_memory_o->GetMemory());
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZMultiphysicsCompMesh * TransportOperator){
     
@@ -3697,6 +3414,9 @@ void TMRSApproxSpaceGenerator::FillMaterialMemory(int material_id, TPZMultiphysi
     }
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::FillMaterialMemoryDarcy(int material_id, TPZMultiphysicsCompMesh * MixedOperator, TPZAlgebraicTransport *algebraicTranspor){
     
     if (!MixedOperator || !algebraicTranspor) {
@@ -3726,6 +3446,9 @@ void TMRSApproxSpaceGenerator::FillMaterialMemoryDarcy(int material_id, TPZMulti
     }
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::SetUpdateMaterialMemory(int material_id, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q){
     
     if (!cmesh) {
@@ -3748,8 +3471,10 @@ void TMRSApproxSpaceGenerator::SetUpdateMaterialMemory(int material_id, TPZMulti
         mat_with_memory_trans->SetUpdateMem(update_memory_Q);
         return;
     }
-    
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::SetUpdateMemory(int dimension, TMRSDataTransfer & sim_data, TPZMultiphysicsCompMesh * cmesh, bool update_memory_Q){
 	if (dimension != 3) {
@@ -3761,7 +3486,9 @@ void TMRSApproxSpaceGenerator::SetUpdateMemory(int dimension, TMRSDataTransfer &
     }
 }
 
-//
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
 {
     //    {
@@ -3780,52 +3507,9 @@ void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices)
     coarseindices.Resize(count);
 }
 
-void TMRSApproxSpaceGenerator::InsertMaterialObjects(TPZMHMixedMeshControl &control)
-{
-    
-    TPZCompMesh &cmesh = control.CMesh();
-    TPZGeoMesh &gmesh = control.GMesh();
-    TPZCompMesh *MixedFluxPressureCmesh =  &cmesh;
-    
-    int dim = gmesh.Dimension();
-    MixedFluxPressureCmesh->SetDimModel(dim);
-    
-    
-    int dimension = mGeometry->Dimension();
-    
-    //    TPZMixedDarcyWithFourSpaces *volume = nullptr;
-    TPZDarcyFlowWithMem *volume = nullptr;
-    
-    std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
-    
-	for (auto chunk : DomainDimNameAndPhysicalTag) {
-		std::string material_name = chunk.first;
-		std::cout << "physical name = " << material_name << std::endl;
-		int material_id = chunk.second;
-		//            volume = new TPZMixedDarcyWithFourSpaces(material_id, d);
-		volume = new TPZDarcyFlowWithMem(material_id, dimension);
-		//            volume->SetPermeability(1.0);
-		volume->SetGravity(mSimData.mTNumerics.m_gravity);
-		volume->mSimData = mSimData;
-		MixedFluxPressureCmesh->InsertMaterialObject(volume);
-	}
-    
-    
-    if (!volume) {
-        DebugStop();
-    }
-    
-    TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
-	for(auto &chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
-		int bc_id   = chunk.first;
-		std::pair<int,REAL>& typeAndVal = chunk.second;
-		int bc_type = typeAndVal.first;
-		val2[0]  = typeAndVal.second;
-		TPZBndCondT<STATE> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-		MixedFluxPressureCmesh->InsertMaterialObject(face);
-	}
-    
-}
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh * MixedOperator)
 {
     //
@@ -3932,6 +3616,8 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
 //    }
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::findNeighElementbyMatId(TPZGeoElSide &gelside, std::vector<TPZGeoElSide> &neihside, std::set<int> VolMatIds){
     
@@ -3947,8 +3633,11 @@ void TMRSApproxSpaceGenerator::findNeighElementbyMatId(TPZGeoElSide &gelside, st
         }
         NeihSideAux = NeihSideAux.Neighbour();
     }
-    
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::CreateElementInterfaces(TPZGeoEl *gel){
     
     int dimension = gel->Dimension();
@@ -4005,6 +3694,9 @@ void TMRSApproxSpaceGenerator::CreateElementInterfaces(TPZGeoEl *gel){
     }
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::CreateInterfaces(TPZCompMesh *cmesh){
     
     // Here the interfaces are created based on the previously set material ids
@@ -4045,8 +3737,11 @@ void TMRSApproxSpaceGenerator::CreateInterfaces(TPZCompMesh *cmesh){
     
     //    std::ofstream file("NewInterfaces.vtk");
     //    TPZVTKGeoMesh::PrintCMeshVTK(cmesh, file);
-    
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     int dimension = gel->Dimension();
     int nsides = gel->NSides();
@@ -4165,6 +3860,10 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
         }
     }
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::CreateInterfaceElements(TPZGeoElSide &gelside, TPZGeoElSide &gelneig, int matid){
     
     TPZGeoElBC gbc(gelside,matid);
@@ -4179,6 +3878,9 @@ void TMRSApproxSpaceGenerator::CreateInterfaceElements(TPZGeoElSide &gelside, TP
         TPZInterfaceElement *mp_interface_el = new TPZInterfaceElement(*mTransportOperator, gbc.CreatedElement(),celside_r, celside_l);
     }
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::CreateTransportElement(int p_order, TPZCompMesh *cmesh, TPZGeoEl *gel, bool is_BC){
     int dimension = gel->Dimension();
@@ -4204,6 +3906,10 @@ void TMRSApproxSpaceGenerator::CreateTransportElement(int p_order, TPZCompMesh *
     }
     gel->ResetReference();
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     int KeepOneLagrangian = 6;
     cmesh->ComputeNodElCon();
@@ -4295,6 +4001,9 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
     std::cout << "\n\t=======> Finished substructuring\n";
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 const bool TMRSApproxSpaceGenerator::isThereFracIntersection() const {
     const int matIdIntersection = mSimData.mTFracIntersectProperties.m_IntersectionId;
     for (auto gel : mGeometry->ElementVec()){
@@ -4306,6 +4015,9 @@ const bool TMRSApproxSpaceGenerator::isThereFracIntersection() const {
     
     return false;
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& meshvec_Hybrid) {
     
@@ -4403,6 +4115,9 @@ void TMRSApproxSpaceGenerator::HybridizeIntersections(TPZVec<TPZCompMesh *>& mes
     cout << "==> Finished hybridizing intersections..." << endl;
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZVec<TPZCompMesh *>& meshvec_Hybrid) {
     TPZCompMesh* cmeshpressure = mMixedOperator->MeshVector()[1];
     mMixedOperator->Reference()->ResetReference();
@@ -4424,7 +4139,8 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements(TPZVec<TPZCom
     SetInterfaceDomains(pressureindices,mHybridizer->fInterfaceMatid);
 }
 
-
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements() {
     // identify the domain indices of the interface elements
@@ -4456,6 +4172,8 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements() {
     }
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh) {
     
@@ -4875,6 +4593,9 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     cout << "\n---------------------- Finished MergeMeshes for MHM data structure ----------------------\n" << endl;
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::CheckMeshIntegrity(TPZGeoMesh* gmesh) {
 	for(auto gel : gmesh->ElementVec()) {
 		const int geldim = gel->Dimension();
@@ -4900,7 +4621,9 @@ void TMRSApproxSpaceGenerator::CheckMeshIntegrity(TPZGeoMesh* gmesh) {
 	}
 }
 
-// verify if the assigned subdomains are consistent
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::VerifySubdomainIntegrity()
 {
     TPZGeoMesh *gmesh = mGeometry;
@@ -4981,8 +4704,9 @@ void TMRSApproxSpaceGenerator::VerifySubdomainIntegrity()
     }
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
-// assign a subdomain to the lower level elements
 void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompMesh *fluxmesh)
 {
     if(mGeometry->Reference() != fluxmesh)
@@ -5156,7 +4880,9 @@ void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompM
 #endif
 }
 
-// identify the domain indices of the interface elements
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::SetInterfaceDomains(TPZStack<int64_t> &pressureindices,std::pair<int,int> &interfacematids)
 {
     TPZCompMesh *cmesh = mMixedOperator;
@@ -5203,13 +4929,17 @@ void TMRSApproxSpaceGenerator::SetInterfaceDomains(TPZStack<int64_t> &pressurein
         }
     }
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 bool TMRSApproxSpaceGenerator::IsFracMatId(int matiD){
     return (mSimData.mTFracProperties.m_fracprops.find(matiD) != mSimData.mTFracProperties.m_fracprops.end());
-//    mSimData.mTFracProperties.m_fracprops(matiD);
 }
 
-// order the overlapping fracture elements such that they correspond to the order of the fracture planes
-// this will update the neighbour information between 3D elements and between fracture elements
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZGeoElSide> &fracvec)
 {
     // compute the normal direction of the 3D element with positive side direction
@@ -5316,7 +5046,9 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
 #endif
 }
 
-// properly order overlapping fracture elements
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::OrderOverlappingFractures()
 {
     TPZCompMesh *cmesh = mGeometry->Reference();
@@ -5343,7 +5075,9 @@ void TMRSApproxSpaceGenerator::OrderOverlappingFractures()
     }
 }
 
-// initialize the integration point information for fracture glue
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void TMRSApproxSpaceGenerator::InitializeMemoryFractureGlue()
 {
     int64_t nel = mMixedOperator->NElements();
@@ -5389,3 +5123,6 @@ void TMRSApproxSpaceGenerator::InitializeMemoryFractureGlue()
         }
     }
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
