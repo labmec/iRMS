@@ -92,7 +92,7 @@ void RunTest(const int caseToSim)
     
     // ----- Setting the global data transfer -----
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
-    sim_data.mTFracProperties.m_matid = globFracID;
+	//  sim_data.mTFracProperties.m_matid = globFracID; // This is now set for each fracture
     aspace.SetDataTransfer(sim_data);
 
     // ----- Creates the multiphysics compmesh -----
@@ -252,7 +252,14 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 1.;
+//    sim_data.mTFracProperties.m_Permeability = 1.;
+	TMRSDataTransfer::TFracProperties::FracProp fracprop;
+	fracprop.m_perm = 1.;
+	fracprop.m_width = 1.;
+	fracprop.m_fracbc = 100000; // Does not matter for mortar spaces
+	fracprop.m_fracIntersectMatID = EIntersection;
+	sim_data.mTFracProperties.m_fracprops[globFracID] = fracprop;
+	
     REAL kappa=1.0;
     int  id1=EVolume;
     std::map<int, REAL> idPerm;

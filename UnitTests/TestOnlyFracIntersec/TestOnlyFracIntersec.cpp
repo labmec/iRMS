@@ -85,7 +85,8 @@ void Test2frac(const int& caseToSim)
     
     // -------------- Setting the global data transfer --------------
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
-    sim_data.mTFracProperties.m_matid = globFracID;
+//    sim_data.mTFracProperties.m_matid = globFracID; // This is now set for each fracture
+	
     aspace.SetDataTransfer(sim_data);
     
     // -------------- Creates de multiphysics compmesh --------------
@@ -213,7 +214,14 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 0.00001;
+//    sim_data.mTFracProperties.m_Permeability = 0.00001;
+	TMRSDataTransfer::TFracProperties::FracProp fracprop;
+	fracprop.m_perm = 0.00001;
+	fracprop.m_width = 1.;
+	fracprop.m_fracbc = EPressure;
+	fracprop.m_fracIntersectMatID = EIntersection;
+	sim_data.mTFracProperties.m_fracprops[globFracID] = fracprop;
+	
     REAL kappa=1.0;
     int  id1=1;
     int  id2=2;
@@ -221,7 +229,6 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     idPerm[id1]= kappa;
     idPerm[id2]= kappa;
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
-    
     
     
     // PostProcess controls

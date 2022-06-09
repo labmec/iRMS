@@ -77,7 +77,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
     
     // ----- Approximation space -----
     TMRSApproxSpaceGenerator aspace;
-    sim_data.mTFracProperties.m_matid = globFracID;
+	//    sim_data.mTFracProperties.m_matid = globFracID; // This is now set for each fracture
     sim_data.mTGeometry.mSkeletonDiv = 0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -359,7 +359,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EFaceBCPressure] = std::make_pair(D_Type,1.);
 
-        mBCFlowFracMatIdToTypeValue[EPressure] = std::make_pair(N_Type, zero_flux);
+		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPressure] = std::make_pair(N_Type, zero_flux);
     
     }
     else if (caseToSim < 3){
@@ -372,7 +372,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,0.);
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,zero_flux);
 		        
-        mBCFlowFracMatIdToTypeValue[EPressure] = std::make_pair(N_Type, zero_flux);
+		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPressure] = std::make_pair(N_Type, zero_flux);
                 
 		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(D_Type, 1.);
 		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(N_Type, 0.);
@@ -419,7 +419,14 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTNumerics.m_max_iter_transport=1;
     
     // Fracture permeability
-    sim_data.mTFracProperties.m_Permeability = 1.e4;
+//    sim_data.mTFracProperties.m_Permeability = 1.e4;
+	TMRSDataTransfer::TFracProperties::FracProp fracprop;
+	fracprop.m_perm = 1.e4;
+	fracprop.m_width = 1.;
+	fracprop.m_fracbc = EPressure;
+	fracprop.m_fracIntersectMatID = EIntersection;
+	sim_data.mTFracProperties.m_fracprops[globFracID] = fracprop;
+
     
     //FracAndReservoirProperties
     REAL kappa=1.0;

@@ -2698,7 +2698,9 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 
     if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
 
-    VerifySubdomainIntegrity();
+	if(isMHM && mSubdomainIndexGel.size()){
+		VerifySubdomainIntegrity();
+	}
     // ========================================================
     // Setting lagrange multiplier order
     SetLagrangeMultiplier4Spaces(mesh_vec);
@@ -2727,7 +2729,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::set<int> matsWithMem, matsWithOutMem;
     AddMultiphysicsMaterialsToCompMesh(order,matsWithMem, matsWithOutMem);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec,matsWithMem, matsWithOutMem );
-    this->InitializeMemoryFractureGlue();
+	if(isFracSim()) this->InitializeMemoryFractureGlue();
     {
         std::ofstream file("MixOpew.vtk");
         TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
@@ -2735,7 +2737,9 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 	
     if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
     
-    VerifySubdomainIntegrity();
+	if(isMHM && mSubdomainIndexGel.size()){
+		VerifySubdomainIntegrity();
+	}
 
 	// ========================================================
     // Creates interface elements for hybridized intersections
@@ -2758,7 +2762,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 
 	cout << "\nNequations before hiding the elements = " << mMixedOperator->NEquations() << endl;
 #ifdef PZDEBUG
-    {
+	if (isMHM) {
         // visualize the subdomain association of the geometric element
         ofstream out("gmeshdomain.vtk");
         //PrintGMeshVTK(TPZGeoMesh *gmesh, std::ofstream &file, TPZVec<int> &elData);
