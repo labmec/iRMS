@@ -153,15 +153,22 @@ TMRSDataTransfer Setting2Fractures(){
     sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;    
     
-    //FracAndReservoirProperties
-        sim_data.mTFracProperties.m_Permeability = 0.00001;
-        REAL kappa=1.0;
-        int  id1=1;
-        int  id2=2;
-        std::map<int, REAL> idPerm;
-        idPerm[id1]= kappa;
-        idPerm[id2]= kappa;
-        sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
+	//FracAndReservoirProperties (only one fracture property for all fracs)
+	DebugStop(); // the next few lines were added without testing. Please delete DebugStop and check if everything is fine
+	TMRSDataTransfer::TFracProperties::FracProp fracprop;
+	fracprop.m_perm = 0.00001;
+	fracprop.m_width = 1.;
+	fracprop.m_fracbc = 11;
+	fracprop.m_fracIntersectMatID = 12;
+	sim_data.mTFracProperties.m_fracprops[10] = fracprop;
+
+	REAL kappa=1.0;
+	int  id1=1;
+	int  id2=2;
+	std::map<int, REAL> idPerm;
+	idPerm[id1]= kappa;
+	idPerm[id2]= kappa;
+	sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     // PostProcess controls
     sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";

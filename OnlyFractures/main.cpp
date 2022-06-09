@@ -343,7 +343,14 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 1.e4;
+	DebugStop(); // the next few lines were added without testing. Please delete DebugStop and check if everything is fine
+	TMRSDataTransfer::TFracProperties::FracProp fracprop;
+	fracprop.m_perm = 1.e4;
+	fracprop.m_width = 1.;
+	fracprop.m_fracbc = EPressure;
+	fracprop.m_fracIntersectMatID = EIntersection;
+	sim_data.mTFracProperties.m_fracprops[globFracID] = fracprop;
+
     REAL kappa=1.0;
     int  id1=EVolume;
 //    int  id2=2;

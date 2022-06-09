@@ -666,11 +666,16 @@ TMRSDataTransfer SettingBenchmarkCase1(){
     
     //FracProperties
     //FracAndReservoirProperties
-    sim_data.mTFracProperties.m_Permeability = 1.0e-3;
-    REAL kappa1=1.0e-5;
+	DebugStop(); // the next few lines were added without testing. Please delete DebugStop and check if everything is fine
+	TMRSDataTransfer::TFracProperties::FracProp fracprop;
+	fracprop.m_perm = 1.0e-3;
+	fracprop.m_width = 1.;
+	fracprop.m_fracbc = -11;
+	fracprop.m_fracIntersectMatID = -14;
+	sim_data.mTFracProperties.m_fracprops[10] = fracprop;
+	
+	REAL kappa1=1.0e-5;
     REAL kappa2=1.0e-6;
-
-    
     int  id1=1;
     int  id2=2;
     std::map<int, REAL>idPerm;
@@ -735,7 +740,6 @@ void BenchmarkCase1()
     
     TMRSApproxSpaceGenerator aspace;
     TMRSDataTransfer sim_data  = SettingBenchmarkCase1();
-    sim_data.mTFracProperties.m_matid = 10;
     sim_data.mTGeometry.mSkeletonDiv =0;
     sim_data.mTGeometry.m_skeletonMatId = 19;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
