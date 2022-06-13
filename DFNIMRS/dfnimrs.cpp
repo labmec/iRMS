@@ -82,7 +82,7 @@ int main(){
     // 6: Two parallel square fractures very close, but no overlap
     // 7: Two parallel square fractures very close, WITH overlap
     // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
-	int simcase = 1;
+	int simcase = 2;
     string filenameBase;
     switch (simcase) {
         case 0:
@@ -92,7 +92,7 @@ int main(){
 			filenameBase = basemeshpath + "/dfnimrs/fl_case1";
             break;
         case 2:
-			DebugStop(); // create me
+//			DebugStop(); // create me
 			filenameBase = basemeshpath + "/dfnimrs/fl_case2";
             break;
         case 3:
