@@ -3578,7 +3578,9 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             for (int i = 0; i < ndata; i++) {
                 TMRSMemory &mem = memory_vector.get()->operator [](i);
                 mem.m_sw = 0.0;
-                mem.m_phi = 0.1;
+				mem.m_phi = it->second.m_porosity;
+				const REAL fracwidth = it->second.m_width;
+				mem.m_kappa_normal = 1./(fracwidth*fracwidth);
                 REAL kappa = it->second.m_perm;
                 mem.m_kappa.Resize(3, 3);
                 mem.m_kappa.Zero();

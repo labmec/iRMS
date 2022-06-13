@@ -162,7 +162,9 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*q[j];
         }
     }
-    kappaNormal = memory.m_kappa(0,0);
+	
+//    kappaNormal = memory.m_kappa(0,0);
+	kappaNormal = memory.m_kappa_normal;
    
    
     

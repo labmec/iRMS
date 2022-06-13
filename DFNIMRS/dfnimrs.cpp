@@ -82,7 +82,7 @@ int main(){
     // 6: Two parallel square fractures very close, but no overlap
     // 7: Two parallel square fractures very close, WITH overlap
     // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
-	int simcase = 2;
+	int simcase = 3;
     string filenameBase;
     switch (simcase) {
         case 0:
@@ -139,7 +139,7 @@ void RunProblem(string& filenameBase, const int simcase)
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes);
 	if(simcase == 3 || simcase == 8) ModifyBCsForCase3(gmeshfine); // Generate the correct mesh and delete!
-    
+//	if(simcase == 2) ModifyPermeabilityForCase2(gmeshcoarse);
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
     if (1) {
@@ -409,8 +409,8 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
         std::string name = "Fracture" + std::to_string(i);
         const int matid = actualfracid;
         const REAL permerm = fracture["K"];
-//		const REAL fracWidth = fracture["width"];
-		const REAL fracWidth = 0.1;
+		const REAL fracWidth = fracture["width"];
+//		const REAL fracWidth = 0.1;
 		TMRSDataTransfer::TFracProperties::FracProp fracprop;
         sim_data.mTGeometry.mDomainFracNameAndMatId[name] = matid;
         actualfracid +=5;
@@ -751,25 +751,26 @@ void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 // ---------------------------------------------------------------------
 
 void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh) {
-	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
-//    for (auto gel: gmesh->ElementVec()) {
-//        if (!gel) continue;
-//        if (gel->MaterialId() != EVolume) continue; // only matrix
-//
-//        TPZVec<REAL> masscent(3,0.0), xcenter(3,0.0);
-//        gel->CenterPoint(gel->NSides()-1, masscent);
-//        gel->X(masscent, xcenter);
-//
-//        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-//        if (x > 0.5 && y < 0.5)
-//            gel->SetMaterialId(EVolume2);
-//
-//        if (x > 0.75 && y > 0.5 && y < 0.75 && z > 0.5)
-//            gel->SetMaterialId(EVolume2);
-//
-//        if (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625 && z > 0.5 && z < 0.75)
-//            gel->SetMaterialId(EVolume2);
-//    }
+//	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != 1 && gel->MaterialId() != 2) continue; // only matrix
+
+        TPZVec<REAL> masscent(3,0.0), xcenter(3,0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        gel->X(masscent, xcenter);
+
+        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+		gel->SetMaterialId(1);
+        if (x > 0.5 && y < 0.5)
+            gel->SetMaterialId(2);
+
+        if (x > 0.75 && y > 0.5 && y < 0.75 && z > 0.5)
+            gel->SetMaterialId(2);
+
+        if (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625 && z > 0.5 && z < 0.75)
+            gel->SetMaterialId(2);
+    }
 }
 
 // ---------------------------------------------------------------------
