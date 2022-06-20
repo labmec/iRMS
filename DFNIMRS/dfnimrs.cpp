@@ -124,6 +124,7 @@ int main(){
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 void RunProblem(string& filenameBase, const int simcase)
+
 {
     auto start_time = std::chrono::steady_clock::now();
     
@@ -138,8 +139,6 @@ void RunProblem(string& filenameBase, const int simcase)
 	int initVolForMergeMeshes = -1000000;
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes);
-	if(simcase == 3 || simcase == 8) ModifyBCsForCase3(gmeshfine); // Generate the correct mesh and delete!
-//	if(simcase == 2) ModifyPermeabilityForCase2(gmeshcoarse);
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
     if (1) {
