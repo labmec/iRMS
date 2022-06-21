@@ -82,7 +82,7 @@ int main(){
     // 6: Two parallel square fractures very close, but no overlap
     // 7: Two parallel square fractures very close, WITH overlap
     // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
-	int simcase = 3;
+	int simcase = 2;
     string filenameBase;
     switch (simcase) {
         case 0:
@@ -132,7 +132,7 @@ void RunProblem(string& filenameBase, const int simcase)
     const bool isRefineMesh = false;
     const bool isPostProc = true;
 	const bool isRunWithTranport = false;
-	const bool isMHM = true;
+	const bool isMHM = false;
 	const int n_threads = 8;
     
     // ----- Creating gmesh and data transfer -----
