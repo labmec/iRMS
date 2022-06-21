@@ -3212,10 +3212,10 @@ Physical Surface("noflux") = {264, 273, 282, 291, 300, 309, 318, 4, 327, 336, 34
 Physical Surface("inlet") = {585, 588, 590, 592, 507, 505, 503, 500};
 //+
 Physical Surface("outlet") = {678, 682, 685, 688, 593, 597, 600, 603, 338, 342, 345, 348, 253, 257, 260, 263};
-// Transfinite Curve{:}=2;
-// Transfinite Surface{:};
+Transfinite Curve{:}=2;
+Transfinite Surface{:};
 // Transfinite Curve{3,4,10,11}=2;
-//
-//  //Transfinite Surface{1,3,5,6,7};
- // Recombine Surface {:};
- // Transfinite Volume{:};
+
+ //Transfinite Surface{1,3,5,6,7};
+ Recombine Surface {:};
+ Transfinite Volume{:};
