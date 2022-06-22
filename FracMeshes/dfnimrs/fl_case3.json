@@ -20,7 +20,7 @@
     ],
     "NCoarseGroups": 468,
     "FractureGlueMatId": 1000000,
-    "FractureGluePerm": 1.0e4,
+    "FractureGluePerm": 0.5e2,
     "Boundary": [
         {
             "name": "inlet",

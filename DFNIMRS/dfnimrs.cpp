@@ -83,7 +83,7 @@ int main(){
     // 7: Two parallel square fractures very close, WITH overlap
     // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
 	// 9: Study of snapping tolerances on case 3
-	int simcase = 9;
+	int simcase = 3;
     string filenameBase;
     switch (simcase) {
         case 0:
