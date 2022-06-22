@@ -82,7 +82,7 @@ int main(){
     // 6: Two parallel square fractures very close, but no overlap
     // 7: Two parallel square fractures very close, WITH overlap
     // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
-	int simcase = 2;
+	int simcase = 9;
     string filenameBase;
     switch (simcase) {
         case 0:
@@ -114,6 +114,9 @@ int main(){
         case 8:
 			filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap";
 			break;
+        case 9:
+            filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/fl_case3";
+            break;
 		default:
             break;
     }
@@ -966,7 +969,7 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
             if (nFracElsForSide > 1 && !interEls.size() && !bcEls.size()) {
                 cout << "nfracs for this side: " << nFracElsForSide << endl;
                 cout << "This is an error" << endl;
-                DebugStop();
+//                DebugStop();
             }
             if ((interEls.size() || nFracElsForSide > 1) && bcEls.size()) {
                 cout << "PLEASE CHECK CAREFULLY! An element may have a boundary even if it intersects\n";
