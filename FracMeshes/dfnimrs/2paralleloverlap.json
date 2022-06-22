@@ -53,7 +53,8 @@
         { //Fracture 0
             "Index": 0,
             "K" : 1.0,
-            "phi": 0.2,            
+            "phi": 0.2,           
+            "width": 0.1, 
             "Limit": "Etruncated",
             "Nodes":[
                 [0.95, 2.50,-0.50],
@@ -65,7 +66,8 @@
         ,{//Fracture 1
             "Index": 1,
             "K" : 1.0,
-            "phi": 0.2,                        
+            "phi": 0.2,   
+            "width": 0.1,                      
             "Limit": "Etruncated",
             "Nodes":[
                 [1.05, 2.50,-0.50],
