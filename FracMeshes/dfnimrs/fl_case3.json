@@ -47,7 +47,7 @@
     "Fractures":[
         {
             "Index": 4,
-            "K" : 1.0e4,
+            "K" : 1.0e2,
             "phi": 0.2,
             "width": 0.01,
             "Limit": "Erecovered",
@@ -61,7 +61,7 @@
         },
         {
             "Index": 0,
-            "K" : 1.0e4,
+            "K" : 1.0e2,
             "phi": 0.2,
             "width": 0.01,
             "Limit": "Erecovered",
@@ -75,7 +75,7 @@
         },
         {
             "Index": 1,
-            "K" : 1.0e4,
+            "K" : 1.0e2,
             "phi": 0.2,
             "width": 0.01,
             "Limit": "Erecovered",
@@ -89,7 +89,7 @@
         },
         {
             "Index": 7,
-            "K" : 1.0e4,
+            "K" : 1.0e2,
             "phi": 0.2,
             "width": 0.01,
             "Limit": "Erecovered",
@@ -103,7 +103,7 @@
         },
         {
             "Index": 3,
-            "K" : 1.0e4,
+            "K" : 1.0e2,
             "phi": 0.2,
             "width": 0.01,
             "Limit": "Erecovered",
@@ -117,7 +117,7 @@
         },
         {
             "Index": 2,
-            "K" : 1.0e4,
+            "K" : 1.0e2,
             "phi": 0.2,
             "width": 0.01,
             "Limit": "Erecovered",
@@ -131,7 +131,7 @@
         },
         {
             "Index": 5,
-            "K" : 1.0e4,
+            "K" : 1.0e2,
             "phi": 0.2,
             "width": 0.01,
             "Limit": "Erecovered",
@@ -145,7 +145,7 @@
         },
         {
             "Index": 6,
-            "K" : 1.0e4,
+            "K" : 1.0e2,
             "phi": 0.2,
             "width": 0.01,
             "Limit": "Erecovered",

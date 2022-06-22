@@ -557,15 +557,15 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
     
     cmesh->SetDimModel(gmeshdim);
 #ifdef PZDEBUG
-    {
-        cmesh->ComputeNodElCon();
-        int64_t ncon = cmesh->ConnectVec().NElements();
-        for(int64_t ic = 0; ic<ncon; ic++)
-        {
-            TPZConnect &c = cmesh->ConnectVec()[ic];
-            if(c.NElConnected() > 2 && c.NShape() != 4) DebugStop();
-        }
-    }
+//    {
+//        cmesh->ComputeNodElCon();
+//        int64_t ncon = cmesh->ConnectVec().NElements();
+//        for(int64_t ic = 0; ic<ncon; ic++)
+//        {
+//            TPZConnect &c = cmesh->ConnectVec()[ic];
+//            if(c.NElConnected() > 2 && c.NShape() != 4) DebugStop();
+//        }
+//    }
 #endif
 }
 
