@@ -29,6 +29,8 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
 
 void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data);
 
+void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte);
+
 // Quick fix functions. Should be deleted in the future (May 2022)
 void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh);
 void ModifyBCsForCase2(TPZGeoMesh* gmesh);
@@ -83,7 +85,7 @@ int main(){
     // 7: Two parallel square fractures very close, WITH overlap
     // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
 	// 9: Study of snapping tolerances on case 3
-	int simcase = 3;
+	int simcase = 9;
     string filenameBase;
     switch (simcase) {
         case 0:
@@ -205,7 +207,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Changing BCs for some testing cases -----
     if(simcase == 6 || simcase == 7){
         //linear pressure...
-        ModifyBCsFor2ParallelFractures(gmeshfine);
+//        ModifyBCsFor2ParallelFractures(gmeshfine);
         std::ofstream name3("ModBCs.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
@@ -296,35 +298,33 @@ void RunProblem(string& filenameBase, const int simcase)
         }
         mixAnalisys->Assemble();
 		
-        if(0) // Jun 2022: Can we delete this???
-        {
-            int64_t nc = mixed_operator->NConnects();
-            TPZFMatrix<STATE> &sol = mixed_operator->Solution();
-            for (int64_t ic = 0; ic<nc; ic++) {
-                TPZConnect &c = mixed_operator->ConnectVec()[ic];
-                int64_t seqnum = c.SequenceNumber();
-                if(seqnum < 0) continue;
-                unsigned char lagrange = c.LagrangeMultiplier();
-                STATE fill = 0.;
-                if(lagrange == 0 || lagrange == 2 || lagrange == 6)
-                {
-                }
-                else {
-                    fill = 4.;
-                }
-                int ndof = c.NShape();
-                for (int idf = 0; idf < ndof ; idf++) {
-                    int64_t index = mixed_operator->Block().Index(seqnum, idf);
-                    sol(index,0) = fill;
-                }
+		const bool testCtePressure = false;
+		if(testCtePressure){
+			{
+				std::ofstream out("qmesh.txt");
+				mixed_operator->MeshVector()[0]->Print(out);
+			}
+			const int neq = mixAnalisys->Mesh()->NEquations();
+			TPZFMatrix<STATE> res(neq,1,0.);
+			FillPCteSol(mixed_operator,1.);
+			mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+//			mixAnalisys->PostProcessTimeStep(2);
+//			mixAnalisys->PostProcessTimeStep(3);
+			TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
+//			mixed_operator->Solution().Print("sol");
+			mat->Multiply(mixed_operator->Solution(), res);
+//			cout << res;
+//			mixAnalisys->Rhs().Print("rhs");
+			res = res + mixAnalisys->Rhs();
+//			cout << res;
+			std::ofstream out("problematicEls.txt");
+			mixAnalisys->PrintVectorByElement(out, res, 1.e-6);
+		}
 
-            }
-        }
-        else
-        {
-            mixAnalisys->Solve();
-
-        }
+		mixAnalisys->Solve();
+		mixAnalisys->VerifyElementFluxes();
+				
+		
         TPZFastCondensedElement::fSkipLoadSolution = false;
         mixed_operator->LoadSolution(mixed_operator->Solution());
 		
@@ -1008,6 +1008,33 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
     }
 
 	// No need to buildConnectivity. It is already correct
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte) {
+	
+	int64_t nc = mpcmesh->NConnects();
+	TPZFMatrix<STATE> &sol = mpcmesh->Solution();
+	for (int64_t ic = 0; ic<nc; ic++) {
+		TPZConnect &c = mpcmesh->ConnectVec()[ic];
+		int64_t seqnum = c.SequenceNumber();
+		if(seqnum < 0) continue;
+		unsigned char lagrange = c.LagrangeMultiplier();
+		STATE fill = 0.;
+		if(lagrange == 1 || lagrange == 3 || lagrange == 5)
+		{
+			fill = pcte;
+		}
+		int ndof = c.NShape();
+		for (int idf = 0; idf < ndof ; idf++) {
+			int64_t index = mpcmesh->Block().Index(seqnum, idf);
+			sol(index,0) = fill;
+		}
+
+	}
+		
 }
 
 // ---------------------------------------------------------------------

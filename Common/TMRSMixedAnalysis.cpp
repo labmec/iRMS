@@ -9,6 +9,16 @@
 #endif
 #include "TPZSpStructMatrix_Eigen.h"
 #include "TPZSpMatrixEigen.h"
+#include <pzshapequad.h>
+#include "pzshapelinear.h"
+#include "pzshapetriang.h"
+#include "pzshapequad.h"
+#include "pzshapetetra.h"
+#include "pzshapecube.h"
+#include "pzshapeprism.h"
+#include "pzshapepiram.h"
+#include "pzshapepoint.h"
+#include "TPZCompElHDivCollapsed.h"
 
 using namespace std;
 
@@ -255,4 +265,74 @@ void TMRSMixedAnalysis::Solve(){
     auto total_time_solve = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_solve).count()/1000.;
     cout << "Total time solve = " << total_time_solve << " seconds" << endl;
 #endif
+}
+
+void TMRSMixedAnalysis::VerifyElementFluxes(){
+	TPZMultiphysicsCompMesh *mixedmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh()) ;
+	TPZCompMesh *cmesh =mixedmesh->MeshVector()[0];
+	std::ofstream file("fuxmesh.txt");
+	const TPZFMatrix<STATE> &meshSol = cmesh->Solution();
+	mixedmesh->MeshVector()[0]->Print(file);
+	int nels =mixedmesh->MeshVector()[0]->NElements();
+	for (int iel =0; iel<nels-1; iel++) {
+		TPZCompEl *cel = mixedmesh->MeshVector()[0]->Element(iel);
+		if (!cel) continue;
+//            if(cel->Dimension() != cmesh->Dimension()) continue;
+		TPZCompElHDiv<pzshape::TPZShapeCube> *hdivel = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(cel);
+		TPZCompElHDiv<pzshape::TPZShapeTetra> *hdiveltet = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTetra> *>(cel);
+		TPZCompElHDiv<pzshape::TPZShapeQuad> *hdivelq = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeQuad> *>(cel);
+		TPZCompElHDiv<pzshape::TPZShapeTriang> *hdivelqTri = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTriang> *>(cel);
+		TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivCollaps = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *>(hdivelq);
+		TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivCollapsTri = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *>(hdivelqTri);
+		if (!hdivel && !hdiveltet && !hdivCollaps && !hdivCollapsTri) {
+			continue;
+		}
+		TPZInterpolatedElement* intel = dynamic_cast<TPZInterpolatedElement*>(cel);
+		
+		int ncon = cel->NConnects();
+		int nCorners = cel->Reference()->NCornerNodes();
+		int nsides1 = cel->Reference()->NSides(1);
+		int nsides = cel->Reference()->NSides();
+		REAL sumel=0.0;
+		for (int icon=0; icon<ncon-1; icon++) {
+			TPZConnect &con = cel->Connect(icon);
+			int sideOrient =0;
+			const bool isColaps = hdivCollaps || hdivCollapsTri;
+			const int iconNum = hdivCollaps ? 5 : 4;
+			const int sideForEl = hdivCollaps ? 8 : 6;
+			if(!isColaps){
+				 sideOrient = intel->GetSideOrient(nCorners+nsides1+icon);
+			}
+			else{
+				if (isColaps && icon < iconNum) {
+					sideOrient = intel->GetSideOrient(nCorners+icon);
+				}
+				 
+			}
+			if (isColaps && icon == iconNum-1) {
+				ncon++;
+				continue;
+			}
+			if (isColaps && icon == iconNum) {
+				sideOrient = intel->GetSideOrient(sideForEl);
+			}
+			if (isColaps && icon == iconNum+1) {
+				sideOrient = intel->GetSideOrient(sideForEl+1);
+			}
+			
+		   
+			int sequence =con.fSequenceNumber;
+			int64_t pos = cmesh->Block().Position(sequence);
+			if(sequence==-1) continue;
+			int blocksize = cmesh->Block().Size(sequence);
+			for(int ieq=0; ieq< blocksize; ieq++)
+			{
+			sumel += sideOrient*meshSol.GetVal(cmesh->Block().Index(sequence,ieq),0);
+			}
+		}
+		if(std::abs(sumel)> 1.0e-8 ){
+			DebugStop();
+		}
+//            std::cout<<"Gel Index: "<< cel->Reference()->Index() <<" SumEl: "<<sumel<<std::endl;
+	}
 }

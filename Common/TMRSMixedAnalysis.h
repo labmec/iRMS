@@ -73,7 +73,10 @@ public:
     void Assemble() override;
     
     /// override solve to have timers
-    void Solve() override;    
+    void Solve() override;
+	
+	/// Verifies if the sum of the fluxes over all faces of an element is zero
+	void VerifyElementFluxes();
 };
 
 #endif /* TMRSMixedAnalysis_h */

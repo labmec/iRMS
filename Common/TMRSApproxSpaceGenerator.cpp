@@ -311,7 +311,44 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
                 }
             }
         }
+		
+		// Here we are creating the boundary compels of the fracture
         cmesh->AutoBuild(matTogelindex[fracbcid]);
+		
+		// Here, we fix the side orient of neighboring fracture elements
+		for(auto gelindex : matTogelindex[fracmatid]) {
+			TPZGeoEl *gel = gmesh->Element(gelindex);
+			TPZInterpolatedElement* intel = dynamic_cast<TPZInterpolatedElement*>(gel->Reference());
+			if(!intel) DebugStop();
+			for (int iside = gel->FirstSide(1); iside < gel->FirstSide(2); iside++) {
+				TPZGeoElSide gelside(gel,iside);
+				const int gelSideOrient = intel->GetSideOrient(iside);
+				for(TPZGeoElSide neigh = gelside.Neighbour() ; neigh != gelside ; neigh++){
+					TPZGeoEl* neighgel = neigh.Element();
+					if(neighgel->HasSubElement()) continue;
+					if(!IsFracMatId(neighgel->MaterialId()) && !IsFracBCMatId(neighgel->MaterialId())) continue;
+					
+					TPZInterpolatedElement* neighintel = dynamic_cast<TPZInterpolatedElement*>(neighgel->Reference());
+					if(!neighintel) continue;
+					const int neighside = neigh.Side();
+					
+					if(neighintel->NConnects() == 1){
+						intel->SetSideOrient(iside, 1);
+						neighintel->SetSideOrient(neighside, 1);
+						continue;
+					}
+
+					const int neighSideOrient = neighintel->GetSideOrient(neighside);
+					
+					if(gelSideOrient*neighSideOrient > 0){
+						const int newNeighSideOrient = -gelSideOrient;
+						neighintel->SetSideOrient(neighside, newNeighSideOrient);
+					}
+				}
+			}
+		}
+		
+		// Now, we split the connects of sides of fracture elements that have intersections
         for(auto gelindex : matTogelindex[fracintersect])
         {
             TPZGeoEl *gel = gmesh->Element(gelindex);
