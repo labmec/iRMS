@@ -478,9 +478,12 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         }
         TPZGeoElSide gelside(gel);
         TPZGeoElSide neigh = gelside.Neighbour();
+        // left and right volumetric elements
+        // left has side orient 1 , right has side orient -1
         std::pair<TPZCompElSide,TPZCompElSide> leftright;
         std::pair<int,int> leftrightdomain;
         std::pair<int64_t,int64_t> leftrightcindex;
+        // hdivdomain : domain of the fracture element
         int hdivdomain = mSubdomainIndexGel[gel->Index()];
         int icon = 0;
         // loop over all neighbours of the fracture element
@@ -516,8 +519,24 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         if(cleftright.first.HasDependency() && leftrightdomain.first == leftrightdomain.second) DebugStop();
         if(cleftright.second.HasDependency() && leftrightdomain.first == leftrightdomain.second) DebugStop();
         // verify if we need to swap the connects
+        bool needswap = false;
+        
         if((hdivdomain == leftrightdomain.first && cleftright.first.HasDependency()) ||
            (hdivdomain == leftrightdomain.second && cleftright.second.HasDependency()))
+        {
+            needswap = true;
+        }
+        if(!cleftright.first.HasDependency() && !cleftright.second.HasDependency())
+        {
+            auto skel = gelside.HasNeighbour(18);
+            if(!skel) DebugStop();
+            TPZCompEl *cskel = skel.Element()->Reference();
+            if(!cskel) DebugStop();
+            int skelcindex = cskel->ConnectIndex(0);
+            if(hdivdomain == leftrightdomain.first && leftrightcindex.first == skelcindex) needswap = true;
+            if(hdivdomain == leftrightdomain.second && leftrightcindex.second == skelcindex) needswap = true;
+        }
+        if(needswap)
         {
             TPZInterpolatedElement *intelL = dynamic_cast<TPZInterpolatedElement*>(leftright.first.Element());
             TPZInterpolatedElement *intelR = dynamic_cast<TPZInterpolatedElement*>(leftright.second.Element());
@@ -4009,6 +4028,26 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         }
     }
     
+    {
+        std::map<int64_t,std::set<int64_t>> connecttoel;
+        int64_t nel = cmesh->NElements();
+        for (int64_t el = 0; el < nel; el++) {
+            TPZCompEl *cel = cmesh->Element(el);
+            int nc = cel->NConnects();
+            for (int ic = 0; ic<nc; ic++) {
+                int64_t cindex = cel->ConnectIndex(ic);
+                connecttoel[cindex].insert(el);
+            }
+        }
+        auto els = connecttoel[667];
+        for(auto it:els)
+        {
+            TPZCompEl *cel = cmesh->Element(it);
+            cel->Print();
+        }
+        TPZConnect &c = cmesh->ConnectVec()[667];
+        c.Print(*cmesh);
+    }
     std::map<int64_t,int64_t> submeshindices;
     TPZCompMeshTools::PutinSubmeshes(cmesh, ElementGroups, submeshindices, KeepOneLagrangian);
     
