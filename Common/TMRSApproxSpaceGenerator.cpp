@@ -4028,26 +4028,26 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         }
     }
     
-    {
-        std::map<int64_t,std::set<int64_t>> connecttoel;
-        int64_t nel = cmesh->NElements();
-        for (int64_t el = 0; el < nel; el++) {
-            TPZCompEl *cel = cmesh->Element(el);
-            int nc = cel->NConnects();
-            for (int ic = 0; ic<nc; ic++) {
-                int64_t cindex = cel->ConnectIndex(ic);
-                connecttoel[cindex].insert(el);
-            }
-        }
-        auto els = connecttoel[667];
-        for(auto it:els)
-        {
-            TPZCompEl *cel = cmesh->Element(it);
-            cel->Print();
-        }
-        TPZConnect &c = cmesh->ConnectVec()[667];
-        c.Print(*cmesh);
-    }
+//    {
+//        std::map<int64_t,std::set<int64_t>> connecttoel;
+//        int64_t nel = cmesh->NElements();
+//        for (int64_t el = 0; el < nel; el++) {
+//            TPZCompEl *cel = cmesh->Element(el);
+//            int nc = cel->NConnects();
+//            for (int ic = 0; ic<nc; ic++) {
+//                int64_t cindex = cel->ConnectIndex(ic);
+//                connecttoel[cindex].insert(el);
+//            }
+//        }
+//        auto els = connecttoel[667];
+//        for(auto it:els)
+//        {
+//            TPZCompEl *cel = cmesh->Element(it);
+//            cel->Print();
+//        }
+//        TPZConnect &c = cmesh->ConnectVec()[667];
+//        c.Print(*cmesh);
+//    }
     std::map<int64_t,int64_t> submeshindices;
     TPZCompMeshTools::PutinSubmeshes(cmesh, ElementGroups, submeshindices, KeepOneLagrangian);
     
