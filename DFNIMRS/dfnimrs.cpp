@@ -85,7 +85,9 @@ int main(){
     // 7: Two parallel square fractures very close, WITH overlap
     // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
 	// 9: Study of snapping tolerances on case 3
-	int simcase = 9;
+    // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
+    // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
+	int simcase = 11;
     string filenameBase;
     switch (simcase) {
         case 0:
@@ -119,6 +121,12 @@ int main(){
 			break;
         case 9:
             filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/fl_case3";
+            break;
+        case 10:
+            filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestFunciona/fl_case3";
+            break;
+        case 11:
+            filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestNoFunciona/fl_case3";
             break;
 		default:
             break;

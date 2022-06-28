@@ -519,25 +519,25 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         if(cleftright.first.HasDependency() && leftrightdomain.first == leftrightdomain.second) DebugStop();
         if(cleftright.second.HasDependency() && leftrightdomain.first == leftrightdomain.second) DebugStop();
         // verify if we need to swap the connects
-        bool needswap = false;
-        
-        if((hdivdomain == leftrightdomain.first && cleftright.first.HasDependency()) ||
-           (hdivdomain == leftrightdomain.second && cleftright.second.HasDependency()))
-        {
-            needswap = true;
-        }
-        if(!cleftright.first.HasDependency() && !cleftright.second.HasDependency())
-        {
-            auto skel = gelside.HasNeighbour(18);
-            if(!skel) DebugStop();
-            TPZCompEl *cskel = skel.Element()->Reference();
-            if(!cskel) DebugStop();
-            int skelcindex = cskel->ConnectIndex(0);
-            if(hdivdomain == leftrightdomain.first && leftrightcindex.first == skelcindex) needswap = true;
-            if(hdivdomain == leftrightdomain.second && leftrightcindex.second == skelcindex) needswap = true;
-        }
-        if(needswap)
-        {
+//        bool needswap = false;
+//
+//        if((hdivdomain == leftrightdomain.first && cleftright.first.HasDependency()) ||
+//           (hdivdomain == leftrightdomain.second && cleftright.second.HasDependency()))
+//        {
+//            needswap = true;
+//        }
+//        if(!cleftright.first.HasDependency() && !cleftright.second.HasDependency())
+//        {
+//            auto skel = gelside.HasNeighbour(18);
+//            if(!skel) DebugStop();
+//            TPZCompEl *cskel = skel.Element()->Reference();
+//            if(!cskel) DebugStop();
+//            int skelcindex = cskel->ConnectIndex(0);
+//            if(hdivdomain == leftrightdomain.first && leftrightcindex.first == skelcindex) needswap = true;
+//            if(hdivdomain == leftrightdomain.second && leftrightcindex.second == skelcindex) needswap = true;
+//        }
+//        if(needswap)
+//        {
             TPZInterpolatedElement *intelL = dynamic_cast<TPZInterpolatedElement*>(leftright.first.Element());
             TPZInterpolatedElement *intelR = dynamic_cast<TPZInterpolatedElement*>(leftright.second.Element());
             int Llocindex = intelL->SideConnectLocId(0, leftright.first.Side());
@@ -546,7 +546,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
             intelR->SetConnectIndex(Rlocindex, leftrightcindex.first);
             leftrightcindex.first = leftright.first.ConnectIndex();
             leftrightcindex.second = leftright.second.ConnectIndex();
-        }
+//        }
         // verify if the order is OK
         TPZConnect &cL = cmesh->ConnectVec()[leftrightcindex.first];
         // verify if we need to swap the connects
