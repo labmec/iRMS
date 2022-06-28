@@ -138,7 +138,7 @@ void RunProblem(string& filenameBase, const int simcase)
     const bool isRefineMesh = false;
     const bool isPostProc = true;
 	const bool isRunWithTranport = false;
-	const bool isMHM = false;
+	const bool isMHM = true;
 	const int n_threads = 8;
     
     // ----- Creating gmesh and data transfer -----
@@ -207,7 +207,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Changing BCs for some testing cases -----
     if(simcase == 6 || simcase == 7){
         //linear pressure...
-//        ModifyBCsFor2ParallelFractures(gmeshfine);
+        ModifyBCsFor2ParallelFractures(gmeshfine);
         std::ofstream name3("ModBCs.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
@@ -334,6 +334,28 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Note: This has to be done after LoadSolution()!
 		mixed_operator->UpdatePreviousState(-1.);
         
+        // Computes the integral of the normal flux on the boundaries.
+        // To use, change the inletMatId and outletMatId according to problem
+        const bool computeInAndOutFlux = false;
+        if(computeInAndOutFlux){
+            std::set<int> matidsInlet;
+            std::set<int> matidsOutlet;
+            std::string varname="NormalFlux";
+            const int inletMatId = 2, outletMatId = 3;
+            matidsInlet.insert(inletMatId);
+            matidsOutlet.insert(outletMatId);
+            mixed_operator->Reference()->ResetReference();
+            mixed_operator->LoadReferences(); // compute integral in the multiphysics mesh
+            int nels = mixed_operator->NElements();
+            
+            TPZVec<STATE> vecint = mixed_operator->Integrate(varname, matidsInlet);
+            std::cout<<"Inlet integral of normal flux = "<<vecint<<std::endl;
+            TPZVec<STATE> vecintout = mixed_operator->Integrate(varname, matidsOutlet);
+            std::cout<<"*****"<<std::endl;
+            std::cout<<"Outlet integral of normal flux = "<<vecintout<<std::endl;
+        }
+    
+        
         // ----- Post processing -----
         if (isPostProc) {
             mixAnalisys->fsoltransfer.TransferFromMultiphysics();
@@ -344,6 +366,9 @@ void RunProblem(string& filenameBase, const int simcase)
         }
     }
     
+    
+ 
+    //
     auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count()/1000.;
     cout << "\n\n\t--------- Total time of simulation = " << total_time << " seconds -------\n" << endl;
 

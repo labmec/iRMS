@@ -98,6 +98,7 @@ int TMRSDarcyFlowWithMem<TMEM>::VariableIndex(const std::string &name) const {
     if(!strcmp("g_average",name.c_str()))       return  5;
     if(!strcmp("p_average",name.c_str()))       return  6;
     if(!strcmp("GradPressure", name.c_str()))   return 7;
+    if(!strcmp("NormalFlux", name.c_str()))   return 8;
     return TPZMaterial::VariableIndex(name);
 }
 
@@ -110,6 +111,7 @@ int TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(int var) const{
     if(var == 5) return 1;
     if(var == 6) return 1;
     if(var == 7) return 3;
+    if(var == 8) return 1;
     return TPZMaterial::NSolutionVariables(var);
 }
 
@@ -128,7 +130,11 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> 
     
     q = datavec[qb].sol[0];
     p = datavec[pb].sol[0];
-    REAL div_q = datavec[qb].divsol[0][0];
+    
+    if(var == 8){ // normal flux. Only works for bc materials
+        Solout[0] = q[0];
+        return;
+    }
     
     if(var == 1){
         for (int i=0; i < 3; i++)
@@ -144,6 +150,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> 
     }
     
     if(var == 3){
+        REAL div_q = datavec[qb].divsol[0][0];
         Solout[0] = div_q;
         return;
     }

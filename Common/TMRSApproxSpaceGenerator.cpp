@@ -3636,7 +3636,6 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
                 mem.m_sw = 0.0;
 				mem.m_phi = it->second.m_porosity;
 				const REAL fracwidth = it->second.m_width;
-				mem.m_kappa_normal = 1./(fracwidth*fracwidth);
                 REAL kappa = it->second.m_perm;
                 mem.m_kappa.Resize(3, 3);
                 mem.m_kappa.Zero();
@@ -3646,6 +3645,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
                     mem.m_kappa(j,j) = kappa;
                     mem.m_kappa_inv(j,j) = 1.0/kappa;
                 }
+                mem.m_kappa_normal = 2.0*kappa/(fracwidth*fracwidth);
             }
         }
         
@@ -4269,7 +4269,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     int fine_skeleton_matid = mSimData.mTGeometry.m_skeletonMatId;
     int coarse_skeleton_matid = 18;
     std::map<int,int64_t> MatFinetoCoarseElIndex;
-//    std::map<int64_t,int64_t> NodeCoarseToNodeFine;
+//  std::map<int64_t,int64_t> NodeCoarseToNodeFine;
     std::vector<int64_t> NodeCoarseToNodeFine(coarsemesh->NNodes(),-1);
     std::map<int64_t,int64_t> ElCoarseToElFine;
     

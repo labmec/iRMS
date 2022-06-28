@@ -28,6 +28,8 @@ endif()
 file(GLOB_RECURSE PZ_SRC
      "../neopz/*.h"
      "../neopz/*.cpp"
+     "../NeoPzDevelop/*.h"
+     "../NeoPzDevelop/*.cpp"
 )
 add_custom_target( GlobalFiles SOURCES ${PZ_SRC})
 
