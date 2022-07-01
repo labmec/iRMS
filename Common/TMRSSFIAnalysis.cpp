@@ -179,14 +179,17 @@ void TMRSSFIAnalysis::FillProperties(){
                         break;
                     }
                 }
-                if (!fountmat)
+                if (!fountmat){
                     DebugStop();
+                }
+//
                 
             }
             
             m_transport_module->fAlgebraicTransport.fdt = m_sim_data->mTNumerics.m_dt;
             //Type 0.- InletCondition
-            //Type 1.- OutletCondition            
+            //Type 1.- OutletCondition
+            bool foundinlet = false;
 			for (auto& chunk : m_sim_data->mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
 				const int idVal   = chunk.first;
 				std::pair<int,REAL>& typeAndVal = chunk.second;
@@ -194,11 +197,51 @@ void TMRSSFIAnalysis::FillProperties(){
 				const REAL idValue   = typeAndVal.second;
 				std::pair<int, REAL> bccond = std::make_pair(idType, idValue);
 				m_transport_module->fAlgebraicTransport.fboundaryCMatVal[idVal] =bccond;
+                //PressureImposed
 				if(idType==0){
-					m_transport_module->fAlgebraicTransport.inletmatid =idVal;
+//                    if(idValue!=0){
+                        if (!foundinlet) {
+                            m_transport_module->fAlgebraicTransport.inletmatid =idVal;
+                            foundinlet = true;
+                        }
+                        else{
+                            int inletant = m_transport_module->fAlgebraicTransport.inletmatid;
+                            REAL val = m_transport_module->fAlgebraicTransport.fboundaryCMatVal[inletant].second;
+                            int type = m_sim_data->mTBoundaryConditions.mBCTransportMatIdToTypeValue[inletant].first;
+                            if(type==1){
+                                m_transport_module->fAlgebraicTransport.outletmatid = idVal;
+                            }
+                            if((idType==0) && (val>idValue) && (type!=1)){
+                                m_transport_module->fAlgebraicTransport.inletmatid = inletant;
+                                m_transport_module->fAlgebraicTransport.outletmatid = idVal;
+                            }
+//                            else{
+//                                m_transport_module->fAlgebraicTransport.inletmatid = idVal;
+//                                m_transport_module->fAlgebraicTransport.outletmatid = inletant;
+//                            }
+//                        }
+                    }
+					
 				}
-				if(idType==1){
-					m_transport_module->fAlgebraicTransport.outletmatid =idVal;
+				if(idType==1 && idValue!=0){
+                    if(idValue<0){
+                        if(!foundinlet){
+                            m_transport_module->fAlgebraicTransport.inletmatid=idVal;
+                            foundinlet = true;
+                        }
+                        else{
+                            int antval =m_transport_module->fAlgebraicTransport.inletmatid;
+                            m_transport_module->fAlgebraicTransport.inletmatid=idVal;
+                            m_transport_module->fAlgebraicTransport.outletmatid=antval;
+                        }
+                        
+                    }
+                    else{
+                        
+                        m_transport_module->fAlgebraicTransport.outletmatid =idVal;
+                        
+                    }
+					
 				}
 			}
             
@@ -475,8 +518,8 @@ void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracBound);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_transport_module->fAlgebraicTransport.inletmatid);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_transport_module->fAlgebraicTransport.outletmatid);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(4); //Mat With No Flux
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(5);//Mat With No Flux
+   // m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(4); //Mat With No Flux
+   // m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(5);//Mat With No Flux
     m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
 }
 

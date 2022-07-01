@@ -27,7 +27,7 @@
 		{
 			"name": "outlet",
 			"matid": 3,
-			"type": 0,
+			"type": 0, // imposed pressure
 			"value": 1.0
 		},		
 		{

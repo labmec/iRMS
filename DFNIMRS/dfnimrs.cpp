@@ -88,14 +88,15 @@ int main(){
 	// 9: Study of snapping tolerances on case 3
     // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
     // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
-	int simcase = 11;
+	int simcase = 10;
     string filenameBase;
     switch (simcase) {
         case 0:
 			filenameBase = basemeshpath + "/dfnimrs/twoElCoarseNew";
             break;
         case 1:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case1";
+//			filenameBase = basemeshpath + "/dfnimrs/fl_case1";
+            filenameBase = basemeshpath + "/dfnimrs/fl_case1";
             break;
         case 2:
 //			DebugStop(); // create me
@@ -146,7 +147,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Simulation and printing parameters -----
     const bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = false;
+	const bool isRunWithTranport = true;
 	const bool isMHM = true;
 	const int n_threads = 8;
     
@@ -232,7 +233,7 @@ void RunProblem(string& filenameBase, const int simcase)
     bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-    if((simcase == 1 ||simcase == 2 || simcase == 3) && isRunWithTranport){
+    if((simcase == 1 ||simcase == 2 || simcase == 3 || simcase == 10) && isRunWithTranport){
 
 		// Create transport mesh. TODO: Create transport data structure without the need for a mesh
         aspace.BuildAuxTransportCmesh();
@@ -384,7 +385,7 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	const int ndom = input["Domains"].size();
 	if(input.find("Fractures") == input.end()) DebugStop();
 	const int nfrac = input["Fractures"].size();
-	sim_data.mTReservoirProperties.mPorosityAndVolumeScale.resize(ndom+nfrac);
+	sim_data.mTReservoirProperties.mPorosityAndVolumeScale.resize(ndom+nfrac+1);
 	int countPhi = 0;
 	
 	// ------------------------ Reading 3D Domain matids ------------------------
@@ -402,11 +403,13 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		idPerm[matid]= permeability;
 		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(matid,phi, 1.0);
 	}
+    
 	sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
 	
 	// ------------------------ Reading 3D Domain BC matids ------------------------
 	if(input.find("Boundary") == input.end()) DebugStop();
 	std::map<int,std::pair<int,REAL>>& BCFlowMatIdToTypeValue = sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue;
+    std::map<int,std::pair<int,REAL>>& BCTransportMatIdToTypeValue = sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue;
 	for(auto& bc : input["Boundary"]){
 		if(bc.find("matid") == bc.end()) DebugStop();
 		if(bc.find("type") == bc.end()) DebugStop();
@@ -417,11 +420,15 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		
 		if(BCFlowMatIdToTypeValue.find(matid) != BCFlowMatIdToTypeValue.end()) DebugStop();
 		BCFlowMatIdToTypeValue[matid] = std::make_pair(type, value);
+        BCTransportMatIdToTypeValue[matid] = std::make_pair(type, value);
+        
 	}
 	
 	// ------------------------ Reading fractures and fracture bcs matids ------------------------
     int initfracmatid =input["FractureInitMatId"];
     int actualfracid = initfracmatid;
+    REAL phiintersec=0;
+    REAL inersecLenght =0;
     for(auto& fracture : input["Fractures"]){
         const int i = fracture["Index"];
         std::string name = "Fracture" + std::to_string(i);
@@ -463,12 +470,19 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 		if(fracture.find("phi") == fracture.end()) DebugStop();
 		const REAL phifrac = fracture["phi"];
 		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(matid, phifrac, fracWidth);
+        
+        REAL phiintersec=phifrac;
+        REAL inersecLenght =fracWidth;
 
     }
+//    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(299,0.2, 0.01);
 	
+
     int FractureHybridPressureMatId = input["FractureHybridPressureMatId"];
     // this is the material id of the pressure between hybridized fluxes of intersecting fractures
     sim_data.mTGeometry.m_pressureMatId = FractureHybridPressureMatId;
+    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(FractureHybridPressureMatId, phiintersec, inersecLenght*inersecLenght);
+    
     
     // the material id of the conductivity between fractures
     if(input.find("FractureGlueMatId") != input.end())
@@ -488,16 +502,6 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
 	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
 	
-    // @TODO: PHIL: this data structure should be a map. The matids are the same as above and the values are all 1
-    // @TODO: PHIL to JOSE: what is type 5?
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(N_Type, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(D_Type, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[ENoflux] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracOutlet] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracInlet] = std::make_pair(5, 1.);
-	sim_data.mTGeometry.mInterface_material_idFracBound = EFracNoFlux;
-
-	
 	// Other properties
 	sim_data.mTGeometry.mSkeletonDiv = 0;
 	sim_data.mTNumerics.m_sfi_tol = 0.0001;
@@ -511,8 +515,10 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	sim_data.mTNumerics.m_gravity = grav;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
 	sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
-	sim_data.mTNumerics.m_n_steps = 100;
-	sim_data.mTNumerics.m_dt      = 1.0e7;//*day;
+	
+    
+    sim_data.mTNumerics.m_n_steps = 100;
+	sim_data.mTNumerics.m_dt      = 0.01;//*day;
 	sim_data.mTNumerics.m_max_iter_sfi=1;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
 	sim_data.mTNumerics.m_max_iter_transport=1;

@@ -354,7 +354,11 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimVolDimFrac(TPZComp
     orientationR = 0;
     TPZCompEl *CompelMixedR = gelR->Reference();
     TPZMultiphysicsElement *celmultR =dynamic_cast<TPZMultiphysicsElement *>(CompelMixedR);
-    if(!celmultR){
+    TPZCompEl *hdivBoundR = nullptr;
+    if(celmultR ){
+        hdivBoundR = celmultR->Element(0);
+    }
+    if(!celmultR || !hdivBoundR){
         std::cout<<"TransportElement Without fluxelement: INTERESECTION?"<<std::endl;
         orientationR = gelR->NormalOrientation(SideR);
         orientationR = 0.0; //-orientationL;
@@ -368,7 +372,7 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimVolDimFrac(TPZComp
         }
         return;
     }
-    TPZCompEl *hdivBoundR = celmultR->Element(0);
+//    TPZCompEl *hdivBoundR = celmultR->Element(0);
     TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *hdivCollapsedCR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *>(hdivBoundR);
     TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *hdivCollapsedTR= dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *>(hdivBoundR);
     
@@ -1280,6 +1284,9 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int side = gel->NSides()-1;
         transport.fCellsData.fVolume[i]=volume;
         transport.fCellsData.fMatId[i]=matId;
+        if(matId==299){
+            int ok=0;
+        }
         if (cel->NConnects()!=1) {
             DebugStop();
         }
