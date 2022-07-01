@@ -84,38 +84,38 @@ int main(){
 	// 9: Study of snapping tolerances on case 3
     // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
     // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
-	int simcase = 10;
+	int simcase = 0;
     string filenameBase;
     switch (simcase) {
         case 0:
-			filenameBase = basemeshpath + "/dfnimrs/twoElCoarseNew";
+			filenameBase = basemeshpath + "/dfnimrs/twoelCoarse/twoElCoarseNew";
             break;
         case 1:
 //			filenameBase = basemeshpath + "/dfnimrs/fl_case1";
-            filenameBase = basemeshpath + "/dfnimrs/fl_case1";
+            filenameBase = basemeshpath + "/dfnimrs/fl_case1/fl_case1";
             break;
         case 2:
 //			DebugStop(); // create me
-			filenameBase = basemeshpath + "/dfnimrs/fl_case2";
+			filenameBase = basemeshpath + "/dfnimrs/fl_case2/fl_case2";
             break;
         case 3:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3";
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3/fl_case3";
             break;
         case 4:
             DebugStop(); // Need to generate mesh without overlap or need to treat overlap
 			filenameBase = basemeshpath + "/dfnimrs/fl_case4";
             break;
         case 5:
-			filenameBase = basemeshpath + "/dfnimrs/intersect";
+			filenameBase = basemeshpath + "/dfnimrs/intersect/intersect";
             break;
         case 6:
-			filenameBase = basemeshpath + "/dfnimrs/2parallel";
+			filenameBase = basemeshpath + "/dfnimrs/2parallel/2parallel";
 			break;
         case 7:
-			filenameBase = basemeshpath + "/dfnimrs/2paralleloverlap";
+			filenameBase = basemeshpath + "/dfnimrs/2paralleloverlap/2paralleloverlap";
 			break;
         case 8:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap";
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/fl_case3_snap";
 			break;
         case 9:
             filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/fl_case3";
@@ -143,7 +143,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Simulation and printing parameters -----
     const bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = true;
+	const bool isRunWithTranport = false;
 	const bool isMHM = true;
 	const int n_threads = 8;
     
@@ -520,8 +520,16 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	sim_data.mTNumerics.m_max_iter_transport=1;
 	
 	// PostProcess controls
-	sim_data.mTPostProcess.m_file_name_mixed = "mixed_operator.vtk";
-	sim_data.mTPostProcess.m_file_name_transport = "transport_operator.vtk";
+	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
+	std::replace( vtkfilename.begin(), vtkfilename.end(), '/', '_');
+	std::string pressurevtk = vtkfilename + ".vtk";
+	std::string transportvtk = vtkfilename + "_transport.vtk";
+	std::cout << "\n===> PostProcess file name: " << vtkfilename << std::endl;
+	
+	
+	
+	sim_data.mTPostProcess.m_file_name_mixed = pressurevtk;
+	sim_data.mTPostProcess.m_file_name_transport = transportvtk;
 	TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
 	vecnames.Push("Flux");
 	scalnames.Push("Pressure");
