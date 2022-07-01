@@ -43,6 +43,7 @@ void ReadMeshesWell(string& filenameFine, string& filenameCoarse,
 void ReadMeshesIP3D(string& filenameFine, string& filenameCoarse,
                     TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
 
+void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh);
 
 // TODO: Delete this enum? (May 2022)
 enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
@@ -306,12 +307,9 @@ void RunProblem(string& filenameBase, const int simcase)
         }
         mixAnalisys->Assemble();
 		
+		// Testing if constant pressure leads to zero residual in cte pressure problem
 		const bool testCtePressure = false;
 		if(testCtePressure){
-			{
-				std::ofstream out("qmesh.txt");
-				mixed_operator->MeshVector()[0]->Print(out);
-			}
 			const int neq = mixAnalisys->Mesh()->NEquations();
 			TPZFMatrix<STATE> res(neq,1,0.);
 			FillPCteSol(mixed_operator,1.);
@@ -319,16 +317,13 @@ void RunProblem(string& filenameBase, const int simcase)
 //			mixAnalisys->PostProcessTimeStep(2);
 //			mixAnalisys->PostProcessTimeStep(3);
 			TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
-//			mixed_operator->Solution().Print("sol");
 			mat->Multiply(mixed_operator->Solution(), res);
-//			cout << res;
-//			mixAnalisys->Rhs().Print("rhs");
 			res = res + mixAnalisys->Rhs();
-//			cout << res;
 			std::ofstream out("problematicEls.txt");
 			mixAnalisys->PrintVectorByElement(out, res, 1.e-6);
 		}
-
+		
+		// Solving problem
 		mixAnalisys->Solve();
 		mixAnalisys->VerifyElementFluxes();
 				
@@ -344,23 +339,10 @@ void RunProblem(string& filenameBase, const int simcase)
         
         // Computes the integral of the normal flux on the boundaries.
         // To use, change the inletMatId and outletMatId according to problem
-        const bool computeInAndOutFlux = false;
+        const bool computeInAndOutFlux = true;
         if(computeInAndOutFlux){
-            std::set<int> matidsInlet;
-            std::set<int> matidsOutlet;
-            std::string varname="NormalFlux";
-            const int inletMatId = 2, outletMatId = 3;
-            matidsInlet.insert(inletMatId);
-            matidsOutlet.insert(outletMatId);
-            mixed_operator->Reference()->ResetReference();
-            mixed_operator->LoadReferences(); // compute integral in the multiphysics mesh
-            int nels = mixed_operator->NElements();
-            
-            TPZVec<STATE> vecint = mixed_operator->Integrate(varname, matidsInlet);
-            std::cout<<"Inlet integral of normal flux = "<<vecint<<std::endl;
-            TPZVec<STATE> vecintout = mixed_operator->Integrate(varname, matidsOutlet);
-            std::cout<<"*****"<<std::endl;
-            std::cout<<"Outlet integral of normal flux = "<<vecintout<<std::endl;
+			const int inletMatId = 2, outletMatId = 3;
+			computeIntegralOfNormalFlux(inletMatId, outletMatId, mixed_operator);
         }
     
         
@@ -1068,6 +1050,26 @@ void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte) {
 
 	}
 		
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh) {
+	std::set<int> matidsInlet;
+	std::set<int> matidsOutlet;
+	std::string varname="NormalFlux";
+	matidsInlet.insert(inletMatId);
+	matidsOutlet.insert(outletMatId);
+	cmesh->Reference()->ResetReference();
+	cmesh->LoadReferences(); // compute integral in the multiphysics mesh
+	int nels = cmesh->NElements();
+	
+	TPZVec<STATE> vecint = cmesh->Integrate(varname, matidsInlet);
+	std::cout << "Inlet integral of normal flux = " << vecint << std::endl;
+	TPZVec<STATE> vecintout = cmesh->Integrate(varname, matidsOutlet);
+	std::cout << "*****" << std::endl;
+	std::cout << "Outlet integral of normal flux = " << vecintout << std::endl;
 }
 
 // ---------------------------------------------------------------------
