@@ -37,11 +37,7 @@ void ModifyBCsForCase2(TPZGeoMesh* gmesh);
 void ModifyBCsForCase3(TPZGeoMesh* gmesh);
 void ModifyBCsForCase4(TPZGeoMesh* gmesh);
 void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh);
-// Mesh readers for plotting
-void ReadMeshesWell(string& filenameFine, string& filenameCoarse,
-                    TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
-void ReadMeshesIP3D(string& filenameFine, string& filenameCoarse,
-                    TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse);
+
 
 void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -1062,6 +1058,27 @@ void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte) {
 // ---------------------------------------------------------------------
 
 void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh) {
+	
+	// modifying bc of top outlet of case 3 to compute integral separately
+	TPZGeoMesh* gmesh = cmesh->Reference();
+	const REAL zerotol = ZeroTolerance();
+	for (auto gel: gmesh->ElementVec()) {
+		if (!gel) continue;
+		if (gel->MaterialId() != 3) continue; // 2d faces on boundary only
+		
+		TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+		gel->CenterPoint(gel->NSides()-1, masscent);
+		gel->X(masscent, xcenter);
+		const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+		const bool isYend = fabs(y-2.25) < zerotol;
+//		const bool isYend = (y-0.0) < zerotol;
+		
+//		if(isYend and z < 0.5){
+//			gel->SetMaterialId(-10000);
+//		}
+				
+	}
+	
 	std::set<int> matidsInlet;
 	std::set<int> matidsOutlet;
 	std::string varname="NormalFlux";
