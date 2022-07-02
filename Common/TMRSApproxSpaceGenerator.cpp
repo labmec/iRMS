@@ -520,6 +520,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         if(cleftright.first.HasDependency() && leftrightdomain.first == leftrightdomain.second) DebugStop();
         if(cleftright.second.HasDependency() && leftrightdomain.first == leftrightdomain.second) DebugStop();
         // verify if we need to swap the connects
+		// NOTE Jul 2022: This code was need to run case 2 of flemisch benchmark with mhm
+		//                It seems, it is not needed anymore since it works without it. If something happens, please check.
 //        bool needswap = false;
 //
 //        if((hdivdomain == leftrightdomain.first && cleftright.first.HasDependency()) ||

@@ -84,7 +84,8 @@ int main(){
 	// 9: Study of snapping tolerances on case 3
     // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
     // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
-	int simcase = 0;
+	// 12,13,14,15,16,17: Modified Case 3 where all fracs touch boundary. Snapping is 0.0001, 0.04, 0.05, 0.1, 0.01, 0.03 respectively
+	int simcase = 12;
     string filenameBase;
     switch (simcase) {
         case 0:
@@ -126,6 +127,24 @@ int main(){
         case 11:
             filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestNoFunciona/fl_case3";
             break;
+		case 12:
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_0001/fl_case3";
+			break;
+		case 13:
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_04/fl_case3";
+			break;
+		case 14:
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_05/fl_case3";
+			break;
+		case 15:
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_1/fl_case3";
+			break;
+		case 16:
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_01/fl_case3";
+			break;
+		case 17:
+			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/fl_case3";
+			break;
 		default:
             break;
     }
@@ -1068,11 +1087,12 @@ void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte) {
 void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh) {
 	
 	// modifying bc of top outlet of case 3 to compute integral separately
+	const int matidFake = -10000;
 	TPZGeoMesh* gmesh = cmesh->Reference();
 	const REAL zerotol = ZeroTolerance();
 	for (auto gel: gmesh->ElementVec()) {
 		if (!gel) continue;
-		if (gel->MaterialId() != 3) continue; // 2d faces on boundary only
+		if (gel->MaterialId() != outletMatId) continue; // 2d faces on boundary only
 		
 		TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
 		gel->CenterPoint(gel->NSides()-1, masscent);
@@ -1081,14 +1101,13 @@ void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TP
 		const bool isYend = fabs(y-2.25) < zerotol;
 //		const bool isYend = (y-0.0) < zerotol;
 		
-//		if(isYend and z < 0.5){
-//			gel->SetMaterialId(-10000);
-//		}
+		if(isYend and z < 0.5){
+			gel->SetMaterialId(matidFake);
+		}
 				
 	}
 	
-	std::set<int> matidsInlet;
-	std::set<int> matidsOutlet;
+	std::set<int> matidsInlet, matidsOutlet;
 	std::string varname="NormalFlux";
 	matidsInlet.insert(inletMatId);
 	matidsOutlet.insert(outletMatId);
@@ -1098,9 +1117,31 @@ void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TP
 	
 	TPZVec<STATE> vecint = cmesh->Integrate(varname, matidsInlet);
 	std::cout << "Inlet integral of normal flux = " << vecint << std::endl;
+	
 	TPZVec<STATE> vecintout = cmesh->Integrate(varname, matidsOutlet);
 	std::cout << "*****" << std::endl;
-	std::cout << "Outlet integral of normal flux = " << vecintout << std::endl;
+	std::cout << "Inlet integral of normal flux = " << vecint << std::endl;
+	std::cout << "Outlet integral of normal flux at top = " << -vecintout[0] << std::endl;
+	std::cout << "Outlet integral of normal flux at bot = " << vecint[0] + vecintout[0] << std::endl;
+
+	
+	
+	for (auto gel: gmesh->ElementVec()) {
+		if (!gel) continue;
+		if (gel->MaterialId() != matidFake) continue; // 2d faces on boundary only
+		
+		TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+		gel->CenterPoint(gel->NSides()-1, masscent);
+		gel->X(masscent, xcenter);
+		const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+		const bool isYend = fabs(y-2.25) < zerotol;
+//		const bool isYend = (y-0.0) < zerotol;
+		
+		if(isYend and z < 0.5){
+			gel->SetMaterialId(outletMatId);
+		}
+				
+	}
 }
 
 // ---------------------------------------------------------------------
