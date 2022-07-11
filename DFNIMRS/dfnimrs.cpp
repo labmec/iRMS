@@ -85,7 +85,7 @@ int main(){
     // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
     // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
 	// 12,13,14,15,16,17: Modified Case 3 where all fracs touch boundary. Snapping is 0.0001, 0.04, 0.05, 0.1, 0.01, 0.03 respectively
-	int simcase = 12;
+	int simcase = 0;
     string filenameBase;
     switch (simcase) {
         case 0:
