@@ -4,12 +4,17 @@
  *
  */
 
+#define USEMAIN
+
+#ifndef USEMAIN
 #include <catch2/catch.hpp>
+#endif
 
 #include <TMRSApproxSpaceGenerator.h>
 #include <tpzgeoelrefpattern.h>
 #include <TPZGenGrid3D.h>
 #include "imrs_config.h"
+#include "pzlog.h"
 
 // ---- Enum for materials ----
 enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd, EVolume, EFaceBCPressure};
@@ -35,6 +40,12 @@ namespace onefractest{
 
 using namespace std;
 
+// ----- Logger -----
+#ifdef PZ_LOG
+static TPZLogger mainlogger("cubicdomain");
+#endif
+
+#ifndef USEMAIN
 // ---- Test 0 ----
 TEST_CASE("constant_pressure","[onefrac_test]"){
     onefractest::TestOneFrac(0);
@@ -55,14 +66,28 @@ TEST_CASE("linear_pressure_transport","[onefrac_test]"){
     onefractest::TestOneFrac(3);
 }
 
-//int main(){
-//    onefractest::TestOneFrac(2);
-//    return 0;
-//}
+#else
+int main(){
+    onefractest::TestOneFrac(3);
+    return 0;
+}
+#endif
 
 // ---- Driver Function Implementation ----
-void onefractest::TestOneFrac(const int& caseToSim)
-{
+void onefractest::TestOneFrac(const int& caseToSim) {
+    
+    string basemeshpath(FRACMESHES);
+#ifdef PZ_LOG
+    string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
+    TPZLogger::InitializePZLOG(logpath);
+    if (mainlogger.isDebugEnabled()) {
+        std::stringstream sout;
+        sout << "\nLogger for Cubic Domain problem target\n" << endl;;
+        LOGPZ_DEBUG(mainlogger, sout.str())
+    }
+#endif
+
+    
     cout << "\n\n\t\t---------------------- Start of Simulation " << caseToSim <<  " ------------------------\n" << endl;
     
     // ----- Creating gmesh and data transfer -----
@@ -85,7 +110,8 @@ void onefractest::TestOneFrac(const int& caseToSim)
     sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     
     // ----- Setting gmesh -----
-    aspace.SetGeometry(gmesh);
+    aspace.InitMatIdForMergeMeshes() = 8;
+    aspace.SetGeometry(gmesh,gmesh);
     
     // ----- Setting the global data transfer -----
 //    sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
@@ -169,6 +195,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
     mixAnalisys->PostProcessTimeStep(dimToPost);
     }
     // ----- Checking if results match -----
+#ifndef USEMAIN
     gmesh->ResetReference();
     mixed_operator->LoadReferences();
     std::list<TPZCompEl *> ellist;
@@ -203,7 +230,7 @@ void onefractest::TestOneFrac(const int& caseToSim)
             }
         } // ellist
     } // elementvec
-    
+#endif
    
     // ----- Cleaning up -----
     delete gmesh;
@@ -364,6 +391,9 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     }
     else if (caseToSim < 3){
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EFaceBCPressure] = std::make_pair(D_Type,1.);
+        sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,1.);
+        sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,1.);
+        sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(D_Type,1.);
         
 		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPressure] = std::make_pair(D_Type, 1.);
     }
@@ -375,9 +405,9 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
 		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPressure] = std::make_pair(N_Type, zero_flux);
                 
 		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(D_Type, 1.);
-		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(N_Type, 0.);
+		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(D_Type, 0.);
 		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[ENoflux] = std::make_pair(5, zero_flux);
-		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFaceBCPressure] = std::make_pair(5, 1.);
+//		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFaceBCPressure] = std::make_pair(5, 1.);
 		sim_data.mTGeometry.mInterface_material_idFracBound = EPressure;
         
     }

@@ -2618,11 +2618,12 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
 			int bc_id   = chunk.first;
 			std::pair<int,REAL>& typeAndVal = chunk.second;
 			int bc_type = typeAndVal.first;
+            val2[0] = typeAndVal.second;
 			if(bc_type == 2){
 				val2[0] = 0.0;
 				val1(0,0) = typeAndVal.second;
 			}
-			TPZBndCondT<REAL>* face = fracmat->CreateBC(volume,bc_id,bc_type,val1,val2);
+			TPZBndCondT<REAL>* face = fracmat->CreateBC(fracmat,bc_id,bc_type,val1,val2);
 			if (HasForcingFunctionBC()) {
 				face->SetForcingFunctionBC(mForcingFunctionBC,1);
 			}

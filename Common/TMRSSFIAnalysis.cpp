@@ -189,6 +189,8 @@ void TMRSSFIAnalysis::FillProperties(){
             m_transport_module->fAlgebraicTransport.fdt = m_sim_data->mTNumerics.m_dt;
             //Type 0.- InletCondition
             //Type 1.- OutletCondition
+            // This part of the code tries to set the inlet and outlet matids automatically based on where the flux is
+            // entering and leaving.
             bool foundinlet = false;
 			for (auto& chunk : m_sim_data->mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
 				const int idVal   = chunk.first;
