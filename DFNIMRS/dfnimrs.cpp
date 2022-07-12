@@ -8,6 +8,7 @@
 #include "pzlog.h"
 #include <tpzgeoelrefpattern.h>
 #include "json.hpp"
+#include <filesystem>
 
 // include dfn filereader
 #include "filereader.h"
@@ -16,6 +17,8 @@
 
 // ----- Namespaces -----
 using namespace std;
+namespace fs = std::filesystem;
+
 // ----- End of namespaces -----
 
 // ----- Functions -----
@@ -27,7 +30,7 @@ void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
 void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gmesh);
 
-void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data);
+void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTransfer& sim_data);
 
 void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte);
 
@@ -37,6 +40,7 @@ void ModifyBCsForCase2(TPZGeoMesh* gmesh);
 void ModifyBCsForCase3(TPZGeoMesh* gmesh);
 void ModifyBCsForCase4(TPZGeoMesh* gmesh);
 void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh);
+bool fileExists(const fs::path& p, fs::file_status s = fs::file_status{});
 
 
 void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh);
@@ -166,6 +170,16 @@ void RunProblem(string& filenameBase, const int simcase)
 	bool isMHM = true;
 	const int n_threads = 8;
     
+    // ----- output folder -----
+    std::string outputFolder = filenameBase.substr(filenameBase.find_last_of("/") + 1) + "/";
+    if(!fileExists(outputFolder)){
+        if (!fs::create_directory(outputFolder))
+            DebugStop();
+        else
+            cout << "Directory created with name " << outputFolder << endl;
+    }
+
+    
     // ----- Creating gmesh and data transfer -----
 	int initVolForMergeMeshes = -1000000;
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
@@ -174,13 +188,13 @@ void RunProblem(string& filenameBase, const int simcase)
 #ifdef PZDEBUG
     if (1) {
         if(gmeshfine){
-            std::ofstream name("GeoMesh_Fine_Initial.vtk");
+            std::ofstream name(outputFolder + "GeoMesh_Fine_Initial.vtk");
             TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
-            std::ofstream name2("GeoMesh_Fine_Initial.txt");
+            std::ofstream name2(outputFolder + "GeoMesh_Fine_Initial.txt");
             gmeshfine->Print(name2);
         }
         if(gmeshcoarse){
-            std::ofstream name("GeoMesh_Coarse_Initial.vtk");
+            std::ofstream name(outputFolder + "GeoMesh_Coarse_Initial.vtk");
             TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, name);
         }
     }
@@ -193,7 +207,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
 
 	// ----- Filling data transfer from json input file -----
-	FillDataTransferDFN(filenameBase, sim_data);
+	FillDataTransferDFN(filenameBase, outputFolder, sim_data);
 	
 	// ----- Creating intersection GeoElBCs -----
 	fixPossibleMissingIntersections(sim_data,gmeshfine); // read about this in the function itself
@@ -223,9 +237,9 @@ void RunProblem(string& filenameBase, const int simcase)
 	// Code takes a fine and a coarse mesh to generate MHM data structure
 	aspace.SetGeometry(gmeshfine,gmeshcoarse);
 	{
-		std::ofstream name("GeoMesh_Fine_AfterMergeMeshes.vtk");
+		std::ofstream name(outputFolder + "GeoMesh_Fine_AfterMergeMeshes.vtk");
 		TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
-        std::ofstream name2("GeoMesh_MHM_domain.vtk");
+        std::ofstream name2(outputFolder + "GeoMesh_MHM_domain.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
 	}
     
@@ -233,7 +247,7 @@ void RunProblem(string& filenameBase, const int simcase)
     if(simcase == 6 || simcase == 7){
         //linear pressure...
         ModifyBCsFor2ParallelFractures(gmeshfine);
-        std::ofstream name3("ModBCs.vtk");
+        std::ofstream name3(outputFolder + "ModBCs.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
     
@@ -254,9 +268,9 @@ void RunProblem(string& filenameBase, const int simcase)
         aspace.BuildAuxTransportCmesh();
         TPZCompMesh * transport_operator = aspace.GetTransportOperator();
 #ifdef PZDEBUG
-        std::string name("mesh");
+        std::string name(outputFolder + "mesh");
         aspace.PrintGeometry(name);
-        std::ofstream name2("TransportOperator.vtk");
+        std::ofstream name2(outputFolder + "TransportOperator.vtk");
         TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, name2);
 #endif
 
@@ -318,7 +332,7 @@ void RunProblem(string& filenameBase, const int simcase)
         mixAnalisys->SetDataTransfer(&sim_data);
         mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
         {
-            std::ofstream out("mixedCMesh.txt");
+            std::ofstream out(outputFolder + "mixedCMesh.txt");
             mixed_operator->Print(out);
         }
         mixAnalisys->Assemble();
@@ -335,7 +349,7 @@ void RunProblem(string& filenameBase, const int simcase)
 			TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
 			mat->Multiply(mixed_operator->Solution(), res);
 			res = res + mixAnalisys->Rhs();
-			std::ofstream out("problematicEls.txt");
+			std::ofstream out(outputFolder + "problematicEls.txt");
 			mixAnalisys->PrintVectorByElement(out, res, 1.e-6);
 		}
 		
@@ -372,9 +386,6 @@ void RunProblem(string& filenameBase, const int simcase)
         }
     }
     
-    
- 
-    //
     auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count()/1000.;
     cout << "\n\n\t--------- Total time of simulation = " << total_time << " seconds -------\n" << endl;
 
@@ -386,7 +397,7 @@ void RunProblem(string& filenameBase, const int simcase)
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
+void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTransfer& sim_data) {
 	
 	using json = nlohmann::json;
 	std::string filenamejson = filenameBase + ".json";
@@ -541,8 +552,8 @@ void FillDataTransferDFN(string& filenameBase, TMRSDataTransfer& sim_data) {
 	// PostProcess controls
 	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
 	std::replace( vtkfilename.begin(), vtkfilename.end(), '/', '_');
-	std::string pressurevtk = vtkfilename + ".vtk";
-	std::string transportvtk = vtkfilename + "_transport.vtk";
+	std::string pressurevtk = outputFolder + vtkfilename + ".vtk";
+	std::string transportvtk = outputFolder + vtkfilename + "_transport.vtk";
 	std::cout << "\n===> PostProcess file name: " << vtkfilename << std::endl;
 	
 	
@@ -1147,6 +1158,16 @@ void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TP
 		}
 				
 	}
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+bool fileExists(const fs::path& p, fs::file_status s) {
+    if(fs::status_known(s) ? fs::exists(s) : fs::exists(p))
+        return true;
+    else
+        return false;
 }
 
 // ---------------------------------------------------------------------

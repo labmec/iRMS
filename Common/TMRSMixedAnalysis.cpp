@@ -270,9 +270,9 @@ void TMRSMixedAnalysis::Solve(){
 void TMRSMixedAnalysis::VerifyElementFluxes(){
 	TPZMultiphysicsCompMesh *mixedmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh()) ;
 	TPZCompMesh *cmesh =mixedmesh->MeshVector()[0];
-	std::ofstream file("fuxmesh.txt");
+//	std::ofstream file("fuxmesh.txt");
 	const TPZFMatrix<STATE> &meshSol = cmesh->Solution();
-	mixedmesh->MeshVector()[0]->Print(file);
+//	mixedmesh->MeshVector()[0]->Print(file);
 	int nels =mixedmesh->MeshVector()[0]->NElements();
 	for (int iel =0; iel<nels-1; iel++) {
 		TPZCompEl *cel = mixedmesh->MeshVector()[0]->Element(iel);

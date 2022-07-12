@@ -98,16 +98,10 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * geometry){
 // ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * gmeshcoarse){
-//    ofstream out1("gmesh_before.txt");
-//    gmeshfine->Print(out1);
     if (InitMatIdForMergeMeshes() == -1000) {
         DebugStop(); // MatId for MHM should be set in main!
     }
-    std::ofstream file("coarse.vtk");
-    TPZVTKGeoMesh::PrintCMeshVTK(gmeshcoarse, file);
     MergeMeshes(gmeshfine, gmeshcoarse); // this fills mSubdomainIndexGel that is used for MHM
-//    ofstream out2("gmesh_after.txt");
-//    gmeshfine->Print(out2);
     mGeometry = gmeshfine;
 #ifdef PZDEBUG
     {
@@ -696,8 +690,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
                 if(sideorient*sideorientneigh != -1) DebugStop();
             }
         }
-        std::ofstream out("HdivMesh.txt");
-        cmesh->Print(out);
+//        std::ofstream out("HdivMesh.txt");
+//        cmesh->Print(out);
     }
 #endif
     // ===> Creating fracture element
@@ -718,10 +712,10 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
     cmesh->ApproxSpace().SetAllCreateFunctionsHDiv(3);
 	
 #ifdef PZDEBUG
-    {
-        std::ofstream out("gmesh.txt");
-        gmesh->Print(out);
-    }
+//    {
+//        std::ofstream out("gmesh.txt");
+//        gmesh->Print(out);
+//    }
 #endif
     
     // ===> Fix blocks
@@ -768,24 +762,25 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
     }
     
 #ifdef PZDEBUG
-    std::ofstream sout("q_mesh.txt");
-    cmesh->Print(sout);
+//    std::ofstream sout("q_mesh.txt");
+//    cmesh->Print(sout);
 #endif
 #ifdef PZDEBUG
-    {
-        TPZGeoMesh *gmesh = mGeometry;
-        int64_t nel = gmesh->NElements();
-        std::map<int,int> numels;
-        for (int64_t el = 0; el<nel; el++) {
-            TPZGeoEl *gel = gmesh->Element(el);
-            int matid = gel->MaterialId();
-            numels[matid]++;
-        }
-        std::cout << __PRETTY_FUNCTION__ << " at line " << __LINE__ << std::endl;
-        for(auto it: numels){
-            std::cout << "For matid " << it.first << " number of elements " << it.second << std::endl;
-        }
-    }
+    // This method checks the number of elements for each matid
+//    {
+//        TPZGeoMesh *gmesh = mGeometry;
+//        int64_t nel = gmesh->NElements();
+//        std::map<int,int> numels;
+//        for (int64_t el = 0; el<nel; el++) {
+//            TPZGeoEl *gel = gmesh->Element(el);
+//            int matid = gel->MaterialId();
+//            numels[matid]++;
+//        }
+//        std::cout << __PRETTY_FUNCTION__ << " at line " << __LINE__ << std::endl;
+//        for(auto it: numels){
+//            std::cout << "For matid " << it.first << " number of elements " << it.second << std::endl;
+//        }
+//    }
 #endif
 
     return cmesh;
@@ -2801,10 +2796,6 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     AddMultiphysicsMaterialsToCompMesh(order,matsWithMem, matsWithOutMem);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec,matsWithMem, matsWithOutMem );
 	if(isFracSim()) this->InitializeMemoryFractureGlue();
-    {
-        std::ofstream file("MixOpew.vtk");
-        TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
-    }
 	
     if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
     
@@ -2826,8 +2817,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     {
 //		ofstream out("mphysics.vtk");
 //		TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, out);
-        std::ofstream sout("mixed_cmesh_four_spaces.txt");
-        mMixedOperator->Print(sout);
+//        std::ofstream sout("mixed_cmesh_four_spaces.txt");
+//        mMixedOperator->Print(sout);
     }
 #endif
 
@@ -2835,9 +2826,8 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 #ifdef PZDEBUG
 	if (isMHM) {
         // visualize the subdomain association of the geometric element
-        ofstream out("gmeshdomain.vtk");
-        //PrintGMeshVTK(TPZGeoMesh *gmesh, std::ofstream &file, TPZVec<int> &elData);
-        TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out,mSubdomainIndexGel);
+//        ofstream out("gmeshdomain.vtk");
+//        TPZVTKGeoMesh::PrintGMeshVTK(mGeometry, out,mSubdomainIndexGel);
     }
 #endif
 	// ========================================================
@@ -2851,10 +2841,10 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
 	TPZReservoirTools::PushConnectBackward(mMixedOperator, 3, 7);
 	
 #ifdef PZDEBUG
-    {
-        std::ofstream out("SubStructuredMesh.txt");
-        mMixedOperator->Print(out);
-    }
+//    {
+//        std::ofstream out("SubStructuredMesh.txt");
+//        mMixedOperator->Print(out);
+//    }
 #endif
 }
 
@@ -4009,12 +3999,13 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         //        }
         int64_t domain = mSubdomainIndexGel[el];
         if (domain == -1) {
-            std::cout<<"matId of element not condensed "<<gel->MaterialId()<<std::endl;
+//            std::cout<<"matId of element not condensed "<<gel->MaterialId()<<std::endl;
             continue;
         }
         ElementGroups[domain].insert(indexel);
     }
-    if (ElementGroups.size() <= 5)
+    
+    if (ElementGroups.size() <= 0) // Change this 0 to another number to debug
     {
         std::cout << "Number of element groups " << ElementGroups.size() << std::endl;
         std::map<int64_t,TCompIndexes>::iterator it;
@@ -4538,7 +4529,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         REAL Sum = 0.;
         for(int i=1; i<gelvec.size(); i++) Sum += gelvec[i]->Volume();
         REAL diff = Area-Sum;
-        std::cout << "Skeleton area of el " << fine_skel << " area " << Area << " sum of small " << Sum << std::endl;
+//        std::cout << "Skeleton area of el " << fine_skel << " area " << Area << " sum of small " << Sum << std::endl;
 #endif
         TPZGeoMesh gmeshrefpattern;
         TPZRefPatternTools::GenerateGMeshFromElementVec(gelvec,gmeshrefpattern);
@@ -4662,12 +4653,12 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
             std::cout << "For matid " << it.first << " number of elements " << it.second << std::endl;
         }
     }
-#endif
 	{
-		ofstream out("meshsubdomains.vtk");
+//		ofstream out("meshsubdomains.vtk");
 		if(mSubdomainIndexGel.size() != finemesh->NElements()) DebugStop();
-		TPZVTKGeoMesh::PrintGMeshVTK(finemesh, out, mSubdomainIndexGel);
+//		TPZVTKGeoMesh::PrintGMeshVTK(finemesh, out, mSubdomainIndexGel);
 	}
+#endif
 	
 #ifdef PZDEBUG
 	CheckMeshIntegrity(finemesh);
@@ -4950,16 +4941,18 @@ void TMRSApproxSpaceGenerator::IdentifySubdomainForLowdimensionElements(TPZCompM
         }
     }
 	
+    
 #ifdef PZDEBUG
-	const int64_t nsub = mSubdomainIndexGel.size();
-	for(int i = 0 ; i < nsub ; i++) {
-		const int macroindex = mSubdomainIndexGel[i];
-		TPZGeoEl* gel = mGeometry->Element(i);
-		const int eldim = gel->Dimension();
-		if(eldim == 3) continue;
-		const int matid = gel->MaterialId();
-		cout << "Element index " << i << " | dim " << eldim << " | matid " << matid << " | domain " << macroindex << endl;
-	}
+    // Function to check all the domains of all elements
+//	const int64_t nsub = mSubdomainIndexGel.size();
+//	for(int i = 0 ; i < nsub ; i++) {
+//		const int macroindex = mSubdomainIndexGel[i];
+//		TPZGeoEl* gel = mGeometry->Element(i);
+//		const int eldim = gel->Dimension();
+//		if(eldim == 3) continue;
+//		const int matid = gel->MaterialId();
+//		cout << "Element index " << i << " | dim " << eldim << " | matid " << matid << " | domain " << macroindex << endl;
+//	}
 #endif
 }
 
