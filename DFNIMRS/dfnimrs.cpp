@@ -89,7 +89,7 @@ int main(){
     string filenameBase;
     switch (simcase) {
         case 0:
-			filenameBase = basemeshpath + "/dfnimrs/twoelCoarse/twoElCoarseNew";
+			filenameBase = basemeshpath + "/dfnimrs/twoelCoarse/twoElCoarse";
             break;
         case 1:
 //			filenameBase = basemeshpath + "/dfnimrs/fl_case1";
