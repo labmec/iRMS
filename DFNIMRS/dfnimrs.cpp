@@ -172,6 +172,11 @@ void RunProblem(string& filenameBase, const int simcase)
     
     // ----- output folder -----
     std::string outputFolder = filenameBase.substr(filenameBase.find_last_of("/") + 1) + "/";
+//    std::string outputFolder = filenameBase.substr(filenameBase.find_last_of("/") + 1) + "/";
+    std::string outputFolder = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
+    outputFolder = outputFolder.substr(0,outputFolder.find_last_of("/"));
+    std::replace( outputFolder.begin(), outputFolder.end(), '/', '_');
+    outputFolder = outputFolder + "/";
     if(!fileExists(outputFolder)){
         if (!fs::create_directory(outputFolder))
             DebugStop();
@@ -550,8 +555,9 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTNumerics.m_max_iter_transport=1;
 	
 	// PostProcess controls
-	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
-	std::replace( vtkfilename.begin(), vtkfilename.end(), '/', '_');
+//	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
+//	std::replace( vtkfilename.begin(), vtkfilename.end(), '/', '_');
+    std::string vtkfilename = filenameBase.substr(filenameBase.find_last_of("/") + 1);
 	std::string pressurevtk = outputFolder + vtkfilename + ".vtk";
 	std::string transportvtk = outputFolder + vtkfilename + "_transport.vtk";
 	std::cout << "\n===> PostProcess file name: " << vtkfilename << std::endl;
