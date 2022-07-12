@@ -2795,8 +2795,15 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     std::set<int> matsWithMem, matsWithOutMem;
     AddMultiphysicsMaterialsToCompMesh(order,matsWithMem, matsWithOutMem);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec,matsWithMem, matsWithOutMem );
-	if(isFracSim()) this->InitializeMemoryFractureGlue();
-	
+    if(isFracSim()){
+        this->InitializeMemoryFractureGlue();
+    }
+    
+    {
+        std::ofstream file("MixOpew.vtk");
+        TPZVTKGeoMesh::PrintCMeshVTK(mMixedOperator, file);
+    }
+    
     if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
     
 	if(isMHM && mSubdomainIndexGel.size()){
