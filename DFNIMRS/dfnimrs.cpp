@@ -20,7 +20,7 @@ using namespace std;
 
 // ----- Functions -----
 void RunProblem(string& filenameBase, const int simucase);
-void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes);
+void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes, bool& isMHM);
 void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 										  std::map<int,std::pair<int,int>>& matidtoFractures,
 										  const int fracInitMatId, const int fracinc, const int FractureHybridPressureMatId);
@@ -163,13 +163,13 @@ void RunProblem(string& filenameBase, const int simcase)
     const bool isRefineMesh = false;
     const bool isPostProc = true;
 	const bool isRunWithTranport = false;
-	const bool isMHM = true;
+	bool isMHM = true;
 	const int n_threads = 8;
     
     // ----- Creating gmesh and data transfer -----
 	int initVolForMergeMeshes = -1000000;
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
-	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes);
+	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM);
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
     if (1) {
@@ -355,7 +355,7 @@ void RunProblem(string& filenameBase, const int simcase)
         
         // Computes the integral of the normal flux on the boundaries.
         // To use, change the inletMatId and outletMatId according to problem
-        const bool computeInAndOutFlux = true;
+        const bool computeInAndOutFlux = false;
         if(computeInAndOutFlux){
 			const int inletMatId = 2, outletMatId = 3;
 			computeIntegralOfNormalFlux(inletMatId, outletMatId, mixed_operator);
@@ -631,7 +631,7 @@ void MapFractureIntersection(const std::string &filenameBase, std::map<std::stri
 // ---------------------------------------------------------------------
 
 
-void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes) {
+void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes, bool& isMHM) {
 	using json = nlohmann::json;
 	std::string filenamejson = filenameBase + ".json";
 	
@@ -642,8 +642,13 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagCoarse(4); // From 0D to 3D
 	TPZManVector<std::map<std::string,int>,4> dim_name_and_physical_tagFine(4); // From 0D to 3D
 	
-	std::set<int> allmatids; // use to check for repeated matids and highest matid
+	std::set<int> allmatids; // used to check for repeated matids and highest matid
 	
+    // ------------------------ Check if isMHM is set on file ------------------------
+    if(input.find("useMHM") != input.end()) {
+        isMHM = input["useMHM"];
+    }
+    
 	// ------------------------ Get matids of 3D domain ------------------------
 	if(input.find("Domains") == input.end()) DebugStop();
 	for(auto& domain : input["Domains"]){
