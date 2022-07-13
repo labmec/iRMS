@@ -171,7 +171,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	const int n_threads = 8;
     
     // ----- output folder -----
-    std::string outputFolder = filenameBase.substr(filenameBase.find_last_of("/") + 1) + "/";
+//    std::string outputFolder = filenameBase.substr(filenameBase.find_last_of("/") + 1) + "/";
 //    std::string outputFolder = filenameBase.substr(filenameBase.find_last_of("/") + 1) + "/";
     std::string outputFolder = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
     outputFolder = outputFolder.substr(0,outputFolder.find_last_of("/"));
@@ -1038,7 +1038,7 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
                 cout << "This is an error" << endl;
 //                DebugStop();
             }
-            if ((interEls.size() || nFracElsForSide > 1) && bcEls.size()) {
+            if (0 && (interEls.size() || nFracElsForSide > 1) && bcEls.size()) {
                 cout << "PLEASE CHECK CAREFULLY! An element may have a boundary even if it intersects\n";
                 cout << "Domains intersecting and boundary through snap\n Intersection matids ";
                 for(auto it : interEls) cout << it->MaterialId() << " ";
