@@ -42,7 +42,7 @@ void ModifyBCsForCase4(TPZGeoMesh* gmesh);
 void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh);
 bool fileExists(const fs::path& p, fs::file_status s = fs::file_status{});
 void CreateOutputFolders(std::string& outputFolder);
-void CopyInputFilesToOutputFolder(std::string& filenameBase, std::string& outputFolder);
+void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::string& outputFolder);
 
 void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -96,64 +96,64 @@ int main(int argc, char* argv[]){
         // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
         // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
         // 12,13,14,15,16,17: Modified Case 3 where all fracs touch boundary. Snapping is 0.0001, 0.04, 0.05, 0.1, 0.01, 0.03 respectively
-        simcase = 10;
+        simcase = 0;
         switch (simcase) {
             case 0:
-                filenameBase = basemeshpath + "/dfnimrs/twoelCoarse/twoElCoarse";
+                filenameBase = basemeshpath + "/dfnimrs/twoelCoarse";
                 break;
             case 1:
                 //            filenameBase = basemeshpath + "/dfnimrs/fl_case1";
-                filenameBase = basemeshpath + "/dfnimrs/fl_case1/fl_case1";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case1/";
                 break;
             case 2:
                 //            DebugStop(); // create me
-                filenameBase = basemeshpath + "/dfnimrs/fl_case2/fl_case2";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case2/";
                 break;
             case 3:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3/";
                 break;
             case 4:
                 DebugStop(); // Need to generate mesh without overlap or need to treat overlap
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4";
                 break;
             case 5:
-                filenameBase = basemeshpath + "/dfnimrs/intersect/intersect";
+                filenameBase = basemeshpath + "/dfnimrs/intersect/";
                 break;
             case 6:
-                filenameBase = basemeshpath + "/dfnimrs/2parallel/2parallel";
+                filenameBase = basemeshpath + "/dfnimrs/2parallel/";
                 break;
             case 7:
-                filenameBase = basemeshpath + "/dfnimrs/2paralleloverlap/2paralleloverlap";
+                filenameBase = basemeshpath + "/dfnimrs/2paralleloverlap/";
                 break;
             case 8:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/fl_case3_snap";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/";
                 break;
             case 9:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/";
                 break;
             case 10:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestFunciona/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/";
                 break;
             case 11:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestNoFunciona/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestNoFunciona/";
                 break;
             case 12:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_0001/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_0001/";
                 break;
             case 13:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_04/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_04/";
                 break;
             case 14:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_05/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_05/";
                 break;
             case 15:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_1/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_1/";
                 break;
             case 16:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_01/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_01/";
                 break;
             case 17:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/fl_case3";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/";
                 break;
             default:
                 break;
@@ -166,7 +166,6 @@ int main(int argc, char* argv[]){
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 void RunProblem(string& filenameBase, const int simcase)
-
 {
     auto start_time = std::chrono::steady_clock::now();
     
@@ -177,10 +176,11 @@ void RunProblem(string& filenameBase, const int simcase)
 	bool isMHM = true;
 	const int n_threads = 8;
     
-    // ----- output folder -----
+    // ----- output folder stuff -----
+    if(filenameBase.back() != '/') filenameBase = filenameBase + "/";
     std::string outputFolder = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
     CreateOutputFolders(outputFolder);
-    CopyInputFilesToOutputFolder(filenameBase,outputFolder);
+    CopyInputFilesToOutputFolderAndFixFilename(filenameBase,outputFolder);
     outputFolder = outputFolder.substr(0,outputFolder.find_last_of("/"));
     outputFolder = outputFolder + "/";
 
@@ -1202,11 +1202,30 @@ void CreateOutputFolders(std::string& outputFolder) {
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void CopyInputFilesToOutputFolder(std::string& filenameBase, std::string& outputFolder){
+void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::string& outputFolder){
+    
+    // Copying all files from input folder to output folder
     std::string onlyFolder = outputFolder.substr(0,outputFolder.find_last_of("/"));
-    fs::copy(filenameBase + ".json", onlyFolder, fs::copy_options::update_existing);
-    fs::copy(filenameBase + "_coarse.msh", onlyFolder, fs::copy_options::update_existing);
-    fs::copy(filenameBase + "_fine.msh", onlyFolder, fs::copy_options::update_existing);
+    fs::copy(filenameBase , onlyFolder, fs::copy_options::update_existing | fs::copy_options::recursive);
+    
+    // Adding the json name to filenameBase
+    int njson = 0;
+    for (auto const& dir_entry : std::filesystem::directory_iterator{filenameBase}){
+        std::string filename = dir_entry.path().string();
+        std::cout << dir_entry.path().string() << endl;
+        
+        if(filename.substr(filename.find(".")) == ".json"){
+            if(njson == 0){
+                filenameBase = filename.substr(0,filename.find("."));
+                njson++;
+            }
+            else {
+                cout << "\n\n=====> ERROR! There are two json files in the provided input folder" << endl;
+                DebugStop();
+            }
+        }
+    }
+
 }
 
 // ---------------------------------------------------------------------
