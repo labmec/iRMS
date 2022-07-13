@@ -602,6 +602,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
             hdivcollapsed->SetConnectIndex(nconnects, leftrightcindex.first);
             hdivcollapsed->SetConnectIndex(nconnects+1, leftrightcindex.second);
         }
+        cleftright.first.RemoveDepend();
+        cleftright.second.RemoveDepend();
     }
     
     cmesh->ExpandSolution();
@@ -4647,6 +4649,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 	
 	
 #ifdef PZDEBUG
+    if(0)
     {
         int64_t nel = finemesh->NElements();
         std::map<int,int> numels;
