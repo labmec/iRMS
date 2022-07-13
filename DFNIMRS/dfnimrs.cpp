@@ -65,7 +65,7 @@ static TPZLogger mainlogger("cubicdomain");
 //  | |  | |  / ___ \  | | | |\  |
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
-int main(){
+int main(int argc, char* argv[]){
     string basemeshpath(FRACMESHES);
 #ifdef PZ_LOG
     string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
@@ -77,81 +77,87 @@ int main(){
     }
 #endif
     
-    // 0: two elements, 1 frac, no intersection
-    // 1: Flemisch case 1
-    // 2: Flemisch case 2
-    // 3: Flemisch case 3
-    // 4: Flemisch case 4
-    // 5: 4 elements, 2 frac, w/ intersection
-    // 6: Two parallel square fractures very close, but no overlap
-    // 7: Two parallel square fractures very close, WITH overlap
-    // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
-	// 9: Study of snapping tolerances on case 3
-    // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
-    // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
-	// 12,13,14,15,16,17: Modified Case 3 where all fracs touch boundary. Snapping is 0.0001, 0.04, 0.05, 0.1, 0.01, 0.03 respectively
-	int simcase = 10;
     string filenameBase;
-    switch (simcase) {
-        case 0:
-			filenameBase = basemeshpath + "/dfnimrs/twoelCoarse/twoElCoarse";
-            break;
-        case 1:
-//			filenameBase = basemeshpath + "/dfnimrs/fl_case1";
-            filenameBase = basemeshpath + "/dfnimrs/fl_case1/fl_case1";
-            break;
-        case 2:
-//			DebugStop(); // create me
-			filenameBase = basemeshpath + "/dfnimrs/fl_case2/fl_case2";
-            break;
-        case 3:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3/fl_case3";
-            break;
-        case 4:
-            DebugStop(); // Need to generate mesh without overlap or need to treat overlap
-			filenameBase = basemeshpath + "/dfnimrs/fl_case4";
-            break;
-        case 5:
-			filenameBase = basemeshpath + "/dfnimrs/intersect/intersect";
-            break;
-        case 6:
-			filenameBase = basemeshpath + "/dfnimrs/2parallel/2parallel";
-			break;
-        case 7:
-			filenameBase = basemeshpath + "/dfnimrs/2paralleloverlap/2paralleloverlap";
-			break;
-        case 8:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/fl_case3_snap";
-			break;
-        case 9:
-            filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/fl_case3";
-            break;
-        case 10:
-            filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestFunciona/fl_case3";
-            break;
-        case 11:
-            filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestNoFunciona/fl_case3";
-            break;
-		case 12:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_0001/fl_case3";
-			break;
-		case 13:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_04/fl_case3";
-			break;
-		case 14:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_05/fl_case3";
-			break;
-		case 15:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_1/fl_case3";
-			break;
-		case 16:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_01/fl_case3";
-			break;
-		case 17:
-			filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/fl_case3";
-			break;
-		default:
-            break;
+    int simcase = 0;
+    if (argc > 1) {
+        filenameBase = basemeshpath + argv[1];
+    }
+    else{
+        // 0: two elements, 1 frac, no intersection
+        // 1: Flemisch case 1
+        // 2: Flemisch case 2
+        // 3: Flemisch case 3
+        // 4: Flemisch case 4
+        // 5: 4 elements, 2 frac, w/ intersection
+        // 6: Two parallel square fractures very close, but no overlap
+        // 7: Two parallel square fractures very close, WITH overlap
+        // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
+        // 9: Study of snapping tolerances on case 3
+        // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
+        // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
+        // 12,13,14,15,16,17: Modified Case 3 where all fracs touch boundary. Snapping is 0.0001, 0.04, 0.05, 0.1, 0.01, 0.03 respectively
+        simcase = 10;
+        switch (simcase) {
+            case 0:
+                filenameBase = basemeshpath + "/dfnimrs/twoelCoarse/twoElCoarse";
+                break;
+            case 1:
+                //            filenameBase = basemeshpath + "/dfnimrs/fl_case1";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case1/fl_case1";
+                break;
+            case 2:
+                //            DebugStop(); // create me
+                filenameBase = basemeshpath + "/dfnimrs/fl_case2/fl_case2";
+                break;
+            case 3:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3/fl_case3";
+                break;
+            case 4:
+                DebugStop(); // Need to generate mesh without overlap or need to treat overlap
+                filenameBase = basemeshpath + "/dfnimrs/fl_case4";
+                break;
+            case 5:
+                filenameBase = basemeshpath + "/dfnimrs/intersect/intersect";
+                break;
+            case 6:
+                filenameBase = basemeshpath + "/dfnimrs/2parallel/2parallel";
+                break;
+            case 7:
+                filenameBase = basemeshpath + "/dfnimrs/2paralleloverlap/2paralleloverlap";
+                break;
+            case 8:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/fl_case3_snap";
+                break;
+            case 9:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/fl_case3";
+                break;
+            case 10:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestFunciona/fl_case3";
+                break;
+            case 11:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestNoFunciona/fl_case3";
+                break;
+            case 12:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_0001/fl_case3";
+                break;
+            case 13:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_04/fl_case3";
+                break;
+            case 14:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_05/fl_case3";
+                break;
+            case 15:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_1/fl_case3";
+                break;
+            case 16:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_01/fl_case3";
+                break;
+            case 17:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/fl_case3";
+                break;
+            default:
+                break;
+        }
     }
     RunProblem(filenameBase,simcase);
     return 0;
