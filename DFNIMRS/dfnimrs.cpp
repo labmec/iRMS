@@ -41,7 +41,8 @@ void ModifyBCsForCase3(TPZGeoMesh* gmesh);
 void ModifyBCsForCase4(TPZGeoMesh* gmesh);
 void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh);
 bool fileExists(const fs::path& p, fs::file_status s = fs::file_status{});
-
+void CreateOutputFolders(std::string& outputFolder);
+void CopyInputFilesToOutputFolder(std::string& filenameBase, std::string& outputFolder);
 
 void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -171,18 +172,11 @@ void RunProblem(string& filenameBase, const int simcase)
 	const int n_threads = 8;
     
     // ----- output folder -----
-//    std::string outputFolder = filenameBase.substr(filenameBase.find_last_of("/") + 1) + "/";
-//    std::string outputFolder = filenameBase.substr(filenameBase.find_last_of("/") + 1) + "/";
     std::string outputFolder = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
+    CreateOutputFolders(outputFolder);
+    CopyInputFilesToOutputFolder(filenameBase,outputFolder);
     outputFolder = outputFolder.substr(0,outputFolder.find_last_of("/"));
-    std::replace( outputFolder.begin(), outputFolder.end(), '/', '_');
     outputFolder = outputFolder + "/";
-    if(!fileExists(outputFolder)){
-        if (!fs::create_directory(outputFolder))
-            DebugStop();
-        else
-            cout << "Directory created with name " << outputFolder << endl;
-    }
 
     
     // ----- Creating gmesh and data transfer -----
@@ -191,18 +185,18 @@ void RunProblem(string& filenameBase, const int simcase)
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM);
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
-    if (1) {
-        if(gmeshfine){
-            std::ofstream name(outputFolder + "GeoMesh_Fine_Initial.vtk");
-            TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
-            std::ofstream name2(outputFolder + "GeoMesh_Fine_Initial.txt");
-            gmeshfine->Print(name2);
-        }
-        if(gmeshcoarse){
-            std::ofstream name(outputFolder + "GeoMesh_Coarse_Initial.vtk");
-            TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, name);
-        }
-    }
+//    if (1) {
+//        if(gmeshfine){
+//            std::ofstream name(outputFolder + "GeoMesh_Fine_Initial.vtk");
+//            TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
+//            std::ofstream name2(outputFolder + "GeoMesh_Fine_Initial.txt");
+//            gmeshfine->Print(name2);
+//        }
+//        if(gmeshcoarse){
+//            std::ofstream name(outputFolder + "GeoMesh_Coarse_Initial.vtk");
+//            TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, name);
+//        }
+//    }
 #endif
 	
 	// ----- Approximation space -----
@@ -244,16 +238,16 @@ void RunProblem(string& filenameBase, const int simcase)
 	{
 		std::ofstream name(outputFolder + "GeoMesh_Fine_AfterMergeMeshes.vtk");
 		TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
-        std::ofstream name2(outputFolder + "GeoMesh_MHM_domain.vtk");
-        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
+//        std::ofstream name2(outputFolder + "GeoMesh_MHM_domain.vtk");
+//        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
 	}
     
 	// ----- Changing BCs for some testing cases -----
     if(simcase == 6 || simcase == 7){
         //linear pressure...
         ModifyBCsFor2ParallelFractures(gmeshfine);
-        std::ofstream name3(outputFolder + "ModBCs.vtk");
-        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
+//        std::ofstream name3(outputFolder + "ModBCs.vtk");
+//        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
     
     // ----- Creates the multiphysics compmesh -----
@@ -336,10 +330,10 @@ void RunProblem(string& filenameBase, const int simcase)
         TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
         mixAnalisys->SetDataTransfer(&sim_data);
         mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-        {
-            std::ofstream out(outputFolder + "mixedCMesh.txt");
-            mixed_operator->Print(out);
-        }
+//        {
+//            std::ofstream out(outputFolder + "mixedCMesh.txt");
+//            mixed_operator->Print(out);
+//        }
         mixAnalisys->Assemble();
 		
 		// Testing if constant pressure leads to zero residual in cte pressure problem
@@ -1174,6 +1168,39 @@ bool fileExists(const fs::path& p, fs::file_status s) {
         return true;
     else
         return false;
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void CreateOutputFolders(std::string& outputFolder) {
+
+    std::string folders = outputFolder;
+    char c = '/';
+    std::string folderToCreate = "";
+    int nfolders = 0;
+    while (folders.find("/") != std::string::npos) {
+        if(nfolders == 0) folderToCreate = folders.substr(0,folders.find("/"));
+        else folderToCreate = folderToCreate + "/" + folders.substr(0,folders.find("/"));
+        folders = folders.substr(folders.find("/")+1);
+        if(!fileExists(folderToCreate)){
+            if (!fs::create_directory(folderToCreate))
+                DebugStop();
+            else
+                cout << "Directory created with name " << folderToCreate << endl;
+        }
+        nfolders++;
+    }
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void CopyInputFilesToOutputFolder(std::string& filenameBase, std::string& outputFolder){
+    std::string onlyFolder = outputFolder.substr(0,outputFolder.find_last_of("/"));
+    fs::copy(filenameBase + ".json", onlyFolder, fs::copy_options::update_existing);
+    fs::copy(filenameBase + "_coarse.msh", onlyFolder, fs::copy_options::update_existing);
+    fs::copy(filenameBase + "_fine.msh", onlyFolder, fs::copy_options::update_existing);
 }
 
 // ---------------------------------------------------------------------
