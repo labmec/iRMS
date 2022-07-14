@@ -178,7 +178,7 @@ void RunProblem(string& filenameBase, const int simcase)
     
     // ----- output folder stuff -----
     if(filenameBase.back() != '/') filenameBase = filenameBase + "/";
-    std::string outputFolder = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
+    std::string outputFolder = "Output/"+filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
     CreateOutputFolders(outputFolder);
     CopyInputFilesToOutputFolderAndFixFilename(filenameBase,outputFolder);
     outputFolder = outputFolder.substr(0,outputFolder.find_last_of("/"));
@@ -653,6 +653,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	std::string filenamejson = filenameBase + ".json";
 	
 	std::ifstream filejson(filenamejson);
+    if(!filejson) DebugStop();
 	json input = json::parse(filejson,nullptr,true,true); // to ignore comments in json file
 
 	// ===================> Coarse mesh <=======================
