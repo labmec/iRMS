@@ -44,7 +44,7 @@ bool fileExists(const fs::path& p, fs::file_status s = fs::file_status{});
 void CreateOutputFolders(std::string& outputFolder);
 void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::string& outputFolder);
 
-void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh);
+std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh);
 
 // TODO: Delete this enum? (May 2022)
 enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
@@ -374,10 +374,16 @@ void RunProblem(string& filenameBase, const int simcase)
         
         // Computes the integral of the normal flux on the boundaries.
         // To use, change the inletMatId and outletMatId according to problem
-        const bool computeInAndOutFlux = false;
+        const bool computeInAndOutFlux = true;
         if(computeInAndOutFlux){
+            std::set<int> bcflux = {2,3,5};
 			const int inletMatId = 2, outletMatId = 3;
-			computeIntegralOfNormalFlux(inletMatId, outletMatId, mixed_operator);
+			auto result = computeIntegralOfNormalFlux(bcflux, mixed_operator);
+            std::ofstream out(outputFolder + "fluxintegral.txt");
+            for(auto it: result)
+            {
+                out << "Integral for matid " << it.first << " " << it.second << std::endl;
+            }
         }
     
         
@@ -1107,64 +1113,27 @@ void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte) {
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void computeIntegralOfNormalFlux(const int inletMatId, const int outletMatId, TPZMultiphysicsCompMesh *cmesh) {
+std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh) {
 	
 	// modifying bc of top outlet of case 3 to compute integral separately
-	const int matidFake = -10000;
 	TPZGeoMesh* gmesh = cmesh->Reference();
 	const REAL zerotol = ZeroTolerance();
-	for (auto gel: gmesh->ElementVec()) {
-		if (!gel) continue;
-		if (gel->MaterialId() != outletMatId) continue; // 2d faces on boundary only
-		
-		TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
-		gel->CenterPoint(gel->NSides()-1, masscent);
-		gel->X(masscent, xcenter);
-		const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-		const bool isYend = fabs(y-2.25) < zerotol;
-//		const bool isYend = (y-0.0) < zerotol;
-		
-		if(isYend and z < 0.5){
-			gel->SetMaterialId(matidFake);
-		}
-				
-	}
-	
+    std::map<int,TPZVec<STATE>> result;
 	std::set<int> matidsInlet, matidsOutlet;
 	std::string varname="NormalFlux";
-	matidsInlet.insert(inletMatId);
-	matidsOutlet.insert(outletMatId);
 	cmesh->Reference()->ResetReference();
 	cmesh->LoadReferences(); // compute integral in the multiphysics mesh
 	int nels = cmesh->NElements();
+	for(auto it: bcMatId)
+    {
+        std::set<int> matid = {it};
+        TPZVec<STATE> vecint = cmesh->Integrate(varname, matid);
+        result[it] = vecint;
+        std::cout << "Integral of normal flux for matid " << it << " = " << vecint << std::endl;
+        
+    }
+    return result;
 	
-	TPZVec<STATE> vecint = cmesh->Integrate(varname, matidsInlet);
-	std::cout << "Inlet integral of normal flux = " << vecint << std::endl;
-	
-	TPZVec<STATE> vecintout = cmesh->Integrate(varname, matidsOutlet);
-	std::cout << "*****" << std::endl;
-	std::cout << "Inlet integral of normal flux = " << vecint << std::endl;
-	std::cout << "Outlet integral of normal flux at top = " << -vecintout[0] << std::endl;
-	std::cout << "Outlet integral of normal flux at bot = " << vecint[0] + vecintout[0] << std::endl;
-
-	
-	
-	for (auto gel: gmesh->ElementVec()) {
-		if (!gel) continue;
-		if (gel->MaterialId() != matidFake) continue; // 2d faces on boundary only
-		
-		TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
-		gel->CenterPoint(gel->NSides()-1, masscent);
-		gel->X(masscent, xcenter);
-		const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-		const bool isYend = fabs(y-2.25) < zerotol;
-//		const bool isYend = (y-0.0) < zerotol;
-		
-		if(isYend and z < 0.5){
-			gel->SetMaterialId(outletMatId);
-		}
-				
-	}
 }
 
 // ---------------------------------------------------------------------
