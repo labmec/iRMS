@@ -96,7 +96,7 @@ int main(int argc, char* argv[]){
         // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
         // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
         // 12,13,14,15,16,17: Modified Case 3 where all fracs touch boundary. Snapping is 0.0001, 0.04, 0.05, 0.1, 0.01, 0.03 respectively
-        simcase = 0;
+        simcase = 11;
         switch (simcase) {
             case 0:
                 filenameBase = basemeshpath + "/dfnimrs/twoelCoarse";
@@ -1176,7 +1176,7 @@ void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::
     
     // Copying all files from input folder to output folder
     std::string onlyFolder = outputFolder.substr(0,outputFolder.find_last_of("/"));
-    fs::copy(filenameBase , onlyFolder, fs::copy_options::update_existing | fs::copy_options::recursive);
+//    fs::copy(filenameBase , onlyFolder, fs::copy_options::update_existing | fs::copy_options::recursive);
     
     // Adding the json name to filenameBase
     int njson = 0;
