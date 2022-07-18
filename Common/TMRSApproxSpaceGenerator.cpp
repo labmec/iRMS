@@ -385,7 +385,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
             {
                 int domain =-1;
                 if(mSimData.mTNumerics.m_mhm_mixed_Q){
-                    int domain = mSubdomainIndexGel[neigh.Element()->Index()];
+                     domain = mSubdomainIndexGel[neigh.Element()->Index()];
                 }
                     
                 int neighmatid = neigh.Element()->MaterialId();
