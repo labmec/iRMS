@@ -1,11 +1,11 @@
 {
     "$schema": "../dfn_schema.json",
-    // "PZGenGrid": {
-    //     "x0": [0.75, 1.50, 0.0],
-    //     "xf": [1.00, 2.00, 0.500001],
-    //     "Nels": [1,2,3],
-    //     "MMeshType": "EHexahedral"
-    // },
+     "PZGenGrid": {
+         "x0": [0.75, 1.50, 0.0],
+         "xf": [1.00, 2.00, 0.500001],
+         "Nels": [1,2,3],
+         "MMeshType": "EHexahedral"
+     },
     "Mesh": "examples/flemisch_benchmark/fl_case3_meshes/6x6x13/fl_case3.msh",
     "PreRefine": 0,
     "TolDist": 0.0022,
@@ -37,7 +37,7 @@
         {
             "name": "noflux",
             "matid": 4,
-            "type": 1, // imposed flux
+            "type": 1,  //imposed flux
             "value": 0.0
         }
         
@@ -52,7 +52,7 @@
             "width": 0.01,
             "Limit": "Erecovered",
             "Comment": "The lonely vertical one",
-            "Nodes":[ 
+            "Nodes":[
                 [0.500, 0.050, 0.050],
                 [0.500, 0.300, 0.050],
                 [0.500, 0.300, 0.950],
@@ -136,7 +136,7 @@
             "width": 0.01,
             "Limit": "Erecovered",
             "Comment": "Big diagonal above",
-            "Nodes":[ 
+            "Nodes":[
                 [0.950, 1.000, 0.500],
                 [0.950, 2.200, 0.850],
                 [0.050, 2.200, 0.850],
@@ -162,9 +162,3 @@
 
 
 
-// "PZGenGrid": {
-//     "x0": [0.5, 2.00, 0.0],
-//     "xf": [1.00, 2.25, 0.5],
-//     "MMeshType": "EHexahedral",
-//     "Nels": [2,1,3]
-// },

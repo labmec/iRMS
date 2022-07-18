@@ -69,6 +69,7 @@ void TMRSDarcyFractureGlueFlowWithMem::Contribute(const TPZVec<TPZMaterialDataT<
     auto & memory = this->GetMemory().get()->operator[](gp_index);
     REAL kappaNormal = m_permeability;
     REAL dist = memory.m_dist;
+    std::cout<<"dist: "<<dist<< " perm: "<<kappaNormal<< " matid: "<<this->Id()<<std::endl;
     REAL fact  = weight*dist/kappaNormal;
     auto &phi = datavec[0].phi;
     int nphi = datavec[qb].phi.Rows();

@@ -74,6 +74,7 @@ int TMRSDarcyFractureFlowWithMem<TMEM>::VariableIndex(const std::string &name) c
     if(!strcmp("kappa",name.c_str()))           return  4;
     if(!strcmp("g_average",name.c_str()))        return  5;
     if(!strcmp("p_average",name.c_str()))        return  6;
+    if(!strcmp("matid",name.c_str()))        return  7;
     return TPZMaterial::VariableIndex(name);
 }
 
@@ -85,11 +86,15 @@ int TMRSDarcyFractureFlowWithMem<TMEM>::NSolutionVariables(int var) const{
     if(var == 4) return 1;
     if(var == 5) return 1;
     if(var == 6) return 1;
+    if(var == 7) return 1;
     return TBase::NSolutionVariables(var);
 }
 
 template <class TMEM>
 void TMRSDarcyFractureFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout) {
+    if (var==7) {
+        Solout[0]= this->Id();
+    }
     TMRSDarcyFlowWithMem<TMEM>::Solution(datavec,var,Solout);
 }
 

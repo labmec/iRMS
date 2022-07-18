@@ -151,7 +151,7 @@ void RunProblem( const int &caseToSim){
     // Code takes a fine and a coarse mesh to generate MHM data structure
     TMRSApproxSpaceGenerator aspace;
     aspace.InitMatIdForMergeMeshes() = EInitVolumeMatForMHM;
-    sim_data.mTFracProperties.m_matid = EFracture;
+//    sim_data.mTFracProperties.m_matid = EFracture;
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
 //  aspace.SetGeometry(gmeshfine);
@@ -222,7 +222,7 @@ void RunProblem( const int &caseToSim){
                 current_report_time =reporting_times[pos];
                 
                 // computes integral of saturation for elements of certain matid
-                InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(aspace.FractureMatId());
+//                InntMassFrac=sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(aspace.FractureMatId());
                 fileCilamce<<current_report_time/(86400*365)<<", "<<InntMassFrac<<std::endl;
                
                 mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();

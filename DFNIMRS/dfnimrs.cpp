@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 0;
+    int simcase =11;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -113,7 +113,7 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3/";
                 break;
             case 4:
-                DebugStop(); // Need to generate mesh without overlap or need to treat overlap
+              //  DebugStop(); // Need to generate mesh without overlap or need to treat overlap
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4";
                 break;
             case 5:
@@ -191,18 +191,19 @@ void RunProblem(string& filenameBase, const int simcase)
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM);
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
-//    if (1) {
-//        if(gmeshfine){
-//            std::ofstream name(outputFolder + "GeoMesh_Fine_Initial.vtk");
-//            TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
-//            std::ofstream name2(outputFolder + "GeoMesh_Fine_Initial.txt");
-//            gmeshfine->Print(name2);
-//        }
-//        if(gmeshcoarse){
-//            std::ofstream name(outputFolder + "GeoMesh_Coarse_Initial.vtk");
-//            TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, name);
-//        }
-//    }
+    if (1) {
+        if(gmeshfine){
+            gmeshfine->SetDimension(3);
+            std::ofstream name(outputFolder + "GeoMesh_Fine_Initial.vtk");
+            TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
+            std::ofstream name2(outputFolder + "GeoMesh_Fine_Initial.txt");
+            gmeshfine->Print(name2);
+        }
+        if(gmeshcoarse){
+            std::ofstream name(outputFolder + "GeoMesh_Coarse_Initial.vtk");
+            TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, name);
+        }
+    }
 #endif
 	
 	// ----- Approximation space -----
@@ -241,6 +242,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Setting gmesh -----
 	// Code takes a fine and a coarse mesh to generate MHM data structure
 	aspace.SetGeometry(gmeshfine,gmeshcoarse);
+
 	{
 		std::ofstream name(outputFolder + "GeoMesh_Fine_AfterMergeMeshes.vtk");
 		TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
@@ -750,7 +752,9 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 		std::string ivolstring = volbase + to_string(ivol);
 		dim_name_and_physical_tagFine[3][ivolstring] = initVolForMergeMeshes + ivol;
 	}
-	
+    //Jose apagar
+    volbase = "k33";
+    dim_name_and_physical_tagFine[3][volbase] = 1;
 	// ------------------------ Generate gmesh fine ------------------------
 	string filenameFine = filenameBase + "_fine.msh";
     

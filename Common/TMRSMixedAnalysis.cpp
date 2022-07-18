@@ -236,6 +236,8 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
 		PostProcess(div,dimToPost);
     }
     
+    
+    
     auto total_time_pp = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_pp).count()/1000.;
     cout << "Total time post process = " << total_time_pp << " seconds" << endl;
 
