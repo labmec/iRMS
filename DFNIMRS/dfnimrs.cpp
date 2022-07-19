@@ -305,7 +305,6 @@ struct FractureQuantities {
                 previntegral = fBoundaryTransmission[fracmats];
             }
             TPZCompEl *cel = gel->Reference();
-            std::cout << cel->ConnectIndex(0) << std::endl;
             TPZVec<REAL> fluxvec(1,0.);
             fluxmesh->SetDimModel(1);
             cel->Integrate(0, fluxvec);
