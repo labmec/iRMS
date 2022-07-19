@@ -98,7 +98,10 @@ int TMRSDarcyFlowWithMem<TMEM>::VariableIndex(const std::string &name) const {
     if(!strcmp("g_average",name.c_str()))       return  5;
     if(!strcmp("p_average",name.c_str()))       return  6;
     if(!strcmp("GradPressure", name.c_str()))   return 7;
-    if(!strcmp("NormalFlux", name.c_str()))   return 8;
+    if(!strcmp("BCNormalFlux", name.c_str()))   return 8;
+    if(!strcmp("FluxNorm", name.c_str()))   return 9;
+    if(!strcmp("div_positive", name.c_str()))   return 10;
+    if(!strcmp("div_negative", name.c_str()))   return 11;
     return TPZMaterial::VariableIndex(name);
 }
 
@@ -112,6 +115,9 @@ int TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(int var) const{
     if(var == 6) return 1;
     if(var == 7) return 3;
     if(var == 8) return 1;
+    if(var == 9) return 1;
+    if(var == 10) return 1;
+    if(var == 11) return 1;
     return TPZMaterial::NSolutionVariables(var);
 }
 
@@ -131,6 +137,16 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> 
     q = datavec[qb].sol[0];
     p = datavec[pb].sol[0];
     
+//    STATE p_alt = 0.;
+//    TPZManVector<STATE> flux_alt;
+//    if(datavec[0].intGlobPtIndex >= 0)
+//    {
+//        auto gp_index = datavec[0].intGlobPtIndex;
+//        TMRSMemory &mem = this->GetMemory().get()->operator[](gp_index);
+//        p_alt = mem.p();
+//        mem.Flux(flux_alt);
+//    }
+    
     if(var == 8){ // normal flux. Only works for bc materials
         Solout[0] = q[0];
         return;
@@ -144,6 +160,18 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> 
         return;
     }
     
+    // fluxnorm
+    if(var == 9) {
+        Solout[0] = 0.;
+        for (int i=0; i < 3; i++)
+        {
+            Solout[0] += q[i]*q[i];
+        }
+        Solout[0] = sqrt(Solout[0]);
+        return;
+
+    }
+    
     if(var == 2){
         Solout[0] = p[0];
         return;
@@ -154,7 +182,19 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> 
         Solout[0] = div_q;
         return;
     }
-    
+    // div positive
+    if(var == 10) {
+        REAL div_q = datavec[qb].divsol[0][0];
+        Solout[0] = div_q > 0.? div_q: 0.;
+        return;
+    }
+    // div negative
+    if(var == 11) {
+        REAL div_q = datavec[qb].divsol[0][0];
+        Solout[0] = div_q < 0.? div_q: 0.;
+        return;
+    }
+
     if(var == 4){
      
             TPZManVector<double, 3> point;

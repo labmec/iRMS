@@ -152,6 +152,12 @@ public:
         m_flux = flux;
     }
     
+    /// Set the flux
+    void Flux(TPZVec<REAL> &flux)
+    {
+        flux = m_flux;
+    }
+    
     /// Set the normal permeability
     void SetNormalPermeability(REAL &normal_kappa)
     {

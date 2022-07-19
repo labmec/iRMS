@@ -68,32 +68,22 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Print(std::ostream &out) const{
 
 template <class TMEM>
 int TMRSDarcyFractureFlowWithMem<TMEM>::VariableIndex(const std::string &name) const{
-    if(!strcmp("Flux",name.c_str()))            return  1;
-    if(!strcmp("Pressure",name.c_str()))        return  2;
-    if(!strcmp("div_q",name.c_str()))           return  3;
-    if(!strcmp("kappa",name.c_str()))           return  4;
-    if(!strcmp("g_average",name.c_str()))        return  5;
-    if(!strcmp("p_average",name.c_str()))        return  6;
-    if(!strcmp("matid",name.c_str()))        return  7;
-    return TPZMaterial::VariableIndex(name);
+    return TMRSDarcyFlowWithMem<TMEM>::VariableIndex(name);
 }
 
 template <class TMEM>
 int TMRSDarcyFractureFlowWithMem<TMEM>::NSolutionVariables(int var) const{
-    if(var == 1) return 3;
-    if(var == 2) return 1;
-    if(var == 3) return 1;
-    if(var == 4) return 1;
-    if(var == 5) return 1;
-    if(var == 6) return 1;
-    if(var == 7) return 1;
-    return TBase::NSolutionVariables(var);
+    return TMRSDarcyFlowWithMem<TMEM>::NSolutionVariables(var);
 }
 
 template <class TMEM>
 void TMRSDarcyFractureFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout) {
-    if (var==7) {
-        Solout[0]= this->Id();
+    if(datavec[0].divsol.size() > 0) {
+#ifdef PZDEBUG
+        if(datavec[0].divsol[0].size() != 2) DebugStop();
+#endif
+        // overwrite the total divergence for the inplane divergence
+        datavec[0].divsol[0][0] = datavec[0].divsol[0][1];
     }
     TMRSDarcyFlowWithMem<TMEM>::Solution(datavec,var,Solout);
 }

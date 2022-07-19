@@ -164,6 +164,161 @@ int main(int argc, char* argv[]){
 // ----------------- End of Main -----------------
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
+
+struct FractureQuantities {
+    TPZMultiphysicsCompMesh *fCMesh = 0;
+    std::set<int> fAllFracturesMatId;
+    int fracMatid = 0;
+    int fPressureIntersectMatid = 0;
+    int fGlueMatid = 0;
+    REAL fIntegrateFluxNorm = 0.;
+    REAL fAveragePressure = 0.;
+    REAL fdivintegral = 0.;
+    REAL fdivpositive_integral = 0.;
+    REAL fdivnegative_integral = 0.;
+    REAL fBoundarySnapSize = 0.;
+    REAL fFaceSnapSize = 0;
+    REAL fFracBCFluxIntegral = 0.;
+    REAL fFracIntersectFluxIntegral = 0.;
+    // breakdown of fluid transmission by intersecting fracture set
+    std::map<std::set<int>, std::pair<REAL,REAL> > fBoundaryTransmission;
+    
+    FractureQuantities(TPZMultiphysicsCompMesh *cmesh, const std::set<int> &allfracs, int pressureintersect, int matglue) : fCMesh(cmesh), fAllFracturesMatId(allfracs), fPressureIntersectMatid(pressureintersect),
+    fGlueMatid(matglue) {
+        
+    }
+    void ComputeFluxQuantities(int matid)
+    {
+        fracMatid = matid;
+        IntegrateFractureFlux();
+        AveragePressure();
+        IntegrateDivFracture();
+        ComputeTransmissionBreakdown();
+    }
+    
+    void IntegrateFractureFlux()
+    {
+        std::set<int> matids = {fracMatid};
+        auto flux = fCMesh->Integrate("FluxNorm", matids);
+        fIntegrateFluxNorm = flux[0];
+        TPZGeoMesh *gmesh = fCMesh->Reference();
+        int64_t nel = gmesh->NElements();
+        for (int64_t el = 0; el<nel ; el++) {
+            TPZGeoEl *gel = gmesh->Element(el);
+            if(!gel) continue;
+            if(gel->MaterialId() == fracMatid+1) {
+                TPZGeoElSide gelside(gel);
+                if(gelside.HasNeighbour(fPressureIntersectMatid)) {
+                    fBoundarySnapSize += gel->Volume();
+                }
+            }
+            if(gel->MaterialId() == fracMatid) {
+                TPZGeoElSide gelside(gel);
+                if(gelside.HasNeighbour(fGlueMatid)) {
+                    fFaceSnapSize += gel->Volume();
+                }
+            }
+        }
+    }
+    void AveragePressure()
+    {
+        std::set<int> matids = {fracMatid};
+        auto pressure = fCMesh->Integrate("Pressure", matids);
+        fAveragePressure = pressure[0];
+        REAL area = 0.;
+        TPZGeoMesh *gmesh  = fCMesh->Reference();
+        int64_t nel = gmesh->NElements();
+        for (int64_t el = 0; el<nel; el++) {
+            TPZGeoEl *gel = gmesh->Element(el);
+            if(gel && gel->MaterialId() == fracMatid){
+                area += gel->Volume();
+            }
+        }
+        fAveragePressure /= area;
+    }
+    
+    void IntegrateDivFracture()
+    {
+        std::set<int> matids = {fracMatid};
+        auto divpos = fCMesh->Integrate("div_positive", matids);
+        fdivpositive_integral = divpos[0];
+        auto divneg = fCMesh->Integrate("div_negative", matids);
+        fdivnegative_integral = divneg[0];
+        auto divint = fCMesh->Integrate("div_q", matids);
+        fdivintegral = divint[0];
+        std::set<int> matidfracbound = {fracMatid+1};
+        auto bcflux = fCMesh->Integrate("BCNormalFlux", matidfracbound);
+        std::set<int> matidfracintersect = {fracMatid+2};
+        auto intersectflux = fCMesh->Integrate("BCNormalFlux", matidfracintersect);
+        fFracBCFluxIntegral = bcflux[0];
+        fFracIntersectFluxIntegral = intersectflux[0];
+    }
+    
+    void Print(std::ostream &out) {
+        out << "For fracture " << fracMatid << std::endl;
+        out << "Average pressure " << fAveragePressure << std::endl;
+        out << "Integrate fluxnorm " << fIntegrateFluxNorm << std::endl;
+        out << "Integrated divergence " << fdivintegral << std::endl;
+        out << "Integrated positive divergence " << fdivpositive_integral << std::endl;
+        out << "Integrated negative divergence " << fdivnegative_integral << std::endl;
+        out << "Integrated boundary flux " << fFracBCFluxIntegral << std::endl;
+        out << "Integrated intersection flux " << fFracIntersectFluxIntegral << std::endl;
+        out << "Size of snapped boundary " << fBoundarySnapSize << std::endl;
+        out << "Area of overlapping faces " << fFaceSnapSize << std::endl;
+        for(auto &it : fBoundaryTransmission) {
+            out << "Flux transmitted to fractures ";
+            for(auto id : it.first) out << id << " ";
+            out << ": " << it.second.first << " and " << it.second.second << std::endl;
+        }
+    }
+    
+    void ComputeTransmissionBreakdown()
+    {
+        TPZCompMesh *fluxmesh = fCMesh->MeshVector()[0];
+        TPZGeoMesh *gmesh = fluxmesh->Reference();
+        gmesh->ResetReference();
+        fluxmesh->LoadReferences();
+        int fracintersect = fracMatid+2;
+        // for each geometric element of fracintersect
+        //      find all neighbours of matid in fractures (form a set)
+        //      integrate the flux value
+        //      add to the datastructure
+        int64_t nel = gmesh->NElements();
+        for (int64_t el = 0; el<nel; el++) {
+            TPZGeoEl *gel = gmesh->Element(el);
+            if(!gel || gel->MaterialId() != fracintersect) continue;
+            TPZGeoElSide gelside(gel);
+            std::set<int> fracmats;
+            for(auto neigh = gelside.Neighbour(); neigh != gelside; neigh++)
+            {
+                int matid = neigh.Element()->MaterialId();
+                if(fAllFracturesMatId.find(matid) != fAllFracturesMatId.end()) fracmats.insert(matid);
+            }
+            // remove the current fracture matid
+            if(fracmats.find(fracMatid) == fracmats.end()) DebugStop();
+            fracmats.erase(fracMatid);
+            std::pair<REAL,REAL> previntegral = {0.,0.};
+            if(fBoundaryTransmission.find(fracmats) == fBoundaryTransmission.end())
+            {
+                fBoundaryTransmission[fracmats] = previntegral;
+            } else {
+                previntegral = fBoundaryTransmission[fracmats];
+            }
+            TPZCompEl *cel = gel->Reference();
+            std::cout << cel->ConnectIndex(0) << std::endl;
+            TPZVec<REAL> fluxvec(1,0.);
+            fluxmesh->SetDimModel(1);
+            cel->Integrate(0, fluxvec);
+            REAL flux = fluxvec[0];
+            if(flux < 0.) previntegral.first += flux;
+            else previntegral.second += flux;
+            fBoundaryTransmission[fracmats] = previntegral;
+        }
+    }
+
+};
+
+
 void RunProblem(string& filenameBase, const int simcase)
 {
     auto start_time = std::chrono::steady_clock::now();
@@ -243,6 +398,32 @@ void RunProblem(string& filenameBase, const int simcase)
 	aspace.SetGeometry(gmeshfine,gmeshcoarse);
 
 	{
+        {
+            int dim = gmeshfine->Dimension();
+            int64_t nel = gmeshfine->NElements();
+            int error = 0;
+            for (int64_t el = 0; el<nel; el++) {
+                TPZGeoEl *gel = gmeshfine->Element(el);
+                if(gel->Dimension() != dim) continue;
+                int firstside = gel->FirstSide(2);
+                for(int is = firstside; is< gel->NSides()-1; is++)
+                {
+                    TPZGeoElSide gelside(gel,is);
+                    auto neigh = gelside.Neighbour();
+                    if(neigh == gelside) {
+                        std::cout << gelside << "Has no neighbour\n";
+                        error = 1;
+                        TPZGeoElBC gelbc(gelside,-1000);
+                    }
+                }
+            }
+            if(error == 1){
+                std::cout << "3D element without neighbour \n";
+                std::ofstream name("GeoMesh_Fine_AfterMergeMeshes.vtk");
+                TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
+                DebugStop();
+            }
+        }
 		std::ofstream name(outputFolder + "GeoMesh_Fine_AfterMergeMeshes.vtk");
 		TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
 //        std::ofstream name2(outputFolder + "GeoMesh_MHM_domain.vtk");
@@ -372,11 +553,21 @@ void RunProblem(string& filenameBase, const int simcase)
 		// -DeltaU. So, to obtain the correct solution, we multiply it by -1.
 		// Note: This has to be done after LoadSolution()!
 		mixed_operator->UpdatePreviousState(-1.);
+        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
         
+        {
+            // print the flux mesh with the solutions "loaded"
+            TPZCompMesh *fluxmesh = mixed_operator->MeshVector()[0];
+            std::ofstream flux("fluxmesh.txt");
+            fluxmesh->Print(flux);
+        }
+
+//        TPZCompMesh *pressure = mixed_operator->MeshVector()[1];
+//        pressure->Solution().Print("pressure multipliers");
         // Computes the integral of the normal flux on the boundaries.
         // To use, change the inletMatId and outletMatId according to problem
-        const bool computeInAndOutFlux = true;
-        if(computeInAndOutFlux){
+        const bool PostProcessQuantities = true;
+        if(PostProcessQuantities){
             std::set<int> bcflux = {2,3,5};
 			const int inletMatId = 2, outletMatId = 3;
 			auto result = computeIntegralOfNormalFlux(bcflux, mixed_operator);
@@ -384,6 +575,18 @@ void RunProblem(string& filenameBase, const int simcase)
             for(auto it: result)
             {
                 out << "Integral for matid " << it.first << " " << it.second << std::endl;
+            }
+            auto &allfrac = sim_data.mTFracProperties.m_fracprops;
+            int gluematid = sim_data.mTFracIntersectProperties.m_FractureGlueId;
+            int pressureintersect = sim_data.mTGeometry.m_pressureMatId;
+            std::set<int> fracmatids;
+            for(auto &it : allfrac) fracmatids.insert(it.first);
+            for(auto &it : allfrac)
+            {
+                FractureQuantities frac(mixed_operator,fracmatids, pressureintersect,gluematid);
+                frac.ComputeFluxQuantities(it.first);
+                frac.Print(out);
+                frac.Print(std::cout);
             }
         }
     
@@ -405,6 +608,8 @@ void RunProblem(string& filenameBase, const int simcase)
     delete gmeshfine;
     delete gmeshcoarse;
 }
+
+
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
@@ -576,6 +781,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
 	vecnames.Push("Flux");
 	scalnames.Push("Pressure");
+    scalnames.Push("div_q");
 	if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
 		scalnames.Push("g_average");
 		scalnames.Push("p_average");
@@ -670,6 +876,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	std::set<int> allmatids; // used to check for repeated matids and highest matid
 	
     // ------------------------ Check if isMHM is set on file ------------------------
+    isMHM = true;
     if(input.find("useMHM") != input.end()) {
         isMHM = input["useMHM"];
     }
@@ -703,8 +910,16 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	}
 
 	// ------------------------ Generate gmesh coarse ------------------------
-	string filenameCoarse = filenameBase + "_coarse.msh";
-	gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
+    if(input.find("Mesh") == input.end()) DebugStop();
+    std::string meshfile = input["Mesh"];
+    {
+        auto lastslash = filenamejson.find_last_of("/");
+        auto meshdirname = filenamejson.substr(0,lastslash+1);
+//        meshFile = meshFile.substr(meshFile.find("examples/") + 9,meshFile.length());
+        meshfile = meshdirname + meshfile;
+
+    }
+	gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
     
     int ncoarse_vol = 0;
     int64_t nelcoarse = gmeshcoarse->NElements();
@@ -1036,6 +1251,7 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
                 }
                 cout << "Found two intersection elements at the same place!" << endl;
                 cout << "Manually deleting intersection geoel..." << endl;
+                
                 TPZGeoEl* gelduplicate = interEls[1];
                 const int64_t duplicateIndex = gelduplicate->Index();
                 gelduplicate->RemoveConnectivities();
@@ -1123,7 +1339,7 @@ std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcM
 	const REAL zerotol = ZeroTolerance();
     std::map<int,TPZVec<STATE>> result;
 	std::set<int> matidsInlet, matidsOutlet;
-	std::string varname="NormalFlux";
+	std::string varname="BCNormalFlux";
 	cmesh->Reference()->ResetReference();
 	cmesh->LoadReferences(); // compute integral in the multiphysics mesh
 	int nels = cmesh->NElements();
