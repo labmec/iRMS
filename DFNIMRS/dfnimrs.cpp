@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase =11;
+    int simcase = 9;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -128,7 +128,7 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/";
                 break;
             case 9:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona";
                 break;
             case 10:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/";
@@ -916,10 +916,11 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
         auto meshdirname = filenamejson.substr(0,lastslash+1);
 //        meshFile = meshFile.substr(meshFile.find("examples/") + 9,meshFile.length());
         meshfile = meshdirname + meshfile;
-
     }
 	gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
-    
+//    string filenameCoarse = filenameBase + "_coarse.msh";
+//    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
+
     int ncoarse_vol = 0;
     int64_t nelcoarse = gmeshcoarse->NElements();
     for(int64_t el = 0; el<nelcoarse; el++)
@@ -1400,16 +1401,18 @@ void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::
     int njson = 0;
     for (auto const& dir_entry : std::filesystem::directory_iterator{filenameBase}){
         std::string filename = dir_entry.path().string();
-        std::cout << dir_entry.path().string() << endl;
+//        std::cout << dir_entry.path().string() << endl;
         
-        if(filename.substr(filename.find(".")) == ".json"){
-            if(njson == 0){
-                filenameBase = filename.substr(0,filename.find("."));
-                njson++;
-            }
-            else {
-                cout << "\n\n=====> ERROR! There are two json files in the provided input folder" << endl;
-                DebugStop();
+        if (filename.find(".") != std::string::npos){
+            if(filename.substr(filename.find(".")) == ".json"){
+                if(njson == 0){
+                    filenameBase = filename.substr(0,filename.find("."));
+                    njson++;
+                }
+                else {
+                    cout << "\n\n=====> ERROR! There are two json files in the provided input folder" << endl;
+                    DebugStop();
+                }
             }
         }
     }
