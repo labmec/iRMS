@@ -2084,7 +2084,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
                     //                    TPZAutoPointer<TPZGuiInterface> guiInterface;
                     //                    subcmesh->SetAnalysisSkyline(numThreads, preconditioned, guiInterface);
                     TPZAutoPointer<TPZGuiInterface> guiInterface;
-                    subcmesh->SetAnalysisSkyline(0, 0, guiInterface);
+//                    subcmesh->SetAnalysisSkyline(0, 0, guiInterface);
                     //                    std::ofstream subcm2("PrintSubm2.txt");
                     //                    subcmesh->Print(subcm2);
                     

@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase =11;
+    int simcase =3;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -128,7 +128,7 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/";
                 break;
             case 9:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona/";
                 break;
             case 10:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/";

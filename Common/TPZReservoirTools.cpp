@@ -590,7 +590,7 @@ void TPZReservoirTools::SplitConnect(TPZGeoEl *gelIntersect)
 /// Find one or two TPZCompElSides which are neighbour of the geometric element and have a dimension one higher
 std::pair<TPZCompElSide,TPZCompElSide> TPZReservoirTools::FindHdiv(TPZGeoEl *gelintersect)
 {
-    int dim = gelintersect->Dimension();
+    int dim =gelintersect->Dimension();
     TPZGeoElSide gelside(gelintersect);
     TPZGeoElSide neighbour = gelside.Neighbour();
     std::pair<TPZCompElSide,TPZCompElSide> result;

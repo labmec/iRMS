@@ -6,13 +6,14 @@
     //     "Nels": [1,2,3],
     //     "MMeshType": "EHexahedral"
     // },
-"Mesh": "examples/flemisch_benchmark/dfnimrs/fl_case4_coarse.msh",
+"Mesh": "fl_case4_coarse.msh",
+
     // "TolAngle": 1.57,
     // "TolDist": 10.0,
     // "TolAngle": 0.261799,
     // "TolDist": 500.0,
-    "TolAngle": 1.1,
-    "TolDist": 1.1,
+    "TolAngle": 0.01,
+    "TolDist": 0.01,
     // "PreRefine": 1,
     
     
@@ -45,7 +46,7 @@
         }
         
     ],
-    "NCoarseGroups": 94302,
+    "NCoarseGroups": 5832,
     "FractureHybridPressureMatId": 299,
     "FractureInitMatId": 300,
     "FractureGlueMatId": 1000000,
