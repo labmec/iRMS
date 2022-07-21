@@ -22,7 +22,7 @@
         "name": "k33",
         "matid":1,
         "K": 1.0,
-        "phi": 1.0e-2
+        "phi": 0.2
     }
     ],
     "Boundary": [
@@ -46,7 +46,7 @@
         }
         
     ],
-    "NCoarseGroups": 5832,
+    "NCoarseGroups": 3024,
     "FractureHybridPressureMatId": 299,
     "FractureInitMatId": 300,
     "FractureGlueMatId": 1000000,

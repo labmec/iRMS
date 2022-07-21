@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 9;
+    int simcase = 4;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
