@@ -1,6 +1,6 @@
 {
     "$schema": "./dfn_schema.json", // Should be always here
-    "Mesh" : "examples/twoElCoarse.msh", // Coarse mesh in Gmsh format
+    "Mesh" : "twoElCoarse_coarse.msh", // Coarse mesh in Gmsh format
     "TolDist": 1e-4, // Absolute tolerance to perform snapping of fracture to mesh face/edge
     "TolAngle": 1e-2, // Absolute angle tolerance to perform snapping
     "Domains": [ // Vector with all matrix properties
