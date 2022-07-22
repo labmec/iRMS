@@ -155,6 +155,9 @@ int main(int argc, char* argv[]){
             case 17:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/";
                 break;
+            case 18:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/";
+                break;
             default:
                 break;
         }
