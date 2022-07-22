@@ -113,7 +113,7 @@ int main(int argc, char* argv[]){
                 break;
             case 4:
               //  DebugStop(); // Need to generate mesh without overlap or need to treat overlap
-                filenameBase = basemeshpath + "/dfnimrs/fl_case4";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case4_test2";
                 break;
             case 5:
                 filenameBase = basemeshpath + "/dfnimrs/intersect/";
