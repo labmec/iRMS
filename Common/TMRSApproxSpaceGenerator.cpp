@@ -4378,10 +4378,9 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
             TPZManVector<REAL,3> qsi(dim,0.);
             int64_t coarse_index = 0;
             
-//            TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
-//            if(coarse_index-first3DCoarse != matid - fInitMatIdForMergeMeshes) DebugStop();
-//            MatFinetoCoarseElIndex[matid] = coarse_index;
-            MatFinetoCoarseElIndex[matid] = matid-fInitMatIdForMergeMeshes+first3DCoarse;
+            TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
+            if(coarse_index-first3DCoarse != matid - fInitMatIdForMergeMeshes) DebugStop();
+            MatFinetoCoarseElIndex[matid] = coarse_index;
         }
 #else
         MatFinetoCoarseElIndex[matid] = matid-fInitMatIdForMergeMeshes+first3DCoarse;
