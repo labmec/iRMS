@@ -113,7 +113,7 @@ int main(int argc, char* argv[]){
                 break;
             case 4:
               //  DebugStop(); // Need to generate mesh without overlap or need to treat overlap
-                filenameBase = basemeshpath + "/dfnimrs/fl_case4_test2";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_test2";
                 break;
             case 5:
                 filenameBase = basemeshpath + "/dfnimrs/intersect/";
@@ -157,6 +157,8 @@ int main(int argc, char* argv[]){
                 break;
             case 18:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/";
+            case 19:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
                 break;
             default:
                 break;
@@ -1399,7 +1401,7 @@ void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::
     
     // Copying all files from input folder to output folder
     std::string onlyFolder = outputFolder.substr(0,outputFolder.find_last_of("/"));
-//    fs::copy(filenameBase , onlyFolder, fs::copy_options::update_existing | fs::copy_options::recursive);
+    fs::copy(filenameBase , onlyFolder, fs::copy_options::update_existing | fs::copy_options::recursive);
     
     // Adding the json name to filenameBase
     int njson = 0;
