@@ -78,7 +78,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 4;
+    int simcase = 19;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -350,7 +350,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM);
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
-    if (1) {
+    if (0) {
         if(gmeshfine){
             gmeshfine->SetDimension(3);
             std::ofstream name(outputFolder + "GeoMesh_Fine_Initial.vtk");
@@ -923,17 +923,22 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 //        meshFile = meshFile.substr(meshFile.find("examples/") + 9,meshFile.length());
         meshfile = meshdirname + meshfile;
     }
-	gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+    int ncoarse_vol = 0;
+    if(isMHM){
+        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+        
+        int64_t nelcoarse = gmeshcoarse->NElements();
+        for(int64_t el = 0; el<nelcoarse; el++)
+        {
+            TPZGeoEl *gel = gmeshcoarse->Element(el);
+            if(gel && gel->Dimension()==3) ncoarse_vol++;
+        }
+    }
+	
 //    string filenameCoarse = filenameBase + "_coarse.msh";
 //    gmeshcoarse = generateGMeshWithPhysTagVec(filenameCoarse,dim_name_and_physical_tagCoarse);
 
-    int ncoarse_vol = 0;
-    int64_t nelcoarse = gmeshcoarse->NElements();
-    for(int64_t el = 0; el<nelcoarse; el++)
-    {
-        TPZGeoEl *gel = gmeshcoarse->Element(el);
-        if(gel && gel->Dimension()==3) ncoarse_vol++;
-    }
+   
 	// ===================> Fine mesh <=======================
 	// Note that boundary elements have been added previously to the set dim_name_and_physical_tagFine
 
@@ -961,12 +966,13 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 		fracCounter++;
 	}
 	
-	// ------------------------ Adding volume physical tags ------------------------
+	// ------------------------ Adding volume physical tags------------------------
 	const int maxMatId = *allmatids.rbegin();
 	initVolForMergeMeshes = (1+maxMatId/100)*100;
 	if(input.find("NCoarseGroups") == input.end()) DebugStop();
 	const int nCoarseGroups = input["NCoarseGroups"];
-    if(nCoarseGroups != ncoarse_vol) DebugStop();
+    
+    if((nCoarseGroups != ncoarse_vol) && isMHM) DebugStop();
 	std::string volbase = "c";
 	for (int ivol = 0; ivol < nCoarseGroups; ivol++) {
 		std::string ivolstring = volbase + to_string(ivol);

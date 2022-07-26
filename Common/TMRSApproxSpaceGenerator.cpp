@@ -101,7 +101,11 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * g
     if (InitMatIdForMergeMeshes() == -1000) {
         DebugStop(); // MatId for MHM should be set in main!
     }
-    MergeMeshes(gmeshfine, gmeshcoarse); // this fills mSubdomainIndexGel that is used for MHM
+    bool useMHM = mSimData.mTNumerics.m_mhm_mixed_Q;
+    if(useMHM){
+        MergeMeshes(gmeshfine, gmeshcoarse); // this fills mSubdomainIndexGel that is used for MHM
+    }
+    
     mGeometry = gmeshfine;
 #ifdef PZDEBUG
     {
@@ -110,8 +114,12 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * g
             TPZGeoEl *gel = mGeometry->Element(el);
             if(gel->Dimension() != mGeometry->Dimension()) continue;
             if(gel->HasSubElement()) continue;
-            int geldomain = mSubdomainIndexGel[el];
-            if(geldomain == -1) DebugStop();
+            int geldomain =-1;
+            if(useMHM){
+                geldomain = mSubdomainIndexGel[el];
+                if(geldomain == -1) DebugStop();
+            }
+           
             int firstside = gel->FirstSide(2);
             int lastside = gel->NSides()-1;
             for(int side = firstside; side < lastside; side++)
@@ -121,14 +129,18 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * g
                     int neighdim = neigh.Element()->Dimension();
                     if(neighdim != 3) continue;
                     int neighind = neigh.Element()->Index();
-                    int neighdomain = mSubdomainIndexGel[neighind];
-                    if(neighdomain != geldomain)
-                    {
-                        if(!neigh.HasNeighbour(this->mSimData.mTGeometry.m_skeletonMatId))
+                    
+                    if (useMHM) {
+                        int neighdomain = mSubdomainIndexGel[neighind];
+                        if(neighdomain != geldomain)
                         {
-                            DebugStop();
+                            if(!neigh.HasNeighbour(this->mSimData.mTGeometry.m_skeletonMatId))
+                            {
+                                DebugStop();
+                            }
                         }
                     }
+                   
                 }
             }
         }
@@ -259,7 +271,7 @@ static int64_t GeoElSideConnectIndex(const TPZGeoElSide &gelside)
 // ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh){
-    
+    bool useMHM= mSimData.mTNumerics.m_mhm_mixed_Q;
     // ===> Create the fracture hdivcollapsed elements
     // These should be unconnected with the 3D elements so we reset references in the gmesh
     // They are, however, connected (with connects) between themselves
@@ -370,7 +382,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
             if(previous.Neighbour() != gelside) DebugStop();
             // setting the domain of the newly created elements
             // creating an interface geometric element
-            {
+            if (useMHM) {
                 int domain = mSubdomainIndexGel[previous.Element()->Index()];
                 if(domain == -1) DebugStop();
                 mSubdomainIndexGel[gel->Index()] = domain;
@@ -380,35 +392,48 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
                 mSubdomainIndexGel.Resize(nel, -1);
                 mSubdomainIndexGel[gbc.CreatedElement()->Index()] = domain;
             }
+            
             // look for the other element with the fractintersect matid
             // this element was created in splitconnect
             for(auto neigh = gelside.Neighbour(); neigh != gelside; neigh++)
             {
-                int domain = mSubdomainIndexGel[neigh.Element()->Index()];
+                int domain =-1;
                 int neighmatid = neigh.Element()->MaterialId();
-                // here we check for any fracture matid
-                if(IsFracMatId(neighmatid)) domains.insert(domain);
+                if (useMHM) {
+                    domain = mSubdomainIndexGel[neigh.Element()->Index()];
+                    // here we check for any fracture matid
+                    if(IsFracMatId(neighmatid)) {
+                        domains.insert(domain);
+                        
+                    };
+                }
+                
                 // here we check for the current fracture being processed
                 if(neighmatid == fracmatid)
                 {
                     // the fracture element must belong to some subdomain
-                    if(domain == -1) DebugStop();
+                   
+                    if(domain == -1 && useMHM) DebugStop();
                     auto bound = neigh.Neighbour();
                     // the first neighbour of the fracture element needs to be a fracintersect
                     if(bound.Element()->MaterialId() != fracintersect) DebugStop();
-                    mSubdomainIndexGel[bound.Element()->Index()] = domain;
+                    
                     TPZGeoElBC gbc(bound,interfacematid);
-                    nel = mGeometry->NElements();
-                    mSubdomainIndexGel.Resize(nel, -1);
-                    mSubdomainIndexGel[gbc.CreatedElement()->Index()] = domain;
-                    // the pressure geometric element was created, if needed, in split connect??
-                    auto pressure = neigh.HasNeighbour(mSimData.mTGeometry.m_pressureMatId);
-                    if(!pressure) DebugStop();
-                    mSubdomainIndexGel[pressure.Element()->Index()] = domain;
+                    if (useMHM) {
+                        mSubdomainIndexGel[bound.Element()->Index()] = domain;
+                        nel = mGeometry->NElements();
+                        mSubdomainIndexGel.Resize(nel, -1);
+                        mSubdomainIndexGel[gbc.CreatedElement()->Index()] = domain;
+                        // the pressure geometric element was created, if needed, in split connect??
+                        auto pressure = neigh.HasNeighbour(mSimData.mTGeometry.m_pressureMatId);
+                        if(!pressure) DebugStop();
+                        mSubdomainIndexGel[pressure.Element()->Index()] = domain;
+                    }
+                    
                 }
             }
             // if the neighbouring elements belong to different macro domains then the pressure will stay in the father mesh
-            if(domains.size()>1)
+            if(domains.size()>1 && useMHM)
             {
                 auto pressure = gelside.HasNeighbour(mSimData.mTGeometry.m_pressureMatId);
                 if(!pressure) DebugStop();
@@ -495,7 +520,11 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         std::pair<int,int> leftrightdomain;
         std::pair<int64_t,int64_t> leftrightcindex;
         // hdivdomain : domain of the fracture element
-        int hdivdomain = mSubdomainIndexGel[gel->Index()];
+        int hdivdomain =-1;
+        if(useMHM){
+            hdivdomain = mSubdomainIndexGel[gel->Index()];
+        }
+        
         int icon = 0;
         // loop over all neighbours of the fracture element
         while(neigh != gelside){
@@ -513,12 +542,17 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
             if(icon==0) SplitConnectsAtInterface(compside);
             if (sideorient == 1){
                 leftright.first = compside;
-                leftrightdomain.first = mSubdomainIndexGel[gelnei->Index()];
+                if(useMHM){
+                  leftrightdomain.first = mSubdomainIndexGel[gelnei->Index()];
+                }
+               
                 leftrightcindex.first = compside.ConnectIndex();
                 icon++;
             } else if(sideorient == -1){
                 leftright.second = compside;
+                if(useMHM){
                 leftrightdomain.second = mSubdomainIndexGel[gelnei->Index()];
+                }
                 leftrightcindex.second = compside.ConnectIndex();
                 icon++;
             }
@@ -527,8 +561,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         // this would imply more than 2 3D elements linked to the fracture
         if(icon != 2) DebugStop();
         std::pair<TPZConnect,TPZConnect> cleftright = {cmesh->ConnectVec()[leftrightcindex.first],cmesh->ConnectVec()[leftrightcindex.second]};
-        if(cleftright.first.HasDependency() && leftrightdomain.first == leftrightdomain.second) DebugStop();
-        if(cleftright.second.HasDependency() && leftrightdomain.first == leftrightdomain.second) DebugStop();
+        if(cleftright.first.HasDependency() && leftrightdomain.first == leftrightdomain.second && useMHM) DebugStop();
+        if(cleftright.second.HasDependency() && leftrightdomain.first == leftrightdomain.second && useMHM) DebugStop();
         // verify if we need to swap the connects
 		// NOTE Jul 2022: This code was need to run case 2 of flemisch benchmark with mhm
 		//                It seems, it is not needed anymore since it works without it. If something happens, please check.
@@ -563,13 +597,13 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         // verify if the order is OK
         TPZConnect &cL = cmesh->ConnectVec()[leftrightcindex.first];
         // verify if we need to swap the connects
-        if(hdivdomain == leftrightdomain.first && cL.HasDependency())
+        if(hdivdomain == leftrightdomain.first && cL.HasDependency() && useMHM)
         {
             DebugStop();
         }
         TPZConnect &cR = cmesh->ConnectVec()[leftrightcindex.second];
         // verify if we need to swap the connects
-        if(hdivdomain == leftrightdomain.second && cR.HasDependency())
+        if(hdivdomain == leftrightdomain.second && cR.HasDependency() && useMHM)
         {
             DebugStop();
         }

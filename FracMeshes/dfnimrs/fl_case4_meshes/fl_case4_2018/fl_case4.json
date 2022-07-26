@@ -51,6 +51,7 @@
     "FractureInitMatId": 300,
     "FractureGlueMatId": 1000000,
     "FractureGluePerm": 1,
+    "useMHM": false,
     "Fractures": [
         {
             "Index": 0,
