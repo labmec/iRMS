@@ -735,7 +735,6 @@ void TMRSSFIAnalysis::ReadProperties(std::string name, bool print_table_Q, std::
     
     if(Kx.size() == 0){
         std::cout<<"No data read."<<std::endl;
-        
         DebugStop();
     }
     if(print_table_Q){

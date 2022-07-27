@@ -48,6 +48,7 @@ endif(USING_SUPERLU)
 
 
 # create folder with meshes
+set(RESERVOIRDIR ${CMAKE_SOURCE_DIR}/Reservoir)
 set(FRACMESHESDIR ${CMAKE_SOURCE_DIR}/FracMeshes)
 set (CONFIG_H "${CMAKE_SOURCE_DIR}/Common/imrs_config.h")
 configure_file ("${CMAKE_SOURCE_DIR}/Common/imrs_config.h.in" ${CONFIG_H})

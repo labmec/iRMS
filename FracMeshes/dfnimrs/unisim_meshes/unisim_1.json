@@ -1,0 +1,63 @@
+{
+    "$schema": "../dfn_schema.json",
+    // "PZGenGrid": {
+    //     "x0": [0.75, 1.50, 0.0],
+    //     "xf": [1.00, 2.00, 0.500001],
+    //     "Nels": [1,2,3],
+    //     "MMeshType": "EHexahedral"
+    // },
+"Mesh": "UNISIMT4R8P2p5.msh",
+
+    // "TolAngle": 1.57,
+    // "TolDist": 10.0,
+    // "TolAngle": 0.261799,
+    // "TolDist": 500.0,
+    "TolAngle": 0.01,
+    "TolDist": 0.01,
+    // "PreRefine": 1,
+    
+    
+    "Domains": [
+    {
+        "name": "RockMatrix",
+        "matid":1,
+        "K": 1.0,
+        "phi": 0.2
+    },
+    {
+        "name": "RockMatrix2",
+        "matid":2,
+        "K": 1.0,
+        "phi": 0.2
+    }
+    ],
+    "Boundary": [
+        {
+            "name": "Injectors",
+            "matid": 3,
+            "type": 0, // imposed pressure
+            "value": 30.0
+        },
+        {
+            "name": "Productors",
+            "matid": 4,
+            "type": 0,  // imposed pressure
+            "value": 10.0
+        },
+        {
+            "name": "ZeroFlux",
+            "matid": 5,
+            "type": 1, // imposed flux
+            "value": 0.0
+        }
+        
+    ],
+    "NCoarseGroups": 3024,
+    "FractureHybridPressureMatId": 299,
+    "FractureInitMatId": 300,
+    "FractureGlueMatId": 1000000,
+    "FractureGluePerm": 1,
+    "useMHM":false,
+    "needsMerge":false,
+    "SimulationDim": 2
+}

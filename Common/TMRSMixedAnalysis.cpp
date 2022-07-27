@@ -105,13 +105,10 @@ void TMRSMixedAnalysis::RunTimeStep(){
         x +=dx;
         cmesh->UpdatePreviousState(-1.);
         fsoltransfer.TransferFromMultiphysics();
-        
 #ifdef USING_BOOST
         boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
 #endif
-        
         Assemble();
-        
 #ifdef USING_BOOST
         boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
         boost::posix_time::time_duration deltat = tsim2-tsim1;

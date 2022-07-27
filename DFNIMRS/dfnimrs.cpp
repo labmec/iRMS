@@ -9,7 +9,8 @@
 #include <tpzgeoelrefpattern.h>
 #include "json.hpp"
 #include <filesystem>
-
+#include <libInterpolate/Interpolate.hpp>
+#include <libInterpolate/AnyInterpolator.hpp>
 // include dfn filereader
 #include "filereader.h"
 
@@ -43,6 +44,10 @@ void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh);
 bool fileExists(const fs::path& p, fs::file_status s = fs::file_status{});
 void CreateOutputFolders(std::string& outputFolder);
 void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::string& outputFolder);
+
+TPZGeoMesh * Transform2dMeshToUnisim3D(TPZGeoMesh* gmesh2d, int nLayers);
+void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
+void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
 
 std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -78,7 +83,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 19;
+    int simcase = 20;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -96,6 +101,8 @@ int main(int argc, char* argv[]){
         // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
         // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
         // 12,13,14,15,16,17: Modified Case 3 where all fracs touch boundary. Snapping is 0.0001, 0.04, 0.05, 0.1, 0.01, 0.03 respectively
+        // 19: Case4 mesh 2018
+        // 20: Unisim
         switch (simcase) {
             case 0:
                 filenameBase = basemeshpath + "/dfnimrs/twoelCoarse";
@@ -159,6 +166,9 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/";
             case 19:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
+                break;
+            case 20:
+                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
                 break;
             default:
                 break;
@@ -348,9 +358,13 @@ void RunProblem(string& filenameBase, const int simcase)
 	int initVolForMergeMeshes = -1000000;
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM);
+    
+    if(simcase==20){
+        gmeshfine = Transform2dMeshToUnisim3D(gmeshfine, 5);
+    }
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
-    if (0) {
+    if (1) {
         if(gmeshfine){
             gmeshfine->SetDimension(3);
             std::ofstream name(outputFolder + "GeoMesh_Fine_Initial.vtk");
@@ -631,7 +645,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	// ------------------------ Getting number of domains and fractures ------------------------
 	if(input.find("Domains") == input.end()) DebugStop();
 	const int ndom = input["Domains"].size();
-	if(input.find("Fractures") == input.end()) DebugStop();
+	if(input.find("Fractures") == input.end());
 	const int nfrac = input["Fractures"].size();
 	sim_data.mTReservoirProperties.mPorosityAndVolumeScale.resize(ndom+nfrac+1);
 	int countPhi = 0;
@@ -885,6 +899,16 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     if(input.find("useMHM") != input.end()) {
         isMHM = input["useMHM"];
     }
+    bool needMerge= true;
+    if(input.find("needsMerge") != input.end()) {
+        needMerge = input["needsMerge"];
+    }
+    int SimulationDim= 3;
+    if(input.find("SimulationDim") != input.end()) {
+        SimulationDim = input["SimulationDim"];
+    }
+    
+    
     
 	// ------------------------ Get matids of 3D domain ------------------------
 	if(input.find("Domains") == input.end()) DebugStop();
@@ -893,7 +917,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 		if(domain.find("name") == domain.end()) DebugStop();
 		const int matid = domain["matid"];
 		const string name = domain["name"];
-		dim_name_and_physical_tagCoarse[3][name] = matid;
+		dim_name_and_physical_tagCoarse[SimulationDim][name] = matid;
 		const bool is_in = allmatids.find(matid) != allmatids.end();
 		if(is_in) DebugStop();
 		allmatids.insert(matid);
@@ -907,8 +931,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 		if(bc.find("matid") == bc.end()) DebugStop();
 		const string name = bc["name"];
 		const int matid = bc["matid"];
-		dim_name_and_physical_tagCoarse[2][name] = matid;
-		dim_name_and_physical_tagFine[2][name] = matid;
+		dim_name_and_physical_tagCoarse[SimulationDim-1][name] = matid;
+		dim_name_and_physical_tagFine[SimulationDim-1][name] = matid;
 		const bool is_in = allmatids.find(matid) != allmatids.end();
 		if(is_in) DebugStop();
 		allmatids.insert(matid);
@@ -948,7 +972,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	
 	// ------------------------ Loop over fractures in Json ------------------------
 	int fracCounter = 0;
-	if(input.find("Fractures") == input.end()) DebugStop();
+    bool isFracSim=false;
+    if(input.find("Fractures") != input.end()){
 	for(auto& frac : input["Fractures"]){
 		const int matid = fracInitMatId + fracCounter*fracinc;
         const int bcmatid = fracInitMatId + fracCounter*fracinc+1;
@@ -965,6 +990,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
         allmatids.insert((currentFracId)+1);
 		fracCounter++;
 	}
+        isFracSim=true;
+    }
 	
 	// ------------------------ Adding volume physical tags------------------------
 	const int maxMatId = *allmatids.rbegin();
@@ -972,15 +999,15 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	if(input.find("NCoarseGroups") == input.end()) DebugStop();
 	const int nCoarseGroups = input["NCoarseGroups"];
     
+    std::string volbase = "c";
+    if(needMerge){
+    
     if((nCoarseGroups != ncoarse_vol) && isMHM) DebugStop();
-	std::string volbase = "c";
-	for (int ivol = 0; ivol < nCoarseGroups; ivol++) {
-		std::string ivolstring = volbase + to_string(ivol);
-		dim_name_and_physical_tagFine[3][ivolstring] = initVolForMergeMeshes + ivol;
-	}
-    //Jose apagar
-    volbase = "k33";
-    dim_name_and_physical_tagFine[3][volbase] = 1;
+        for (int ivol = 0; ivol < nCoarseGroups; ivol++) {
+            std::string ivolstring = volbase + to_string(ivol);
+            dim_name_and_physical_tagFine[SimulationDim][ivolstring] = initVolForMergeMeshes + ivol;
+        }
+    }
 	// ------------------------ Generate gmesh fine ------------------------
 	string filenameFine = filenameBase + "_fine.msh";
     
@@ -994,12 +1021,22 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     firstfracintersect = (1+firstfracintersect/100)*100;
     std::map<int,std::pair<int,int>> matidtoFractures;
     
-    MapFractureIntersection(filenameBase, dim_name_and_physical_tagFine[1], firstfracintersect, matidtoFractures);
+    if(isFracSim){
+        MapFractureIntersection(filenameBase, dim_name_and_physical_tagFine[1], firstfracintersect, matidtoFractures);
+    }
     
-	gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+    if (!isMHM && !needMerge) {
+        gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagCoarse);
+    }
+    else{
+        gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+    }
 
     // for each intersection element create an intersection element for each fracture specifically
-	CreateIntersectionElementForEachFrac(gmeshfine,matidtoFractures,fracInitMatId,fracinc,FractureHybridPressureMatId);
+    if (isFracSim) {
+        CreateIntersectionElementForEachFrac(gmeshfine,matidtoFractures,fracInitMatId,fracinc,FractureHybridPressureMatId);
+    }
+	
 }
 
 // ---------------------------------------------------------------------
@@ -1429,6 +1466,152 @@ void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::
         }
     }
 
+}
+
+TPZGeoMesh * Transform2dMeshToUnisim3D(TPZGeoMesh* gmesh2d, int nLayers){
+   
+    REAL w = 200.0;
+    std::string name2D("mesh2d.vtk");
+    
+    int topID= 5;
+    int baseID = 5;
+    TPZGeoMesh * returnedMesh = nullptr;
+        TPZExtendGridDimension extend(gmesh2d, w);
+        extend.SetElType(1);
+        returnedMesh = extend.ExtendedMesh(nLayers,topID,baseID);
+        ModifyTopeAndBase2(returnedMesh ,nLayers);
+       
+        std::ofstream file("unisim3d.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(returnedMesh,file );
+    return returnedMesh;
+    
+}
+
+void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
+//    std::string filename2 = "Reservoir/base_unisimMOD.txt";
+    
+     std::string filename1 = "topeMOD.txt";
+    std::string filename2 = "baseMOD.txt";
+    std::vector<double> x, y, z, x1,y1,z1;
+    ReadData(filename1, true, x, y, z);
+    ReadData(filename2, true, x1, y1, z1);
+
+    _2D::ThinPlateSplineInterpolator <double> interpTope;
+    _2D::ThinPlateSplineInterpolator <double> interpBase;
+
+    interpTope.setData(x,y,z);
+    interpBase.setData(x1,y1,z1);
+
+    int nCoordinates = gmesh->NodeVec().NElements();
+    double sum=0.0;
+    for (auto val:z) {
+        sum += val;
+    }
+    double val_tope= sum / z.size();
+    sum=0.0;
+    for (auto val:z1) {
+        sum += val;
+    }
+    double val_base= sum / z1.size();
+//    val_base = 1000;
+//    val_tope = 5000;
+//
+//    val_tope = 3000;
+//    val_base = 3000;
+    int npointsPerLayer = nCoordinates/(nlayers+1);
+    double valinter=0.0;
+    for (int ilay = 1; ilay <= nlayers+1; ilay++) {
+        for (int ipoint = (ilay-1)*npointsPerLayer; ipoint<(ilay)*npointsPerLayer; ipoint++) {
+            TPZGeoNode node = gmesh->NodeVec()[ipoint];
+            TPZVec<REAL> co(3);
+            node.GetCoordinates(co);
+            double topeinterpol =interpTope(co[0],co[1]);
+            double baseinterpol = interpBase(co[0],co[1]);
+            if (topeinterpol==0) {
+                topeinterpol = val_tope;
+                if (co[0]>1000.00) {
+                    topeinterpol -= 120;
+                }
+            }
+            if (baseinterpol==0) {
+                
+                baseinterpol = val_base;
+                if (co[0]>1000.00) {
+                   baseinterpol = val_base-80;
+                }
+
+            }
+
+            if (ilay==1) {
+                valinter=topeinterpol;
+//                valinter = 3500;
+                co[2]=valinter;
+                gmesh->NodeVec()[ipoint].SetCoord(co);
+            }
+            if (ilay==nlayers+1) {
+                valinter = baseinterpol;
+//                valinter = 2850;
+                co[2]=valinter;
+                gmesh->NodeVec()[ipoint].SetCoord(co);
+            }
+            if (ilay>1   && ilay < nlayers+1) {
+                valinter = topeinterpol + (ilay-1)*(baseinterpol - topeinterpol)/(nlayers);
+                co[2]=valinter;
+                gmesh->NodeVec()[ipoint].SetCoord(co);
+            }
+        }
+    }
+}
+void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z){
+    
+    bool modpoints = true;
+    std::ifstream file;
+    string basemeshpath(FRACMESHES);
+    basemeshpath = basemeshpath + "/dfnimrs/unisim_meshes/Reservoir_props/" + name;
+    file.open(basemeshpath);
+    int i=1;
+    
+    
+    std::string line;
+    while (std::getline(file, line))
+    {
+        std::istringstream iss(line);
+        std::istringstream issText(line);
+        char l = line[0];
+        if(l != '/'){
+            i=i+1;
+            int val = i%15;
+            if(val ==0){
+                double a, b, c;
+                if(iss >> a >> b >> c) ;
+                if (modpoints) {
+                    x.push_back(a - 350808.47);
+                    y.push_back(b - 7.51376238e6);
+                    z.push_back(c);
+                }
+                else{
+                x.push_back(a);
+                y.push_back(b);
+                z.push_back(c);
+                }
+            };
+        };
+    };
+    
+    if(x.size() == 0){
+        std::cout<<"No data read."<<std::endl;
+        
+        DebugStop();
+    }
+    if(print_table_Q){
+        std::cout<<"*************************"<<std::endl;
+        std::cout<<"Reading file... ok!"<<std::endl;
+        std::cout<<"*************************"<<std::endl;
+        std::cout<<x.size()<<std::endl;
+        std::cout<<y.size()<<std::endl;
+        std::cout<<z.size()<<std::endl;
+    }
+    
 }
 
 // ---------------------------------------------------------------------
