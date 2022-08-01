@@ -102,7 +102,8 @@ void TMRSApproxSpaceGenerator::SetGeometry(TPZGeoMesh * gmeshfine,TPZGeoMesh * g
         DebugStop(); // MatId for MHM should be set in main!
     }
     bool useMHM = mSimData.mTNumerics.m_mhm_mixed_Q;
-    if(useMHM){
+    const bool needsMergeMeshes = mSimData.mTNumerics.m_need_merge_meshes_Q;
+    if(needsMergeMeshes){
         MergeMeshes(gmeshfine, gmeshcoarse); // this fills mSubdomainIndexGel that is used for MHM
     }
     
@@ -271,7 +272,7 @@ static int64_t GeoElSideConnectIndex(const TPZGeoElSide &gelside)
 // ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh){
-    bool useMHM= mSimData.mTNumerics.m_mhm_mixed_Q;
+    bool useMHM = mSimData.mTNumerics.m_mhm_mixed_Q;
     // ===> Create the fracture hdivcollapsed elements
     // These should be unconnected with the 3D elements so we reset references in the gmesh
     // They are, however, connected (with connects) between themselves

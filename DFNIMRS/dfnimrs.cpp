@@ -24,7 +24,7 @@ namespace fs = std::filesystem;
 
 // ----- Functions -----
 void RunProblem(string& filenameBase, const int simucase);
-void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes, bool& isMHM);
+void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes, bool& isMHM, bool& needsMergeMeshes);
 void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 										  std::map<int,std::pair<int,int>>& matidtoFractures,
 										  const int fracInitMatId, const int fracinc, const int FractureHybridPressureMatId);
@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 20;
+    int simcase = 18;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -101,6 +101,7 @@ int main(int argc, char* argv[]){
         // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
         // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
         // 12,13,14,15,16,17: Modified Case 3 where all fracs touch boundary. Snapping is 0.0001, 0.04, 0.05, 0.1, 0.01, 0.03 respectively
+        // 18: joker path, edit at will
         // 19: Case4 mesh 2018
         // 20: Unisim
         switch (simcase) {
@@ -163,7 +164,8 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/";
                 break;
             case 18:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/testingPython/";
+                break;
             case 19:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
                 break;
@@ -343,6 +345,7 @@ void RunProblem(string& filenameBase, const int simcase)
     const bool isPostProc = true;
 	const bool isRunWithTranport = false;
 	bool isMHM = true;
+    bool needsMergeMeshes = true;
 	const int n_threads = 8;
     
     // ----- output folder stuff -----
@@ -357,7 +360,7 @@ void RunProblem(string& filenameBase, const int simcase)
     // ----- Creating gmesh and data transfer -----
 	int initVolForMergeMeshes = -1000000;
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
-	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM);
+	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM,needsMergeMeshes);
     
     if(simcase==20){
         gmeshfine = Transform2dMeshToUnisim3D(gmeshfine, 5);
@@ -437,8 +440,9 @@ void RunProblem(string& filenameBase, const int simcase)
                 }
             }
             if(error == 1){
+                // NOTE: This may happen if setting the boundary conditions wrongly. I suggest checking them
                 std::cout << "3D element without neighbour \n";
-                std::ofstream name("GeoMesh_Fine_AfterMergeMeshes.vtk");
+                std::ofstream name(outputFolder + "GeoMesh_Fine_AfterMergeMeshes.vtk");
                 TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
                 DebugStop();
             }
@@ -880,7 +884,7 @@ void MapFractureIntersection(const std::string &filenameBase, std::map<std::stri
 // ---------------------------------------------------------------------
 
 
-void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes, bool& isMHM) {
+void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes, bool& isMHM, bool& needsMergeMeshes) {
 	using json = nlohmann::json;
 	std::string filenamejson = filenameBase + ".json";
 	
@@ -899,16 +903,17 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     if(input.find("useMHM") != input.end()) {
         isMHM = input["useMHM"];
     }
-    bool needMerge= true;
+    
     if(input.find("needsMerge") != input.end()) {
-        needMerge = input["needsMerge"];
+        needsMergeMeshes = input["needsMerge"];
     }
+    
+    if(isMHM && !needsMergeMeshes) DebugStop();
+    
     int SimulationDim= 3;
     if(input.find("SimulationDim") != input.end()) {
         SimulationDim = input["SimulationDim"];
     }
-    
-    
     
 	// ------------------------ Get matids of 3D domain ------------------------
 	if(input.find("Domains") == input.end()) DebugStop();
@@ -948,7 +953,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
         meshfile = meshdirname + meshfile;
     }
     int ncoarse_vol = 0;
-    if(isMHM){
+    if(needsMergeMeshes){
         gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
         
         int64_t nelcoarse = gmeshcoarse->NElements();
@@ -1000,9 +1005,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	const int nCoarseGroups = input["NCoarseGroups"];
     
     std::string volbase = "c";
-    if(needMerge){
-    
-    if((nCoarseGroups != ncoarse_vol) && isMHM) DebugStop();
+    if(needsMergeMeshes){
+        if(nCoarseGroups != ncoarse_vol) DebugStop();
         for (int ivol = 0; ivol < nCoarseGroups; ivol++) {
             std::string ivolstring = volbase + to_string(ivol);
             dim_name_and_physical_tagFine[SimulationDim][ivolstring] = initVolForMergeMeshes + ivol;
@@ -1025,7 +1029,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
         MapFractureIntersection(filenameBase, dim_name_and_physical_tagFine[1], firstfracintersect, matidtoFractures);
     }
     
-    if (!isMHM && !needMerge) {
+    if (!isMHM && !needsMergeMeshes) {
         gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagCoarse);
     }
     else{
