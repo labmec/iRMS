@@ -20,6 +20,13 @@
 #include "pzshapepoint.h"
 #include "TPZCompElHDivCollapsed.h"
 
+// Uses the new vtk function developed by Fran
+//#define USENEWVTK
+
+#ifdef USENEWVTK
+#include "TPZVTKGenerator.h"
+#endif
+
 using namespace std;
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(){
@@ -214,9 +221,9 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
 //    DefineGraphMesh(2,mat_id_2D,scalnames,vecnames,file_frac);
 //    PostProcess(div,2);
     std::string file = m_sim_data->mTPostProcess.m_file_name_mixed;
-    
+
+    constexpr int vtkRes{0}; //resolucao do vtk
     if (dimToPost == dim-1){
-        file = file.substr(0, file.find(".")) + "_frac.vtk";
         std::set<int> matids;
         map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
         for (it = m_sim_data->mTFracProperties.m_fracprops.begin(); it != m_sim_data->mTFracProperties.m_fracprops.end(); it++)
@@ -224,13 +231,38 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
             int matfracid = it->first;
             matids.insert(matfracid);
         }
+
+#ifdef USENEWVTK
+        const std::string plotfile = file.substr(0, file.find(".")) + "_frac";
+        for (auto nm : vecnames) {
+            scalnames.Push(nm);
+        }
+        auto vtk = TPZVTKGenerator(fCompMesh, matids, scalnames, plotfile, vtkRes);
+        vtk.SetNThreads(8);
+        vtk.Do();
+#else
+        file = file.substr(0, file.find(".")) + "_frac.vtk";
         DefineGraphMesh(dimToPost, matids, scalnames, vecnames, file);
-//        DefineGraphMesh(dimToPost,scalnames,vecnames,file);
         PostProcess(div,dimToPost);
+#endif
     }
     else{
-		DefineGraphMesh(dimToPost,scalnames,vecnames,file);		
-		PostProcess(div,dimToPost);
+#ifdef USENEWVTK
+        const std::string plotfile = file.substr(0, file.find(".")); //sem o .vtk no final
+        for (auto nm : vecnames) {
+            scalnames.Push(nm);
+        }
+        
+        const int postprocdim{3};
+//        std::set<int> mats = {1};
+//        auto vtk = TPZVTKGenerator(fCompMesh, mats, scalnames, plotfile, vtkRes);
+        auto vtk = TPZVTKGenerator(fCompMesh, scalnames, plotfile, vtkRes, postprocdim);
+        vtk.SetNThreads(8);
+        vtk.Do();
+#else
+        DefineGraphMesh(dimToPost,scalnames,vecnames,file);
+        PostProcess(div,dimToPost);
+#endif
     }
     
     
