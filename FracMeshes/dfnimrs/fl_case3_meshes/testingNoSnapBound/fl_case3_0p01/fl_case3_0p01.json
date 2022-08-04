@@ -8,9 +8,9 @@
     // },
     "Mesh": "fl_case3_coarse.msh", // filename in the current directory
     "PreRefine": 0,
-    "TolDist": 0.001,
+    "TolDist": 0.01,
     "TolAngle": 1.0e-4,
-	"useMHM": true,
+	"useMHM": false,
     "Domains": [
         {
             "name": "k33",
@@ -19,7 +19,7 @@
             "phi": 0.2
         }
     ],
-    "NCoarseGroups": 120,
+    "NCoarseGroups": 960,
     "FractureGlueMatId": 1000000,
     "FractureGluePerm": 1.0,
     "Boundary": [
