@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 0;
+    int simcase = 18;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/";
                 break;
             case 18:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/testingNoSnapBound/fl_case3_0p1";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/testingNoSnapBound/fl_case3_0p001";
                 break;
             case 19:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
@@ -979,22 +979,22 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	int fracCounter = 0;
     bool isFracSim=false;
     if(input.find("Fractures") != input.end()){
-	for(auto& frac : input["Fractures"]){
-		const int matid = fracInitMatId + fracCounter*fracinc;
-        const int bcmatid = fracInitMatId + fracCounter*fracinc+1;
-		string fracname = "Fracture" + to_string(fracCounter);
-		string bcfracname = "BCfrac" + to_string(fracCounter);
-		const int currentFracId = fracInitMatId + fracinc * fracCounter;
-        dim_name_and_physical_tagFine[2][fracname] = currentFracId;
-        dim_name_and_physical_tagFine[1][bcfracname] = (currentFracId)+1;
-        bool is_in = allmatids.find(currentFracId) != allmatids.end();
-        if(is_in) DebugStop();
-        allmatids.insert((currentFracId));
-        is_in = allmatids.find((currentFracId)+1) != allmatids.end();
-        if(is_in) DebugStop();
-        allmatids.insert((currentFracId)+1);
-		fracCounter++;
-	}
+        for(auto& frac : input["Fractures"]){
+            const int matid = fracInitMatId + fracCounter*fracinc;
+            const int bcmatid = fracInitMatId + fracCounter*fracinc+1;
+            string fracname = "Fracture" + to_string(fracCounter);
+            string bcfracname = "BCfrac" + to_string(fracCounter);
+            const int currentFracId = fracInitMatId + fracinc * fracCounter;
+            dim_name_and_physical_tagFine[2][fracname] = currentFracId;
+            dim_name_and_physical_tagFine[1][bcfracname] = (currentFracId)+1;
+            bool is_in = allmatids.find(currentFracId) != allmatids.end();
+            if(is_in) DebugStop();
+            allmatids.insert((currentFracId));
+            is_in = allmatids.find((currentFracId)+1) != allmatids.end();
+            if(is_in) DebugStop();
+            allmatids.insert((currentFracId)+1);
+            fracCounter++;
+        }
         isFracSim=true;
     }
 	

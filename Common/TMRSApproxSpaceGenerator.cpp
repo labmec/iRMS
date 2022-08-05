@@ -291,7 +291,10 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         if (hassubel) { // the mesh can be uniformly refined
             continue;
         }
-        const int matid = gel->MaterialId();
+        int matid = gel->MaterialId();
+        if(matid == 11 || matid == 12 || matid == 13){
+            matid = 11;
+        }
         matTogelindex[matid].Push(el);
     }
     int nfrac = mSimData.mTFracProperties.m_fracprops.size();
@@ -321,7 +324,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         }
 		
 		// Here we are creating the boundary compels of the fracture
-        cmesh->AutoBuild(matTogelindex[fracbcid]);
+        cmesh->AutoBuild({matTogelindex[fracbcid]});
 		
 		// Here, we fix the side orient of neighboring fracture elements
 		for(auto gelindex : matTogelindex[fracmatid]) {
@@ -3719,7 +3722,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
                     mem.m_kappa(j,j) = kappa;
                     mem.m_kappa_inv(j,j) = 1.0/kappa;
                 }
-                mem.m_kappa_normal = 2.0*kappa/(fracwidth*fracwidth);
+                mem.m_kappa_normal = kappa;
             }
         }
         

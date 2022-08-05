@@ -21,7 +21,7 @@
 #include "TPZCompElHDivCollapsed.h"
 
 // Uses the new vtk function developed by Fran
-//#define USENEWVTK
+#define USENEWVTK
 
 #ifdef USENEWVTK
 #include "TPZVTKGenerator.h"

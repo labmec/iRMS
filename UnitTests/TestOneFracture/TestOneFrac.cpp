@@ -17,7 +17,7 @@
 #include "pzlog.h"
 
 // ---- Enum for materials ----
-enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd, EVolume, EFaceBCPressure};
+enum EMatid {ENone, EDomain, EInlet, EOutlet, ENoflux, EPressure, EIntersection, EIntersectionEnd, EVolume, EFaceBCPressure, EFracNotUse, EFracInlet, EFracOutlet, EFracNoFlux};
 int globFracID = 10;
 
 // ---- Functions ----
@@ -68,7 +68,7 @@ TEST_CASE("linear_pressure_transport","[onefrac_test]"){
 
 #else
 int main(){
-    onefractest::TestOneFrac(3);
+    onefractest::TestOneFrac(2);
     return 0;
 }
 #endif
@@ -112,6 +112,7 @@ void onefractest::TestOneFrac(const int& caseToSim) {
     // ----- Setting gmesh -----
     aspace.InitMatIdForMergeMeshes() = 8;
     aspace.SetGeometry(gmesh,gmesh);
+    aspace.ApplyUniformRefinement(2);
     
     // ----- Setting the global data transfer -----
 //    sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
@@ -193,6 +194,7 @@ void onefractest::TestOneFrac(const int& caseToSim) {
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
     const int dimToPost = 3;
     mixAnalisys->PostProcessTimeStep(dimToPost);
+    mixAnalisys->PostProcessTimeStep(2);
     }
     // ----- Checking if results match -----
 #ifndef USEMAIN
@@ -392,10 +394,13 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     else if (caseToSim < 3){
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EFaceBCPressure] = std::make_pair(D_Type,1.);
         sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,1.);
-        sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,1.);
-        sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(D_Type,1.);
+        sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EOutlet] = std::make_pair(D_Type,0.);
+        sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[ENoflux] = std::make_pair(N_Type,0.);
         
-		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPressure] = std::make_pair(D_Type, 1.);
+//        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPressure] = std::make_pair(D_Type, 1.);
+		sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracInlet] = std::make_pair(D_Type, 1.);
+        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracOutlet] = std::make_pair(D_Type, 0.);
+        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux] = std::make_pair(N_Type, 1.);
     }
     else if (caseToSim < 4){
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,2.);
@@ -451,9 +456,9 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     // Fracture permeability
 //    sim_data.mTFracProperties.m_Permeability = 1.e4;
 	TMRSDataTransfer::TFracProperties::FracProp fracprop;
-	fracprop.m_perm = 1.e4;
+	fracprop.m_perm = 1.e0;
 	fracprop.m_width = 1.;
-	fracprop.m_fracbc = EPressure;
+	fracprop.m_fracbc = EFracInlet;
 	fracprop.m_fracIntersectMatID = EIntersection;
 	sim_data.mTFracProperties.m_fracprops[globFracID] = fracprop;
 
@@ -571,22 +576,23 @@ TPZGeoMesh *ReadFractureMeshCase2(std::string &filename){
         // ----- Fracture element -----
         int64_t index;
         TPZManVector<int64_t,2> nodesId = {4,5};
-        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracNoFlux,*gmesh,index);
         nodesId = {5,7};
-        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracOutlet,*gmesh,index);
         nodesId = {7,6};
-        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracNoFlux,*gmesh,index);
         nodesId = {6,4};
-        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EPressure,*gmesh,index);
+        new TPZGeoElRefPattern<pzgeom::TPZGeoLinear>(nodesId,EFracInlet,*gmesh,index);
         TPZManVector<int64_t,4> nodesIdVec = {4,6,7,5};
         new TPZGeoElRefPattern<pzgeom::TPZGeoQuad>(nodesIdVec,globFracID,*gmesh,index);
 
         // OBS: For some reason, the code leads to wrong results if these bcs are created before the fracture
-        gmesh = gen3d.BuildBoundaryElements(EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure);
+        gmesh = gen3d.BuildBoundaryElements(ENoflux, EInlet, ENoflux , EOutlet, ENoflux, ENoflux);
+//        gmesh = gen3d.BuildBoundaryElements(EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure, EFaceBCPressure);
         
         gmesh->BuildConnectivity();
-        std::ofstream out("meshbad.txt");
-        gmesh->Print(out);
+//        std::ofstream out("meshbad.txt");
+//        gmesh->Print(out);
     }
     
     return gmesh;
