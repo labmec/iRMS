@@ -17,7 +17,7 @@ TMRSDarcyMemory::TMRSDarcyMemory() {
     m_p = 0.0;
     m_p_n = 0.0;
     m_flux.Resize(3, 0.0);
-    m_d = 0.0;
+    m_ad = 0.0;
     m_kappa_normal =0.0;
     m_fracindexes = std::make_pair(-1, -1);
     
@@ -30,7 +30,7 @@ TMRSDarcyMemory::TMRSDarcyMemory(const TMRSDarcyMemory & other){
     m_p         = other.m_p;
     m_p_n       = other.m_p_n;
     m_flux      = other.m_flux;
-    m_d         = other.m_d;
+    m_ad         = other.m_ad;
     m_kappa_normal = other.m_kappa_normal;
     m_fracindexes =other.m_fracindexes;
 }
@@ -46,7 +46,7 @@ const TMRSDarcyMemory & TMRSDarcyMemory::operator=(const TMRSDarcyMemory & other
     m_p         = other.m_p;
     m_p_n       = other.m_p_n;
     m_flux      = other.m_flux;
-    m_d         = other.m_d;
+    m_ad         = other.m_ad;
     m_kappa_normal = other.m_kappa_normal;
     m_fracindexes =other.m_fracindexes;
     
@@ -68,7 +68,7 @@ void TMRSDarcyMemory::Write(TPZStream &buf, int withclassid) const{
     buf.Write(&m_p);
     buf.Write(&m_p_n);
     buf.Write(m_flux);
-    buf.Write(&m_d);
+    buf.Write(&m_ad);
     buf.Write(m_kappa_normal);
     buf.Write(&m_fracindexes);
    
@@ -81,7 +81,7 @@ void TMRSDarcyMemory::Read(TPZStream &buf, void *context){
     buf.Read(&m_p);
     buf.Read(&m_p_n);
     buf.Read(m_flux);
-    buf.Read(&m_d);
+    buf.Read(&m_ad);
     buf.Read(&m_kappa_normal);
    
 }
@@ -94,7 +94,7 @@ void TMRSDarcyMemory::Print(std::ostream &out) const{
     out << "\n m_p = " << m_p;
     out << "\n m_p_n = " << m_p_n;
     out << "\n m_flux = " << m_flux;
-    out << "\n m_d = " << m_d;
+    out << "\n m_ad = " << m_ad;
     out << "\n m_kappa_normal = " << m_kappa_normal;
     out << "\n m_fracindexes = " << m_fracindexes;
 }

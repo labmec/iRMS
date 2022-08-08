@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 0;
+    int simcase = 3;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -409,7 +409,7 @@ void RunProblem(string& filenameBase, const int simcase)
 		gRefDBase.InitializeUniformRefPattern(EQuadrilateral);
 		gRefDBase.InitializeUniformRefPattern(EOned);
 		for (auto gel : gmeshfine->ElementVec()){
-			if(!gel) continue;
+			if(!gel || gel->HasSubElement()) continue;
 			TPZManVector<TPZGeoEl*,10> children;
 			gel->Divide(children);
 		}

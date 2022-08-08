@@ -4,7 +4,7 @@
  *
  */
 
-#define USEMAIN
+//#define USEMAIN
 
 #ifndef USEMAIN
 #include <catch2/catch.hpp>
