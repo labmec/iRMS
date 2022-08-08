@@ -54,7 +54,7 @@
     "Fractures": [
         {
             "Index": 0,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -70,7 +70,7 @@
         },
         {
             "Index": 32,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -95,7 +95,7 @@
         },
         {
             "Index": 1,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -113,7 +113,7 @@
         },
         {
             "Index": 2,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -134,7 +134,7 @@
         },
         {
             "Index": 3,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -155,7 +155,7 @@
         },
         {
             "Index": 4,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -184,7 +184,7 @@
         },
         {
             "Index": 5,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -205,7 +205,7 @@
         },
         {
             "Index": 6,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -226,7 +226,7 @@
         },
         {
             "Index": 7,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -247,7 +247,7 @@
         },
         {
             "Index": 8,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -272,7 +272,7 @@
         },
         {
             "Index": 9,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -297,7 +297,7 @@
         },
         {
             "Index": 10,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -322,7 +322,7 @@
         },
         {
             "Index": 11,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -347,7 +347,7 @@
         },
         {
             "Index": 12,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -376,7 +376,7 @@
         },
         {
             "Index": 13,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -396,7 +396,7 @@
         },
         {
             "Index": 14,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -417,7 +417,7 @@
         },
         {
             "Index": 15,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -442,7 +442,7 @@
         },
         {
             "Index": 16,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -467,7 +467,7 @@
         },
         {
             "Index": 17,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -489,7 +489,7 @@
         },
         {
             "Index": 18,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -506,7 +506,7 @@
         },
         {
             "Index": 19,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -531,7 +531,7 @@
         },
         {
             "Index": 20,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -552,7 +552,7 @@
         },
         {
             "Index": 21,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -573,7 +573,7 @@
         },
         {
             "Index": 22,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -594,7 +594,7 @@
         },
         {
             "Index": 23,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -619,7 +619,7 @@
         },
         {
             "Index": 24,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -648,7 +648,7 @@
         },
         {
             "Index": 25,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -673,7 +673,7 @@
         },
         {
             "Index": 26,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -694,7 +694,7 @@
         },
         {
             "Index": 27,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -719,7 +719,7 @@
         },
         {
             "Index": 28,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -748,7 +748,7 @@
         },
         {
             "Index": 29,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -773,7 +773,7 @@
         },
         {
             "Index": 30,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -798,7 +798,7 @@
         },
         {
             "Index": 31,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -824,7 +824,7 @@
        
         {
             "Index": 33,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -853,7 +853,7 @@
         },
         {
             "Index": 34,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -878,7 +878,7 @@
         },
         {
             "Index": 35,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -899,7 +899,7 @@
         },
         {
             "Index": 36,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -924,7 +924,7 @@
         },
         {
             "Index": 37,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -949,7 +949,7 @@
         },
         {
             "Index": 38,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -974,7 +974,7 @@
         },
         {
             "Index": 39,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -991,7 +991,7 @@
         },
         {
             "Index": 40,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1016,7 +1016,7 @@
         },
         {
             "Index": 41,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1041,7 +1041,7 @@
         },
         {
             "Index": 42,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1066,7 +1066,7 @@
         },
         {
             "Index": 43,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1091,7 +1091,7 @@
         },
         {
             "Index": 44,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1120,7 +1120,7 @@
         },
         {
             "Index": 45,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1149,7 +1149,7 @@
         },
         {
             "Index": 46,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1178,7 +1178,7 @@
         },
         {
             "Index": 47,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1203,7 +1203,7 @@
         },
         {
             "Index": 48,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1228,7 +1228,7 @@
         },
         {
             "Index": 49,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1253,7 +1253,7 @@
         },
         {
             "Index": 50,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
             "Limit": "Erecovered",
@@ -1282,7 +1282,7 @@
         },
         {
             "Index": 51,
-            "K" : 100.0,
+            "K" : 1.0e4,
             "phi": 0.2,
             "width": 1.0e-2,
                         "Limit": "Erecovered",
