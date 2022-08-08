@@ -3713,6 +3713,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
                 mem.m_sw = 0.0;
 				mem.m_phi = it->second.m_porosity;
 				const REAL fracwidth = it->second.m_width;
+                mem.m_ad = fracwidth;
                 REAL kappa = it->second.m_perm;
                 mem.m_kappa.Resize(3, 3);
                 mem.m_kappa.Zero();
@@ -3722,7 +3723,6 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
                     mem.m_kappa(j,j) = kappa;
                     mem.m_kappa_inv(j,j) = 1.0/kappa;
                 }
-                mem.m_kappa_normal = kappa;
             }
         }
         

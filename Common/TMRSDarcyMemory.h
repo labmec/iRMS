@@ -40,8 +40,8 @@ public:
     /// mass flux
     TPZManVector<REAL,3> m_flux;
     
-    /// Dimensional factor
-    REAL m_d;
+    /// Fracture opening
+    REAL m_ad;
     
     /// Default constructor
     TMRSDarcyMemory();
@@ -106,7 +106,7 @@ public:
     
     /// Dimensional factor associated to multi-dimensional mixed operators
     void SetDimensionalFactor(REAL d){
-        m_d = d;
+        m_ad = d;
     }
     
     /// Set pore pressure at last state

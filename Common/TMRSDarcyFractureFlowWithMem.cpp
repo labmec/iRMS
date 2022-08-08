@@ -141,12 +141,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0),kappa_inv_qFrac(3,1,0.0) ;
     
-    TPZFNMatrix<9,STATE>  kappaInv(3,3,0.0);
-    kappaInv=memory.m_kappa_inv;
-    REAL kappaNormal = 1.0;
-    REAL ad =1.0;
-    REAL eps = ad;
-    REAL factor = 1.0;
+    REAL ad = memory.m_ad;
     
     int s_i, s_j;
     int v_i, v_j;
@@ -157,15 +152,9 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*q[j];
         }
     }
-	
-//    kappaNormal = memory.m_kappa(0,0);
-    kappaNormal = memory.m_kappa_normal;
-   
-   
     
     for (int iq = 0; iq < first_transverse_q; iq++)
     {
-        //        datavec[qb].Print(std::cou        t);
         v_i = datavec[qb].fVecShapeIndex[iq].first;
         s_i = datavec[qb].fVecShapeIndex[iq].second;
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
@@ -185,7 +174,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
                 kappa_inv_phi_q_j.Zero();
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
-                        kappa_inv_phi_q_j(i,0) += (1.0/eps)* memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                        kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) / ad * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
                     }
                 }
                 
@@ -217,7 +206,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
 
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q(i,0) += (1.0/kappaNormal)*q[i];
+            kappa_inv_q(i,0) += memory.m_kappa_inv(i,i)*q[i];
         }
         
         for (int i = 0; i < 3; i++) {
@@ -242,8 +231,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             // ad = 1
             // factor = 1
             for (int j = 0; j < 3; j++) {
-                REAL KappaInvVal = (1.0/kappaNormal);
-                kappa_inv_phi_q_j(j,0) = ad*KappaInvVal * factor * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                REAL KappaInvVal = memory.m_kappa_inv(j,j);
+                kappa_inv_phi_q_j(j,0) = 0.5 * ad * KappaInvVal * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
             }
             
 
@@ -252,7 +241,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             for (int j = 0; j < 3; j++) {
                 kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
             }
-            ek(iq + first_q,jq + first_q) += weight *kappa_inv_phi_q_j_dot_phi_q_i;
+            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
         }
         for (int jp = 0; jp < nphi_p; jp++)
         {
@@ -270,7 +259,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
 
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q(i,0) += (1.0/kappaNormal)*q[i];
+            kappa_inv_q(i,0) += memory.m_kappa_inv(i,i)*q[i];
         }
         
         for (int i = 0; i < 3; i++) {
@@ -292,8 +281,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             // v_j is the index of the vector corresponding to jq
             // kappa_inv_phi_q_j = vector equal to 1/kappa phi_qs * phi_qs * vector(v_j)
             for (int j = 0; j < 3; j++) {
-                REAL KappaInvVal = (1.0/kappaNormal);
-                kappa_inv_phi_q_j(j,0) += ad*KappaInvVal* factor *phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                REAL KappaInvVal = memory.m_kappa_inv(j,j);
+                kappa_inv_phi_q_j(j,0) += 0.5 * ad * KappaInvVal * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
             }
             
             // kappa_inv_phi_q_j_dot_phi_q_i is the dot product of both vectors

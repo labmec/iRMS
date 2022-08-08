@@ -457,7 +457,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
 //    sim_data.mTFracProperties.m_Permeability = 1.e4;
 	TMRSDataTransfer::TFracProperties::FracProp fracprop;
 	fracprop.m_perm = 1.e0;
-	fracprop.m_width = 1.;
+	fracprop.m_width = 1.0;
 	fracprop.m_fracbc = EFracInlet;
 	fracprop.m_fracIntersectMatID = EIntersection;
 	sim_data.mTFracProperties.m_fracprops[globFracID] = fracprop;
