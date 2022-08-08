@@ -253,10 +253,9 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
             scalnames.Push(nm);
         }
         
-        const int postprocdim{3};
 //        std::set<int> mats = {1};
 //        auto vtk = TPZVTKGenerator(fCompMesh, mats, scalnames, plotfile, vtkRes);
-        auto vtk = TPZVTKGenerator(fCompMesh, scalnames, plotfile, vtkRes, postprocdim);
+        auto vtk = TPZVTKGenerator(fCompMesh, scalnames, plotfile, vtkRes, dimToPost);
         vtk.SetNThreads(8);
         vtk.Do();
 #else

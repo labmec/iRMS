@@ -115,7 +115,7 @@ void Test2frac(const int& caseToSim)
     
     // -------------- Post processing --------------
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-    mixAnalisys->PostProcessTimeStep();
+    mixAnalisys->PostProcessTimeStep(2);
     
     // -------------- Integral of pressure over domain --------------
     const std::string varname = "Pressure";
