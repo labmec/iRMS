@@ -298,7 +298,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
     for(auto frac : mSimData.mTFracProperties.m_fracprops)
     {
         int fracmatid = frac.first;
-        int fracbcid = frac.second.m_fracbc;
+        std::set<int>& frabcids = frac.second.m_fracbc;
+//        int fracbcid = frac.second.m_fracbc;
         int fracintersect = frac.second.m_fracIntersectMatID;
         for(auto gelindex : matTogelindex[fracmatid])
         {
@@ -321,7 +322,13 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         }
 		
 		// Here we are creating the boundary compels of the fracture
-        cmesh->AutoBuild(matTogelindex[fracbcid]);
+        TPZStack<int64_t> allbcindexes;
+        for(const int bcid : frabcids){
+            for(int64_t& ind : matTogelindex[bcid]){
+                allbcindexes.Push(ind);
+            }
+        }
+        cmesh->AutoBuild(allbcindexes);
 		
 		// Here, we fix the side orient of neighboring fracture elements
 		for(auto gelindex : matTogelindex[fracmatid]) {
@@ -449,7 +456,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
             if(!gel->Reference()) DebugStop();
             gel->ResetReference();
         }
-        for(auto gelindex : matTogelindex[fracbcid])
+        for(auto gelindex : allbcindexes)
         {
             TPZGeoEl *gel = gmesh->Element(gelindex);
             if(!gel->Reference()) DebugStop();

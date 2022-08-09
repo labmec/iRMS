@@ -878,16 +878,17 @@ public:
         
 		/// Structure with all fractures properties
 		struct FracProp{
-			int m_fracbc; // fracture boundary condition matid
+//			int m_fracbc; // fracture boundary condition matid
+            std::set<int> m_fracbc; // fracture boundary condition matid
             int m_fracIntersectMatID; // material id for intersections
 			REAL m_perm; // permeability of the fracture
 			REAL m_width; // fracture opening
 			REAL m_porosity; // porosity of the fracture
             DFNPolygon m_polydata; // geometry of the fracture
             
-            FracProp() : m_fracbc(0), m_fracIntersectMatID(0), m_perm(0.), m_width(0.), m_porosity(0.)
+            FracProp() : m_fracIntersectMatID(0), m_perm(0.), m_width(0.), m_porosity(0.)
             {
-                
+                m_fracbc.clear();
             }
             
             FracProp(const FracProp &copy) = default;
@@ -955,7 +956,11 @@ public:
                 int matfracid = it->first;
                 TFracProperties::FracProp prop = it->second;
                 std::cout<<"Material: "<<matfracid<<std::endl;
-                std::cout<<"bcMaterial: "<<prop.m_fracbc<<std::endl;
+                std::cout<<"bcMaterial: ";
+                for(auto bcid : prop.m_fracbc){
+                    std::cout<<bcid<<"\t";
+                }
+                std::cout<<std::endl;
                 std::cout << "Inersection material id" <<prop.m_fracIntersectMatID << std::endl;
                 std::cout<<"Permeability: "<<prop.m_perm<<std::endl;
                 std::cout<<"Width: "<<prop.m_width<<std::endl;
@@ -973,9 +978,10 @@ public:
             {
                 int matfracid = it->first;
                 TFracProperties::FracProp prop = it->second;
-                int bcid = prop.m_fracbc;
-                if(bcid == matid){
-                    return true;
+                for (auto bcid : prop.m_fracbc){
+                    if(bcid == matid){
+                        return true;
+                    }
                 }
             }
             return false;

@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 4;
+    int simcase = 3;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -709,7 +709,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 		// Fracture properties
 		fracprop.m_perm = permerm;
 		fracprop.m_width = fracWidth;
-		fracprop.m_fracbc = matid + 1;
+		fracprop.m_fracbc.insert(matid + 1);
         fracprop.m_fracIntersectMatID = matid + 2;
         
 		// Fracture polygon
@@ -728,7 +728,12 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 		// Fracture boundary conditions
         const REAL zero_flux = 0., zero_pressure = 0.;
         const int bcFracType_Dirichlet = 0, bcFracType_Neumann = 1;
-        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[fracprop.m_fracbc] = std::make_pair(bcFracType_Neumann, zero_flux);
+        if(fracprop.m_fracbc.size() == 1){
+            sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[*fracprop.m_fracbc.begin()] = std::make_pair(bcFracType_Neumann, zero_flux);
+        }
+        else{
+            DebugStop(); // for now, dfnimrs only allows one bc which is zero flux
+        }
         sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[fracprop.m_fracIntersectMatID] = std::make_pair(bcFracType_Dirichlet, zero_pressure);
 		
 		// Setting fracture porosity in reservoir properties data structure

@@ -158,7 +158,7 @@ TMRSDataTransfer Setting2Fractures(){
 	TMRSDataTransfer::TFracProperties::FracProp fracprop;
 	fracprop.m_perm = 0.00001;
 	fracprop.m_width = 1.;
-	fracprop.m_fracbc = 11;
+	fracprop.m_fracbc.insert(11);
 	fracprop.m_fracIntersectMatID = 12;
 	sim_data.mTFracProperties.m_fracprops[10] = fracprop;
 

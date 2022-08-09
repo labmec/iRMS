@@ -256,7 +256,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
 	TMRSDataTransfer::TFracProperties::FracProp fracprop;
 	fracprop.m_perm = 1.;
 	fracprop.m_width = 1.;
-	fracprop.m_fracbc = 100000; // Does not matter for mortar spaces
+	fracprop.m_fracbc.insert(100000); // Does not matter for mortar spaces
 	fracprop.m_fracIntersectMatID = EIntersection;
 	sim_data.mTFracProperties.m_fracprops[globFracID] = fracprop;
 	

@@ -8,8 +8,12 @@
 #include "pzlog.h"
 #include <tpzgeoelrefpattern.h>
 
+#define USEMAIN
+
+#ifdef USEMAIN
 // Unit test includes
 #include <catch2/catch.hpp>
+#endif
 
 // ----- Namespaces -----
 using namespace std;
@@ -36,6 +40,14 @@ enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
 #ifdef PZ_LOG
 static TPZLogger mainlogger("cubicdomain");
 #endif
+
+#ifdef USEMAIN
+int main(){
+    int CaseToSim = 0;
+    RunProblem(CaseToSim);
+    return 0;
+}
+#else
 
 // ----- Test cases -----
 // ---- Test 0 ----
@@ -71,6 +83,8 @@ TEST_CASE("Four_El_Two_Frac_lin_pressure_Transp","[test_frac_4spaces_3D]"){
     RunProblem(7);
 }
 
+#endif
+
 // Case0: TwoElements, one fracture constant pressure
 // Case1: TwoElements, one fracture linear pressure
 // Case2: FourElements, two intersecting fractures constant pressure
@@ -88,13 +102,6 @@ TEST_CASE("Four_El_Two_Frac_lin_pressure_Transp","[test_frac_4spaces_3D]"){
 //  | |  | |  / ___ \  | | | |\  |
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
-
-
-//int main(){
-//    int CaseToSim = 7;
-//    RunProblem(CaseToSim);
-//    return 0;
-//}
 
 void RunProblem( const int &caseToSim){
     
@@ -253,6 +260,7 @@ void RunProblem( const int &caseToSim){
     if (fabs(integratedflux) < 1.e-14 ) integratedflux = 0.; // to make Approx(0.) work
     std::cout << "\nintegral of flux  = " << integratedflux << std::endl;
     
+#ifndef USEMAIN
     // ----- Comparing with analytical solution -----
 
     REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
@@ -266,7 +274,7 @@ void RunProblem( const int &caseToSim){
         REQUIRE( mass == Approx(1.37505).epsilon(1.e-3) ); // Approx is from catch2 lib
     if(caseToSim == 4 || caseToSim == 6)
         REQUIRE( mass == Approx( 0.) ); // Approx is from catch2 lib
-    
+#endif
     
     // ----- Cleaning up -----
     delete gmeshfine;
@@ -346,6 +354,14 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     sim_data.mTNumerics.m_max_iter_sfi=1;
     sim_data.mTNumerics.m_max_iter_mixed=1;
     sim_data.mTNumerics.m_max_iter_transport=1;
+    
+    // Fracture permeability
+    TMRSDataTransfer::TFracProperties::FracProp fracprop;
+    fracprop.m_perm = 1.;
+    fracprop.m_width = 1.;
+    fracprop.m_fracbc.insert(EFracNoFlux);
+    fracprop.m_fracIntersectMatID = EIntersection;
+    sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
     
     //FracAndReservoirProperties
     REAL kappa=1.0;

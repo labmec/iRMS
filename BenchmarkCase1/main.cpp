@@ -670,7 +670,7 @@ TMRSDataTransfer SettingBenchmarkCase1(){
 	TMRSDataTransfer::TFracProperties::FracProp fracprop;
 	fracprop.m_perm = 1.0e-3;
 	fracprop.m_width = 1.;
-	fracprop.m_fracbc = -11;
+	fracprop.m_fracbc.insert(-11);
 	fracprop.m_fracIntersectMatID = -14;
 	sim_data.mTFracProperties.m_fracprops[10] = fracprop;
 	
