@@ -10,7 +10,7 @@
 
 #define USEMAIN
 
-#ifdef USEMAIN
+#ifndef USEMAIN
 // Unit test includes
 #include <catch2/catch.hpp>
 #endif
@@ -25,15 +25,20 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
 TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std::map<std::string,int>,4>& dim_name_and_physical_tagFine);
 void modifyBCsForInletOutlet(TPZGeoMesh* gmesh);
 void modifyBCsForInletOutletFracTransport(TPZGeoMesh* gmesh);
+void MapFractureIntersection(const std::string &filenameBase, std::map<std::string,int> &matmap, int firstfracintersect, std::map<int,std::pair<int,int>> &matidtoFractures);
+void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
+                                          std::map<int,std::pair<int,int>>& matidtoFractures,
+                                          const int fracInitMatId, const int fracinc, const int FractureHybridPressureMatId);
+
 
 void ReadMeshes(string& filenameFine, string& filenameCoarse,
                 TPZGeoMesh*& gmesh, TPZGeoMesh*& gmeshcoarse, int const  caseToSim);
 const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& varname);
 
 enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
-    /*5*/EFaceBCPressure, EFracInlet, EFracOutlet, EFracNoFlux, EFracPressure,
-    /*10*/EFracture, EIntersection, EIntersectionEnd, EPLossAtIntersect,
-    /*15 HAS TO BE LAST*/EInitVolumeMatForMHM /*Not sure if we will keep this structure */
+    /*5*/EFaceBCPressure, EFracInlet, EFracOutlet, EFractureHybridPressure, EFracPressure,
+    /*10*/EFracture, EFracNoFlux, EIntersection, EIntersectionEnd, EPLossAtIntersect, EFracture2, EFracNoFlux2, EIntersection2,
+    /*HAS TO BE LAST*/EInitVolumeMatForMHM /*Not sure if we will keep this structure */
 };
 
 // ----- Logger -----
@@ -43,7 +48,7 @@ static TPZLogger mainlogger("cubicdomain");
 
 #ifdef USEMAIN
 int main(){
-    int CaseToSim = 0;
+    int CaseToSim = 3;
     RunProblem(CaseToSim);
     return 0;
 }
@@ -109,7 +114,9 @@ void RunProblem( const int &caseToSim){
     
     string basemeshpath(FRACMESHES);
 #ifdef PZ_LOG
-    TPZLogger::InitializePZLOG("log4cxx.cfg");
+    string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
+    TPZLogger::InitializePZLOG(logpath);
+//    TPZLogger::InitializePZLOG("log4cxx.cfg");
     if (mainlogger.isDebugEnabled()) {
         std::stringstream sout;
         sout << "\nLogger for Cubic Domain problem target\n" << endl;;
@@ -162,6 +169,7 @@ void RunProblem( const int &caseToSim){
     sim_data.mTFracIntersectProperties.m_IntersectionId = EIntersection;
     aspace.SetGeometry(gmeshfine,gmeshcoarse);
 //  aspace.SetGeometry(gmeshfine);
+    aspace.PrintGeometry("geomesh_aftermerge.vtk");
     
     // ----- Setting the global data transfer -----
     aspace.SetDataTransfer(sim_data);
@@ -262,10 +270,10 @@ void RunProblem( const int &caseToSim){
     
 #ifndef USEMAIN
     // ----- Comparing with analytical solution -----
-
     REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
     if (caseToSim == 1 || caseToSim == 3 || caseToSim == 5 || caseToSim == 7) // linear pressure variation
-        REQUIRE( integratedflux == Approx( 8./3. ) ); // Approx is from catch2 lib
+        // DeltaP = 2, DeltaS = 2. + fracwidth = 3 | q = - DeltaP/DeltaS = 2/3. Integrated = 2./3. * 8/ = 16./3.
+        REQUIRE( integratedflux == Approx( 16./3. ) ); // Approx is from catch2 lib
     if (caseToSim == 0 || caseToSim == 2 || caseToSim == 4 || caseToSim == 6)  // cte pressure
         REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
     if(caseToSim==5)
@@ -295,8 +303,10 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     
     // Domain material
     sim_data.mTGeometry.mDomainNameAndMatId["Volume"] = EVolume;
-    sim_data.mTGeometry.mDomainFracNameAndMatId["Fractures"] = EFracture;
-    sim_data.mTGeometry.mDomainFracIntersectionNameAndMatId["EIntersection"] = EIntersection;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fracture"] = EFracture;
+    sim_data.mTGeometry.mDomainFracNameAndMatId["Fracture2"] = EFracture2;
+//    sim_data.mTGeometry.mDomainFracIntersectionNameAndMatId["EIntersection"] = EIntersection;
+    sim_data.mTGeometry.m_pressureMatId = EFractureHybridPressure;
     
     // Domain boundary conditions
 	sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,pressure_two);
@@ -306,9 +316,18 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
 	
     // Fracture boundary conditions
 	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux] = std::make_pair(N_Type, zero_flux);
+    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracNoFlux2] = std::make_pair(N_Type, zero_flux);    
 	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracInlet] = std::make_pair(D_Type, pressure_two);
 	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracOutlet] = std::make_pair(D_Type, zero_pressure);
-	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPLossAtIntersect] = std::make_pair(Mixed_Type, 0.5);
+	
+//    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection] = std::make_pair(D_Type, zero_pressure);
+//    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection2] = std::make_pair(D_Type, zero_pressure);
+    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection] = std::make_pair(Mixed_Type, 0.5);
+    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection2] = std::make_pair(Mixed_Type, 0.5);
+
+    
+//    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPLossAtIntersect] = std::make_pair(Mixed_Type, 0.5);
+    
 	
 	
     sim_data.mTFracIntersectProperties.m_IntersectionPressureLossId = EPLossAtIntersect;
@@ -356,12 +375,33 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     sim_data.mTNumerics.m_max_iter_transport=1;
     
     // Fracture permeability
-    TMRSDataTransfer::TFracProperties::FracProp fracprop;
-    fracprop.m_perm = 1.;
-    fracprop.m_width = 1.;
-    fracprop.m_fracbc.insert(EFracNoFlux);
-    fracprop.m_fracIntersectMatID = EIntersection;
-    sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
+    if(simcase == 0 || simcase == 1){
+        TMRSDataTransfer::TFracProperties::FracProp fracprop;
+        fracprop.m_perm = 1.;
+        fracprop.m_width = 1.;
+        fracprop.m_fracbc.insert(EFracNoFlux);
+        fracprop.m_fracIntersectMatID = EIntersection;
+        sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
+    }else{
+        {
+            TMRSDataTransfer::TFracProperties::FracProp fracprop;
+            fracprop.m_perm = 1.;
+            fracprop.m_width = 1.;
+            fracprop.m_fracbc.insert(EFracNoFlux);
+            fracprop.m_fracbc.insert(EFracInlet);
+            fracprop.m_fracbc.insert(EFracOutlet);
+            fracprop.m_fracIntersectMatID = EIntersection;
+            sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
+        }
+        {
+            TMRSDataTransfer::TFracProperties::FracProp fracprop;
+            fracprop.m_perm = 1.;
+            fracprop.m_width = 1.;
+            fracprop.m_fracbc.insert(EFracNoFlux2);
+            fracprop.m_fracIntersectMatID = EIntersection2;
+            sim_data.mTFracProperties.m_fracprops[EFracture2] = fracprop;
+        }
+    }
     
     //FracAndReservoirProperties
     REAL kappa=1.0;
@@ -445,21 +485,125 @@ void ReadMeshes(string& filenameFine, string& filenameCoarse,
     // Fractures
     dim_name_and_physical_tagFine[2]["Fracture12"] = EFracture;
     
-    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture;
+    dim_name_and_physical_tagFine[2]["Fracture10"] = EFracture2;
     dim_name_and_physical_tagFine[2]["Fracture11"] = EFracture;
 
     // Fractures BCs
-    dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracNoFlux;
-    dim_name_and_physical_tagFine[1]["BCfrac1"] = EFracNoFlux;
+    if(caseToSim == 0 || caseToSim == 1){
+        dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracNoFlux;
+    }
+    else{
+        dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracNoFlux2;
+        dim_name_and_physical_tagFine[1]["BCfrac1"] = EFracNoFlux;
+    }
     
     // Intersections
-    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection;
+//    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection2;
+    
+    std::map<int,std::pair<int,int>> matidtoFractures;
+    if(caseToSim == 2){
+        int firstfracintersect = EInitVolumeMatForMHM + 4;
+        firstfracintersect = (1+firstfracintersect/100)*100;
+        MapFractureIntersection(filenameFine, dim_name_and_physical_tagFine[1], firstfracintersect, matidtoFractures);
+    }
             
     gmeshfine = generateGMeshWithPhysTagVec(filenameFine,dim_name_and_physical_tagFine);
+
     
-    if(caseToSim == 1 || caseToSim == 3 || caseToSim == 5 || caseToSim == 7)
-    modifyBCsForInletOutlet(gmeshfine);
+    if(caseToSim == 1 || caseToSim == 3 || caseToSim == 5 || caseToSim == 7){
+        modifyBCsForInletOutlet(gmeshfine);
+    }
     
+    if(caseToSim == 2){
+        const int fracinc = 5;
+        CreateIntersectionElementForEachFrac(gmeshfine,matidtoFractures,EFracture,fracinc,EFractureHybridPressure);
+    }
+    
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
+                                          std::map<int,std::pair<int,int>>& matidtoFractures,
+                                          const int fracInitMatId, const int fracinc, const int FractureHybridPressureMatId) {
+    int64_t nelem = gmeshfine->NElements();
+    for(int64_t el = 0; el<nelem; el++)
+    {
+        TPZGeoEl *gel = gmeshfine->Element(el);
+        if(!gel) continue;
+        int matid = gel->MaterialId();
+        auto it = matidtoFractures.find(matid);
+        if(it != matidtoFractures.end())
+        {
+            if(gel->Dimension() == 3) DebugStop();
+            TPZGeoElSide gelside(gel);
+            int frac1 = it->second.first;
+            int matid1 = EIntersection;
+//            int frac1bcid = fracInitMatId + frac1*fracinc + 1;
+            std::set<int> frac1bcids = {EFracNoFlux,EFracInlet,EFracOutlet};
+            auto frac1bc = gelside.HasNeighbour(frac1bcids);
+            if(frac1bc)
+            {
+                frac1bc.Element()->SetMaterialId(matid1);
+            }
+            else
+            {
+                TPZGeoElBC(gelside,matid1);
+            }
+            int frac2 = it->second.second;
+            int matid2 = EIntersection2;
+//            int frac2bcid = fracInitMatId + frac2*fracinc + 1;
+            auto frac2bc = gelside.HasNeighbour(EFracNoFlux2);
+            if(frac2bc)
+            {
+                frac2bc.Element()->SetMaterialId(matid2);
+            }
+            else
+            {
+                TPZGeoElBC(gelside,matid2);
+            }
+            // create the geometric element for receiving the hybridized pressure element
+            auto fracintersect = gelside.HasNeighbour(FractureHybridPressureMatId);
+            if(!fracintersect)
+            {
+                TPZGeoElBC(gelside,FractureHybridPressureMatId);
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void MapFractureIntersection(const std::string &filenameBase, std::map<std::string,int> &matmap, int firstfracintersect, std::map<int,std::pair<int,int>> &matidtoFractures)
+{
+    // Creating gmsh reader
+    TPZGmshReader  Geometry;
+    std::string filename = filenameBase;
+    std::ifstream input(filename);
+    Geometry.ReadPhysicalProperties4(input); // There are some automatic associations that are not used. So dont worry if the code alerts about it
+    auto physicaltags = Geometry.GetDimPhysicalTagName();
+    // loop over all physical tags of dimension 1
+    const std::string begins("fracIntersection");
+    const int beglength = begins.size();
+    for(auto iter : physicaltags[1])
+    {
+        auto name = iter.second;
+        if(name.compare(0,beglength,begins) == 0)
+        {
+            auto pos1 = name.find_first_of("_",0);
+            auto pos2 = name.find_last_of("_");
+            std::string strfac1 = name.substr(pos1+1,pos2-pos1-1);
+            std::string strfac2 = name.substr(pos2+1);
+            int frac1 = std::stoi(strfac1);
+            int frac2 = std::stoi(strfac2);
+            matmap[name] = firstfracintersect;
+            matidtoFractures[firstfracintersect] = std::pair<int,int>(frac1,frac2);
+            firstfracintersect++;
+        }
+    }
 }
 
 // ---------------------------------------------------------------------

@@ -10,7 +10,7 @@
     "PreRefine": 0,
     "TolDist": 0.001,
     "TolAngle": 1.0e-4,
-	"useMHM": false,
+	"useMHM": true,
     "Domains": [
         {
             "name": "k33",
