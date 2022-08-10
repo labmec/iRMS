@@ -48,7 +48,7 @@ static TPZLogger mainlogger("cubicdomain");
 
 #ifdef USEMAIN
 int main(){
-    int CaseToSim = 3;
+    int CaseToSim = 5;
     RunProblem(CaseToSim);
     return 0;
 }
@@ -267,7 +267,11 @@ void RunProblem( const int &caseToSim){
     STATE integratedflux = ComputeIntegralOverDomain(mixed_operator,qvarname);
     if (fabs(integratedflux) < 1.e-14 ) integratedflux = 0.; // to make Approx(0.) work
     std::cout << "\nintegral of flux  = " << integratedflux << std::endl;
-    
+
+    if(caseToSim > 3){
+        std::cout << "\nMass  = " << mass << std::endl;
+    }
+
 #ifndef USEMAIN
     // ----- Comparing with analytical solution -----
     REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
@@ -320,10 +324,14 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
 	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracInlet] = std::make_pair(D_Type, pressure_two);
 	sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EFracOutlet] = std::make_pair(D_Type, zero_pressure);
 	
-//    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection] = std::make_pair(D_Type, zero_pressure);
-//    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection2] = std::make_pair(D_Type, zero_pressure);
-    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection] = std::make_pair(Mixed_Type, 0.5);
-    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection2] = std::make_pair(Mixed_Type, 0.5);
+    if(simcase == 2 || simcase == 6){
+        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection] = std::make_pair(D_Type, zero_pressure);
+        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection2] = std::make_pair(D_Type, zero_pressure);
+    }
+    else if(simcase == 3 || simcase == 7){
+        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection] = std::make_pair(Mixed_Type, 2.);
+        sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EIntersection2] = std::make_pair(Mixed_Type, 2.);
+    }
 
     
 //    sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue[EPLossAtIntersect] = std::make_pair(Mixed_Type, 0.5);
@@ -359,8 +367,6 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     sim_data.mTNumerics.m_sfi_tol = 0.0001;
     sim_data.mTNumerics.m_res_tol_transport = 0.0001;
     sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-    sim_data.mTNumerics.m_n_steps = 1 ;
-    sim_data.mTNumerics.m_dt      = 1.0; //*day;
     sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     sim_data.mTNumerics.m_mhm_mixed_Q          = true;
     std::vector<REAL> grav(3,0.0);
@@ -369,24 +375,25 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;
     sim_data.mTNumerics.m_n_steps = 2;
-    sim_data.mTNumerics.m_dt      = 1.0;//*day;
+    sim_data.mTNumerics.m_dt      = 0.01;//*day;
     sim_data.mTNumerics.m_max_iter_sfi=1;
     sim_data.mTNumerics.m_max_iter_mixed=1;
     sim_data.mTNumerics.m_max_iter_transport=1;
     
     // Fracture permeability
-    if(simcase == 0 || simcase == 1){
+    const REAL fracwidth = 1., fracperm = 1.;
+    if(simcase == 0 || simcase == 1 || simcase == 4 || simcase == 5){
         TMRSDataTransfer::TFracProperties::FracProp fracprop;
-        fracprop.m_perm = 1.;
-        fracprop.m_width = 1.;
+        fracprop.m_perm = fracperm;
+        fracprop.m_width = fracwidth;
         fracprop.m_fracbc.insert(EFracNoFlux);
         fracprop.m_fracIntersectMatID = EIntersection;
         sim_data.mTFracProperties.m_fracprops[EFracture] = fracprop;
     }else{
         {
             TMRSDataTransfer::TFracProperties::FracProp fracprop;
-            fracprop.m_perm = 1.;
-            fracprop.m_width = 1.;
+            fracprop.m_perm = fracperm;
+            fracprop.m_width = fracwidth;
             fracprop.m_fracbc.insert(EFracNoFlux);
             fracprop.m_fracbc.insert(EFracInlet);
             fracprop.m_fracbc.insert(EFracOutlet);
@@ -395,8 +402,8 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
         }
         {
             TMRSDataTransfer::TFracProperties::FracProp fracprop;
-            fracprop.m_perm = 1.;
-            fracprop.m_width = 1.;
+            fracprop.m_perm = fracperm;
+            fracprop.m_width = fracwidth;
             fracprop.m_fracbc.insert(EFracNoFlux2);
             fracprop.m_fracIntersectMatID = EIntersection2;
             sim_data.mTFracProperties.m_fracprops[EFracture2] = fracprop;
@@ -404,18 +411,18 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
     }
     
     //FracAndReservoirProperties
-    REAL kappa=1.0;
+    REAL kappa = 1.0;
     int  id1 = EVolume;
     std::map<int, REAL> idPerm;
     idPerm[id1]= kappa;
     sim_data.mTReservoirProperties.m_permeabilitiesbyId = idPerm;
     
     REAL resPorosity = 0.2;
-    REAL fracPorosity = 0.1;
+    REAL fracPorosity = 0.2;
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale.resize(3);
     sim_data.mTReservoirProperties.mPorosityAndVolumeScale[0] = std::make_tuple(EVolume, resPorosity,1.0);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[1] = std::make_tuple(EFracture, fracPorosity, 0.2);
-    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[2] = std::make_tuple(EIntersection, fracPorosity, 0.2*0.2);
+    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[1] = std::make_tuple(EFracture, fracPorosity, fracwidth);
+    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[2] = std::make_tuple(EIntersection, fracPorosity, fracwidth*fracwidth);
     
     
     // PostProcess controls
@@ -489,7 +496,7 @@ void ReadMeshes(string& filenameFine, string& filenameCoarse,
     dim_name_and_physical_tagFine[2]["Fracture11"] = EFracture;
 
     // Fractures BCs
-    if(caseToSim == 0 || caseToSim == 1){
+    if(caseToSim == 0 || caseToSim == 1 || caseToSim == 4 || caseToSim == 5){
         dim_name_and_physical_tagFine[1]["BCfrac0"] = EFracNoFlux;
     }
     else{
@@ -502,7 +509,7 @@ void ReadMeshes(string& filenameFine, string& filenameCoarse,
 //    dim_name_and_physical_tagFine[1]["fracIntersection_0_1"] = EIntersection2;
     
     std::map<int,std::pair<int,int>> matidtoFractures;
-    if(caseToSim == 2){
+    if(caseToSim == 2 || caseToSim == 3 || caseToSim == 6 || caseToSim == 7){
         int firstfracintersect = EInitVolumeMatForMHM + 4;
         firstfracintersect = (1+firstfracintersect/100)*100;
         MapFractureIntersection(filenameFine, dim_name_and_physical_tagFine[1], firstfracintersect, matidtoFractures);
@@ -515,7 +522,7 @@ void ReadMeshes(string& filenameFine, string& filenameCoarse,
         modifyBCsForInletOutlet(gmeshfine);
     }
     
-    if(caseToSim == 2){
+    if(caseToSim == 2 || caseToSim == 3 || caseToSim == 6 || caseToSim == 7){
         const int fracinc = 5;
         CreateIntersectionElementForEachFrac(gmeshfine,matidtoFractures,EFracture,fracinc,EFractureHybridPressure);
     }

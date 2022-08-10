@@ -429,6 +429,21 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDa
         }
             break;
             
+        case 2 :    // Mixed BC
+        {
+            const REAL v1 = bc.Val1()(0,0);
+            for (int iq = 0; iq < nphi_q; iq++){
+                const REAL qn_N = bc_data[0];
+                REAL qn = 0.0;
+                qn = q[0];
+                ef(iq + first_q) += weight * (qn - qn_N) * phi_qs(iq,0);
+                for (int jq = 0; jq < nphi_q; jq++){
+                    ek(iq + first_q,jq + first_q) += weight/v1 * phi_qs(jq,0) * phi_qs(iq,0);
+                }
+            }
+        }
+            break;
+            
         default: std::cout << "This BC doesn't exist." << std::endl;
         {
             

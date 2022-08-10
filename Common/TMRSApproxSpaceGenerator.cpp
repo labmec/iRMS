@@ -1583,9 +1583,9 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
 			mTransportOperator->InsertMaterialObject(volume);
 			volIds.insert(material_id);
             
-            volume = new TPZTracerFlow(material_id+1,dimension-2);
-            mTransportOperator->InsertMaterialObject(volume);
-            boundaryId.insert(material_id+1);
+//            volume = new TPZTracerFlow(material_id+1,dimension-2);
+//            mTransportOperator->InsertMaterialObject(volume);
+//            boundaryId.insert(material_id+1);
             
 		}
         
