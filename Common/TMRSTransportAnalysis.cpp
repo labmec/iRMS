@@ -573,7 +573,8 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     }
     
     if(m_sim_data->mTFracIntersectProperties.isThereFractureIntersection()){
-        matidsToPost.insert(m_sim_data->mTFracIntersectProperties.m_IntersectionId);
+        matidsToPost.clear();
+        matidsToPost.insert(m_sim_data->mTGeometry.m_pressureMatId);
         std::string file_frac2("fracture_s1d.vtk");
         DefineGraphMesh(1,matidsToPost,scalnames,vecnames,file_frac2);
         PostProcess(div,1);
