@@ -9,8 +9,12 @@
 #include <tpzgeoelrefpattern.h>
 #include "TPZTimer.h"
 
+#define USEMAIN
+
+#ifndef USEMAIN
 // Unit test includes
 #include <catch2/catch.hpp>
+#endif
 
 
 // ----- Namespaces -----
@@ -48,6 +52,7 @@ enum EMatid {/*0*/ENone, EVolume, EVolume2, EInlet, EOutlet, ENoflux,
 static TPZLogger mainlogger("cubicdomain");
 #endif
 
+#ifndef USEMAIN
 // 1: Flemisch case 1
 // 2: Flemisch case 2
 // 3: Flemisch case 3
@@ -65,6 +70,26 @@ TEST_CASE("case_3","[flemisch_cte_pressure]"){
 //TEST_CASE("case_4","[flemisch_cte_pressure]"){
 //    RunProblem(4);
 //}
+#else
+int main(){
+
+#ifdef PZ_LOG
+    string basemeshpath(FRACMESHES);
+    string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
+    TPZLogger::InitializePZLOG(logpath);
+    if (mainlogger.isDebugEnabled()) {
+        std::stringstream sout;
+        sout << "\nLogger for Cubic Domain problem target\n" << endl;;
+        LOGPZ_DEBUG(mainlogger, sout.str())
+    }
+#endif
+
+    int simcase = 1;
+    RunProblem(simcase);
+    return 0;
+}
+// ----------------- End of Main -----------------
+#endif
 
 //-------------------------------------------------------------------------------------------------
 //   __  __      _      _   _   _
@@ -73,27 +98,6 @@ TEST_CASE("case_3","[flemisch_cte_pressure]"){
 //  | |  | |  / ___ \  | | | |\  |
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
-//int main(){
-//
-//#ifdef PZ_LOG
-//    string basemeshpath(FRACMESHES);
-//    string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
-//    TPZLogger::InitializePZLOG(logpath);
-//    if (mainlogger.isDebugEnabled()) {
-//        std::stringstream sout;
-//        sout << "\nLogger for Cubic Domain problem target\n" << endl;;
-//        LOGPZ_DEBUG(mainlogger, sout.str())
-//    }
-//#endif
-//
-//    int simcase = 4;
-//    RunProblem(simcase);
-//    return 0;
-//}
-// ----------------- End of Main -----------------
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
 void RunProblem(const int simcase)
 {
     auto start_time = std::chrono::steady_clock::now();
@@ -131,7 +135,11 @@ void RunProblem(const int simcase)
     TMRSDataTransfer sim_data;
 	// ----- Approximation space -----
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
+#ifndef USEMAIN
 	sim_data.mTNumerics.m_mhm_mixed_Q = GENERATE(false,true);
+#else
+    sim_data.mTNumerics.m_mhm_mixed_Q = true;
+#endif
 	sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
     
 	FillDataTransfer(sim_data);
@@ -223,6 +231,7 @@ void RunProblem(const int simcase)
     }
     std::cout << "\nintegral of flux  = " << integratedflux << std::endl;
     
+#ifndef USEMAIN
     // ----- Comparing with analytical solution -----
     // Imposing unit pressure in all domains. Then, the integrated pressure should be equal
     // to the volume of each domain
@@ -237,10 +246,10 @@ void RunProblem(const int simcase)
 
     // Flux should always be zero since all cases have cte pressure
     REQUIRE( integratedflux == Approx( 0.) );
-        
+#endif
     auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count()/1000.;
     cout << "\n\n\t--------- Total time of simulation = " << total_time << " seconds -------\n" << endl;
-    
+
     // ----- Cleaning up -----
     delete gmeshfine;
     delete gmeshcoarse;

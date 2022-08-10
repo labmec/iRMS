@@ -10,6 +10,10 @@ target_link_libraries(test_library PUBLIC NeoPZ::pz iMRS_library Catch2::Catch2)
 add_subdirectory(TestOneFracture)
 add_subdirectory(TestOnlyFracIntersec)
 add_subdirectory(TestFracIntersect3D)
-add_subdirectory(TestFracIntersect3DMortar)
 add_subdirectory(TestNoFrac4Spaces)
-add_subdirectory(TestFlemischCtePressure)
+
+# These tests have been discontinued until dfnimrs becomes a class that can be used to call them
+# add_subdirectory(TestFlemischCtePressure)
+
+# Mortar spaces have been discontinued in iMRS
+# add_subdirectory(TestFracIntersect3DMortar)

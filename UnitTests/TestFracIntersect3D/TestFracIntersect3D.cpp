@@ -8,7 +8,7 @@
 #include "pzlog.h"
 #include <tpzgeoelrefpattern.h>
 
-#define USEMAIN
+//#define USEMAIN
 
 #ifndef USEMAIN
 // Unit test includes
