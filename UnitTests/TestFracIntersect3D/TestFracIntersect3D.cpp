@@ -48,7 +48,7 @@ static TPZLogger mainlogger("cubicdomain");
 
 #ifdef USEMAIN
 int main(){
-    int CaseToSim = 6;
+    int CaseToSim = 7;
     RunProblem(CaseToSim);
     return 0;
 }
@@ -283,7 +283,7 @@ void RunProblem( const int &caseToSim){
     if(caseToSim==5)
         REQUIRE( mass == Approx(2.38975).epsilon(1.e-3) ); // Approx is from catch2 lib
     if(caseToSim==7)
-        REQUIRE( mass == Approx(1.37505).epsilon(1.e-3) ); // Approx is from catch2 lib
+        REQUIRE( mass == Approx(3.58463).epsilon(1.e-3) ); // Approx is from catch2 lib
     if(caseToSim == 4 || caseToSim == 6)
         REQUIRE( mass == Approx( 0.) ); // Approx is from catch2 lib
 #endif

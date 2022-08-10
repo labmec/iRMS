@@ -1622,8 +1622,11 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
         boundaryId.insert(fracbounId);
         
         if(mSimData.mTGeometry.m_pressureMatId){
-            TPZBndCond * face6 = volume->CreateBC(volume,mSimData.mTGeometry.m_pressureMatId,dimension-2,val1,val2);
-            mTransportOperator->InsertMaterialObject(face6);
+           
+            volume = new TPZTracerFlow(mSimData.mTGeometry.m_pressureMatId,dimension-2);
+            
+//            TPZBndCond * face6 = volume->CreateBC(volume,mSimData.mTGeometry.m_pressureMatId,dimension-2,val1,val2);
+            mTransportOperator->InsertMaterialObject(volume);
             volIds.insert(mSimData.mTGeometry.m_pressureMatId);
         }
        
@@ -3905,6 +3908,13 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     std::set<int> matidsbcfrac;
     GetMaterialIds( dim-1, FracNeihVec, matidsbcfrac);
     
+    
+    for (auto& chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+        int bc_id   = chunk.first;
+        matidsbcfrac.insert(bc_id);
+    }
+
+
     //intersecmatids
     std::set<int> FracNeihVec2;
     for(auto ifrac:FracNeihVec ){
