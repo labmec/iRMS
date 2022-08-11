@@ -172,7 +172,7 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
                 break;
             case 21:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_pcte";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_lf";
                 break;
             default:
                 break;
