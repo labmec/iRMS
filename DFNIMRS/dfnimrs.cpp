@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 3;
+    int simcase = 21;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -104,6 +104,7 @@ int main(int argc, char* argv[]){
         // 18: joker path, edit at will
         // 19: Case4 mesh 2018
         // 20: Unisim
+        // 21: Flemisch case 4 with constant pressure
         switch (simcase) {
             case 0:
                 filenameBase = basemeshpath + "/dfnimrs/twoelCoarse";
@@ -120,7 +121,6 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3/";
                 break;
             case 4:
-              //  DebugStop(); // Need to generate mesh without overlap or need to treat overlap
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_test2";
                 break;
             case 5:
@@ -137,7 +137,6 @@ int main(int argc, char* argv[]){
                 break;
             case 9:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona";
-
                 break;
             case 10:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/";
@@ -171,6 +170,9 @@ int main(int argc, char* argv[]){
                 break;
             case 20:
                 filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
+                break;
+            case 21:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_pcte";
                 break;
             default:
                 break;
