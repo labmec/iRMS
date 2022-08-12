@@ -7,10 +7,12 @@ endif()
 
 target_link_libraries(test_library PUBLIC NeoPZ::pz iMRS_library Catch2::Catch2)
 
+add_subdirectory(TestDFNIMRS)
 add_subdirectory(TestOneFracture)
 add_subdirectory(TestOnlyFracIntersec)
 add_subdirectory(TestFracIntersect3D)
 add_subdirectory(TestNoFrac4Spaces)
+
 
 # These tests have been discontinued until dfnimrs becomes a class that can be used to call them
 # add_subdirectory(TestFlemischCtePressure)

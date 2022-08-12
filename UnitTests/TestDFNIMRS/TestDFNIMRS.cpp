@@ -16,6 +16,14 @@
 
 #include "DFNMesh.h"
 
+//#define USEMAIN
+
+#ifndef USEMAIN
+// Unit test includes
+#include <catch2/catch.hpp>
+#endif
+
+
 // ----- Namespaces -----
 using namespace std;
 namespace fs = std::filesystem;
@@ -23,7 +31,7 @@ namespace fs = std::filesystem;
 // ----- End of namespaces -----
 
 // ----- Functions -----
-void RunProblem(string& filenameBase, const int simucase);
+void RunProblem(string& filenameBase);
 void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes, bool& isMHM, bool& needsMergeMeshes);
 void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 										  std::map<int,std::pair<int,int>>& matidtoFractures,
@@ -35,19 +43,11 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 
 void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte);
 
-// Quick fix functions. Should be deleted in the future (May 2022)
-void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh);
-void ModifyBCsForCase2(TPZGeoMesh* gmesh);
-void ModifyBCsForCase3(TPZGeoMesh* gmesh);
-void ModifyBCsForCase4(TPZGeoMesh* gmesh);
-void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh);
 bool fileExists(const fs::path& p, fs::file_status s = fs::file_status{});
 void CreateOutputFolders(std::string& outputFolder);
 void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::string& outputFolder);
 
-TPZGeoMesh * Transform2dMeshToUnisim3D(TPZGeoMesh* gmesh2d, int nLayers);
-void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
-void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
+const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& varname);
 
 std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -70,117 +70,32 @@ static TPZLogger mainlogger("cubicdomain");
 //  | |  | |  / ___ \  | | | |\  |
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
+#ifdef USEMAIN
 int main(int argc, char* argv[]){
     string basemeshpath(FRACMESHES);
-#ifdef PZ_LOG
-    string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
-    TPZLogger::InitializePZLOG(logpath);
-    if (mainlogger.isDebugEnabled()) {
-        std::stringstream sout;
-        sout << "\nLogger for Cubic Domain problem target\n" << endl;;
-        LOGPZ_DEBUG(mainlogger, sout.str())
-    }
-#endif
-    
-    string filenameBase;
-    int simcase = 18;
-    if (argc > 1) {
-        filenameBase = basemeshpath + argv[1];
-    }
-    else{
-        // 0: two elements, 1 frac, no intersection
-        // 1: Flemisch case 1
-        // 2: Flemisch case 2
-        // 3: Flemisch case 3
-        // 4: Flemisch case 4
-        // 5: 4 elements, 2 frac, w/ intersection
-        // 6: Two parallel square fractures very close, but no overlap
-        // 7: Two parallel square fractures very close, WITH overlap
-        // 8: Flemisch case 3 with snapping of the bottom fracture to the middle fracture
-        // 9: Study of snapping tolerances on case 3
-        // 10: Case 3 snapping of middle fractures. NO snap of fractures to domain boundary
-        // 11: Case 3 snapping of middle fractures. With snap of fractures to domain boundary
-        // 12,13,14,15,16,17: Modified Case 3 where all fracs touch boundary. Snapping is 0.0001, 0.04, 0.05, 0.1, 0.01, 0.03 respectively
-        // 18: joker path, edit at will
-        // 19: Case4 mesh 2018
-        // 20: Unisim
-        // 21: Flemisch case 4 with constant pressure
-        switch (simcase) {
-            case 0:
-                filenameBase = basemeshpath + "/dfnimrs/twoelCoarse";
-                break;
-            case 1:
-                //            filenameBase = basemeshpath + "/dfnimrs/fl_case1";
-                filenameBase = basemeshpath + "/dfnimrs/fl_case1/";
-                break;
-            case 2:
-                //            DebugStop(); // create me
-                filenameBase = basemeshpath + "/dfnimrs/fl_case2/";
-                break;
-            case 3:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3/";
-                break;
-            case 4:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_test2";
-                break;
-            case 5:
-                filenameBase = basemeshpath + "/dfnimrs/intersect/";
-                break;
-            case 6:
-                filenameBase = basemeshpath + "/dfnimrs/2parallel/";
-                break;
-            case 7:
-                filenameBase = basemeshpath + "/dfnimrs/2paralleloverlap/";
-                break;
-            case 8:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/";
-                break;
-            case 9:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona";
-                break;
-            case 10:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/";
-                break;
-            case 11:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestNoFunciona/";
-                break;
-            case 12:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_0001/";
-                break;
-            case 13:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_04/";
-                break;
-            case 14:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_05/";
-                break;
-            case 15:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_1/";
-                break;
-            case 16:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_01/";
-                break;
-            case 17:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/";
-                break;
-            case 18:
-                filenameBase = basemeshpath + "/dfnimrs/intersectSnap";
-                break;
-            case 19:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
-                break;
-            case 20:
-                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
-                break;
-            case 21:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_lf";
-                break;
-            default:
-                break;
-        }
-    }
-    RunProblem(filenameBase,simcase);
+    string filenameBase = basemeshpath + "/dfnimrs/intersectSnap";
+    RunProblem(filenameBase);
     return 0;
 }
+#else
+
+// ----- Test cases -----
+// ---- Test 0 ----
+TEST_CASE("Four_El_Two_Frac_Snap_cte_pressure","[test_dfnimrs]"){
+    string basemeshpath(FRACMESHES);
+    string filenameBase = basemeshpath + "/dfnimrs/intersectSnap";
+    RunProblem(filenameBase);
+}
+
+// ---- Test 1 ----
+TEST_CASE("Four_El_Two_Frac_cte_pressure","[test_dfnimrs]"){
+    string basemeshpath(FRACMESHES);
+    string filenameBase = basemeshpath + "/dfnimrs/twoElCoarse";
+    RunProblem(filenameBase);
+}
+
+#endif
+
 // ----------------- End of Main -----------------
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
@@ -338,8 +253,19 @@ struct FractureQuantities {
 };
 
 
-void RunProblem(string& filenameBase, const int simcase)
+void RunProblem(string& filenameBase)
 {
+    string basemeshpath(FRACMESHES);
+#ifdef PZ_LOG
+    string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
+    TPZLogger::InitializePZLOG(logpath);
+    if (mainlogger.isDebugEnabled()) {
+        std::stringstream sout;
+        sout << "\nLogger for Cubic Domain problem target\n" << endl;;
+        LOGPZ_DEBUG(mainlogger, sout.str())
+    }
+#endif
+    
     auto start_time = std::chrono::steady_clock::now();
     
 	// ----- Simulation and printing parameters -----
@@ -364,9 +290,6 @@ void RunProblem(string& filenameBase, const int simcase)
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM,needsMergeMeshes);
     
-    if(simcase==20){
-        gmeshfine = Transform2dMeshToUnisim3D(gmeshfine, 5);
-    }
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
     if (1) {
@@ -454,15 +377,7 @@ void RunProblem(string& filenameBase, const int simcase)
 //        std::ofstream name2(outputFolder + "GeoMesh_MHM_domain.vtk");
 //        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
 	}
-    
-	// ----- Changing BCs for some testing cases -----
-    if(simcase == 6 || simcase == 7){
-        //linear pressure...
-        ModifyBCsFor2ParallelFractures(gmeshfine);
-//        std::ofstream name3(outputFolder + "ModBCs.vtk");
-//        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
-    }
-    
+        
     // ----- Creates the multiphysics compmesh -----
 	const int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
@@ -474,157 +389,107 @@ void RunProblem(string& filenameBase, const int simcase)
     bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-    if((simcase == 1 ||simcase == 2 || simcase == 3 || simcase == 10) && isRunWithTranport){
-
-		// Create transport mesh. TODO: Create transport data structure without the need for a mesh
-        aspace.BuildAuxTransportCmesh();
-        TPZCompMesh * transport_operator = aspace.GetTransportOperator();
-#ifdef PZDEBUG
-        std::string name(outputFolder + "mesh");
-        aspace.PrintGeometry(name);
-        std::ofstream name2(outputFolder + "TransportOperator.vtk");
-        TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, name2);
-#endif
-
-		// Creating coupled pressure/flow and transport analysis
-        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
-        sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
-        sfi_analysis->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-        const int n_steps = sim_data.mTNumerics.m_n_steps;
-        const REAL dt = sim_data.mTNumerics.m_dt;
-
-		// Times to report solution
-        TPZStack<REAL,100> reporting_times;
-        reporting_times = sim_data.mTPostProcess.m_vec_reporting_times;
-        REAL sim_time = 0.0;
-        int pos =0;
-        REAL current_report_time = reporting_times[pos];
-        int npos = reporting_times.size();
-
-		// Initializing tranport solution
-        sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
-        REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-        std::cout << "Mass report at time : " << 0.0 << std::endl;
-        std::cout << "Mass integral :  " << initial_mass << std::endl;
-        std::ofstream fileCilamce("IntegratedSat.txt");
-        TPZFastCondensedElement::fSkipLoadSolution = false;
-		const int typeToPPinit = 1; // 0: both, 1: p/flux, 2: saturation
-		const int typeToPPsteps = 2; // 0: both, 1: p/flux, 2: saturation
-		
-		// Looping over time steps
-        for (int it = 1; it <= n_steps; it++) {
-            sim_time = it*dt;
-            sfi_analysis->m_transport_module->SetCurrentTime(dt);
-            sfi_analysis->RunTimeStep();
-            if(it == 1){
-                sfi_analysis->PostProcessTimeStep(typeToPPinit);
-            }
-            mixed_operator->LoadSolution(mixed_operator->Solution());
-			
-			// Only post process based on reporting times
-            if (sim_time >=  current_report_time) {
-				cout << "\n---------------------- SFI Step " << it << " ----------------------" << endl;
-                std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
-                mixed_operator->UpdatePreviousState(-1.);
-                sfi_analysis->PostProcessTimeStep(typeToPPsteps);
-                pos++;
-                current_report_time = reporting_times[pos];
-                REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
-                fileCilamce << current_report_time/(86400*365) << ", " << InntMassFrac << std::endl;
-
-                REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-                std::cout << "Mass report at time : " << sim_time << std::endl;
-                std::cout << "Mass integral :  " << mass << std::endl;
-            }
-        }
-    }
-    else{
-        // -------------- Running problem --------------
-        TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
-        mixAnalisys->SetDataTransfer(&sim_data);
-        mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-//        {
-//            std::ofstream out(outputFolder + "mixedCMesh.txt");
-//            mixed_operator->Print(out);
-//        }
-        mixAnalisys->Assemble();
-		
-		// Testing if constant pressure leads to zero residual in cte pressure problem
-		const bool testCtePressure = false;
-		if(testCtePressure){
-			const int neq = mixAnalisys->Mesh()->NEquations();
-			TPZFMatrix<STATE> res(neq,1,0.);
-			FillPCteSol(mixed_operator,1.);
-			mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-//			mixAnalisys->PostProcessTimeStep(2);
-//			mixAnalisys->PostProcessTimeStep(3);
-			TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
-			mat->Multiply(mixed_operator->Solution(), res);
-			res = res + mixAnalisys->Rhs();
-			std::ofstream out(outputFolder + "problematicEls.txt");
-			mixAnalisys->PrintVectorByElement(out, res, 1.e-6);
-		}
-		
-		// Solving problem
-		mixAnalisys->Solve();
-		mixAnalisys->VerifyElementFluxes();
-				
-		
-        TPZFastCondensedElement::fSkipLoadSolution = false;
-        mixed_operator->LoadSolution(mixed_operator->Solution());
-		
-		// The problem is linear, and therefore, we can just call assemble and solve once.
-		// However, the system is assembled in a "nonlinear" fashion, thus, the solution represents
-		// -DeltaU. So, to obtain the correct solution, we multiply it by -1.
-		// Note: This has to be done after LoadSolution()!
-		mixed_operator->UpdatePreviousState(-1.);
-        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-        
-        {
-            // print the flux mesh with the solutions "loaded"
-            TPZCompMesh *fluxmesh = mixed_operator->MeshVector()[0];
-            std::ofstream flux("fluxmesh.txt");
-            fluxmesh->Print(flux);
-        }
-
-//        TPZCompMesh *pressure = mixed_operator->MeshVector()[1];
-//        pressure->Solution().Print("pressure multipliers");
-        // Computes the integral of the normal flux on the boundaries.
-        // To use, change the inletMatId and outletMatId according to problem
-        const bool PostProcessQuantities = true;
-        if(PostProcessQuantities){
-            std::set<int> bcflux = {2,3,5};
-			const int inletMatId = 2, outletMatId = 3;
-			auto result = computeIntegralOfNormalFlux(bcflux, mixed_operator);
-            std::ofstream out(outputFolder + "fluxintegral.txt");
-            for(auto it: result)
-            {
-                out << "Integral for matid " << it.first << " " << it.second << std::endl;
-            }
-            auto &allfrac = sim_data.mTFracProperties.m_fracprops;
-            int gluematid = sim_data.mTFracIntersectProperties.m_FractureGlueId;
-            int pressureintersect = sim_data.mTGeometry.m_pressureMatId;
-            std::set<int> fracmatids;
-            for(auto &it : allfrac) fracmatids.insert(it.first);
-            for(auto &it : allfrac)
-            {
-                FractureQuantities frac(mixed_operator,fracmatids, pressureintersect,gluematid);
-                frac.ComputeFluxQuantities(it.first);
-                frac.Print(out);
-                frac.Print(std::cout);
-            }
-        }
+    // -------------- Running problem --------------
+    TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
+    mixAnalisys->SetDataTransfer(&sim_data);
+    mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+    //        {
+    //            std::ofstream out(outputFolder + "mixedCMesh.txt");
+    //            mixed_operator->Print(out);
+    //        }
+    mixAnalisys->Assemble();
     
-        
-        // ----- Post processing -----
-        if (isPostProc) {
-            mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-            int dimToPost = 3;
-            mixAnalisys->PostProcessTimeStep(dimToPost);
-            dimToPost = 2;
-            mixAnalisys->PostProcessTimeStep(dimToPost);
+    // Testing if constant pressure leads to zero residual in cte pressure problem
+    const bool testCtePressure = false;
+    if(testCtePressure){
+        const int neq = mixAnalisys->Mesh()->NEquations();
+        TPZFMatrix<STATE> res(neq,1,0.);
+        FillPCteSol(mixed_operator,1.);
+        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+        //			mixAnalisys->PostProcessTimeStep(2);
+        //			mixAnalisys->PostProcessTimeStep(3);
+        TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
+        mat->Multiply(mixed_operator->Solution(), res);
+        res = res + mixAnalisys->Rhs();
+        std::ofstream out(outputFolder + "problematicEls.txt");
+        mixAnalisys->PrintVectorByElement(out, res, 1.e-6);
+    }
+    
+    // Solving problem
+    mixAnalisys->Solve();
+    mixAnalisys->VerifyElementFluxes();
+    
+    
+    TPZFastCondensedElement::fSkipLoadSolution = false;
+    mixed_operator->LoadSolution(mixed_operator->Solution());
+    
+    // The problem is linear, and therefore, we can just call assemble and solve once.
+    // However, the system is assembled in a "nonlinear" fashion, thus, the solution represents
+    // -DeltaU. So, to obtain the correct solution, we multiply it by -1.
+    // Note: This has to be done after LoadSolution()!
+    mixed_operator->UpdatePreviousState(-1.);
+    mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+    
+    {
+        // print the flux mesh with the solutions "loaded"
+        TPZCompMesh *fluxmesh = mixed_operator->MeshVector()[0];
+        std::ofstream flux("fluxmesh.txt");
+        fluxmesh->Print(flux);
+    }
+    
+    //        TPZCompMesh *pressure = mixed_operator->MeshVector()[1];
+    //        pressure->Solution().Print("pressure multipliers");
+    // Computes the integral of the normal flux on the boundaries.
+    // To use, change the inletMatId and outletMatId according to problem
+    const bool PostProcessQuantities = true;
+    if(PostProcessQuantities){
+        std::set<int> bcflux = {2,3,5};
+        const int inletMatId = 2, outletMatId = 3;
+        auto result = computeIntegralOfNormalFlux(bcflux, mixed_operator);
+        std::ofstream out(outputFolder + "fluxintegral.txt");
+        for(auto it: result)
+        {
+            out << "Integral for matid " << it.first << " " << it.second << std::endl;
+        }
+        auto &allfrac = sim_data.mTFracProperties.m_fracprops;
+        int gluematid = sim_data.mTFracIntersectProperties.m_FractureGlueId;
+        int pressureintersect = sim_data.mTGeometry.m_pressureMatId;
+        std::set<int> fracmatids;
+        for(auto &it : allfrac) fracmatids.insert(it.first);
+        for(auto &it : allfrac)
+        {
+            FractureQuantities frac(mixed_operator,fracmatids, pressureintersect,gluematid);
+            frac.ComputeFluxQuantities(it.first);
+            frac.Print(out);
+            frac.Print(std::cout);
         }
     }
+    
+    
+    // ----- Post processing -----
+    if (isPostProc) {
+        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+        int dimToPost = 3;
+        mixAnalisys->PostProcessTimeStep(dimToPost);
+        dimToPost = 2;
+        mixAnalisys->PostProcessTimeStep(dimToPost);
+    }
+    
+    // ----- Compute integral of pressure and flux over domain and compare with analytical solution -----
+    const std::string pvarname = "Pressure";
+    const STATE integratedpressure = ComputeIntegralOverDomain(mixed_operator,pvarname);
+    std::cout << "\nintegral of pressure  = " << integratedpressure << std::endl;
+
+    const std::string qvarname = "Flux";
+    STATE integratedflux = ComputeIntegralOverDomain(mixed_operator,qvarname);
+    if (fabs(integratedflux) < 1.e-14 ) integratedflux = 0.; // to make Approx(0.) work
+    std::cout << "\nintegral of flux  = " << integratedflux << std::endl;
+    
+#ifndef USEMAIN
+    // ----- Comparing with analytical solution -----
+    REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
+    REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
+#endif
     
     auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count()/1000.;
     cout << "\n\n\t--------- Total time of simulation = " << total_time << " seconds -------\n" << endl;
@@ -1104,160 +969,6 @@ void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh) {
-//	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
-    for (auto gel: gmesh->ElementVec()) {
-        if (!gel) continue;
-        if (gel->MaterialId() != 1 && gel->MaterialId() != 2) continue; // only matrix
-
-        TPZVec<REAL> masscent(3,0.0), xcenter(3,0.0);
-        gel->CenterPoint(gel->NSides()-1, masscent);
-        gel->X(masscent, xcenter);
-
-        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-		gel->SetMaterialId(1);
-        if (x > 0.5 && y < 0.5)
-            gel->SetMaterialId(2);
-
-        if (x > 0.75 && y > 0.5 && y < 0.75 && z > 0.5)
-            gel->SetMaterialId(2);
-
-        if (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625 && z > 0.5 && z < 0.75)
-            gel->SetMaterialId(2);
-    }
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void ModifyBCsForCase2(TPZGeoMesh* gmesh) {
-	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
-        
-//    const REAL inletDomain = 0.25, outletDomain = 0.875;
-//    const REAL zerotol = ZeroTolerance();
-//
-//    for (auto gel: gmesh->ElementVec()) {
-//        if (!gel) continue;
-//        if (gel->MaterialId() != EFaceBCPressure) continue; // 2d faces on boundary only
-//
-//        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
-//        gel->CenterPoint(gel->NSides()-1, masscent);
-//        gel->X(masscent, xcenter);
-//        const bool isXzero = fabs(xcenter[0]) < zerotol, isYzero = fabs(xcenter[1]) < zerotol, isZzero = fabs(xcenter[2]) < zerotol;
-//        const bool isXone = fabs(xcenter[0]-1.) < zerotol, isYone = fabs(xcenter[1]-1.) < zerotol, isZone = fabs(xcenter[2]-1.) < zerotol;
-//
-//        gel->SetMaterialId(ENoflux); // Default is no flux
-//        // Setting inlet BCs
-//        if(isXzero && (xcenter[1] < inletDomain && xcenter[2] < inletDomain))
-//                gel->SetMaterialId(EOutlet);
-//        if(isYzero && (xcenter[0] < inletDomain && xcenter[2] < inletDomain))
-//                gel->SetMaterialId(EOutlet);
-//        if(isZzero && (xcenter[0] < inletDomain && xcenter[1] < inletDomain))
-//                gel->SetMaterialId(EOutlet);
-//
-//        // Setting outlet BCs
-//        if(isXone && (xcenter[1] > outletDomain && xcenter[2] > outletDomain))
-//                gel->SetMaterialId(EInlet);
-//        if(isYone && (xcenter[0] > outletDomain && xcenter[2] > outletDomain))
-//                gel->SetMaterialId(EInlet);
-//        if(isZone && (xcenter[0] > outletDomain && xcenter[1] > outletDomain))
-//                gel->SetMaterialId(EInlet);
-//    }
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void ModifyBCsForCase3(TPZGeoMesh* gmesh) {
-    
-    const REAL zerotol = ZeroTolerance();
-    const REAL onethird = 1./3., twothirds = 2./3.;
-    
-    for (auto gel: gmesh->ElementVec()) {
-        if (!gel) continue;
-//        if (gel->MaterialId() != ENoflux) continue; // 2d faces on boundary only
-        if(gel->Dimension() != 2){continue;}
-        if((gel->MaterialId() != ENoflux) && (gel->MaterialId() != EInlet) && (gel->MaterialId() != EOutlet)){continue;}
-        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
-        gel->CenterPoint(gel->NSides()-1, masscent);
-        gel->X(masscent, xcenter);
-        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-        const bool isYzero = fabs(y) < zerotol;
-        const bool isYend = fabs(y-2.25) < zerotol;
-        
-        // Setting inlet BCs
-        gel->SetMaterialId(ENoflux);
-        if(isYzero && (z > onethird && z < twothirds))
-                gel->SetMaterialId(EInlet);
-    
-        // Setting outlet BCs
-        if(isYend && (z > 0. && z < onethird))
-                gel->SetMaterialId(EOutlet);
-        if(isYend && (z > twothirds && z < 1.))
-                gel->SetMaterialId(EOutlet);
-    }
-}
-
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
-void ModifyBCsForCase4(TPZGeoMesh* gmesh) {
-	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
-    const REAL zerotol = ZeroTolerance();
-    
-    for (auto gel: gmesh->ElementVec()) {
-        if (!gel) continue;
-        if (gel->MaterialId() != ENoflux) continue; // 2d faces on boundary only
-        
-        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
-        gel->CenterPoint(gel->NSides()-1, masscent);
-        gel->X(masscent, xcenter);
-        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-        const bool isYend = fabs(y-1500.) < zerotol;
-        const bool isXinit = fabs(x+500.) < zerotol;
-        const bool isXend = fabs(x-350.) < zerotol;
-        
-        // Default is no flux already set previously
-        
-        // Setting inlet BCs
-        if(isYend && (z > 300. && x < -200.))
-                gel->SetMaterialId(EInlet);
-        if(isXinit && (z > 300. && y > 1200.))
-                gel->SetMaterialId(EInlet);
-
-        // Setting outlet BCs
-        if(isXinit && (y < 400. && z < 100.))
-                gel->SetMaterialId(EOutlet);
-        if(isXend && (y < 400. && z < 100.))
-                gel->SetMaterialId(EOutlet);
-    }
-}
-
-void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh) {
-   
-    const REAL zerotol = ZeroTolerance();
-    for (auto gel: gmesh->ElementVec()) {
-        if (!gel) continue;
-        if (gel->MaterialId() != 2) continue; // 2d faces on boundary only
-        
-        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
-        gel->CenterPoint(gel->NSides()-1, masscent);
-        gel->X(masscent, xcenter);
-        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-        const bool isXinit = fabs(x) < zerotol;
-        const bool isXend = fabs(x-2) < zerotol;
-        
-        // Default is no flux already set previously
-        // Setting inlet BCs
-        if(isXinit)
-                gel->SetMaterialId(3);
-        if(isXend )
-                gel->SetMaterialId(4);
-    }
-}
-// ---------------------------------------------------------------------
-// ---------------------------------------------------------------------
-
 void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gmesh){
     // it may happen that the supplied mesh from DFN has missing intersections where 2 fractures intersect.
     // We treat this here. But it would be ideal to make DFN robust enough so we could remove this function whatsoever
@@ -1479,150 +1190,27 @@ void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::
 
 }
 
-TPZGeoMesh * Transform2dMeshToUnisim3D(TPZGeoMesh* gmesh2d, int nLayers){
-   
-    REAL w = 200.0;
-    std::string name2D("mesh2d.vtk");
-    
-    int topID= 5;
-    int baseID = 5;
-    TPZGeoMesh * returnedMesh = nullptr;
-        TPZExtendGridDimension extend(gmesh2d, w);
-        extend.SetElType(1);
-        returnedMesh = extend.ExtendedMesh(nLayers,topID,baseID);
-        ModifyTopeAndBase2(returnedMesh ,nLayers);
-       
-        std::ofstream file("unisim3d.vtk");
-    TPZVTKGeoMesh::PrintGMeshVTK(returnedMesh,file );
-    return returnedMesh;
-    
-}
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
-void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers){
-//    std::string filename2 = "Reservoir/base_unisimMOD.txt";
-    
-     std::string filename1 = "topeMOD.txt";
-    std::string filename2 = "baseMOD.txt";
-    std::vector<double> x, y, z, x1,y1,z1;
-    ReadData(filename1, true, x, y, z);
-    ReadData(filename2, true, x1, y1, z1);
-
-    _2D::ThinPlateSplineInterpolator <double> interpTope;
-    _2D::ThinPlateSplineInterpolator <double> interpBase;
-
-    interpTope.setData(x,y,z);
-    interpBase.setData(x1,y1,z1);
-
-    int nCoordinates = gmesh->NodeVec().NElements();
-    double sum=0.0;
-    for (auto val:z) {
-        sum += val;
-    }
-    double val_tope= sum / z.size();
-    sum=0.0;
-    for (auto val:z1) {
-        sum += val;
-    }
-    double val_base= sum / z1.size();
-//    val_base = 1000;
-//    val_tope = 5000;
-//
-//    val_tope = 3000;
-//    val_base = 3000;
-    int npointsPerLayer = nCoordinates/(nlayers+1);
-    double valinter=0.0;
-    for (int ilay = 1; ilay <= nlayers+1; ilay++) {
-        for (int ipoint = (ilay-1)*npointsPerLayer; ipoint<(ilay)*npointsPerLayer; ipoint++) {
-            TPZGeoNode node = gmesh->NodeVec()[ipoint];
-            TPZVec<REAL> co(3);
-            node.GetCoordinates(co);
-            double topeinterpol =interpTope(co[0],co[1]);
-            double baseinterpol = interpBase(co[0],co[1]);
-            if (topeinterpol==0) {
-                topeinterpol = val_tope;
-                if (co[0]>1000.00) {
-                    topeinterpol -= 120;
-                }
-            }
-            if (baseinterpol==0) {
-                
-                baseinterpol = val_base;
-                if (co[0]>1000.00) {
-                   baseinterpol = val_base-80;
-                }
-
-            }
-
-            if (ilay==1) {
-                valinter=topeinterpol;
-//                valinter = 3500;
-                co[2]=valinter;
-                gmesh->NodeVec()[ipoint].SetCoord(co);
-            }
-            if (ilay==nlayers+1) {
-                valinter = baseinterpol;
-//                valinter = 2850;
-                co[2]=valinter;
-                gmesh->NodeVec()[ipoint].SetCoord(co);
-            }
-            if (ilay>1   && ilay < nlayers+1) {
-                valinter = topeinterpol + (ilay-1)*(baseinterpol - topeinterpol)/(nlayers);
-                co[2]=valinter;
-                gmesh->NodeVec()[ipoint].SetCoord(co);
-            }
-        }
-    }
-}
-void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z){
-    
-    bool modpoints = true;
-    std::ifstream file;
-    string basemeshpath(FRACMESHES);
-    basemeshpath = basemeshpath + "/dfnimrs/unisim_meshes/Reservoir_props/" + name;
-    file.open(basemeshpath);
-    int i=1;
-    
-    
-    std::string line;
-    while (std::getline(file, line))
-    {
-        std::istringstream iss(line);
-        std::istringstream issText(line);
-        char l = line[0];
-        if(l != '/'){
-            i=i+1;
-            int val = i%15;
-            if(val ==0){
-                double a, b, c;
-                if(iss >> a >> b >> c) ;
-                if (modpoints) {
-                    x.push_back(a - 350808.47);
-                    y.push_back(b - 7.51376238e6);
-                    z.push_back(c);
-                }
-                else{
-                x.push_back(a);
-                y.push_back(b);
-                z.push_back(c);
-                }
-            };
-        };
-    };
-    
-    if(x.size() == 0){
-        std::cout<<"No data read."<<std::endl;
-        
+const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& varname) {
+    std::set<int> matids;
+    matids.insert(EVolume);
+    cmesh->Reference()->ResetReference();
+    cmesh->LoadReferences(); // compute integral in the multiphysics mesh
+    TPZVec<STATE> vecint = cmesh->Integrate(varname, matids);
+    if ((varname == "Pressure" && vecint.size() != 1) ||
+        (varname == "Flux" && vecint.size() != 3)){
         DebugStop();
     }
-    if(print_table_Q){
-        std::cout<<"*************************"<<std::endl;
-        std::cout<<"Reading file... ok!"<<std::endl;
-        std::cout<<"*************************"<<std::endl;
-        std::cout<<x.size()<<std::endl;
-        std::cout<<y.size()<<std::endl;
-        std::cout<<z.size()<<std::endl;
-    }
+    if (varname == "Pressure")
+        return vecint[0];
+    else if (varname == "Flux")
+        return vecint[1];
+    else
+        DebugStop();
     
+    return -100000; // default value so compiler does not complain
 }
 
 // ---------------------------------------------------------------------
