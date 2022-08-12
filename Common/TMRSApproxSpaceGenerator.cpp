@@ -355,11 +355,25 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
                     }
 					// we dont adjust if the neighmatid is different and if there is not intersection element
                     TPZGeoElSide gelintersect = gelside.HasNeighbour(fracmatid+2);
+                    
+                    if(neighisbound && gelintersect)
+                    {
+                        DebugStop();
+                    }
                     // the neighbour is a different fracture but there is no intersection, we dont adjust
                     if(neighisfrac && neighmatid != fracmatid && !gelintersect) {
                         continue;
                     }
                     
+                    if(gelintersect) {
+                        intel->SetSideOrient(iside, 1);
+                        {
+                            int sideorient = intel->GetSideOrient(iside);
+                            std::cout << "Adjusting orientation because of intersection\n";
+                            std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
+                        }
+                        break;
+                    }
 					TPZInterpolatedElement* neighintel = dynamic_cast<TPZInterpolatedElement*>(neighgel->Reference());
 					if(!neighintel) continue;
 					const int neighside = neigh.Side();
@@ -817,7 +831,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
     
     // ===> Fix blocks
     cmesh->InitializeBlock();
-    if(0)
+    if(1)
     {
         std::ofstream out("VerfiqueDeNovo.txt");
         cmesh->Print(out);
