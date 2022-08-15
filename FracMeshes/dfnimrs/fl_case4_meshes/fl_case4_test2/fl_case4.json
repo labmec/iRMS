@@ -47,6 +47,7 @@
         
     ],
     "NCoarseGroups": 9768,
+    "useRunWithTransport":true;
     "FractureHybridPressureMatId": 299,
     "FractureInitMatId": 300,
     "FractureGlueMatId": 1000000,

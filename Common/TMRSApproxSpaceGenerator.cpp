@@ -339,8 +339,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
 				TPZGeoElSide gelside(gel,iside);
                 // this the side orient of the current element
 				const int gelSideOrient = intel->GetSideOrient(iside);
-                std::cout << "initial side orient\n";
-                std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << gelSideOrient << std::endl;
+//                std::cout << "initial side orient\n";
+//                std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << gelSideOrient << std::endl;
 				for(TPZGeoElSide neigh = gelside.Neighbour() ; neigh != gelside ; neigh++){
 					TPZGeoEl* neighgel = neigh.Element();
 					if(neighgel->HasSubElement()) continue;
@@ -369,8 +369,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
                         intel->SetSideOrient(iside, 1);
                         {
                             int sideorient = intel->GetSideOrient(iside);
-                            std::cout << "Adjusting orientation because of intersection\n";
-                            std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
+//                            std::cout << "Adjusting orientation because of intersection\n";
+//                            std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
                         }
                         break;
                     }
@@ -385,9 +385,9 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
 						neighintel->SetSideOrient(neighside, 1);
                         int sideorient = intel->GetSideOrient(iside);
                         int neighsideorient = neighintel->GetSideOrient(neighside);
-                        std::cout << "Adjusting orientation of boundary\n";
-                        std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
-                        std::cout << "gel index " << neighintel->Reference()->Index() << " side " << neighside << " side orient " << neighsideorient << std::endl;
+//                        std::cout << "Adjusting orientation of boundary\n";
+//                        std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
+//                        std::cout << "gel index " << neighintel->Reference()->Index() << " side " << neighside << " side orient " << neighsideorient << std::endl;
 						continue;
 					}
                     // here we assume there is no fracture intersection
@@ -396,14 +396,14 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
 					const int neighSideOrient = neighintel->GetSideOrient(neighside);
 					
 					if(gelSideOrient*neighSideOrient > 0){
-                        std::cout << "Adjusting wrong neighbouring orientations gelSideOrient " << gelSideOrient << " neighSideOrient " << neighSideOrient << std::endl;
+//                        std::cout << "Adjusting wrong neighbouring orientations gelSideOrient " << gelSideOrient << " neighSideOrient " << neighSideOrient << std::endl;
 						const int newNeighSideOrient = -gelSideOrient;
 						neighintel->SetSideOrient(neighside, newNeighSideOrient);
                         {
                             int sideorient = intel->GetSideOrient(iside);
                             int neighsideorient = neighintel->GetSideOrient(neighside);
-                            std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
-                            std::cout << "gel index " << neighintel->Reference()->Index() << " side " << neighside << " side orient " << neighsideorient << std::endl;
+//                            std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
+//                            std::cout << "gel index " << neighintel->Reference()->Index() << " side " << neighside << " side orient " << neighsideorient << std::endl;
                         }
 					}
 				}
@@ -1627,16 +1627,28 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
         if(isThereFracIntersection()){
             val = 1;
         }
-		for(auto chunk : mSimData.mTGeometry.mDomainFracNameAndMatId){
-			std::string material_name = chunk.first;
-			int material_id = chunk.second;
-			volume = new TPZTracerFlow(material_id,dimension-1);
-			mTransportOperator->InsertMaterialObject(volume);
-			volIds.insert(material_id);
+		for(auto chunk : mSimData.mTFracProperties.m_fracprops){
+            auto fracmatid= chunk.first;
+            auto fracprop= chunk.second;
+            volume = new TPZTracerFlow(fracmatid,dimension-1);
+            mTransportOperator->InsertMaterialObject(volume);
+            volIds.insert(fracmatid);
             
-//            volume = new TPZTracerFlow(material_id+1,dimension-2);
-//            mTransportOperator->InsertMaterialObject(volume);
-//            boundaryId.insert(material_id+1);
+            for(auto& bcsIds : fracprop.m_fracbc){
+                volume = new TPZTracerFlow(bcsIds,dimension-2);
+                mTransportOperator->InsertMaterialObject(volume);
+                boundaryId.insert(bcsIds);
+            }
+            int oka=0;
+//
+//			std::string material_name = chunk.first;
+////            sim_data.mTFracProperties.m_fracprops[matid] = fracprop;
+//			int material_id = chunk.second;
+//			volume = new TPZTracerFlow(material_id,dimension-1);
+//			mTransportOperator->InsertMaterialObject(volume);
+//			volIds.insert(material_id);
+            
+
             
 		}
         

@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 18;
+    int simcase = 4;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -345,7 +345,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Simulation and printing parameters -----
     const bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = false;
+	const bool isRunWithTranport = true;
 	bool isMHM = true;
     bool needsMergeMeshes = true;
 	const int n_threads = 8;
@@ -506,11 +506,13 @@ void RunProblem(string& filenameBase, const int simcase)
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         std::cout << "Mass report at time : " << 0.0 << std::endl;
         std::cout << "Mass integral :  " << initial_mass << std::endl;
-        std::ofstream fileCilamce("IntegratedSat.txt");
+        std::ofstream fileCilamce535("IntegratedSatFrac365.txt");
+        std::ofstream fileCilamce515("IntegratedSatFrac515.txt");
+        std::ofstream fileCilamce530("IntegratedSatFrac530.txt");
         TPZFastCondensedElement::fSkipLoadSolution = false;
 		const int typeToPPinit = 1; // 0: both, 1: p/flux, 2: saturation
 		const int typeToPPsteps = 2; // 0: both, 1: p/flux, 2: saturation
-		
+      
 		// Looping over time steps
         for (int it = 1; it <= n_steps; it++) {
             sim_time = it*dt;
@@ -530,8 +532,14 @@ void RunProblem(string& filenameBase, const int simcase)
                 pos++;
                 current_report_time = reporting_times[pos];
                 REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
-                fileCilamce << current_report_time/(86400*365) << ", " << InntMassFrac << std::endl;
-
+                if(simcase==4 && isRunWithTranport){
+                    REAL InntMassFrac365 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(365);
+                    fileCilamce535 << current_report_time<< ", " << InntMassFrac365 << std::endl;
+                    REAL InntMassFrac515 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(515);
+                    fileCilamce515 << current_report_time << ", " << InntMassFrac515 << std::endl;
+                    REAL InntMassFrac530 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(530);
+                    fileCilamce530 << current_report_time << ", " << InntMassFrac530 << std::endl;
+                }
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
                 std::cout << "Mass integral :  " << mass << std::endl;
@@ -689,7 +697,6 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 		if(BCFlowMatIdToTypeValue.find(matid) != BCFlowMatIdToTypeValue.end()) DebugStop();
 		BCFlowMatIdToTypeValue[matid] = std::make_pair(type, value);
         BCTransportMatIdToTypeValue[matid] = std::make_pair(type, value);
-        
 	}
 	
 	// ------------------------ Reading fractures and fracture bcs matids ------------------------
@@ -780,18 +787,14 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTNumerics.m_sfi_tol = 0.0001;
 	sim_data.mTNumerics.m_res_tol_transport = 0.0001;
 	sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-	sim_data.mTNumerics.m_n_steps = 1 ;
-	sim_data.mTNumerics.m_dt      = 1.0; //*day;
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
 	std::vector<REAL> grav(3,0.0);
 	grav[1] = 0.0;//-9.8*(1.0e-6); // hor
 	sim_data.mTNumerics.m_gravity = grav;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-	sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
-	
-    
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     sim_data.mTNumerics.m_n_steps = 100;
-	sim_data.mTNumerics.m_dt      = 0.01;//*day;
+	sim_data.mTNumerics.m_dt      = 50.0;//*day;
 	sim_data.mTNumerics.m_max_iter_sfi=1;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
 	sim_data.mTNumerics.m_max_iter_transport=1;
