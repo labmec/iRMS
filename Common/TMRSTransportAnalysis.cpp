@@ -12,6 +12,14 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
 
+// Uses the new vtk function developed by Fran
+#define USENEWVTK
+
+#ifdef USENEWVTK
+#include "TPZVTKGenerator.h"
+#endif
+
+
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -555,10 +563,11 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     
     TPZStack<std::string,10> scalnames, vecnames;
     scalnames = m_sim_data->mTPostProcess.m_scalnamesTransport;
-    int div = 0;
+    constexpr int vtkRes{0}; //resolucao do vtk
     int dim = Mesh()->Reference()->Dimension();
     std::string file = m_sim_data->mTPostProcess.m_file_name_transport;
         
+    
     std::set<int> matidsToPost;
     std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
     if (m_sim_data->mTGeometry.isThereFracture()) {
@@ -568,20 +577,53 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
             matidsToPost.insert(matfracid);
         }
         std::string file_frac("fracture_s.vtk");
+        
+#ifdef USENEWVTK
+        const std::string plotfile = file_frac.substr(0, file.find("."));
+        for (auto nm : vecnames) {
+            scalnames.Push(nm);
+        }
+        auto vtk = TPZVTKGenerator(fCompMesh, matidsToPost, scalnames, plotfile, vtkRes);
+        vtk.SetNThreads(8);
+        vtk.Do();
+#else
         DefineGraphMesh(2,matidsToPost,scalnames,vecnames,file_frac);
-        PostProcess(div,2);
+        PostProcess(vtkRes,2);
+#endif
     }
     
     if(m_sim_data->mTFracIntersectProperties.isThereFractureIntersection()){
         matidsToPost.clear();
         matidsToPost.insert(m_sim_data->mTGeometry.m_pressureMatId);
         std::string file_frac2("fracture_s1d.vtk");
+        
+#ifdef USENEWVTK
+        const std::string plotfile = file_frac2.substr(0, file.find("."));
+        for (auto nm : vecnames) {
+            scalnames.Push(nm);
+        }
+        auto vtk = TPZVTKGenerator(fCompMesh, matidsToPost, scalnames, plotfile, vtkRes);
+        vtk.SetNThreads(8);
+        vtk.Do();
+#else
         DefineGraphMesh(1,matidsToPost,scalnames,vecnames,file_frac2);
-        PostProcess(div,1);
+        PostProcess(vtkRes,1);
+#endif
     }
     
+#ifdef USENEWVTK
+    const std::string plotfile = file.substr(0, file.find(".")); //sem o .vtk no final
+    for (auto nm : vecnames) {
+        scalnames.Push(nm);
+    }
+    
+    auto vtk = TPZVTKGenerator(fCompMesh, scalnames, plotfile, vtkRes, dim);
+    vtk.SetNThreads(8);
+    vtk.Do();
+#else
     DefineGraphMesh(dim,scalnames,vecnames,file);
-    PostProcess(div,dim);
+    PostProcess(vtkRes,dim);
+#endif
 }
 
 void TMRSTransportAnalysis::UpdateInitialSolutionFromCellsData(){

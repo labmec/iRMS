@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 4;
+    int simcase = 1;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -474,7 +474,7 @@ void RunProblem(string& filenameBase, const int simcase)
     bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-    if((simcase == 1 ||simcase == 2 || simcase == 3 || simcase == 10) && isRunWithTranport){
+    if(isRunWithTranport){
 
 		// Create transport mesh. TODO: Create transport data structure without the need for a mesh
         aspace.BuildAuxTransportCmesh();
