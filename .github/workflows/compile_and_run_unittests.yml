@@ -31,11 +31,7 @@ jobs:
 
     # ========= Install GMSH ========= 
     - name: Clone External GMSH
-      uses: actions/checkout@v2
-      with:
-        path: ./gmsh
-        repository: https://gitlab.onelab.info/gmsh/gmsh.git
-        ref: master
+      run: git clone https://gitlab.onelab.info/gmsh/gmsh.git  
     - name: Set up build environment for External GMSH
       shell: bash
       working-directory: ${{github.workspace}}/gmsh
