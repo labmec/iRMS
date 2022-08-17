@@ -29,6 +29,28 @@ jobs:
       # We'll use this as our working directory for all subsequent commandss
       run: cmake -E make_directory ${{github.workspace}}/build
 
+    # ========= Install GMSH ========= 
+    - name: Clone External GMSH
+      uses: actions/checkout@v2
+      with:
+        path: ./gmsh
+        repository: https://gitlab.onelab.info/gmsh/gmsh.git
+        ref: master
+    - name: Set up build environment for External GMSH
+      shell: bash
+      working-directory: ${{github.workspace}}/gmsh
+      run: cmake -E make_directory build
+    - name: Configure CMake External GMSH
+      shell: bash
+      working-directory: ${{github.workspace}}/gmsh/build
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gmsh_install -DENABLE_BUILD_SHARED=ON
+    - name: Build And Install External GMSH
+      working-directory: ${{github.workspace}}/gmsh/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target install
+      env:
+        MAKEFLAGS: "-j4"        
+
     # ========= Install MKL =========   
     - name: Intel Apt repository
       timeout-minutes: 1
@@ -124,7 +146,7 @@ jobs:
       shell: bash
       run: cmake --build . --config $BUILD_TYPE --target install
       env:
-        MAKEFLAGS: "-j4"       
+        MAKEFLAGS: "-j4"                    
 
     # ========= Install DFNMesh ========= 
     - name: Clone External DFNMesh
