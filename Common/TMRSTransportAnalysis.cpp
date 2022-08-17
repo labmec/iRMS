@@ -7,10 +7,18 @@
 #include "TMRSTransportAnalysis.h"
 #include "pzfunction.h"
 #include "TPZTracerFlow.h"
-
+#include "pzvtkmesh.h"
 #ifdef USING_BOOST
 #include "boost/date_time/posix_time/posix_time.hpp"
 #endif
+
+// Uses the new vtk function developed by Fran
+#define USENEWVTK
+
+#ifdef USENEWVTK
+#include "TPZVTKGenerator.h"
+#endif
+#include "TPZVTKGeoMesh.h"
 
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
@@ -429,7 +437,7 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
 //        }
 //    }
 #endif
-
+    std::cout<<" ---------------------- Solve Transport----------------------"<<std::endl;
     fTransportSpMatrix->Solve();
 #ifdef USING_BOOST
     boost::posix_time::ptime tnewton3 = boost::posix_time::microsec_clock::local_time();
@@ -555,33 +563,98 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     
     TPZStack<std::string,10> scalnames, vecnames;
     scalnames = m_sim_data->mTPostProcess.m_scalnamesTransport;
-    int div = 0;
+    constexpr int vtkRes{0}; //resolucao do vtk
     int dim = Mesh()->Reference()->Dimension();
     std::string file = m_sim_data->mTPostProcess.m_file_name_transport;
+    std::ofstream file2("transport"+std::to_string(fpostprocessindex)+".vtk");
+    
+//    
+//    std::set<int> matidsToPost;
+//    std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
+//    if (m_sim_data->mTGeometry.isThereFracture()) {
+//        for (it = m_sim_data->mTFracProperties.m_fracprops.begin(); it != m_sim_data->mTFracProperties.m_fracprops.end(); it++)
+//        {
+//            int matfracid = it->first;
+//            matidsToPost.insert(matfracid);
+//        }
+//        std::string file_frac("fracture_s.vtk");
+//        
+//#ifdef USENEWVTK
+//        const std::string plotfile = file_frac.substr(0, file.find("."));
+//        for (auto nm : vecnames) {
+//            scalnames.Push(nm);
+//        }
+//        auto vtk = TPZVTKGenerator(fCompMesh, matidsToPost, scalnames, plotfile, vtkRes);
+//        vtk.SetNThreads(8);
+//        vtk.Do();
+//#else
+//        DefineGraphMesh(2,matidsToPost,scalnames,vecnames,file_frac);
+//        PostProcess(vtkRes,2);
+//#endif
+//    }
+//    
+//    if(m_sim_data->mTFracIntersectProperties.isThereFractureIntersection()){
+//        matidsToPost.clear();
+//        matidsToPost.insert(m_sim_data->mTGeometry.m_pressureMatId);
+//        std::string file_frac2("fracture_s1d.vtk");
+//        
+//#ifdef USENEWVTK
+//        const std::string plotfile = file_frac2.substr(0, file.find("."));
+//        for (auto nm : vecnames) {
+//            scalnames.Push(nm);
+//        }
+//        auto vtk = TPZVTKGenerator(fCompMesh, matidsToPost, scalnames, plotfile, vtkRes);
+//        vtk.SetNThreads(8);
+//        vtk.Do();
+//#else
+//        DefineGraphMesh(1,matidsToPost,scalnames,vecnames,file_frac2);
+//        PostProcess(vtkRes,1);
+//#endif
+//    }
+//    
+//#ifdef USENEWVTK
+//    const std::string plotfile = file.substr(0, file.find(".")); //sem o .vtk no final
+//    for (auto nm : vecnames) {
+//        scalnames.Push(nm);
+//    }
+//    
+//    auto vtk = TPZVTKGenerator(fCompMesh, scalnames, plotfile, vtkRes, dim);
+//    vtk.SetNThreads(8);
+//    vtk.Do();
+//#else
+//    DefineGraphMesh(dim,scalnames,vecnames,file);
+//    PostProcess(vtkRes,dim);
+//#endif
+    int nels = fGeoMesh->NElements();
+    fCompMesh->LoadReferences();
+    TPZVec<REAL> elData(nels,0);
+    int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
+    for (int icell = 0; icell< ncells; icell++) {
+        int indexGeo = fAlgebraicTransport.fCellsData.fGeoIndex[icell];
+        REAL sat= fAlgebraicTransport.fCellsData.fSaturation[icell];
+        auto center = fAlgebraicTransport.fCellsData.fCenterCoordinate[icell];
+        TPZGeoEl *gel = fCompMesh->Reference()->Element(indexGeo);
+        if(!gel) DebugStop();
         
-    std::set<int> matidsToPost;
-    std::map<int, TMRSDataTransfer::TFracProperties::FracProp>::iterator it;
-    if (m_sim_data->mTGeometry.isThereFracture()) {
-        for (it = m_sim_data->mTFracProperties.m_fracprops.begin(); it != m_sim_data->mTFracProperties.m_fracprops.end(); it++)
+#ifdef PZDEBUG
+        TPZManVector<REAL,3> xcenter(3,0.), xi(gel->Dimension(),0.);
+        gel->CenterPoint(gel->NSides()-1, xi);
+        gel->X(xi, xcenter);
+        REAL diff = 0;
+        std::vector<REAL> celcenter = fAlgebraicTransport.fCellsData.fCenterCoordinate[icell];
+        for(int i=0; i<3; i++)
         {
-            int matfracid = it->first;
-            matidsToPost.insert(matfracid);
+            diff += fabs(xcenter[i]-celcenter[i]);
         }
-        std::string file_frac("fracture_s.vtk");
-        DefineGraphMesh(2,matidsToPost,scalnames,vecnames,file_frac);
-        PostProcess(div,2);
+        if(diff > 1.e-16)
+        {
+            DebugStop();
+        }
+# endif
+        elData[indexGeo]=sat;
     }
-    
-    if(m_sim_data->mTFracIntersectProperties.isThereFractureIntersection()){
-        matidsToPost.clear();
-        matidsToPost.insert(m_sim_data->mTGeometry.m_pressureMatId);
-        std::string file_frac2("fracture_s1d.vtk");
-        DefineGraphMesh(1,matidsToPost,scalnames,vecnames,file_frac2);
-        PostProcess(div,1);
-    }
-    
-    DefineGraphMesh(dim,scalnames,vecnames,file);
-    PostProcess(div,dim);
+    TPZVTKGeoMesh::PrintGMeshVTK(fCompMesh->Reference(), file2, elData);
+    fpostprocessindex++;
 }
 
 void TMRSTransportAnalysis::UpdateInitialSolutionFromCellsData(){

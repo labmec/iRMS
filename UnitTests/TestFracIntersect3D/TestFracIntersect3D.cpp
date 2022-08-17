@@ -258,6 +258,7 @@ void RunProblem( const int &caseToSim){
         const int dimToPost = 3;
         mixAnalisys->PostProcessTimeStep(dimToPost);
     }
+    
     // ----- Compute integral of pressure and flux over domain and compare with analytical solution -----
     const std::string pvarname = "Pressure";
     const STATE integratedpressure = ComputeIntegralOverDomain(mixed_operator,pvarname);

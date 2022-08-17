@@ -83,7 +83,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 3;
+    int simcase = 18;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -104,6 +104,7 @@ int main(int argc, char* argv[]){
         // 18: joker path, edit at will
         // 19: Case4 mesh 2018
         // 20: Unisim
+        // 21: Flemisch case 4 with constant pressure
         switch (simcase) {
             case 0:
                 filenameBase = basemeshpath + "/dfnimrs/twoelCoarse";
@@ -120,7 +121,6 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3/";
                 break;
             case 4:
-              //  DebugStop(); // Need to generate mesh without overlap or need to treat overlap
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_test2";
                 break;
             case 5:
@@ -137,7 +137,6 @@ int main(int argc, char* argv[]){
                 break;
             case 9:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona";
-
                 break;
             case 10:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/";
@@ -164,13 +163,16 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/touchBound_s_03/";
                 break;
             case 18:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/testingNoSnapBound/fl_case3_0p1";
+                filenameBase = basemeshpath + "/dfnimrs/intersectSnap";
                 break;
             case 19:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
                 break;
             case 20:
                 filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
+                break;
+            case 21:
+                filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_lf";
                 break;
             default:
                 break;
@@ -343,7 +345,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Simulation and printing parameters -----
     const bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = false;
+	const bool isRunWithTranport = true;
 	bool isMHM = true;
     bool needsMergeMeshes = true;
 	const int n_threads = 8;
@@ -472,7 +474,7 @@ void RunProblem(string& filenameBase, const int simcase)
     bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-    if((simcase == 1 ||simcase == 2 || simcase == 3 || simcase == 10) && isRunWithTranport){
+    if(isRunWithTranport){
 
 		// Create transport mesh. TODO: Create transport data structure without the need for a mesh
         aspace.BuildAuxTransportCmesh();
@@ -504,11 +506,13 @@ void RunProblem(string& filenameBase, const int simcase)
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         std::cout << "Mass report at time : " << 0.0 << std::endl;
         std::cout << "Mass integral :  " << initial_mass << std::endl;
-        std::ofstream fileCilamce("IntegratedSat.txt");
+        std::ofstream fileCilamce535("IntegratedSatFrac365.txt");
+        std::ofstream fileCilamce515("IntegratedSatFrac515.txt");
+        std::ofstream fileCilamce530("IntegratedSatFrac530.txt");
         TPZFastCondensedElement::fSkipLoadSolution = false;
 		const int typeToPPinit = 1; // 0: both, 1: p/flux, 2: saturation
 		const int typeToPPsteps = 2; // 0: both, 1: p/flux, 2: saturation
-		
+      
 		// Looping over time steps
         for (int it = 1; it <= n_steps; it++) {
             sim_time = it*dt;
@@ -528,8 +532,14 @@ void RunProblem(string& filenameBase, const int simcase)
                 pos++;
                 current_report_time = reporting_times[pos];
                 REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
-                fileCilamce << current_report_time/(86400*365) << ", " << InntMassFrac << std::endl;
-
+                if(simcase==4 && isRunWithTranport){
+                    REAL InntMassFrac365 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(365);
+                    fileCilamce535 << current_report_time<< ", " << InntMassFrac365 << std::endl;
+                    REAL InntMassFrac515 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(515);
+                    fileCilamce515 << current_report_time << ", " << InntMassFrac515 << std::endl;
+                    REAL InntMassFrac530 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(530);
+                    fileCilamce530 << current_report_time << ", " << InntMassFrac530 << std::endl;
+                }
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
                 std::cout << "Mass integral :  " << mass << std::endl;
@@ -687,7 +697,6 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 		if(BCFlowMatIdToTypeValue.find(matid) != BCFlowMatIdToTypeValue.end()) DebugStop();
 		BCFlowMatIdToTypeValue[matid] = std::make_pair(type, value);
         BCTransportMatIdToTypeValue[matid] = std::make_pair(type, value);
-        
 	}
 	
 	// ------------------------ Reading fractures and fracture bcs matids ------------------------
@@ -778,18 +787,14 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTNumerics.m_sfi_tol = 0.0001;
 	sim_data.mTNumerics.m_res_tol_transport = 0.0001;
 	sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
-	sim_data.mTNumerics.m_n_steps = 1 ;
-	sim_data.mTNumerics.m_dt      = 1.0; //*day;
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
 	std::vector<REAL> grav(3,0.0);
 	grav[1] = 0.0;//-9.8*(1.0e-6); // hor
 	sim_data.mTNumerics.m_gravity = grav;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-	sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
-	
-    
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
     sim_data.mTNumerics.m_n_steps = 100;
-	sim_data.mTNumerics.m_dt      = 0.01;//*day;
+	sim_data.mTNumerics.m_dt      = 50.0;//*day;
 	sim_data.mTNumerics.m_max_iter_sfi=1;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
 	sim_data.mTNumerics.m_max_iter_transport=1;
