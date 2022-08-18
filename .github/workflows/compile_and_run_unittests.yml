@@ -46,6 +46,10 @@ jobs:
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
 
+    # ========= Install Log4cxx ========= 
+    - name: Intel Apt repository
+      run: sudo apt-get install -y liblog4cxx-dev
+
     # ========= Install NeoPZ ========= 
     - name: Clone External NeoPZ
       uses: actions/checkout@v2
