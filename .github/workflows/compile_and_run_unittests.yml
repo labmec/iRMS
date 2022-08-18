@@ -27,25 +27,7 @@ jobs:
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commandss
-      run: cmake -E make_directory ${{github.workspace}}/build
-
-    # ========= Install GMSH ========= 
-    - name: Clone External GMSH
-      run: (rm -rf ${{github.workspace}}/gmsh || echo "Folder") && git clone https://gitlab.onelab.info/gmsh/gmsh.git ${{github.workspace}}/gmsh
-    - name: Set up build environment for External GMSH
-      shell: bash
-      working-directory: ${{github.workspace}}/gmsh
-      run: cmake -E make_directory build
-    - name: Configure CMake External GMSH
-      shell: bash
-      working-directory: ${{github.workspace}}/gmsh/build
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gmsh_install -DENABLE_BUILD_SHARED=ON
-    - name: Build And Install External GMSH
-      working-directory: ${{github.workspace}}/gmsh/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target install
-      env:
-        MAKEFLAGS: "-j4"        
+      run: cmake -E make_directory ${{github.workspace}}/build    
 
     # ========= Install MKL =========   
     - name: Intel Apt repository
@@ -78,13 +60,31 @@ jobs:
     - name: Configure CMake External NeoPZ
       shell: bash
       working-directory: ${{github.workspace}}/neopz/build
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSING_MKL=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSING_MKL=ON -DUSING_LOG4CXX=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install
     - name: Build And Install External NeoPZ
       working-directory: ${{github.workspace}}/neopz/build
       shell: bash
       run: cmake --build . --config $BUILD_TYPE --target install
       env:
         MAKEFLAGS: "-j4"
+
+    # ========= Install GMSH ========= 
+    - name: Clone External GMSH
+      run: (rm -rf ${{github.workspace}}/gmsh || echo "gmsh folder will be created on clone...") && git clone https://gitlab.onelab.info/gmsh/gmsh.git ${{github.workspace}}/gmsh
+    - name: Set up build environment for External GMSH
+      shell: bash
+      working-directory: ${{github.workspace}}/gmsh
+      run: cmake -E make_directory build
+    - name: Configure CMake External GMSH
+      shell: bash
+      working-directory: ${{github.workspace}}/gmsh/build
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gmsh_install -DENABLE_BUILD_SHARED=ON
+    - name: Build And Install External GMSH
+      working-directory: ${{github.workspace}}/gmsh/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target install
+      env:
+        MAKEFLAGS: "-j4"            
 
     # ========= Install Eigen3 ========= 
     - name: Clone External Eigen3
