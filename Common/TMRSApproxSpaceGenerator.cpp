@@ -4025,13 +4025,52 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
             std::vector<TPZGeoElSide> gelneigVec2;
             findNeighElementbyMatId(gelside,gelneigVec,FracNeihVec);
             int nneih=gelneigVec.size();
+            
             //Frac-Frac intersecttion
             if (nneih>1){
+                //Pode ser interseçao
                 findNeighElementbyMatId(gelside,gelneigVec2,FracIntersec);
                 int ninter = gelneigVec2.size();
+                // fratura enconstando em outra
+                if(ninter==0){
+                    int nfraEls = gelneigVec.size();
+                    // pelo lado de elemento que nao chega a fratura e é vizinho do que encosta
+                    bool foundP=true;
+                    for (auto gelneig:gelneigVec) {
+                        int matId = gelneig.Element()->MaterialId();
+                        if (matId == gelside.Element()->MaterialId()) {
+                            foundP=false;
+                            if (gel->Id() < gelneig.Element()->Id()) {
+                                int matid = matIdFracFrac;
+                                CreateInterfaceElements(gelside, gelneig, matid);
+                                break;
+                            }
+//                            CreateInterfaceElements(gelside, gelneig, transport_interface_matid);
+//                            break;
+                        }
+                    }
+                    // pelo lado da fratura que encosta...
+                    if(foundP){
+                        std::vector<TPZGeoElSide> gelneigP;
+                        findNeighElementbyMatId(gelside,gelneigP,matidsbcfrac);
+                        int nels =gelneigP.size();
+                        if(nels!=1){
+                            DebugStop();
+                        }
+                        int mid=gelneigP[0].Element()->MaterialId();
+                        CreateInterfaceElements(gelside, gelneigP[0], mid);
+//                        int ok=0;
+                    }
+                    
+//                    int ok=0;
+                }
+                
+                if(ninter==1){
+                    TPZGeoElSide gelneig =gelneigVec2[0];
+                    CreateInterfaceElements(gelside, gelneig, transport_interface_matid);
+                }
                 if (ninter>1) DebugStop();
-                TPZGeoElSide gelneig =gelneigVec2[0];
-                CreateInterfaceElements(gelside, gelneig, transport_interface_matid);
+
             }
             //Frac-Frac Interfaces
             if (nneih==1) {

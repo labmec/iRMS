@@ -541,6 +541,7 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimDim(TPZCompElSide 
     fConnectsByInterfaceMatID[connect_indexL] = matID;
     }
 }
+
 void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexFracFrac(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matID){
     
     TPZCompEl *celL = celSideL.Element();
@@ -1277,6 +1278,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
        
         TPZCompEl *cel = fTransportMesh->Element(celindex);
         TPZGeoEl *gel = cel->Reference();
+        int indexgeo=gel->Index();
         int geldim = gel->Dimension();
         int matId = gel->MaterialId();
         
@@ -1313,6 +1315,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         
         for (int ic =0; ic<3; ic++) {center[ic]=coord[ic];};
         transport.fCellsData.fCenterCoordinate[i] = center;
+        transport.fCellsData.fGeoIndex[i]=indexgeo;
     }
 //    transport.fCellsData.fMatId = 1;
 

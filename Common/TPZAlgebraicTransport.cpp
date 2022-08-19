@@ -570,6 +570,7 @@ REAL TPZAlgebraicTransport::CalculateMass(){
 REAL TPZAlgebraicTransport::CalculateMassById(int matId){
     int ncells = fCellsData.fVolume.size();
     REAL intMass = 0.0;
+    REAL volfrac=0.0;
     for (int icel = 0; icel < ncells; icel++) {
         int celId = fCellsData.fMatId[icel];
         if(celId==matId){
@@ -577,9 +578,13 @@ REAL TPZAlgebraicTransport::CalculateMassById(int matId){
             REAL phi = fCellsData.fporosity[icel];
             REAL vol = fCellsData.fVolume[icel];
             intMass += sat*phi*vol;
+            volfrac +=vol*phi;
         }
     }
-    return intMass;
+    if (volfrac==0.0) {
+        return  0.0;
+    }
+    return intMass/volfrac;
     
 }
 std::pair<REAL, REAL> TPZAlgebraicTransport::FLuxWaterOilIntegralbyID(int mat_id){
@@ -633,7 +638,7 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
             }
                 
             REAL fluxInt =transport.fIntegralFlux[iel];
-            if(abs(fluxInt)<1.0e-10){
+            if(IsZero(fluxInt)){
                 numZeroFluxByElement[leftIndex]++;
                 numZeroFluxByElement[rightIndex]++;
             }
@@ -643,14 +648,12 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
             if(rightIndex<0){
                 continue;
             }
-            
             nInterfacesByElement[rightIndex] ++;
             SumFluxByElement[rightIndex] +=  -fluxInt;
-            
         }
     }
     for(int iel = 0; iel<nInterfacesByElement.size(); iel++){
-        if(abs(SumFluxByElement[iel])>1.0e-8){
+        if(abs(SumFluxByElement[iel])>1.0e-4){
             std::cout<<"The sum of the flows on each element must be zero. Element:  "<<iel<<" has a value of"<<SumFluxByElement[iel]<<std::endl;
             
             DebugStop();

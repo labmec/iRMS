@@ -733,59 +733,11 @@ void TPZAnalysisAuxEigen::AnalyzePattern(){
 }
 
 void TPZAnalysisAuxEigen::Solve(){
-    TPZFMatrix<REAL> gmatrixmass(m_transmissibility.rows(),m_transmissibility.rows(),0.0);
-    TPZFMatrix<REAL> gmatrix(m_transmissibility.rows(),m_transmissibility.rows(),0.0);
-    TPZFMatrix<REAL> rhs(m_transmissibility.rows(),1,0.0);
-    
-      
-    
     m_transmissibility += m_mass;
-    
-//    for(int i=0; i< m_transmissibility.rows(); i++){
-//        for(int j=0; j< m_transmissibility.rows(); j++){
-//            gmatrixmass(i,j) =m_transmissibility.coeffRef(i, j);
-//        }
-//    }
-//    gmatrixmass.Print("Ek= ",std::cout, EMathematicaInput);
-    
-     m_rhs *= -1.0;
-
-        for(int j=0; j< m_mass.rows(); j++){
-            rhs(j,0) =m_rhs.coeffRef(j, 0);
-        }
-
-//    rhs.Print("rhs= ",std::cout, EMathematicaInput);
-    
-//    std::cout<<"Matrix: "<<std::endl;
-//    std::cout<<m_transmissibility.toDense()<<std::endl;
-   
- 
-//    gmatrixmass.Print("Ek= ",std::cout, EMathematicaInput);
-//    rhs.Print("RHS= ",std::cout, EMathematicaInput);
-    
-//    std::cout<<"RHS: "<<std::endl;
-//    std::cout<<m_rhs.toDense()<<std::endl;
-    
-
+    m_rhs *= -1.0;
     m_analysis.factorize(m_transmissibility);
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
     m_ds=ds;
-    
-   
-    TPZFMatrix<REAL> vectorm(m_transmissibility.rows(),1,0.0);
-    for(int i=0; i< m_transmissibility.rows(); i++){
-        vectorm(i,0) = ds.coeffRef(i, 0);
-    }
-//    vectorm.Print("Sol= ",std::cout, EMathematicaInput);
-//    std::cout<<"MatrixTransportMortar"<<std::endl;
-//    std::ofstream filemortar("matrixmortar.txt");
-//    gmatrixmass.Print("MassMotar=", filemortar, EMathematicaInput);
-//    gmatrix.Print("KgMotar=", filemortar, EMathematicaInput);
-//    vectorm.Print("vector=", filemortar, EMathematicaInput);
-    
-    
-//    std::cout<<"Solution"<<std::endl;
-//    std::cout<<ds<<std::endl;
 }
 Eigen::SparseMatrix<REAL> TPZAnalysisAuxEigen::Rhs(){
     return m_rhs;
