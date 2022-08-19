@@ -345,7 +345,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Simulation and printing parameters -----
     const bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = true;
+	const bool isRunWithTranport = false;
 	bool isMHM = true;
     bool needsMergeMeshes = true;
 	const int n_threads = 8;
