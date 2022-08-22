@@ -31,6 +31,8 @@
 #include <Eigen/Dense>
 #include <Eigen/SparseCore>
 #include <Eigen/SparseLU>
+#include "Eigen/IterativeLinearSolvers"
+
 //#include <Eigen/PardisoSupport>
 
 //typedef Triplet2 Eigen::Triplet;
@@ -57,10 +59,11 @@ protected:
     REAL m_value;
 };
 */
-
+//using namespace Eigen;
 class TPZAnalysisAuxEigen {
 private:
     
+    bool isFirst = false;
     TPZAlgebraicTransport *fAlgebraicTransport;
     Eigen::SparseMatrix<REAL> m_mass;
     Eigen::SparseMatrix<REAL> m_transmissibility;
@@ -72,6 +75,8 @@ private:
     std::vector<Eigen::Triplet<REAL> >           m_mass_triplets;
 //    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
     Eigen::SparseLU<Eigen::SparseMatrix<REAL>>  m_analysis;
+    
+    Eigen::BiCGSTAB<Eigen::SparseMatrix<REAL, Eigen::RowMajor>, Eigen::IncompleteLUT<double>> m_analysis2;
 
     
 public:

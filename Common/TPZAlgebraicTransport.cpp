@@ -571,6 +571,7 @@ REAL TPZAlgebraicTransport::CalculateMassById(int matId){
     int ncells = fCellsData.fVolume.size();
     REAL intMass = 0.0;
     REAL volfrac=0.0;
+    
     for (int icel = 0; icel < ncells; icel++) {
         int celId = fCellsData.fMatId[icel];
         if(celId==matId){
@@ -578,14 +579,33 @@ REAL TPZAlgebraicTransport::CalculateMassById(int matId){
             REAL phi = fCellsData.fporosity[icel];
             REAL vol = fCellsData.fVolume[icel];
             intMass += sat*phi*vol;
-            volfrac +=vol*phi;
+            volfrac += vol*phi;
         }
     }
     if (volfrac==0.0) {
         return  0.0;
     }
     return intMass/volfrac;
+}
+REAL TPZAlgebraicTransport::CalculateMassById2(int matId){
+    int ncells = fCellsData.fVolume.size();
+    REAL intMass = 0.0;
+    int nfracels=0;
     
+    for (int icel = 0; icel < ncells; icel++) {
+        int celId = fCellsData.fMatId[icel];
+        if(celId==matId){
+            REAL sat = fCellsData.fSaturation[icel];
+            REAL phi = fCellsData.fporosity[icel];
+            REAL vol = fCellsData.fVolume[icel];
+            intMass += sat;
+            nfracels++;
+        }
+    }
+    if (nfracels==0) {
+        return  0.0;
+    }
+    return intMass/nfracels;
 }
 std::pair<REAL, REAL> TPZAlgebraicTransport::FLuxWaterOilIntegralbyID(int mat_id){
     

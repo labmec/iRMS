@@ -92,6 +92,7 @@ int main(int argc, char* argv[]){
         // 1: Flemisch case 1
         // 2: Flemisch case 2
         // 3: Flemisch case 3
+        
         // 4: Flemisch case 4
         // 5: 4 elements, 2 frac, w/ intersection
         // 6: Two parallel square fractures very close, but no overlap
@@ -534,11 +535,14 @@ void RunProblem(string& filenameBase, const int simcase)
                 REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
                 if(simcase==4 && isRunWithTranport){
                     REAL InntMassFrac365 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(365);
-                    fileCilamce535 << current_report_time<< ", " << InntMassFrac365 << std::endl;
+                    REAL InntMassFrac365_2 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById2(365);
+                    fileCilamce535 << current_report_time<< ", " << InntMassFrac365 << " " << InntMassFrac365_2 << std::endl;
                     REAL InntMassFrac515 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(515);
-                    fileCilamce515 << current_report_time << ", " << InntMassFrac515 << std::endl;
+                    REAL InntMassFrac515_2 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById2(515);
+                    fileCilamce515 << current_report_time << ", " << InntMassFrac515 << " " << InntMassFrac515_2<< std::endl;
                     REAL InntMassFrac530 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(530);
-                    fileCilamce530 << current_report_time << ", " << InntMassFrac530 << std::endl;
+                    REAL InntMassFrac530_2 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById2(530);
+                    fileCilamce530 << current_report_time << ", " << InntMassFrac530 << " " << InntMassFrac530_2<< std::endl;
                 }
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;

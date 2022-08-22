@@ -298,6 +298,7 @@ public:
     REAL FLuxIntegralbyID(int mat_id);
     REAL CalculateMass();
     REAL CalculateMassById(int matId);
+    REAL CalculateMassById2(int matId);
     
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
     void VerifyElementFLuxes();

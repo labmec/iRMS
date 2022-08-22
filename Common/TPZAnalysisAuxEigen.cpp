@@ -728,16 +728,29 @@ void TPZAnalysisAuxEigen::AnalyzePattern(){
     Assemble();
     m_transmissibility += m_mass;
 //    std::cout<<m_transmissibility.toDense()<<std::endl;
-    m_analysis.analyzePattern(m_transmissibility);
+    m_analysis2.analyzePattern(m_transmissibility);
     
 }
 
 void TPZAnalysisAuxEigen::Solve(){
     m_transmissibility += m_mass;
     m_rhs *= -1.0;
-    m_analysis.factorize(m_transmissibility);
-    Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
+//    m_analysis.factorize(m_transmissibility);
+//    Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
+//    m_ds=ds;
+    if (!isFirst) {
+        m_analysis2.setTolerance(1e-10);
+        m_analysis2.setMaxIterations(1000);
+        m_analysis2.compute(m_transmissibility);
+        isFirst=true;
+    }
+    
+    Eigen::VectorXd ds = m_analysis2.solve(m_rhs);
+    std::cout << "#iterations:     " << m_analysis2.iterations() << std::endl;
+//    std::cout << "estimated error: " << m_analysis2.error()      << std::endl;
+//    std::cout << "sol: " << ds.head(6).transpose() << std::endl;
     m_ds=ds;
+    
 }
 Eigen::SparseMatrix<REAL> TPZAnalysisAuxEigen::Rhs(){
     return m_rhs;
