@@ -587,6 +587,7 @@ REAL TPZAlgebraicTransport::CalculateMassById(int matId){
     }
     return intMass/volfrac;
 }
+
 REAL TPZAlgebraicTransport::CalculateMassById2(int matId){
     int ncells = fCellsData.fVolume.size();
     REAL intMass = 0.0;

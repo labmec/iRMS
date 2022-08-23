@@ -10,6 +10,8 @@
 #include <tbb/parallel_for.h>
 #endif
 
+#include "TPZSimpleTimer.h"
+
 void TPZAnalysisAuxEigen::AssembleMass(){
     int n_cells = fAlgebraicTransport->fCellsData.fVolume.size();
     m_mass =  Eigen::SparseMatrix<REAL>( n_cells, n_cells );
@@ -45,6 +47,10 @@ void TPZAnalysisAuxEigen::AssembleMass(){
 }
 
 void TPZAnalysisAuxEigen::Assemble(){
+    
+    std::cout << "\n---------------------- Assemble Transport Problem ----------------------" << std::endl;
+    TPZSimpleTimer timer_ass("Timer Assemble Transport Problem");
+    
     int n_cells = fAlgebraicTransport->fCellsData.fVolume.size();
     m_transmissibility =  Eigen::SparseMatrix<REAL>( n_cells, n_cells );
     m_rhs =  Eigen::SparseMatrix<REAL>( n_cells, 1 );
@@ -483,6 +489,7 @@ void TPZAnalysisAuxEigen::Assemble(){
     m_transmissibility.setFromTriplets( m_trans_triplets.begin(), m_trans_triplets.end() );
     m_trans_triplets.clear();
     
+    std::cout << "\n ==> Total Transport assemble time: " << timer_ass.ReturnTimeDouble()/1000 << " seconds" << std::endl;
     
 }
 void TPZAnalysisAuxEigen::AssembleResidual(){

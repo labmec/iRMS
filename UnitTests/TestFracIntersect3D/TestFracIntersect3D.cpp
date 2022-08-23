@@ -8,7 +8,7 @@
 #include "pzlog.h"
 #include <tpzgeoelrefpattern.h>
 
-//#define USEMAIN
+#define USEMAIN
 
 #ifndef USEMAIN
 // Unit test includes
@@ -358,10 +358,10 @@ TMRSDataTransfer FillDataTransfer(TMRSDataTransfer& sim_data, int const simcase)
 	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EInlet] = std::make_pair(D_Type, 1.);
 	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[ENoflux] = std::make_pair(5, 1.);
 	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFaceBCPressure] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracNoFlux] = std::make_pair(5, 1.);
-    sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracNoFlux2] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracInlet] = std::make_pair(5, 1.);
-	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracOutlet] = std::make_pair(5, 1.);
+//	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracNoFlux] = std::make_pair(5, 1.);
+//    sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracNoFlux2] = std::make_pair(5, 1.);
+//	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracInlet] = std::make_pair(5, 1.);
+//	sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFracOutlet] = std::make_pair(5, 1.);
     sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
     // Other properties

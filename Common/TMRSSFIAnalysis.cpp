@@ -451,7 +451,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
 void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
 
     std::cout << "\n---------------------- TMRSSFIAnalysis Post Process ----------------------" << std::endl;
-    TPZSimpleTimer timer_pp;
+    TPZSimpleTimer timer_pp("Timer SFIAnalysis Post Process");
     if (type == 0) {
         m_mixed_module->PostProcessTimeStep(dim);
         m_transport_module->PostProcessTimeStep();
@@ -463,19 +463,18 @@ void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
         m_transport_module->PostProcessTimeStep();
     }
 
-    std::cout << "TMRSSFIAnalysis Post Process total time : " << timer_pp.ReturnTimeDouble() << std::endl;    
+    std::cout << "TMRSSFIAnalysis Post Process total time : " << timer_pp.ReturnTimeDouble()/1000. << " seconds" << std::endl;    
 }
 
 void TMRSSFIAnalysis::SFIIteration(){
     
 
-    TPZSimpleTimer timer_transfer;
+    TPZSimpleTimer timer_sfi("Timer SFI Iteration");
     m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
 //    m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
 //    fAlgebraicDataTransfer.TransferLambdaCoefficients();
-    std::cout << "Transfer from transport to mixed time: " << timer_transfer.ReturnTimeDouble() << std::endl;
-    
+        
     if(isLinearTracer){
         m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
         VerifyElementFluxes();
@@ -488,7 +487,7 @@ void TMRSSFIAnalysis::SFIIteration(){
     // Solves the transport problem
     m_transport_module->RunTimeStep();
     
-    std::cout << "Total Transport time: " << timer_transfer.ReturnTimeDouble() << std::endl;
+    std::cout << "\n ==> Total SFIIteration time: " << timer_sfi.ReturnTimeDouble()/1000 << " seconds" << std::endl;
     
 //    TransferToMixedModule(); // Transfer to mixed
 }

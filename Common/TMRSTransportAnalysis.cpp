@@ -407,7 +407,7 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
 //        }
 //    }
 #endif
-    std::cout<<" ---------------------- Solve Transport----------------------"<<std::endl;
+    std::cout<<"\n ---------------------- Solve Transport----------------------"<<std::endl;
     fTransportSpMatrix->Solve();
     
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = fTransportSpMatrix->Solution();
