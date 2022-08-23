@@ -348,13 +348,23 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
                     // if the neighbour matid is neither a fracture or a fracture boundary no action
                     int neighmatid = neighgel->MaterialId();
                     // we don;t adjust if the neighbour is not a fracture or "my" boundary
-                    auto neighisfrac = IsFracMatId(neighmatid);
-                    bool neighisbound = neighmatid == fracmatid+1;
+//                    auto neighisfrac = IsFracMatId(neighmatid);
+                    
+                    bool neighisfrac=mSimData.mTFracProperties.m_fracprops.find(neighmatid) != mSimData.mTFracProperties.m_fracprops.end();
+                    bool neighisbound= false;
+                    int intersecMatId=mSimData.mTFracProperties.m_fracprops[fracmatid].m_fracIntersectMatID;
+                    for (auto bc: mSimData.mTFracProperties.m_fracprops[fracmatid].m_fracbc) {
+                        if(bc==neighmatid){
+                            neighisbound=true;
+                            break;
+                        }
+                    }
+
                     if(!neighisfrac && !neighisbound) {
                         continue;
                     }
 					// we dont adjust if the neighmatid is different and if there is not intersection element
-                    TPZGeoElSide gelintersect = gelside.HasNeighbour(fracmatid+2);
+                    TPZGeoElSide gelintersect = gelside.HasNeighbour(intersecMatId);
                     
                     if(neighisbound && gelintersect)
                     {
