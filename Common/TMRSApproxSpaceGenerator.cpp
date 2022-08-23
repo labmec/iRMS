@@ -3316,9 +3316,6 @@ void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){
     
     std::ifstream file(mSimData.mTGeometry.mGmeshFileName);
     
-#ifdef USING_BOOST
-    boost::posix_time::ptime LoadMesh1 = boost::posix_time::microsec_clock::local_time();
-#endif
     
 //    if(!mGeometry){
 //        if (file) {
@@ -3329,11 +3326,6 @@ void TMRSApproxSpaceGenerator::SetDataTransfer(TMRSDataTransfer & SimData){
 //            mGeometry = dynamic_cast<TPZGeoMesh *>(restore);
 //            PrintGeometry(mSimData.mSimulationName,1,0);
 //            std::cout<<"The geometric mesh has been loaded successfully."<<std::endl;
-//#ifdef USING_BOOST
-//            boost::posix_time::ptime LoadMesh2 = boost::posix_time::microsec_clock::local_time();
-//            auto delta_LoadMesh = LoadMesh2-LoadMesh1;
-//            std::cout << "Load GMesh time " << delta_LoadMesh << std::endl;;
-//#endif
 //        }
 //        else{
 //            std::cout<<" Geometric mesh information has not been entered. Please enter the mesh in a text file or set it in the approximation space object."<<std::endl;

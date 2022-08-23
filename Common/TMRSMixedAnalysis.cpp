@@ -4,9 +4,6 @@
 //  Created by Omar Durán on 10/15/19.
 
 #include "TMRSMixedAnalysis.h"
-#ifdef USING_BOOST
-#include "boost/date_time/posix_time/posix_time.hpp"
-#endif
 #include "TPZSpStructMatrix_Eigen.h"
 #include "TPZSpMatrixEigen.h"
 #include <pzshapequad.h>
@@ -112,15 +109,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
         x +=dx;
         cmesh->UpdatePreviousState(-1.);
         fsoltransfer.TransferFromMultiphysics();
-#ifdef USING_BOOST
-        boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
-#endif
+
         Assemble();
-#ifdef USING_BOOST
-        boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
-        boost::posix_time::time_duration deltat = tsim2-tsim1;
-        std::cout << "Mixed:: Assembly 2 time Global " << deltat << std::endl;
-#endif
       
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
@@ -147,7 +137,6 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
 void TMRSMixedAnalysis::NewtonIteration(){
     
-#define USING_BOOST
     if(mIsFirstAssembleQ == true)
     {
         fStructMatrix->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
@@ -168,35 +157,9 @@ void TMRSMixedAnalysis::NewtonIteration(){
         mIsFirstAssembleQ=false;
     }
 
-#ifdef USING_BOOST
-    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
-#endif
-
     Assemble();
-    std::ofstream fileprint("Matrix.txt");
-    TPZMatrixSolver<STATE> *matsol = dynamic_cast<TPZMatrixSolver<STATE> *>(this->fSolver);
-    
-
-#ifdef USING_BOOST
-    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
-    boost::posix_time::time_duration deltat = tsim2-tsim1;
-    std::cout << "Mixed:: Assembly time Global " << deltat << std::endl;
-#endif
-
-    
-       
     Solve();
-    
-    
-#ifdef USING_BOOST
-    boost::posix_time::ptime tsim3 = boost::posix_time::microsec_clock::local_time();
-    auto deltat2 = tsim3-tsim2;
-    std::cout << "Mixed:: Solve time global " << deltat2 << std::endl;
-#endif
-//    TPZMatrix<STATE>*mat = Solver().Matrix().operator->();
-//    
-//    TPZSpMatrixEigen<STATE> *mateig = dynamic_cast<TPZSpMatrixEigen<STATE> *>(mat);
-//    mateig->fsparse_eigen*0.0;
+
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
@@ -270,33 +233,28 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
 }
 
 void TMRSMixedAnalysis::Assemble(){
-#ifdef PZDEBUG
+
     auto start_time_ass = std::chrono::steady_clock::now();
-#endif
-    cout << "\n---------------------- Assemble ----------------------" << endl;
+
+    cout << "\n---------------------- Assemble Flux Problem ----------------------" << endl;
     cout << "Number of equations: " << fCompMesh->NEquations() << endl;
     cout << "Number of elements: " << fCompMesh->NElements() << endl;
     TPZLinearAnalysis::Assemble();
 
-#ifdef PZDEBUG
+
     auto total_time_ass = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_ass).count()/1000.;
     cout << "\nTotal time assemble = " << total_time_ass << " seconds" << endl;
-#endif
-
 }
 
 void TMRSMixedAnalysis::Solve(){
-#ifdef PZDEBUG
+
     auto start_time_solve = std::chrono::steady_clock::now();
-#endif
     
-    cout << "\n---------------------- Solve ----------------------" << endl;
+    cout << "\n---------------------- Solve Flux Problem ----------------------" << endl;
     TPZLinearAnalysis::Solve();
     
-#ifdef PZDEBUG
     auto total_time_solve = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_solve).count()/1000.;
     cout << "Total time solve = " << total_time_solve << " seconds" << endl;
-#endif
 }
 
 void TMRSMixedAnalysis::VerifyElementFluxes(){

@@ -52,9 +52,6 @@ public:
     boost::posix_time::time_duration fAsTotalAdkelsSub = tsim2-tsim2;
     boost::posix_time::time_duration fAsTotaAssembleSub = tsim2-tsim2;
     boost::posix_time::time_duration fAsTotaCondensedSub = tsim2-tsim2;
-//    std::cout << "Mixed:: Assembly time Global " << deltat << std::endl;
-
-    
     
     virtual TPZMatrix<STATE> * Create() override;
     

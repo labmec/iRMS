@@ -14,9 +14,6 @@
 #include "imrs_config.h"
 #include "pzlog.h"
 
-#ifdef USING_BOOST
-#include "boost/date_time/posix_time/posix_time.hpp"
-#endif
 
 void LearningReadFracMesh();
 void FracSimpleCase();
@@ -762,12 +759,6 @@ void BenchmarkCase1()
     int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
-    
-#ifdef USING_BOOST
-    boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
-    boost::posix_time::time_duration deltat = tsim2-tsim1;
-    std::cout << "Mixed:: OverHead " << deltat << std::endl;
-#endif
     
     
     std::ofstream fileinform("Infomation.txt");

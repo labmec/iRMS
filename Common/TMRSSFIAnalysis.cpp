@@ -19,6 +19,8 @@
 #include "pzshapeprism.h"
 #include "pzshapepiram.h"
 #include "pzshapepoint.h"
+#include "TPZSimpleTimer.h"
+
 TMRSSFIAnalysis::TMRSSFIAnalysis(){
     m_sim_data = nullptr;
     m_k_iteration = 0;
@@ -447,10 +449,9 @@ void TMRSSFIAnalysis::RunTimeStep(){
 }
 
 void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
-#ifdef USING_BOOST
-    boost::posix_time::ptime t1 = boost::posix_time::microsec_clock::local_time();
-    
-#endif
+
+    std::cout << "\n---------------------- TMRSSFIAnalysis Post Process ----------------------" << std::endl;
+    TPZSimpleTimer timer_pp;
     if (type == 0) {
         m_mixed_module->PostProcessTimeStep(dim);
         m_transport_module->PostProcessTimeStep();
@@ -461,28 +462,19 @@ void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
     if (type == 2) {
         m_transport_module->PostProcessTimeStep();
     }
-#ifdef USING_BOOST
-    boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
-    auto deltat = t2-t1;
-    std::cout << "PostProcess time : " << deltat << std::endl;
-#endif
-    
+
+    std::cout << "TMRSSFIAnalysis Post Process total time : " << timer_pp.ReturnTimeDouble() << std::endl;    
 }
 
 void TMRSSFIAnalysis::SFIIteration(){
     
-#ifdef USING_BOOST
-    boost::posix_time::ptime t1 = boost::posix_time::microsec_clock::local_time();
-#endif
+
+    TPZSimpleTimer timer_transfer;
     m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
 //    m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
 //    fAlgebraicDataTransfer.TransferLambdaCoefficients();
-#ifdef USING_BOOST
-    boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
-    auto deltat = t2-t1;
-    std::cout << "Transfer from transport to mixed time: " << deltat << std::endl;
-#endif
+    std::cout << "Transfer from transport to mixed time: " << timer_transfer.ReturnTimeDouble() << std::endl;
     
     if(isLinearTracer){
         m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
@@ -492,21 +484,12 @@ void TMRSSFIAnalysis::SFIIteration(){
     }
 //    fAlgebraicDataTransfer.TransferPressures();
 //    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
-    
-#ifdef USING_BOOST
-    boost::posix_time::ptime t4 = boost::posix_time::microsec_clock::local_time();
-    deltat = t4-t3;
-    std::cout << "Transfer mixed to transport time: " << deltat << std::endl;
-#endif
-    
+       
     // Solves the transport problem
     m_transport_module->RunTimeStep();
     
-#ifdef USING_BOOST
-    boost::posix_time::ptime t5 = boost::posix_time::microsec_clock::local_time();
-    deltat = t5-t4;
-    std::cout << "Total Transport time: " << deltat << std::endl;
-#endif
+    std::cout << "Total Transport time: " << timer_transfer.ReturnTimeDouble() << std::endl;
+    
 //    TransferToMixedModule(); // Transfer to mixed
 }
 

@@ -16,10 +16,6 @@
 #include "TPZMFSolutionTransfer.h"
 #include "TPZAlgebraicDataTransfer.h"
 
-#ifdef USING_BOOST
-#include "boost/date_time/posix_time/posix_time.hpp"
-#endif
-
 
 /**
  * @class TMRSSFIAnalysis Manager for solving pressure/flux problem and tranport problem. Also takes care of exchanging data between them

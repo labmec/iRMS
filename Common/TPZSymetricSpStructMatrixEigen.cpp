@@ -38,10 +38,6 @@ static LoggerPtr logger(Logger::getLogger("pz.StrMatrix"));
 #include <tbb/parallel_for.h>
 #endif
 
-#ifdef USING_BOOST
-#include "boost/date_time/posix_time/posix_time.hpp"
-#endif
-
 #include <typeinfo>
 using namespace std;
 
@@ -276,10 +272,6 @@ void TPZSymetricSpStructMatrixEigen::Serial_Assemble(TPZBaseMatrix & stiffnessB,
 }
 void TPZSymetricSpStructMatrixEigen::Serial_AssembleSub(TPZMatrix<STATE> & stiffness, TPZFMatrix<STATE> & rhs, TPZAutoPointer<TPZGuiInterface> guiInterface) {
     
-#ifdef USING_BOOST
-    boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
-#endif
-
     TPZMatRed<STATE, TPZFMatrix<STATE> > *matRed = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE> > *> (&stiffness);
 //    matRed->Zero();
     int64_t iel;

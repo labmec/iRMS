@@ -8,9 +8,6 @@
 #include "pzfunction.h"
 #include "TPZTracerFlow.h"
 #include "pzvtkmesh.h"
-#ifdef USING_BOOST
-#include "boost/date_time/posix_time/posix_time.hpp"
-#endif
 
 // Uses the new vtk function developed by Fran
 #define USENEWVTK
@@ -367,29 +364,10 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
 void TMRSTransportAnalysis::NewtonIteration(){
     
     if (m_parallel_execution_Q) {
-#ifdef USING_BOOST
-    boost::posix_time::ptime tnewton1 = boost::posix_time::microsec_clock::local_time();
-#endif
-
         NewtonIteration_Eigen();
-#ifdef USING_BOOST
-        boost::posix_time::ptime tnewton2 = boost::posix_time::microsec_clock::local_time();
-        auto deltat = tnewton2-tnewton1;
-        std::cout << "Transport:: Parallel Newton step time: " << deltat << std::endl;
-#endif
     }else{
-#ifdef USING_BOOST
-        boost::posix_time::ptime tnewtons1 = boost::posix_time::microsec_clock::local_time();
-#endif
-
         NewtonIteration_serial();
-        #ifdef USING_BOOST
-            boost::posix_time::ptime tnewtons2 = boost::posix_time::microsec_clock::local_time();
-            auto deltats = tnewtons2-tnewtons1;
-            std::cout << "Transport:: Serial Newton step time: " << deltats << std::endl;
-        #endif
     }
-    
 }
 
 void TMRSTransportAnalysis::NewtonIteration_serial(){
@@ -418,16 +396,8 @@ void TMRSTransportAnalysis::AnalyzePattern(){
 void TMRSTransportAnalysis::NewtonIteration_Eigen(){
     
 //    Assemble_parallel();
-#ifdef USING_BOOST
-    boost::posix_time::ptime tnewton1 = boost::posix_time::microsec_clock::local_time();
-#endif
     fTransportSpMatrix->Assemble();
     
-#ifdef USING_BOOST
-    boost::posix_time::ptime tnewton2 = boost::posix_time::microsec_clock::local_time();
-    auto deltat = tnewton2-tnewton1;
-    std::cout << "Transport Assembly::  Parallel Newton  time: " << deltat << std::endl;
-#endif
 #ifdef PZDEBUG
 //    {
 //        auto norm = fTransportSpMatrix->RhsNorm();
@@ -439,11 +409,6 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
 #endif
     std::cout<<" ---------------------- Solve Transport----------------------"<<std::endl;
     fTransportSpMatrix->Solve();
-#ifdef USING_BOOST
-    boost::posix_time::ptime tnewton3 = boost::posix_time::microsec_clock::local_time();
-    deltat = tnewton3-tnewton2;
-    std::cout << "Transport Solve time: " << deltat << std::endl;
-#endif
     
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = fTransportSpMatrix->Solution();
     assert(Solution().Rows() == ds.rows());

@@ -334,18 +334,10 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
 
     FromPZtoEigen(x, rhs);
     
-    #ifdef USING_BOOST
-//        boost::posix_time::ptime tmat1 = boost::posix_time::microsec_clock::local_time();
-    #endif
     Eigen::SparseMatrix<REAL> sparse_eigen_c = fsparse_eigen + Eigen::SparseMatrix<REAL>(fsparse_eigen.transpose());
      for(int i=0; i<fsparse_eigen.innerSize(); i++){
          sparse_eigen_c.coeffRef(i, i) *= 0.5;
     }
-    #ifdef USING_BOOST
-//        boost::posix_time::ptime tmat2 = boost::posix_time::microsec_clock::local_time();
-//        auto deltamatt = tmat2-tmat1;
-//        std::cout << "Composing global mat time " << deltamatt << std::endl;
-    #endif
 
 //    Eigen::PardisoLDLT<Eigen::SparseMatrix<REAL>> solverpar;
 //    Eigen::SparseLU<Eigen::SparseMatrix<REAL>> solverpar;
@@ -353,17 +345,9 @@ int TPZSYsmpMatrixEigen<TVar>::Subst_LForward( TPZFMatrix<TVar>* b ) const
 //    std::cout<<"******"<<std::endl;
 //    std::cout<<fsparse_eigen.toDense()<<std::endl;
 //    std::cout<<"******"<<std::endl;
-    #ifdef USING_BOOST
-        boost::posix_time::ptime tsim1 = boost::posix_time::microsec_clock::local_time();
-    #endif
     fanalysis.compute(sparse_eigen_c);
 //    std::cout<< sparse_eigen_c.toDense()<< std::endl;
     Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> dsolS= fanalysis.solve(rhs);
-    #ifdef USING_BOOST
-//        boost::posix_time::ptime tsim2 = boost::posix_time::microsec_clock::local_time();
-//        auto deltat = tsim2-tsim1;
-//        std::cout << "Eigen solve time " << deltat << std::endl;
-    #endif
     
     this->FromEigentoPZ(x, dsolS);
 //    x.Print("SolEeigen=",std::cout, EMathematicaInput);
