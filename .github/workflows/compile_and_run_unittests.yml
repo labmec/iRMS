@@ -90,6 +90,28 @@ jobs:
       env:
         MAKEFLAGS: "-j4"            
 
+    # ========= Install DFNMesh ========= 
+    - name: Clone External DFNMesh
+      uses: actions/checkout@v2
+      with:
+        path: ./dfnmesh
+        repository: labmec/dfnMesh
+        ref: master
+    - name: Set up build environment for External DFNMesh
+      shell: bash
+      working-directory: ${{github.workspace}}/dfnmesh
+      run: cmake -E make_directory build
+    - name: Configure CMake External DFNMesh
+      shell: bash
+      working-directory: ${{github.workspace}}/dfnmesh/build
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/dfnmesh_install
+    - name: Build And Install External DFNMesh
+      working-directory: ${{github.workspace}}/dfnmesh/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target install
+      env:
+        MAKEFLAGS: "-j4"        
+
     # ========= Install Eigen3 ========= 
     - name: Clone External Eigen3
       shell: bash
@@ -146,29 +168,7 @@ jobs:
       shell: bash
       run: cmake --build . --config $BUILD_TYPE --target install
       env:
-        MAKEFLAGS: "-j4"                    
-
-    # ========= Install DFNMesh ========= 
-    - name: Clone External DFNMesh
-      uses: actions/checkout@v2
-      with:
-        path: ./dfnmesh
-        repository: labmec/dfnMesh
-        ref: master
-    - name: Set up build environment for External DFNMesh
-      shell: bash
-      working-directory: ${{github.workspace}}/dfnmesh
-      run: cmake -E make_directory build
-    - name: Configure CMake External DFNMesh
-      shell: bash
-      working-directory: ${{github.workspace}}/dfnmesh/build
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/dfnmesh_install
-    - name: Build And Install External DFNMesh
-      working-directory: ${{github.workspace}}/dfnmesh/build
-      shell: bash
-      run: cmake --build . --config $BUILD_TYPE --target install
-      env:
-        MAKEFLAGS: "-j4"                   
+        MAKEFLAGS: "-j4"                                 
 
     # ========= Build iMRS ========= 
     - name: Configure iMRS CMake
