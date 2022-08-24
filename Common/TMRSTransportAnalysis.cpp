@@ -531,7 +531,7 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     constexpr int vtkRes{0}; //resolucao do vtk
     int dim = Mesh()->Reference()->Dimension();
     std::string file = m_sim_data->mTPostProcess.m_file_name_transport;
-    std::ofstream file2("transport"+std::to_string(fpostprocessindex)+".vtk");
+//    std::ofstream file2("transport"+std::to_string(fpostprocessindex)+".vtk");
     
 //    
 //    std::set<int> matidsToPost;
@@ -616,9 +616,13 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
             DebugStop();
         }
 # endif
+        if(fabs(sat) < 1e-20) sat = 0.;
         elData[indexGeo]=sat;
     }
-    TPZVTKGeoMesh::PrintGMeshVTK(fCompMesh->Reference(), file2, elData);
+    
+    std::string fileAdjusted = file.substr(0,file.find(".vtk")) + std::to_string(fpostprocessindex) + ".vtk";
+    std::ofstream file_ofstream(fileAdjusted);
+    TPZVTKGeoMesh::PrintGMeshVTK(fCompMesh->Reference(), file_ofstream, elData);
     fpostprocessindex++;
 }
 
