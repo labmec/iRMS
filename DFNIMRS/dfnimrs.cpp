@@ -11,6 +11,8 @@
 #include <filesystem>
 #include <libInterpolate/Interpolate.hpp>
 #include <libInterpolate/AnyInterpolator.hpp>
+#include "TPZSimpleTimer.h"
+
 // include dfn filereader
 #include "filereader.h"
 
@@ -83,7 +85,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 4;
+    int simcase = 1;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -1271,6 +1273,7 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
     // The main idea is to check if a fracture element has more than 1 fracture neightbor. If so, an intersection element is
     // needed to hybridzie the region.
     cout << "\n---------------------- Searching for problematic intersection elements ----------------------" << endl;
+    TPZSimpleTimer timer_fixinter;
     
     int nInterCreated = 0;
     for (auto gel : gmesh->ElementVec()) {
@@ -1365,6 +1368,8 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
     else {
         cout << "\n====> Ok! No problematic intersections found" << endl;
     }
+    
+    std::cout << "Total time: " << timer_fixinter.ReturnTimeDouble()/1000 << " seconds" << std::endl;
 
 	// No need to buildConnectivity. It is already correct
 }

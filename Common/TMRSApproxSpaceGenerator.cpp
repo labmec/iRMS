@@ -29,6 +29,7 @@
 #include <pzshapequad.h>
 #include <pzshapelinear.h>
 #include "pzvec_extras.h"
+#include "TPZSimpleTimer.h"
 #ifdef USING_TBB
 #include <tbb/parallel_for.h>
 #endif
@@ -1824,6 +1825,7 @@ TPZCompMesh * TMRSApproxSpaceGenerator::DiscontinuousCmesh(TPZAlgebraicDataTrans
 void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
     
     cout << "\n---------------------- Building multiphysics cmesh ----------------------" << endl;
+    TPZSimpleTimer timer_mp;
     
     bool cond1 = mSimData.mTNumerics.m_four_approx_spaces_Q;
     bool cond2 = mSimData.mTNumerics.m_mhm_mixed_Q;
@@ -1863,6 +1865,8 @@ void TMRSApproxSpaceGenerator::BuildMixedMultiPhysicsCompMesh(int order){
             DebugStop();
     }
     
+    std::cout << "\nTotal time build multiphysics cmesh: " << timer_mp.ReturnTimeDouble()/1000 << " seconds" << std::endl;
+    cout << "\n---------------------- Finished Building multiphysics cmesh ----------------------" << endl;
     //    std::string name_ref = "mhm_geo";
     //    PrintGeometry(name_ref);
 }
@@ -4442,6 +4446,7 @@ void TMRSApproxSpaceGenerator::CreateIntersectionInterfaceElements() {
 void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coarsemesh) {
     
     cout << "\n---------------------- Starting MergeMeshes for MHM data structure ----------------------\n" << endl;
+    TPZSimpleTimer timer_mm;
     
     if(fInitMatIdForMergeMeshes == -1000) {
         cout << "ERROR! Please, set TMRSApproxSpaceGenerator::::fInitMatIdForMergeMeshes" << endl;
@@ -4860,6 +4865,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 	CheckMeshIntegrity(finemesh);
 #endif
     
+    std::cout << "Total time: " << timer_mm.ReturnTimeDouble()/1000 << " seconds" << std::endl;
     cout << "\n---------------------- Finished MergeMeshes for MHM data structure ----------------------\n" << endl;
 }
 
