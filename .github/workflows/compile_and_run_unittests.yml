@@ -27,7 +27,7 @@ jobs:
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
       # We'll use this as our working directory for all subsequent commandss
-      run: cmake -E make_directory ${{github.workspace}}/build
+      run: cmake -E make_directory ${{github.workspace}}/build    
 
     # ========= Install MKL =========   
     - name: Intel Apt repository
@@ -46,6 +46,10 @@ jobs:
         source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
 
+    # ========= Install Log4cxx ========= 
+    - name: Intel Apt repository
+      run: sudo apt-get install -y liblog4cxx-dev
+
     # ========= Install NeoPZ ========= 
     - name: Clone External NeoPZ
       uses: actions/checkout@v2
@@ -60,13 +64,53 @@ jobs:
     - name: Configure CMake External NeoPZ
       shell: bash
       working-directory: ${{github.workspace}}/neopz/build
-      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSING_MKL=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DUSING_MKL=ON -DUSING_LOG4CXX=ON -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/neopz_install
     - name: Build And Install External NeoPZ
       working-directory: ${{github.workspace}}/neopz/build
       shell: bash
       run: cmake --build . --config $BUILD_TYPE --target install
       env:
         MAKEFLAGS: "-j4"
+
+    # ========= Install GMSH ========= 
+    - name: Clone External GMSH
+      run: (rm -rf ${{github.workspace}}/gmsh || echo "gmsh folder will be created on clone...") && git clone https://gitlab.onelab.info/gmsh/gmsh.git ${{github.workspace}}/gmsh
+    - name: Set up build environment for External GMSH
+      shell: bash
+      working-directory: ${{github.workspace}}/gmsh
+      run: cmake -E make_directory build
+    - name: Configure CMake External GMSH
+      shell: bash
+      working-directory: ${{github.workspace}}/gmsh/build
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/gmsh_install -DENABLE_BUILD_SHARED=ON
+    - name: Build And Install External GMSH
+      working-directory: ${{github.workspace}}/gmsh/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target install
+      env:
+        MAKEFLAGS: "-j4"            
+
+    # ========= Install DFNMesh ========= 
+    - name: Clone External DFNMesh
+      uses: actions/checkout@v2
+      with:
+        path: ./dfnmesh
+        repository: labmec/dfnMesh
+        ref: master
+    - name: Set up build environment for External DFNMesh
+      shell: bash
+      working-directory: ${{github.workspace}}/dfnmesh
+      run: cmake -E make_directory build
+    - name: Configure CMake External DFNMesh
+      shell: bash
+      working-directory: ${{github.workspace}}/dfnmesh/build
+      run: cmake .. -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=$GITHUB_WORKSPACE/dfnmesh_install
+    - name: Build And Install External DFNMesh
+      working-directory: ${{github.workspace}}/dfnmesh/build
+      shell: bash
+      run: cmake --build . --config $BUILD_TYPE --target install
+      env:
+        MAKEFLAGS: "-j4"        
 
     # ========= Install Eigen3 ========= 
     - name: Clone External Eigen3
@@ -124,7 +168,7 @@ jobs:
       shell: bash
       run: cmake --build . --config $BUILD_TYPE --target install
       env:
-        MAKEFLAGS: "-j4"                  
+        MAKEFLAGS: "-j4"                                 
 
     # ========= Build iMRS ========= 
     - name: Configure iMRS CMake
@@ -135,7 +179,7 @@ jobs:
       # Note the current convention is to use the -S and -B options here to specify source 
       # and build directories, but this is only available with CMake 3.13 and higher.  
       # The CMake binaries on the Github Actions machines are (as of this writing) 3.12
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_UNITTESTING=ON
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_UNITTESTING=ON -DUSING_DFN=ON
       env:
         BOOST_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}      
     - name: Build iMRS
