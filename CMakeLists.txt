@@ -43,7 +43,7 @@ endif()
 
 option(USING_DFN "Whether the DFN library will be linked in" OFF)
 if(USING_DFN)
-    find_package(DFN REQUIRED HINTS "../../dfnResearch/dfnMesh_install/")
+    find_package(DFN REQUIRED HINTS "../../dfnResearch/dfnMesh_install/" ../dfnmesh_install/ ../../dfnmesh_install/ ${CMAKE_SOURCE_DIR}/dfnmesh_install/)
 endif()
 
 
