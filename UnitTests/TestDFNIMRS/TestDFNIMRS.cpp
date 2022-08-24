@@ -482,7 +482,7 @@ void RunProblem(string& filenameBase)
 
     const std::string qvarname = "Flux";
     STATE integratedflux = ComputeIntegralOverDomain(mixed_operator,qvarname);
-    if (fabs(integratedflux) < 1.e-14 ) integratedflux = 0.; // to make Approx(0.) work
+    if (fabs(integratedflux) < 1.e-12 ) integratedflux = 0.; // to make Approx(0.) work
     std::cout << "\nintegral of flux  = " << integratedflux << std::endl;
     
 #ifndef USEMAIN
