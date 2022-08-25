@@ -452,6 +452,10 @@ public:
          */
         REAL m_dt;
         
+        /**
+         * @brief if true, runs the transport problems. If not, just runs the flow/pressure problem
+         */
+        bool m_run_with_transport;
         
         /**
          * @brief Residual tolerance for mixed operator
@@ -531,6 +535,7 @@ public:
         TNumerics(){
             
             m_dt                    = 0.0;
+            m_run_with_transport    = false;
             m_res_tol_mixed         = 1.0e-4;
             m_res_tol_transport     = 1.0e-7;
             m_corr_tol_mixed        = 1.0e-4;
@@ -562,6 +567,7 @@ public:
         TNumerics(const TNumerics & other){
             
             m_dt                    = other.m_dt;
+            m_run_with_transport    = other.m_run_with_transport;
             m_res_tol_mixed         = other.m_res_tol_mixed;
             m_res_tol_transport     = other.m_res_tol_transport;
             m_corr_tol_mixed        = other.m_corr_tol_mixed;
@@ -592,6 +598,7 @@ public:
             }
             
             m_dt                    = other.m_dt;
+            m_run_with_transport    = other.m_run_with_transport;
             m_res_tol_mixed         = other.m_res_tol_mixed;
             m_res_tol_transport     = other.m_res_tol_transport;
             m_corr_tol_mixed        = other.m_corr_tol_mixed;
@@ -623,6 +630,7 @@ public:
             
             return
             m_dt                    == other.m_dt &&
+            m_run_with_transport    == other.m_run_with_transport &&
             m_res_tol_mixed         == other.m_res_tol_mixed &&
             m_res_tol_transport     == other.m_res_tol_transport &&
             m_corr_tol_mixed        == other.m_corr_tol_mixed &&
@@ -646,6 +654,7 @@ public:
         
         void Write(TPZStream &buf, int withclassid) const{ //ok
             buf.Write(&m_dt);
+            buf.Write(m_run_with_transport);
             buf.Write(&m_res_tol_mixed);
             buf.Write(&m_res_tol_transport);
             buf.Write(&m_corr_tol_mixed);
@@ -670,6 +679,7 @@ public:
         
         void Read(TPZStream &buf, void *context){ //ok
             buf.Read(&m_dt);
+            buf.Read(m_run_with_transport);
             buf.Read(&m_res_tol_mixed);
             buf.Read(&m_res_tol_transport);
             buf.Read(&m_corr_tol_mixed);
@@ -700,6 +710,7 @@ public:
         
         void Print() const {
             std::cout << m_dt << std::endl;
+            std::cout << m_run_with_transport << std::endl;
             std::cout << m_res_tol_mixed << std::endl;
             std::cout << m_res_tol_transport << std::endl;
             std::cout << m_corr_tol_mixed << std::endl;

@@ -348,7 +348,6 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Simulation and printing parameters -----
     const bool isRefineMesh = false;
     const bool isPostProc = true;
-	const bool isRunWithTranport = true;
 	bool isMHM = true;
     bool needsMergeMeshes = true;
 	const int n_threads = 8;
@@ -477,7 +476,7 @@ void RunProblem(string& filenameBase, const int simcase)
     bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-    if(isRunWithTranport){
+    if(sim_data.mTNumerics.m_run_with_transport){
 
 		// Create transport mesh. TODO: Create transport data structure without the need for a mesh
         aspace.BuildAuxTransportCmesh();
@@ -535,7 +534,7 @@ void RunProblem(string& filenameBase, const int simcase)
                 pos++;
                 current_report_time = reporting_times[pos];
                 REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
-                if(simcase==4 && isRunWithTranport){
+                if(simcase==4 && sim_data.mTNumerics.m_run_with_transport){
                     REAL InntMassFrac365 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(365);
                     REAL InntMassFrac365_2 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById2(365);
                     fileCilamce535 << current_report_time<< ", " << InntMassFrac365 << " " << InntMassFrac365_2 << std::endl;
@@ -789,6 +788,21 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
 	
 	// Other properties
+    if(input.find("RunWithTransport") != input.end()){
+        sim_data.mTNumerics.m_run_with_transport = input["RunWithTransport"];
+        if(sim_data.mTNumerics.m_run_with_transport){
+            if(input.find("DeltaT") == input.end()) DebugStop();
+            sim_data.mTNumerics.m_dt = input["DeltaT"];
+            if(input.find("NSteps") == input.end()) DebugStop();
+            sim_data.mTNumerics.m_n_steps = input["NSteps"];
+        }
+    }
+    else{
+        sim_data.mTNumerics.m_n_steps = 100;
+        sim_data.mTNumerics.m_dt      = 1.e7;//*day;
+    }
+    
+    
 	sim_data.mTGeometry.mSkeletonDiv = 0;
 	sim_data.mTNumerics.m_sfi_tol = 0.0001;
 	sim_data.mTNumerics.m_res_tol_transport = 0.0001;
@@ -799,8 +813,6 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTNumerics.m_gravity = grav;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
-    sim_data.mTNumerics.m_n_steps = 100;
-	sim_data.mTNumerics.m_dt      = 50.0;//*day;
 	sim_data.mTNumerics.m_max_iter_sfi=1;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
 	sim_data.mTNumerics.m_max_iter_transport=1;
