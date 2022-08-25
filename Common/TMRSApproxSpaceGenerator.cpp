@@ -1683,6 +1683,7 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
         int fracvol2ID = mSimData.mTGeometry.mInterface_material_idFracSup;
         int fracFracID = mSimData.mTGeometry.mInterface_material_idFracFrac;
         int fracbounId = mSimData.mTGeometry.mInterface_material_idFracBound;
+        
 //         fracbounId =301;
         // Here, the interface materials are created between fracture/volume, fracture/fracture, and fracture/boundary
         TPZBndCond * face = volume->CreateBC(volume,fracvol1ID,dimension-1,val1,val2);

@@ -379,6 +379,7 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
     sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
     sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
+    
     // Boundary conditions
     if (caseToSim < 2) {
 		sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue[EInlet] = std::make_pair(D_Type,2.);
@@ -408,7 +409,6 @@ TMRSDataTransfer SettingFracturesSimple(const int caseToSim){
 		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EOutlet] = std::make_pair(D_Type, 0.);
 		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[ENoflux] = std::make_pair(5, zero_flux);
 //		sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue[EFaceBCPressure] = std::make_pair(5, 1.);
-		sim_data.mTGeometry.mInterface_material_idFracBound = EPressure;
         
     }
     else {
