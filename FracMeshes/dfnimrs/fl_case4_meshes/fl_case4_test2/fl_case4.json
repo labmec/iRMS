@@ -47,7 +47,9 @@
         
     ],
     "NCoarseGroups": 9768,
-    "useRunWithTransport":true,
+    "RunWithTransport": true,
+    "DeltaT": 5.0e1,
+    "NSteps": 100,
     "FractureHybridPressureMatId": 299,
     "FractureInitMatId": 300,
     "FractureGlueMatId": 1000000,

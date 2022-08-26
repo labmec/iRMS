@@ -11,6 +11,9 @@
     "TolDist": 0.001,
     "TolAngle": 1.0e-4,
 	"useMHM": true,
+    "RunWithTransport": false,
+    "DeltaT": 1.0e-2,
+    "NSteps": 100,    
     "Domains": [
         {
             "name": "k33",

@@ -2773,7 +2773,7 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
 				face->SetForcingFunctionBC(mForcingFunctionBC,1);
 			}
 			mMixedOperator->InsertMaterialObject(face);
-			std::cout << "Added frac BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
+//			std::cout << "Added frac BC material w/ id = " << bc_id << " and type = " << bc_type << std::endl;
 			MatsWitOuthmem.insert(bc_id);
 
 		}

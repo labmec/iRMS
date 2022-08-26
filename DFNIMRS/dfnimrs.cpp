@@ -85,7 +85,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 1;
+    int simcase = 2;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -604,7 +604,7 @@ void RunProblem(string& filenameBase, const int simcase)
 //        pressure->Solution().Print("pressure multipliers");
         // Computes the integral of the normal flux on the boundaries.
         // To use, change the inletMatId and outletMatId according to problem
-        const bool PostProcessQuantities = true;
+        const bool PostProcessQuantities = false;
         if(PostProcessQuantities){
             std::set<int> bcflux = {2,3,5};
 			const int inletMatId = 2, outletMatId = 3;
@@ -778,16 +778,8 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
         REAL fractureGluePerm = input["FractureGluePerm"];
         sim_data.mTFracIntersectProperties.m_FractureGluePerm = fractureGluePerm;
     }
-	
-	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
-	const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
-	sim_data.mTGeometry.mInterface_material_id = 100;
-	sim_data.mTGeometry.mInterface_material_idFracInf = 102;
-	sim_data.mTGeometry.mInterface_material_idFracSup = 101;
-	sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
-	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
-	
-	// Other properties
+    
+    // Transport properties
     if(input.find("RunWithTransport") != input.end()){
         sim_data.mTNumerics.m_run_with_transport = input["RunWithTransport"];
         if(sim_data.mTNumerics.m_run_with_transport){
@@ -798,10 +790,18 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
         }
     }
     else{
-        sim_data.mTNumerics.m_n_steps = 100;
-        sim_data.mTNumerics.m_dt      = 1.e7;//*day;
+        DebugStop(); // Please set run with tranport in json
+//        sim_data.mTNumerics.m_n_steps = 100;
+//        sim_data.mTNumerics.m_dt      = 1.e7;//*day;
     }
-    
+	
+	// ------------------------ Setting extra stuff that is still not in JSON ------------------------
+	const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
+	sim_data.mTGeometry.mInterface_material_id = 100;
+	sim_data.mTGeometry.mInterface_material_idFracInf = 102;
+	sim_data.mTGeometry.mInterface_material_idFracSup = 101;
+	sim_data.mTGeometry.mInterface_material_idFracFrac = 103;
+	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
 	sim_data.mTGeometry.mSkeletonDiv = 0;
 	sim_data.mTNumerics.m_sfi_tol = 0.0001;
