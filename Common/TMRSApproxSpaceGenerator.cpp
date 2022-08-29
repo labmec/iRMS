@@ -34,6 +34,11 @@
 #include <tbb/parallel_for.h>
 #endif
 
+// ----- Logger -----
+#ifdef PZ_LOG
+static TPZLogger logger("imrs");
+#endif
+
 using namespace std;
 
 void ComputeCoarseIndices(TPZGeoMesh *gmesh, TPZVec<int64_t> &coarseindices);
@@ -340,8 +345,14 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
 				TPZGeoElSide gelside(gel,iside);
                 // this the side orient of the current element
 				const int gelSideOrient = intel->GetSideOrient(iside);
-//                std::cout << "initial side orient\n";
-//                std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << gelSideOrient << std::endl;
+#ifdef PZ_LOG
+                if (logger.isDebugEnabled()) {
+                    std::stringstream sout;
+                    sout << "\ninitial side orient\n";
+                    sout << "gel index " << gel->Index() << " side " << iside << " side orient " << gelSideOrient << std::endl;
+                    LOGPZ_DEBUG(logger, sout.str())
+                }
+#endif
 				for(TPZGeoElSide neigh = gelside.Neighbour() ; neigh != gelside ; neigh++){
 					TPZGeoEl* neighgel = neigh.Element();
 					if(neighgel->HasSubElement()) continue;
@@ -380,8 +391,14 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
                         intel->SetSideOrient(iside, 1);
                         {
                             int sideorient = intel->GetSideOrient(iside);
-//                            std::cout << "Adjusting orientation because of intersection\n";
-//                            std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
+#ifdef PZ_LOG
+                            if (logger.isDebugEnabled()) {
+                                std::stringstream sout;
+                                sout << "\nAdjusting orientation because of intersection\n";
+                                sout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
+                                LOGPZ_DEBUG(logger, sout.str())
+                            }
+#endif
                         }
                         break;
                     }
@@ -396,9 +413,15 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
 						neighintel->SetSideOrient(neighside, 1);
                         int sideorient = intel->GetSideOrient(iside);
                         int neighsideorient = neighintel->GetSideOrient(neighside);
-//                        std::cout << "Adjusting orientation of boundary\n";
-//                        std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
-//                        std::cout << "gel index " << neighintel->Reference()->Index() << " side " << neighside << " side orient " << neighsideorient << std::endl;
+#ifdef PZ_LOG
+                            if (logger.isDebugEnabled()) {
+                                std::stringstream sout;
+                                sout << "\nAdjusting orientation of boundary\n";
+                                sout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
+                                sout << "gel index " << neighintel->Reference()->Index() << " side " << neighside << " side orient " << neighsideorient << std::endl;
+                                LOGPZ_DEBUG(logger, sout.str())
+                            }
+#endif
 						continue;
 					}
                     // here we assume there is no fracture intersection
@@ -407,14 +430,26 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
 					const int neighSideOrient = neighintel->GetSideOrient(neighside);
 					
 					if(gelSideOrient*neighSideOrient > 0){
-//                        std::cout << "Adjusting wrong neighbouring orientations gelSideOrient " << gelSideOrient << " neighSideOrient " << neighSideOrient << std::endl;
+#ifdef PZ_LOG
+                            if (logger.isDebugEnabled()) {
+                                std::stringstream sout;
+                                sout << "\nAdjusting wrong neighbouring orientations gelSideOrient " << gelSideOrient << " neighSideOrient " << neighSideOrient << std::endl;
+                                LOGPZ_DEBUG(logger, sout.str())
+                            }
+#endif
 						const int newNeighSideOrient = -gelSideOrient;
 						neighintel->SetSideOrient(neighside, newNeighSideOrient);
                         {
                             int sideorient = intel->GetSideOrient(iside);
                             int neighsideorient = neighintel->GetSideOrient(neighside);
-//                            std::cout << "gel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
-//                            std::cout << "gel index " << neighintel->Reference()->Index() << " side " << neighside << " side orient " << neighsideorient << std::endl;
+#ifdef PZ_LOG
+                            if (logger.isDebugEnabled()) {
+                                std::stringstream sout;
+                                sout << "\ngel index " << gel->Index() << " side " << iside << " side orient " << sideorient << std::endl;
+                                sout << "gel index " << neighintel->Reference()->Index() << " side " << neighside << " side orient " << neighsideorient << std::endl;
+                                LOGPZ_DEBUG(logger, sout.str())
+                            }
+#endif
                         }
 					}
 				}
