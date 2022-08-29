@@ -602,6 +602,69 @@ REAL TPZAlgebraicTransport::CalculateMassById(int matId){
     return intMass/volfrac;
 }
 
+void TPZAlgebraicTransport::VerifyConservation(int itime){
+    int ncells = fCellsData.fVolume.size();
+    REAL intMass = 0.0;
+    REAL volfrac=0.0;
+    
+    for (int icel = 0; icel < ncells; icel++) {
+        REAL sat = fCellsData.fSaturation[icel];
+        REAL phi = fCellsData.fporosity[icel];
+        REAL vol = fCellsData.fVolume[icel];
+        intMass += sat*phi*vol;
+        volfrac += vol*phi;
+    }
+    
+    int ninletInterfaces = fInterfaceData[inletmatid].fIntegralFlux.size();
+    REAL fluxIntegratedInlet=0.0;
+    int nOutletInterfaces = fInterfaceData[outletmatid].fIntegralFlux.size();
+    REAL fluxIntegratedOutlet=0.0;
+    for (int iInlet=0; iInlet<ninletInterfaces; iInlet++) {
+         fluxIntegratedInlet += fInterfaceData[inletmatid].fIntegralFlux[iInlet]*fdt*itime;
+    }
+    for (int iOutlet=0; iOutlet<nOutletInterfaces; iOutlet++) {
+        std::pair<int64_t, int64_t> left_right = fInterfaceData[outletmatid].fLeftRightVolIndex[iOutlet];
+        REAL satOutlet = fCellsData.fSaturation[left_right.first];
+        REAL satOutletAnt = fCellsData.fSaturationLastState[left_right.first];
+        fluxIntegratedOutlet += (satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
+    }
+//    fluxIntegratedOutlet += massOut;
+    REAL massConservation = fluxIntegratedInlet +intMass + fluxIntegratedOutlet + massOut;
+    if(std::abs(massConservation) < 1.0e-8 ){
+        std::cout<<"Conservation ok"<<std::endl;
+    }
+    else{
+        std::cout<<"Mass Loss: "<<massConservation<<std::endl;
+        DebugStop();
+    }
+    massOut +=fluxIntegratedOutlet;
+}
+
+
+
+
+
+REAL TPZAlgebraicTransport::CalculateMassByCoord(){
+    int ncells = fCellsData.fVolume.size();
+    REAL intMass=0.0;
+    int ncomputed = 0;
+    std::vector<std::vector<REAL>>& centerCordvvec = fCellsData.fCenterCoordinate;
+    for (int icel =0; icel<ncells; icel++) {
+        std::vector<REAL> & centerCoord= centerCordvvec[icel];
+        const REAL x =centerCoord[0], y=centerCoord[1], z=centerCoord[2];
+//      if (x>0.5 && x<1.0 && y>0.0 && y<0.5 && z>0.0 && z<0.5) {
+//      if (x>0.5 && x<0.75 && y>0.5 && y<0.75 && z>0.75 && z<=1.0) {
+        if (x>0.75 && x<1.0 && y>0.75 && y<1.0 && z>0.5 && z<0.75) {
+            REAL sat = fCellsData.fSaturation[icel];
+            intMass +=sat;
+            ncomputed++;
+        }
+    }
+    return intMass/ncomputed;
+}
+
+
+
 REAL TPZAlgebraicTransport::CalculateMassById2(int matId){
     int ncells = fCellsData.fVolume.size();
     REAL intMass = 0.0;

@@ -249,6 +249,7 @@ public:
     int outletmatid;
     int interfaceid;
     bool fHasPropQ=false;
+    REAL massOut =0.0;
     
     //number of volumetric elements in the transport mesh
     int fNVolumesTransport = 0;
@@ -299,9 +300,11 @@ public:
     REAL CalculateMass();
     REAL CalculateMassById(int matId);
     REAL CalculateMassById2(int matId);
-    
+    REAL CalculateMassByCoord();
+    REAL CalculateMassByCoord2();
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
     void VerifyElementFLuxes();
+    void VerifyConservation(int itime);
     void ZeroFluxes();
     void PrintFluxes();
 };

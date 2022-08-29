@@ -509,6 +509,7 @@ void RunProblem(string& filenameBase, const int simcase)
         std::ofstream fileCilamce535("IntegratedSatFrac365.txt");
         std::ofstream fileCilamce515("IntegratedSatFrac515.txt");
         std::ofstream fileCilamce530("IntegratedSatFrac530.txt");
+        std::ofstream file1("IntegratedSat.txt");
         TPZFastCondensedElement::fSkipLoadSolution = false;
 		const int typeToPPinit = 1; // 0: both, 1: p/flux, 2: saturation
 		const int typeToPPsteps = 2; // 0: both, 1: p/flux, 2: saturation
@@ -520,6 +521,29 @@ void RunProblem(string& filenameBase, const int simcase)
             sfi_analysis->RunTimeStep();
             if(it == 1){
                 sfi_analysis->PostProcessTimeStep(typeToPPinit);
+                const bool PostProcessQuantities = true;
+                if(PostProcessQuantities){
+                    std::set<int> bcflux = {2,3,5};
+                    const int inletMatId = 2, outletMatId = 3;
+                    auto result = computeIntegralOfNormalFlux(bcflux, mixed_operator);
+                    std::ofstream out(outputFolder + "fluxintegral.txt");
+                    for(auto it: result)
+                    {
+                        out << "Integral for matid " << it.first << " " << it.second << std::endl;
+                    }
+                    auto &allfrac = sim_data.mTFracProperties.m_fracprops;
+                    int gluematid = sim_data.mTFracIntersectProperties.m_FractureGlueId;
+                    int pressureintersect = sim_data.mTGeometry.m_pressureMatId;
+                    std::set<int> fracmatids;
+                    for(auto &it : allfrac) fracmatids.insert(it.first);
+                    for(auto &it : allfrac)
+                    {
+                        FractureQuantities frac(mixed_operator,fracmatids, pressureintersect,gluematid);
+                        frac.ComputeFluxQuantities(it.first);
+                        frac.Print(out);
+                        frac.Print(std::cout);
+                    }
+                }
             }
             mixed_operator->LoadSolution(mixed_operator->Solution());
 			
@@ -543,10 +567,15 @@ void RunProblem(string& filenameBase, const int simcase)
                     REAL InntMassFrac530_2 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById2(530);
                     fileCilamce530 << current_report_time << ", " << InntMassFrac530 << " " << InntMassFrac530_2<< std::endl;
                 }
+                if(simcase==3 && sim_data.mTNumerics.m_run_with_transport){
+                    REAL InntMass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(330);
+                    file1<<current_report_time<<" "<<InntMass <<std::endl;
+                }
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
                 std::cout << "Mass integral :  " << mass << std::endl;
             }
+            sfi_analysis->m_transport_module->fAlgebraicTransport.VerifyConservation(it);
         }
     }
     else{
