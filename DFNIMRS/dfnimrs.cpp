@@ -85,7 +85,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 1;
+    int simcase = 4;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -94,7 +94,6 @@ int main(int argc, char* argv[]){
         // 1: Flemisch case 1
         // 2: Flemisch case 2
         // 3: Flemisch case 3
-        
         // 4: Flemisch case 4
         // 5: 4 elements, 2 frac, w/ intersection
         // 6: Two parallel square fractures very close, but no overlap

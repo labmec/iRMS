@@ -925,6 +925,10 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
         cmesh->AutoBuild();
         cmesh->InitializeBlock();
     }
+
+#ifdef PZDEBUG
+    CheckSideOrientOfFractureEls();
+#endif
     
 #ifdef PZDEBUG
 //    std::ofstream sout("q_mesh.txt");
@@ -949,6 +953,61 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
 #endif
 
     return cmesh;
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void TMRSApproxSpaceGenerator::CheckSideOrientOfFractureEls() {
+    TPZGeoMesh* gmesh = mGeometry;
+    for(TPZGeoEl* gel : gmesh->ElementVec()){
+        const int gelmatid = gel->MaterialId();
+        const int firstedge = gel->FirstSide(1);
+        const int lastedge = gel->FirstSide(2);
+        
+        if(!mSimData.mTFracProperties.isFracMatId(gelmatid)){
+            continue;
+        }
+        
+        auto fracprop =  mSimData.mTFracProperties.m_fracprops[gelmatid];
+        const int matidintersect = fracprop.m_fracIntersectMatID;
+        std::set<int>& bcids = fracprop.m_fracbc;
+        
+        TPZInterpolatedElement* intel = dynamic_cast<TPZInterpolatedElement*>(gel->Reference());
+        for (int is = firstedge; is < lastedge; is++) {
+            const int sideorientgel = intel->GetSideOrient(is);
+            TPZGeoElSide gside(gel,is);
+            TPZGeoElSide neig = gside.Neighbour();
+            bool isIntersect = false;
+            for(; gside != neig ; neig++){
+                TPZGeoEl* neiggel = neig.Element();
+                const int neigmatid = neiggel->MaterialId();
+                if (neigmatid == matidintersect) {
+                    if(neiggel->Dimension() != 1) DebugStop();
+                    // there is a neighbour that is an intersection
+                    // note: we assume intersections are neighbors that are always before in the list of neighbors
+                    isIntersect = true;
+                }
+                if(bcids.find(neigmatid) != bcids.end()){
+                    if(neiggel->Dimension() != 1) DebugStop();
+                    // This edge is at at bc of this fracture, then its sideorient should be positive
+                    if(sideorientgel != 1) DebugStop();
+                }
+                if (neiggel->MaterialId() == gelmatid) {
+                    if(neiggel->Dimension() != 2) DebugStop();
+                    // Two adjacent elements of same fracture. Should have opposite sideorients
+                    TPZInterpolatedElement* intelneig = dynamic_cast<TPZInterpolatedElement*>(neiggel->Reference());
+                    const int sideorientneig = intelneig->GetSideOrient(neig.Side());
+                    if(isIntersect){
+                        if(sideorientgel != 1 || sideorientneig != 1) DebugStop();
+                    }
+                    else{
+                        if(sideorientgel*sideorientneig != -1) DebugStop();
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ---------------------------------------------------------------------

@@ -163,6 +163,9 @@ public:
     
 	/// Checks if there is a skeleton element between volume elements of different domains
 	void CheckMeshIntegrity(TPZGeoMesh* gmesh);
+    
+    /// Checks if the sideorient between fracture elements is correct
+    void CheckSideOrientOfFractureEls();
 	
 	/// Set method for mSubdomainIndexGel
     void SetSubdomainIndexes(TPZVec<int64_t> &subIndexes){
