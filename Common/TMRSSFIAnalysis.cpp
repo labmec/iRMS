@@ -505,7 +505,7 @@ void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
    // m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(4); //Mat With No Flux
    // m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(5);//Mat With No Flux
     
-   // m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
+    m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
 }
 
 void TMRSSFIAnalysis::VerifyElementFluxes(){

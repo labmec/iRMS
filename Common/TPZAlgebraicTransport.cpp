@@ -751,7 +751,7 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
         }
     }
     for(int iel = 0; iel<nInterfacesByElement.size(); iel++){
-        if(abs(SumFluxByElement[iel])>1.0e-4){
+        if(abs(SumFluxByElement[iel])>1.0e-6){
             std::cout<<"The sum of the flows on each element must be zero. Element:  "<<iel<<" has a value of"<<SumFluxByElement[iel]<<std::endl;
             
             DebugStop();
