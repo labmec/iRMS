@@ -754,8 +754,8 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 		const REAL phifrac = fracture["phi"];
 		sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(matid, phifrac, fracWidth);
         
-        REAL phiintersec=phifrac;
-        REAL inersecLenght =fracWidth;
+        phiintersec = phifrac;
+        inersecLenght = fracWidth;
 
     }
 //    sim_data.mTReservoirProperties.mPorosityAndVolumeScale[countPhi++] = std::make_tuple(299,0.2, 0.01);

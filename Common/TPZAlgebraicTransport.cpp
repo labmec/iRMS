@@ -58,6 +58,9 @@ void TPZAlgebraicTransport::Contribute(int index, TPZFMatrix<double> &ek,TPZFMat
     REAL sat =fCellsData.fSaturation[index];
     REAL satLast = fCellsData.fSaturationLastState[index];
     REAL phi = fCellsData.fporosity[index];
+#ifdef PZDEBUG
+    if(std::abs(phi) < 1e-12) DebugStop();
+#endif
     ef(0) = fCellsData.fVolume[index]*phi*(sat-satLast);
     ek(0,0) = fCellsData.fVolume[index]*phi;
 }
@@ -73,6 +76,17 @@ void TPZAlgebraicTransport::ContributeResidual(int index, TPZFMatrix<double> &ef
 void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId){
     
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceId].fLeftRightVolIndex[index];
+#ifdef PZDEBUG
+    const REAL phiL = fCellsData.fporosity[lr_index.first];
+    const REAL phiR = fCellsData.fporosity[lr_index.second];
+    const REAL vfL = fCellsData.fVolumefactor[lr_index.first];
+    const REAL vfR = fCellsData.fVolumefactor[lr_index.second];
+    if(std::abs(phiL) < 1e-12) DebugStop();
+    if(std::abs(phiR) < 1e-12) DebugStop();
+    if(std::abs(vfL) < 1e-12) DebugStop();
+    if(std::abs(vfR) < 1e-12) DebugStop();
+#endif
+    
     REAL fluxint  = 1.0*fInterfaceData[interfaceId].fIntegralFlux[index];
     REAL fw_L = fCellsData.fWaterfractionalflow[lr_index.first];
     REAL fw_R = fCellsData.fWaterfractionalflow[lr_index.second];
