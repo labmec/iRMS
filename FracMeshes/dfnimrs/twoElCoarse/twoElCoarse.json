@@ -25,6 +25,7 @@
     "FractureInitMatId": 300, // Initial matid to be given to the fractures. Example frac1 - matid: 300, frac2 - matid: 305, etc.
     "FractureGlueMatId": 1000000,
     "FractureGluePerm": 1.0,
+    "RunWithTransport": false,
     "Fractures":[
         { //Fracture 0
             "Index": 0, // Fracture index
