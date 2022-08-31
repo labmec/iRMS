@@ -50,6 +50,7 @@ void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::
 TPZGeoMesh * Transform2dMeshToUnisim3D(TPZGeoMesh* gmesh2d, int nLayers);
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
 void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
+void FilterZeroNeumann(TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh);
 
 std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -85,7 +86,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 4;
+    int simcase = 1;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -346,6 +347,7 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Simulation and printing parameters -----
     const bool isRefineMesh = false;
     const bool isPostProc = true;
+    const bool isFilterZeroNeumann = false;
 	bool isMHM = true;
     bool needsMergeMeshes = true;
 	const int n_threads = 8;
@@ -490,6 +492,7 @@ void RunProblem(string& filenameBase, const int simcase)
         TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
         sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
         sfi_analysis->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+        if(isFilterZeroNeumann) FilterZeroNeumann(sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
         const int n_steps = sim_data.mTNumerics.m_n_steps;
         const REAL dt = sim_data.mTNumerics.m_dt;
 
@@ -583,6 +586,8 @@ void RunProblem(string& filenameBase, const int simcase)
         TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
         mixAnalisys->SetDataTransfer(&sim_data);
         mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+        if(isFilterZeroNeumann) FilterZeroNeumann(mixAnalisys->StructMatrix(),mixed_operator);
+        
 //        {
 //            std::ofstream out(outputFolder + "mixedCMesh.txt");
 //            mixed_operator->Print(out);
@@ -1678,3 +1683,48 @@ void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std:
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
+
+void FilterZeroNeumann(TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh) {
+
+    std::cout << "\n---------------------- Filtering zero neumann equations ----------------------" << std::endl;
+    TPZSimpleTimer timer_filter("Timer Filter Equations");
+
+    
+    // First build vector with all equations. This vector has 1 where it is active and 0 where it is not active (zero neumann)
+    TPZVec<int64_t> alleq(cmesh->NEquations(),1);
+    for (TPZCompEl* cel : cmesh->ElementVec()) {
+        if(!cel) continue;
+        // for each cel, check if it is bc by dimension and matid
+        TPZGeoEl* gel = cel->Reference();
+        if(!gel) DebugStop(); // Still not working with SubCompMeshes (MHM)
+        if(gel->MaterialId() != 4) continue; // no flux in domain is matid = 4 TODO: change this
+        if(gel->Dimension() != 2) DebugStop();
+        
+        const int ncon = cel->NConnects();
+        if(ncon != 1) DebugStop(); // HDivBound should only have one connect?
+        TPZConnect& con = cel->Connect(0);
+//        if(con.HasDependency() || con.IsCondensed()) continue;
+        const int64_t seqnum = con.SequenceNumber();
+        if(seqnum < 0) DebugStop();
+        const int64_t firsteq = cmesh->Block().Position(seqnum);
+        const int64_t blocksize = cmesh->Block().Size(seqnum);
+        const int64_t lasteq = firsteq + blocksize;
+        if(blocksize != 4) DebugStop(); // 4 for quadrilateral and 3 for triangle
+        for (int i = 0; i < blocksize; i++) {
+            alleq[firsteq+i] = 0;
+        }
+    }
+    TPZStack<int64_t> active;
+    int index = 0;
+    for(int64_t& isact : alleq){
+        if(isact == 1){
+            active.Push(index);
+        }
+        index++;
+    }
+    if(index != alleq.size()) DebugStop();
+    
+    strmat->EquationFilter().SetActiveEquations(active);
+    
+    std::cout << "\n ==> Total Filter time: " << timer_filter.ReturnTimeDouble()/1000. << " seconds" << std::endl;
+}

@@ -4158,7 +4158,8 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                         if(nels!=1){
                             DebugStop();
                         }
-                        int mid=gelneigP[0].Element()->MaterialId();
+//                        int mid= 100;??gelneigP[0].Element()->MaterialId();
+                        int mid = matIdFracFrac;
                         CreateInterfaceElements(gelside, gelneigP[0], mid);
 //                        int ok=0;
                     }
