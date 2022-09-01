@@ -50,7 +50,7 @@ void CopyInputFilesToOutputFolderAndFixFilename(std::string& filenameBase, std::
 TPZGeoMesh * Transform2dMeshToUnisim3D(TPZGeoMesh* gmesh2d, int nLayers);
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
 void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
-void FilterZeroNeumann(TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh);
+void FilterZeroNeumann(TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh);
 
 std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -492,7 +492,7 @@ void RunProblem(string& filenameBase, const int simcase)
         TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
         sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
         sfi_analysis->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-        if(isFilterZeroNeumann) FilterZeroNeumann(sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
+        if(isFilterZeroNeumann) FilterZeroNeumann(sim_data,sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
         const int n_steps = sim_data.mTNumerics.m_n_steps;
         const REAL dt = sim_data.mTNumerics.m_dt;
 
@@ -586,7 +586,7 @@ void RunProblem(string& filenameBase, const int simcase)
         TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
         mixAnalisys->SetDataTransfer(&sim_data);
         mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
-        if(isFilterZeroNeumann) FilterZeroNeumann(mixAnalisys->StructMatrix(),mixed_operator);
+        if(isFilterZeroNeumann) FilterZeroNeumann(sim_data,mixAnalisys->StructMatrix(),mixed_operator);
         
 //        {
 //            std::ofstream out(outputFolder + "mixedCMesh.txt");
@@ -1684,47 +1684,59 @@ void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std:
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void FilterZeroNeumann(TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh) {
+void FilterZeroNeumann(TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh) {
 
     std::cout << "\n---------------------- Filtering zero neumann equations ----------------------" << std::endl;
     TPZSimpleTimer timer_filter("Timer Filter Equations");
-
     
-    // First build vector with all equations. This vector has 1 where it is active and 0 where it is not active (zero neumann)
-    TPZVec<int64_t> alleq(cmesh->NEquations(),1);
-    for (TPZCompEl* cel : cmesh->ElementVec()) {
-        if(!cel) continue;
-        // for each cel, check if it is bc by dimension and matid
-        TPZGeoEl* gel = cel->Reference();
-        if(!gel) DebugStop(); // Still not working with SubCompMeshes (MHM)
-        if(gel->MaterialId() != 4) continue; // no flux in domain is matid = 4 TODO: change this
-        if(gel->Dimension() != 2) DebugStop();
-        
-        const int ncon = cel->NConnects();
-        if(ncon != 1) DebugStop(); // HDivBound should only have one connect?
-        TPZConnect& con = cel->Connect(0);
-//        if(con.HasDependency() || con.IsCondensed()) continue;
-        const int64_t seqnum = con.SequenceNumber();
-        if(seqnum < 0) DebugStop();
-        const int64_t firsteq = cmesh->Block().Position(seqnum);
-        const int64_t blocksize = cmesh->Block().Size(seqnum);
-        const int64_t lasteq = firsteq + blocksize;
-        if(blocksize != 4) DebugStop(); // 4 for quadrilateral and 3 for triangle
-        for (int i = 0; i < blocksize; i++) {
-            alleq[firsteq+i] = 0;
+    if(sim_data.mTNumerics.m_mhm_mixed_Q){
+        std::cout << "Equation filter still not implemented for simulations with SubCompMeshes (MHM)" << std::endl;
+        // Not working. Need to solve error in matred
+        DebugStop();
+    }
+    
+    std::set<int64_t> matidset;
+    
+    // First find all the zero neumann in in the 3d domain
+    for(auto &chunk : sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+        const int bc_id = chunk.first;
+        const std::pair<int,REAL>& typeAndVal = chunk.second;
+        const int bc_type = typeAndVal.first;
+        const REAL val = typeAndVal.second;
+        if(bc_type == 1 && fabs(val) < ZeroTolerance()){
+            matidset.insert(bc_id);
         }
     }
-    TPZStack<int64_t> active;
-    int index = 0;
-    for(int64_t& isact : alleq){
-        if(isact == 1){
-            active.Push(index);
-        }
-        index++;
-    }
-    if(index != alleq.size()) DebugStop();
     
-    strmat->EquationFilter().SetActiveEquations(active);
+    // Then all the zero neumann in the fractures
+    for (auto& chunk : sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue) {
+        const int bc_id   = chunk.first;
+        const std::pair<int,REAL>& typeAndVal = chunk.second;
+        const int bc_type = typeAndVal.first;
+        const REAL val = typeAndVal.second;
+        if(bc_type == 1 && fabs(val) < ZeroTolerance()){
+            matidset.insert(bc_id);
+        }
+    }
+    
+    // Set equatiosn to be filted
+    std::set<int64_t> eqset;
+    cmesh->GetEquationSetByMat(matidset, eqset);
+    if (eqset.size()) {
+        strmat->EquationFilter().ExcludeEquations(eqset);
+    }
+    
+    for(auto cel : cmesh->ElementVec()){
+        TPZSubCompMesh* subcmesh = dynamic_cast<TPZSubCompMesh*>(cel);
+        if (subcmesh) {
+            DebugStop(); // Not working. Need to solve error in matred
+            std::set<int64_t> eqsetsub;
+            subcmesh->GetEquationSetByMat(matidset, eqsetsub);
+            if (eqsetsub.size()) {
+                subcmesh->Analysis()->StructMatrix()->EquationFilter().ExcludeEquations(eqsetsub);
+            }
+        }
+    }
     
     std::cout << "\n ==> Total Filter time: " << timer_filter.ReturnTimeDouble()/1000. << " seconds" << std::endl;
 }
