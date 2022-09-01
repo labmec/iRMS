@@ -22,6 +22,9 @@
 using namespace std;
 namespace fs = std::filesystem;
 
+// ----- Global vars -----
+const int glob_n_threads = 8;
+
 // ----- End of namespaces -----
 
 // ----- Functions -----
@@ -350,7 +353,6 @@ void RunProblem(string& filenameBase, const int simcase)
     const bool isFilterZeroNeumann = false;
 	bool isMHM = true;
     bool needsMergeMeshes = true;
-	const int n_threads = 8;
     
     // ----- output folder stuff -----
     if(filenameBase.back() != '/') filenameBase = filenameBase + "/";
@@ -491,7 +493,7 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Creating coupled pressure/flow and transport analysis
         TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
         sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
-        sfi_analysis->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+        sfi_analysis->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
         if(isFilterZeroNeumann) FilterZeroNeumann(sim_data,sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
         const int n_steps = sim_data.mTNumerics.m_n_steps;
         const REAL dt = sim_data.mTNumerics.m_dt;
@@ -585,7 +587,7 @@ void RunProblem(string& filenameBase, const int simcase)
         // -------------- Running problem --------------
         TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
         mixAnalisys->SetDataTransfer(&sim_data);
-        mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+        mixAnalisys->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
         if(isFilterZeroNeumann) FilterZeroNeumann(sim_data,mixAnalisys->StructMatrix(),mixed_operator);
         
 //        {
@@ -844,7 +846,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	grav[1] = 0.0;//-9.8*(1.0e-6); // hor
 	sim_data.mTNumerics.m_gravity = grav;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 8;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
 	sim_data.mTNumerics.m_max_iter_sfi=1;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
 	sim_data.mTNumerics.m_max_iter_transport=1;
