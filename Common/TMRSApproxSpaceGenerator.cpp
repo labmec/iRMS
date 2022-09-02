@@ -877,11 +877,6 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
     
     // ===> Fix blocks
     cmesh->InitializeBlock();
-    if(1)
-    {
-        std::ofstream out("VerfiqueDeNovo.txt");
-        cmesh->Print(out);
-    }
 }
 
 // ---------------------------------------------------------------------

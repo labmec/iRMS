@@ -89,7 +89,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 1;
+    int simcase = 4;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -511,10 +511,10 @@ void RunProblem(string& filenameBase, const int simcase)
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         std::cout << "Mass report at time : " << 0.0 << std::endl;
         std::cout << "Mass integral :  " << initial_mass << std::endl;
-        std::ofstream fileCilamce535("IntegratedSatFrac365.txt");
-        std::ofstream fileCilamce515("IntegratedSatFrac515.txt");
-        std::ofstream fileCilamce530("IntegratedSatFrac530.txt");
-        std::ofstream file1("IntegratedSat.txt");
+        std::ofstream fileCilamce535(outputFolder + "IntegratedSatFrac365.txt");
+        std::ofstream fileCilamce515(outputFolder + "IntegratedSatFrac515.txt");
+        std::ofstream fileCilamce530(outputFolder + "IntegratedSatFrac530.txt");
+        std::ofstream file1(outputFolder + "IntegratedSat.txt");
         TPZFastCondensedElement::fSkipLoadSolution = false;
 		const int typeToPPinit = 1; // 0: both, 1: p/flux, 2: saturation
 		const int typeToPPsteps = 2; // 0: both, 1: p/flux, 2: saturation
@@ -630,7 +630,7 @@ void RunProblem(string& filenameBase, const int simcase)
         {
             // print the flux mesh with the solutions "loaded"
             TPZCompMesh *fluxmesh = mixed_operator->MeshVector()[0];
-            std::ofstream flux("fluxmesh.txt");
+            std::ofstream flux(outputFolder + "fluxmesh.txt");
             fluxmesh->Print(flux);
         }
 
