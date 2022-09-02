@@ -954,6 +954,10 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
 // ---------------------------------------------------------------------
 
 void TMRSApproxSpaceGenerator::CheckSideOrientOfFractureEls() {
+    if(mSimData.mTNumerics.m_SpaceType != TMRSDataTransfer::TNumerics::E4Space) {
+        // Hybridization is made differently in other space types. Thus, this check does not make sense unless it is E4Space
+        return;
+    }
     TPZGeoMesh* gmesh = mGeometry;
     for(TPZGeoEl* gel : gmesh->ElementVec()){
         const int gelmatid = gel->MaterialId();
@@ -990,7 +994,6 @@ void TMRSApproxSpaceGenerator::CheckSideOrientOfFractureEls() {
                 }
                 if (neiggel->MaterialId() == gelmatid) {
                     if(neiggel->Dimension() != 2) DebugStop();
-                    // Two adjacent elements of same fracture. Should have opposite sideorients
                     TPZInterpolatedElement* intelneig = dynamic_cast<TPZInterpolatedElement*>(neiggel->Reference());
                     const int sideorientneig = intelneig->GetSideOrient(neig.Side());
                     if(isIntersect){
