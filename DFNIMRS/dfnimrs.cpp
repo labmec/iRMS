@@ -291,11 +291,14 @@ struct FractureQuantities {
         out << "Integrated intersection flux " << fFracIntersectFluxIntegral << std::endl;
         out << "Size of snapped boundary " << fBoundarySnapSize << std::endl;
         out << "Area of overlapping faces " << fFaceSnapSize << std::endl;
+        REAL sum = -fdivintegral;
         for(auto &it : fBoundaryTransmission) {
             out << "Flux transmitted to fractures ";
             for(auto id : it.first) out << id << " ";
             out << ": " << it.second.first << " and " << it.second.second << std::endl;
+            sum += it.second.first + it.second.second;
         }
+        out << "Conservation inside fracture " << sum << std::endl;;
     }
     
     void ComputeTransmissionBreakdown()
