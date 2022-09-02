@@ -47,6 +47,7 @@
         
     ],
     "NCoarseGroups": 9768,
+    "useMHM": true,
     "RunWithTransport": true,
     "DeltaT": 5.0e1,
     "NSteps": 100,
