@@ -54,6 +54,7 @@ TPZGeoMesh * Transform2dMeshToUnisim3D(TPZGeoMesh* gmesh2d, int nLayers);
 void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
 void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
 void FilterZeroNeumann(TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh);
+void ComputeDiagnostics(std::string& outputFolder, TMRSDataTransfer& sim_data, std::set<int>& bcflux, TPZMultiphysicsCompMesh* mixed_operator);
 
 std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -89,7 +90,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 4;
+    int simcase = 3;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -280,7 +281,7 @@ struct FractureQuantities {
     }
     
     void Print(std::ostream &out) {
-        out << "For fracture " << fracMatid << std::endl;
+        out << "\n------------ For fracture " << fracMatid << " ------------" << std::endl;
         out << "Average pressure " << fAveragePressure << std::endl;
         out << "Integrate fluxnorm " << fIntegrateFluxNorm << std::endl;
         out << "Integrated divergence " << fdivintegral << std::endl;
@@ -528,26 +529,8 @@ void RunProblem(string& filenameBase, const int simcase)
                 sfi_analysis->PostProcessTimeStep(typeToPPinit);
                 const bool PostProcessQuantities = true;
                 if(PostProcessQuantities){
-                    std::set<int> bcflux = {2,3,5};
-                    const int inletMatId = 2, outletMatId = 3;
-                    auto result = computeIntegralOfNormalFlux(bcflux, mixed_operator);
-                    std::ofstream out(outputFolder + "fluxintegral.txt");
-                    for(auto it: result)
-                    {
-                        out << "Integral for matid " << it.first << " " << it.second << std::endl;
-                    }
-                    auto &allfrac = sim_data.mTFracProperties.m_fracprops;
-                    int gluematid = sim_data.mTFracIntersectProperties.m_FractureGlueId;
-                    int pressureintersect = sim_data.mTGeometry.m_pressureMatId;
-                    std::set<int> fracmatids;
-                    for(auto &it : allfrac) fracmatids.insert(it.first);
-                    for(auto &it : allfrac)
-                    {
-                        FractureQuantities frac(mixed_operator,fracmatids, pressureintersect,gluematid);
-                        frac.ComputeFluxQuantities(it.first);
-                        frac.Print(out);
-                        frac.Print(std::cout);
-                    }
+                    std::set<int> bcflux = {2,3,4}; // computes integral of quantity over these matids
+                    ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
                 }
             }
             mixed_operator->LoadSolution(mixed_operator->Solution());
@@ -637,29 +620,10 @@ void RunProblem(string& filenameBase, const int simcase)
 //        TPZCompMesh *pressure = mixed_operator->MeshVector()[1];
 //        pressure->Solution().Print("pressure multipliers");
         // Computes the integral of the normal flux on the boundaries.
-        // To use, change the inletMatId and outletMatId according to problem
-        const bool PostProcessQuantities = false;
+        const bool PostProcessQuantities = true;
         if(PostProcessQuantities){
-            std::set<int> bcflux = {2,3,5};
-			const int inletMatId = 2, outletMatId = 3;
-			auto result = computeIntegralOfNormalFlux(bcflux, mixed_operator);
-            std::ofstream out(outputFolder + "fluxintegral.txt");
-            for(auto it: result)
-            {
-                out << "Integral for matid " << it.first << " " << it.second << std::endl;
-            }
-            auto &allfrac = sim_data.mTFracProperties.m_fracprops;
-            int gluematid = sim_data.mTFracIntersectProperties.m_FractureGlueId;
-            int pressureintersect = sim_data.mTGeometry.m_pressureMatId;
-            std::set<int> fracmatids;
-            for(auto &it : allfrac) fracmatids.insert(it.first);
-            for(auto &it : allfrac)
-            {
-                FractureQuantities frac(mixed_operator,fracmatids, pressureintersect,gluematid);
-                frac.ComputeFluxQuantities(it.first);
-                frac.Print(out);
-                frac.Print(std::cout);
-            }
+            std::set<int> bcflux = {2,3,4}; // computes integral of quantity over these matids
+            ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
         }
     
         
@@ -1700,23 +1664,27 @@ void FilterZeroNeumann(TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatri
     std::set<int64_t> matidset;
     
     // First find all the zero neumann in in the 3d domain
+    std::cout << "Domain BC matids: ";
     for(auto &chunk : sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
         const int bc_id = chunk.first;
         const std::pair<int,REAL>& typeAndVal = chunk.second;
         const int bc_type = typeAndVal.first;
         const REAL val = typeAndVal.second;
         if(bc_type == 1 && fabs(val) < ZeroTolerance()){
+            std::cout << bc_id << " ";
             matidset.insert(bc_id);
         }
     }
     
     // Then all the zero neumann in the fractures
+    std::cout << "\nFracture BC matids: ";
     for (auto& chunk : sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue) {
         const int bc_id   = chunk.first;
         const std::pair<int,REAL>& typeAndVal = chunk.second;
         const int bc_type = typeAndVal.first;
         const REAL val = typeAndVal.second;
         if(bc_type == 1 && fabs(val) < ZeroTolerance()){
+            std::cout << bc_id << " ";
             matidset.insert(bc_id);
         }
     }
@@ -1740,5 +1708,28 @@ void FilterZeroNeumann(TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatri
         }
     }
     
-    std::cout << "\n ==> Total Filter time: " << timer_filter.ReturnTimeDouble()/1000. << " seconds" << std::endl;
+    std::cout << "\n==> Total Filter time: " << timer_filter.ReturnTimeDouble()/1000. << " seconds" << std::endl;
+}
+
+void ComputeDiagnostics(std::string& outputFolder, TMRSDataTransfer& sim_data, std::set<int>& bcflux, TPZMultiphysicsCompMesh* mixed_operator) {
+    std::cout << "\n**************************** Domain Diagnostics **************************** " << std::endl;
+    auto result = computeIntegralOfNormalFlux(bcflux, mixed_operator);
+    std::ofstream out(outputFolder + "fluxintegral.txt");
+    for(auto it: result)
+    {
+        out << "Integral for matid " << it.first << " " << it.second << std::endl;
+    }
+    std::cout << "\n**************************** Fracture Fluxes Diagnostics **************************** " << std::endl;
+    auto &allfrac = sim_data.mTFracProperties.m_fracprops;
+    int gluematid = sim_data.mTFracIntersectProperties.m_FractureGlueId;
+    int pressureintersect = sim_data.mTGeometry.m_pressureMatId;
+    std::set<int> fracmatids;
+    for(auto &it : allfrac) fracmatids.insert(it.first);
+    for(auto &it : allfrac)
+    {
+        FractureQuantities frac(mixed_operator,fracmatids, pressureintersect,gluematid);
+        frac.ComputeFluxQuantities(it.first);
+        frac.Print(out);
+        frac.Print(std::cout);
+    }
 }
