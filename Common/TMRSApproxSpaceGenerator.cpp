@@ -4045,7 +4045,7 @@ void TMRSApproxSpaceGenerator::CreateInterfaces(TPZCompMesh *cmesh){
     for(auto elindex: cel_indexes[dim-1]){ // loop over fracture elements
         TPZCompEl *cel = cmesh->Element(elindex);
         TPZGeoEl *gel = cel->Reference();
-        CreateFracInterfaces2(gel);
+        CreateFracInterfaces(gel);
     }
     
     //    std::ofstream file("NewInterfaces.vtk");

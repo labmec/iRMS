@@ -513,12 +513,16 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Initializing tranport solution
         sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
-        std::cout << "Mass report at time : " << 0.0 << std::endl;
-        std::cout << "Mass integral :  " << initial_mass << std::endl;
-        std::ofstream fileCilamce535(outputFolder + "IntegratedSatFrac365.txt");
-        std::ofstream fileCilamce515(outputFolder + "IntegratedSatFrac515.txt");
-        std::ofstream fileCilamce530(outputFolder + "IntegratedSatFrac530.txt");
-        std::ofstream file1(outputFolder + "IntegratedSat.txt");
+        std::cout << "\nMass report at initial time : " << 0.0 << std::endl;
+        std::cout << "Initial mass:  " << initial_mass << std::endl;
+//        std::ofstream fileCilamce535(outputFolder + "IntegratedSatFrac365.txt");
+//        std::ofstream fileCilamce515(outputFolder + "IntegratedSatFrac515.txt");
+//        std::ofstream fileCilamce530(outputFolder + "IntegratedSatFrac530.txt");
+        std::ofstream fileFracSat(outputFolder + "FracturesIntegratedSat.txt");
+        fileFracSat << "t" << " ";
+        for (int ifrac = 0 ; ifrac < sim_data.mTFracProperties.m_fracprops.size() ; ifrac++) fileFracSat << "frac" << ifrac << " ";
+        fileFracSat << std::endl;
+
         TPZFastCondensedElement::fSkipLoadSolution = false;
 		const int typeToPPinit = 1; // 0: both, 1: p/flux, 2: saturation
 		const int typeToPPsteps = 2; // 0: both, 1: p/flux, 2: saturation
@@ -541,26 +545,20 @@ void RunProblem(string& filenameBase, const int simcase)
 			// Only post process based on reporting times
             if (sim_time >=  current_report_time) {
 				cout << "\n---------------------- SFI Step " << it << " ----------------------" << endl;
-                std::cout << "PostProcess over the reporting time:  " << sim_time << std::endl;
+                std::cout << "Simulation time:  " << sim_time << std::endl;
                 mixed_operator->UpdatePreviousState(-1.);
                 sfi_analysis->PostProcessTimeStep(typeToPPsteps);
                 pos++;
                 current_report_time = reporting_times[pos];
                 REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
-                if(simcase==4 && sim_data.mTNumerics.m_run_with_transport){
-                    REAL InntMassFrac365 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(365);
-                    REAL InntMassFrac365_2 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById2(365);
-                    fileCilamce535 << current_report_time<< ", " << InntMassFrac365 << " " << InntMassFrac365_2 << std::endl;
-                    REAL InntMassFrac515 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(515);
-                    REAL InntMassFrac515_2 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById2(515);
-                    fileCilamce515 << current_report_time << ", " << InntMassFrac515 << " " << InntMassFrac515_2<< std::endl;
-                    REAL InntMassFrac530 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(530);
-                    REAL InntMassFrac530_2 = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById2(530);
-                    fileCilamce530 << current_report_time << ", " << InntMassFrac530 << " " << InntMassFrac530_2<< std::endl;
-                }
-                if(simcase==3 && sim_data.mTNumerics.m_run_with_transport){
-                    REAL InntMass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(330);
-                    file1<<current_report_time<<" "<<InntMass <<std::endl;
+                if(sim_data.mTNumerics.m_run_with_transport){
+                    fileFracSat << current_report_time << " ";
+                    for (auto& fprop : sim_data.mTFracProperties.m_fracprops) {
+                        const int matid = fprop.first;
+                        const REAL intMassThisFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(matid);
+                        fileFracSat << intMassThisFrac << " ";
+                    }
+                    fileFracSat << std::endl;
                 }
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
@@ -601,7 +599,6 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Solving problem
 		mixAnalisys->Solve();
 		mixAnalisys->VerifyElementFluxes();
-				
 		
         TPZFastCondensedElement::fSkipLoadSolution = false;
         mixed_operator->LoadSolution(mixed_operator->Solution());
