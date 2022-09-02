@@ -631,10 +631,11 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
 //    fluxIntegratedOutlet += massOut;
     REAL massConservation = fluxIntegratedInlet +intMass + fluxIntegratedOutlet + massOut;
     if(std::abs(massConservation) < 1.0e-8 ){
-        std::cout<<"Conservation ok"<<std::endl;
+        std::cout << "Global mass conservation is ok! Total massLoss = " << massConservation << std::endl;
     }
     else{
-        std::cout<<"Mass Loss: "<<massConservation<<std::endl;
+        std::cout << "\t====> ERROR! Global mass conservation NOT ok! <=====" << std::endl;
+        std::cout << "Global mass loss: " << massConservation << std::endl;
         DebugStop();
     }
     massOut +=fluxIntegratedOutlet;
