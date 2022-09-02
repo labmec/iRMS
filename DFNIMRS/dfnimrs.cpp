@@ -12,6 +12,7 @@
 #include <libInterpolate/Interpolate.hpp>
 #include <libInterpolate/AnyInterpolator.hpp>
 #include "TPZSimpleTimer.h"
+#include "pzintel.h"
 
 // include dfn filereader
 #include "filereader.h"
@@ -55,6 +56,7 @@ void ModifyTopeAndBase2(TPZGeoMesh * gmesh ,int nlayers);
 void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std::vector<double> &y, std::vector<double> &z);
 void FilterZeroNeumann(TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh);
 void ComputeDiagnostics(std::string& outputFolder, TMRSDataTransfer& sim_data, std::set<int>& bcflux, TPZMultiphysicsCompMesh* mixed_operator);
+void VerifyIfNeumannIsExactlyZero(const int matidNeumann, TPZMultiphysicsCompMesh* mixed_operator);
 
 std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -90,7 +92,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 3;
+    int simcase = 1;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -539,6 +541,7 @@ void RunProblem(string& filenameBase, const int simcase)
                     std::set<int> bcflux = {2,3,4}; // computes integral of quantity over these matids
                     ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
                 }
+                if(isFilterZeroNeumann) VerifyIfNeumannIsExactlyZero(4,mixed_operator);
             }
             mixed_operator->LoadSolution(mixed_operator->Solution());
 			
@@ -598,6 +601,7 @@ void RunProblem(string& filenameBase, const int simcase)
 		
 		// Solving problem
 		mixAnalisys->Solve();
+        if(isFilterZeroNeumann) VerifyIfNeumannIsExactlyZero(4,mixed_operator);
 		mixAnalisys->VerifyElementFluxes();
 		
         TPZFastCondensedElement::fSkipLoadSolution = false;
@@ -1711,6 +1715,9 @@ void FilterZeroNeumann(TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatri
     std::cout << "\n==> Total Filter time: " << timer_filter.ReturnTimeDouble()/1000. << " seconds" << std::endl;
 }
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void ComputeDiagnostics(std::string& outputFolder, TMRSDataTransfer& sim_data, std::set<int>& bcflux, TPZMultiphysicsCompMesh* mixed_operator) {
     std::cout << "\n**************************** Domain Diagnostics **************************** " << std::endl;
     auto result = computeIntegralOfNormalFlux(bcflux, mixed_operator);
@@ -1733,3 +1740,49 @@ void ComputeDiagnostics(std::string& outputFolder, TMRSDataTransfer& sim_data, s
         frac.Print(std::cout);
     }
 }
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void VerifyIfNeumannIsExactlyZero(const int matidNeumann, TPZMultiphysicsCompMesh* mixed_operator) {
+    TPZCompMesh* fluxmesh = mixed_operator->MeshVector()[0];
+    bool passed = true;
+    TPZFMatrix<STATE>& solmat = fluxmesh->Solution();
+    for(auto cel : fluxmesh->ElementVec()){
+        if(!cel) continue;
+        
+        TPZGeoEl* gel = cel->Reference();
+        if(!gel) continue; // SubCompMesh
+        const int matid = gel->MaterialId();
+        if(matid != matidNeumann) continue; // For now checking only Neumann in domain boundary
+        if(gel->Dimension() != 2) DebugStop();
+        
+        TPZInterpolatedElement* intel = dynamic_cast<TPZInterpolatedElement*>(cel);
+        if(!intel) DebugStop();
+        
+        const int ncon = intel->NConnects();
+        if(ncon != 1) DebugStop();
+        
+        TPZConnect& con = intel->Connect(0);
+        const int64_t seq = con.SequenceNumber();
+        const int64_t firsteq = fluxmesh->Block().Position(seq);
+        const int64_t blocksize = fluxmesh->Block().Size(seq);
+        const int64_t lasteq = firsteq + blocksize;
+        
+        for (int i = 0; i < blocksize; i++) {
+            const REAL solzero = solmat(i,0);
+            if (!IsZero(solzero)) {
+                std::cout << "Position " << firsteq+i << " has a dof with value " << solzero << std::endl;
+                passed = false;
+            }
+        }
+        
+    }
+    if (!passed) {
+        std::cout << "\n\nERROR! Zero Neumann filter did not work. Check above for diagnostics" << std::endl;
+        DebugStop();
+    }
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
