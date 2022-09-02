@@ -727,16 +727,16 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
         for(int iel = 0; iel<neles; iel++){
             int leftIndex = transport.fLeftRightVolIndex[iel].first;
             int rightIndex = transport.fLeftRightVolIndex[iel].second;
-            if(IndexGels[leftIndex]==-1){
-                IndexGels[leftIndex]=1;
+            if(IndexGels[leftIndex] == -1){
+                IndexGels[leftIndex] = 1;
 //                std::cout<<"IndexVec: "<<leftIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].first<<std::endl;
             }
-            if(IndexGels[rightIndex]==-1){
-                IndexGels[rightIndex]=1;
+            if(IndexGels[rightIndex] == -1){
+                IndexGels[rightIndex] = 1;
 //                std::cout<<"IndexVec: "<<rightIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].second<<std::endl;
             }
                 
-            REAL fluxInt =transport.fIntegralFlux[iel];
+            REAL fluxInt = transport.fIntegralFlux[iel];
             if(IsZero(fluxInt)){
                 numZeroFluxByElement[leftIndex]++;
                 numZeroFluxByElement[rightIndex]++;
@@ -744,21 +744,21 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
             
             SumFluxByElement[leftIndex] += fluxInt;
             nInterfacesByElement[leftIndex]++;
-            if(rightIndex<0){
+            if(rightIndex < 0){
                 continue;
             }
-            nInterfacesByElement[rightIndex] ++;
-            SumFluxByElement[rightIndex] +=  -fluxInt;
+            nInterfacesByElement[rightIndex]++;
+            SumFluxByElement[rightIndex] += -fluxInt;
         }
     }
     for(int iel = 0; iel<nInterfacesByElement.size(); iel++){
         if(abs(SumFluxByElement[iel])>1.0e-6){
-            std::cout<<"The sum of the flows on each element must be zero. Element:  "<<iel<<" has a value of"<<SumFluxByElement[iel]<<std::endl;
+            std::cout << "The sum of the flows on each element must be zero. Element: " << iel << " has a value of " << SumFluxByElement[iel] << std::endl;
             std::cout << "The problematic element in the flux mesh is " << fCellsData.fGeoIndex[iel] << std::endl;
             DebugStop();
         }
     }
-    std::cout<<"The sum of the flows over the elements is zero. ¡This is correct!"<<std::endl;
+    std::cout << "The sum of the flows over the elements is zero. This is correct!" << std::endl;
 }
 void TPZAlgebraicTransport::PrintFluxes(){
     for (auto interfaID: fInterfaceData) {
