@@ -721,9 +721,9 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
     std::vector<int> numZeroFluxByElement(nels);
     std::vector<int> IndexGels(nels,-1);
     std::vector<REAL> SumFluxByElement(nels);
-    for( auto interdata: fInterfaceData){
+    for(auto& interdata: fInterfaceData){
      
-        TInterfaceDataTransport &transport  =interdata.second;
+        TInterfaceDataTransport &transport = interdata.second;
         int neles = transport.fLeftRightVolIndex.size();
         for(int iel = 0; iel<neles; iel++){
             int leftIndex = transport.fLeftRightVolIndex[iel].first;

@@ -46,29 +46,10 @@ public:
         TInterfaceDataTransport() : fMatid(0), fcelindex(0), fCoefficientsFlux(0), fIntegralFluxFunctions(0), fLeftRightVolIndex(0),fIntegralFlux(0),fFluxSign(0), fNormalFaceDirection(0), fLeftRightGelIndex(0) {
            
         }
-        TInterfaceDataTransport(const TInterfaceDataTransport &copy){
-            fMatid = copy.fMatid;
-            fCoefficientsFlux = copy.fCoefficientsFlux;
-            fIntegralFluxFunctions = copy.fIntegralFluxFunctions;
-            fIntegralFlux = copy.fIntegralFlux;
-            fFluxSign= copy.fFluxSign;
-            fNormalFaceDirection = copy.fNormalFaceDirection;
-            fcelindex=copy.fcelindex;
-            fLeftRightVolIndex=copy.fLeftRightVolIndex;
-            fLeftRightGelIndex = copy.fLeftRightGelIndex;
-        }
-        TInterfaceDataTransport &operator=(const TInterfaceDataTransport &copy)
-        {
-            fMatid = copy.fMatid;
-            fCoefficientsFlux = copy.fCoefficientsFlux;
-            fIntegralFluxFunctions = copy.fIntegralFluxFunctions;
-            fIntegralFlux = copy.fIntegralFlux;
-            fFluxSign= copy.fFluxSign;
-            fNormalFaceDirection = copy.fNormalFaceDirection;
-            fLeftRightVolIndex=copy.fLeftRightVolIndex;
-            fLeftRightGelIndex = copy.fLeftRightGelIndex;
-            return *this;
-        }
+
+        TInterfaceDataTransport(const TInterfaceDataTransport &copy) = default;
+        TInterfaceDataTransport &operator=(const TInterfaceDataTransport &copy) = default;
+        
         void Print(std::ostream &out);
     };
     
@@ -124,79 +105,9 @@ public:
         {
             
         }
-        TCellData(const TCellData &copy)
-        {
-            fsim_data=copy.fsim_data;
-            fVolume = copy.fVolume;
-            fVolumefactor = copy.fVolumefactor;
-            fMatId=copy.fMatId;
-            fGeoIndex=copy.fGeoIndex;
-            fEqNumber=copy.fEqNumber;
-            fSaturation= copy.fSaturation;
-            fPressure=copy.fPressure;
-            fSaturationLastState = copy.fSaturationLastState;
-            fPressure = copy.fPressure;
-            fDensityOil = copy.fDensityOil;
-            fdDensityOildp = copy.fdDensityOildp;
-            fDensityOilLastState = copy.fDensityOilLastState;
-            fDensityWater = copy.fDensityWater;
-            fdDensityWaterdp = copy.fdDensityWaterdp;
-            fDensityWaterLastState = copy.fDensityWaterLastState;
-            fMixedDensity = copy.fMixedDensity;
-            flambda = copy.flambda;
-            fdlambdawdsw = copy.fdlambdawdsw;
-            fdlambdaodsw = copy.fdlambdaodsw;
-            fWaterfractionalflow = copy.fWaterfractionalflow;
-            fDerivativeWfractionalflow = copy.fDerivativeWfractionalflow;
-            fOilfractionalflow = copy.fOilfractionalflow;
-            fDerivativeOfractionalflow=copy.fDerivativeOfractionalflow;
-            fCenterCoordinate = copy.fCenterCoordinate;
-            fporosity = copy.fporosity;
-            fKx = copy.fKx;
-            fKy = copy.fKy;
-            fKz = copy.fKz;
-            fCompressibility = copy.fCompressibility;
-            fViscosity = copy.fViscosity;
-            fReferencePressures= copy.fReferencePressures;
-            fReferenceDensity = copy.fReferenceDensity;
-        }
-        TCellData &operator=(const TCellData &copy)
-        {
-             fsim_data=copy.fsim_data;
-            fVolume = copy.fVolume;
-            fVolumefactor = copy.fVolumefactor;
-            fMatId=copy.fMatId;
-            fGeoIndex=copy.fGeoIndex;
-            fEqNumber=copy.fEqNumber;
-            fSaturation= copy.fSaturation;
-            fPressure=copy.fPressure;
-            fSaturationLastState = copy.fSaturationLastState;
-            fPressure = copy.fPressure;
-            fDensityOil = copy.fDensityOil;
-            fdDensityOildp = copy.fdDensityOildp;
-            fDensityOilLastState = copy.fDensityOilLastState;
-            fDensityWater = copy.fDensityWater;
-            fdDensityWaterdp = copy.fdDensityWaterdp;
-            fDensityWaterLastState = copy.fDensityWaterLastState;
-            fMixedDensity = copy.fMixedDensity;
-            flambda = copy.flambda;
-            fdlambdawdsw = copy.fdlambdawdsw;
-            fdlambdaodsw = copy.fdlambdaodsw;
-            fWaterfractionalflow = copy.fWaterfractionalflow;
-            fDerivativeWfractionalflow=copy.fDerivativeWfractionalflow;
-            fOilfractionalflow = copy.fOilfractionalflow;
-            fDerivativeOfractionalflow = copy.fDerivativeOfractionalflow;
-            fCenterCoordinate = copy.fCenterCoordinate;
-            fporosity = copy.fporosity;
-            fKx = copy.fKx;
-            fKy = copy.fKy;
-            fKz = copy.fKz;
-            fCompressibility = copy.fCompressibility;
-            fViscosity = copy.fViscosity;
-            fReferencePressures= copy.fReferencePressures;
-            fReferenceDensity = copy.fReferenceDensity;
-            return *this;
-        }
+        TCellData(const TCellData &copy) = default;
+        TCellData &operator=(const TCellData &copy) = default;
+
         void SetNumCells(int64_t ncells)
         {
             fVolume.resize(ncells);
@@ -255,7 +166,7 @@ public:
     int fNVolumesTransport = 0;
     // Cells data structure, one material at a time
     TCellData fCellsData;
- 
+
     
     // Interface data structure, by material, element and side
     std::map<int, TInterfaceDataTransport> fInterfaceData;
