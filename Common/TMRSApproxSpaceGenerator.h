@@ -385,6 +385,7 @@ public:
 	
 	/// Returns true if the matid is a fracture intersection matid
     bool IsFracIntersectMatId(int matiD) { return IsFracMatId(matiD-2); }
+ 
 };
 
 #endif /* TMRSApproxSpaceGenerator_h */

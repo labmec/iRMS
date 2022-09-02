@@ -81,6 +81,7 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     const REAL phiR = fCellsData.fporosity[lr_index.second];
     const REAL vfL = fCellsData.fVolumefactor[lr_index.first];
     const REAL vfR = fCellsData.fVolumefactor[lr_index.second];
+    int matIdL = fCellsData.fporosity[lr_index.first];
     if(std::abs(phiL) < 1e-12) DebugStop();
     if(std::abs(phiR) < 1e-12) DebugStop();
     if(std::abs(vfL) < 1e-12) DebugStop();
@@ -584,7 +585,7 @@ REAL TPZAlgebraicTransport::CalculateMass(){
 REAL TPZAlgebraicTransport::CalculateMassById(int matId){
     int ncells = fCellsData.fVolume.size();
     REAL intMass = 0.0;
-    REAL volfrac=0.0;
+    REAL volfrac= 0.0;
     
     for (int icel = 0; icel < ncells; icel++) {
         int celId = fCellsData.fMatId[icel];

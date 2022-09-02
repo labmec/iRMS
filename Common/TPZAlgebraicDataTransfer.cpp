@@ -1287,7 +1287,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fVolume[i]=volume;
         transport.fCellsData.fMatId[i]=matId;
         if(matId==299){
-            int ok=0;
+            std::cout<<"IntersecElement: "<<std::endl;
         }
         if (cel->NConnects()!=1) {
             DebugStop();

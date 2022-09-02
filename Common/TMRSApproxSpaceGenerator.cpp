@@ -1840,7 +1840,7 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
         
     }
  
-#ifdef PZDEBUG
+#ifdef PZDEBUG2
     std::ofstream transport("transport_cmesh.txt");
     mTransportOperator->Print(transport);
 #endif
@@ -4045,7 +4045,7 @@ void TMRSApproxSpaceGenerator::CreateInterfaces(TPZCompMesh *cmesh){
     for(auto elindex: cel_indexes[dim-1]){ // loop over fracture elements
         TPZCompEl *cel = cmesh->Element(elindex);
         TPZGeoEl *gel = cel->Reference();
-        CreateFracInterfaces(gel);
+        CreateFracInterfaces2(gel);
     }
     
     //    std::ofstream file("NewInterfaces.vtk");
@@ -4055,7 +4055,9 @@ void TMRSApproxSpaceGenerator::CreateInterfaces(TPZCompMesh *cmesh){
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
+
 void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
+    
     int dimension = gel->Dimension();
     int nsides = gel->NSides();
     int ncoord = gel->NCornerNodes();
@@ -4093,10 +4095,10 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     std::set<int> VolMatIds;
     int dimen = gel->Mesh()->Dimension();
     
-	for (auto chunk : DomainDimNameAndPhysicalTag) {
-		int material_id = chunk.second;
-		VolMatIds.insert(material_id);
-	}
+    for (auto chunk : DomainDimNameAndPhysicalTag) {
+        int material_id = chunk.second;
+        VolMatIds.insert(material_id);
+    }
         
    
     for (int iside = ncoord; iside < nsides; iside++) {
@@ -4121,96 +4123,68 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
         }
         else{ // Create interface between fracture/fracture and fracture/boundary
 //            std::set<int> FracNeihVec;
-            std::vector<TPZGeoElSide> gelneigVec2;
-            findNeighElementbyMatId(gelside,gelneigVec,FracNeihVec);
-            int nneih=gelneigVec.size();
+            //Verify if is frac-frac frac-bound or frac-intersec
+            int matfrac = gelside.Element()->MaterialId();
+            auto fracprop = mSimData.mTFracProperties.m_fracprops[matfrac];
+            std::set<int> matsbcfrac =fracprop.m_fracbc;
+            std::set<int> myFracId;
+            std::set<int> myFracIntersectId;
+            std::set<int> intersecId;
+            intersecId.insert(299);
+            myFracId.insert(matfrac);
+            int matIntersec = fracprop.m_fracIntersectMatID;
+            myFracIntersectId.insert(matIntersec);
             
-            //Frac-Frac intersecttion
-            if (nneih>1){
-                //Pode ser interseçao
-                findNeighElementbyMatId(gelside,gelneigVec2,FracIntersec);
-                int ninter = gelneigVec2.size();
-                // fratura enconstando em outra
-                if(ninter==0){
-                    int nfraEls = gelneigVec.size();
-                    // pelo lado de elemento que nao chega a fratura e é vizinho do que encosta
-                    bool foundP=true;
-                    for (auto gelneig:gelneigVec) {
-                        int matId = gelneig.Element()->MaterialId();
-                        if (matId == gelside.Element()->MaterialId()) {
-                            foundP=false;
-                            if (gel->Id() < gelneig.Element()->Id()) {
-                                int matid = matIdFracFrac;
-                                CreateInterfaceElements(gelside, gelneig, matid);
-                                break;
-                            }
-//                            CreateInterfaceElements(gelside, gelneig, transport_interface_matid);
-//                            break;
-                        }
-                    }
-                    // pelo lado da fratura que encosta...
-                    if(foundP){
-                        std::vector<TPZGeoElSide> gelneigP;
-                        findNeighElementbyMatId(gelside,gelneigP,matidsbcfrac);
-                        int nels =gelneigP.size();
-                        if(nels!=1){
-                            DebugStop();
-                        }
-//                        int mid= 100;??gelneigP[0].Element()->MaterialId();
-                        int mid = matIdFracFrac;
-                        CreateInterfaceElements(gelside, gelneigP[0], mid);
-//                        int ok=0;
-                    }
-                    
-//                    int ok=0;
-                }
-                
-                if(ninter==1){
-                    TPZGeoElSide gelneig =gelneigVec2[0];
-                    CreateInterfaceElements(gelside, gelneig, transport_interface_matid);
-                }
-                if (ninter>1) DebugStop();
-
-            }
-            //Frac-Frac Interfaces
-            if (nneih==1) {
-                TPZGeoElSide gelneig =gelneigVec[0];
+            bool is_fracfrac=false;
+            bool is_fracbound=false;
+            bool is_fracintersect=false;
+            
+            std::vector<TPZGeoElSide> gelneigMyFrac;
+            std::vector<TPZGeoElSide> gelneigMyBCFrac;
+            std::vector<TPZGeoElSide> gelneigMyIntersecFrac;
+            
+            findNeighElementbyMatId(gelside,gelneigMyFrac,myFracId);
+            findNeighElementbyMatId(gelside,gelneigMyBCFrac,matsbcfrac);
+            findNeighElementbyMatId(gelside,gelneigMyIntersecFrac,myFracIntersectId);
+            
+            
+            
+            if (gelneigMyFrac.size()==1 && gelneigMyIntersecFrac.size() ==0) {
+                TPZGeoElSide gelneig =gelneigMyFrac[0];
                 if (gel->Id() < gelneig.Element()->Id()) {
                     int matid = matIdFracFrac;
                     CreateInterfaceElements(gelside, gelneig, matid);
                 }
+                is_fracfrac=true;
             }
-            //Frac - Bound Interfaces
-            if(nneih==0){
-                std::vector<TPZGeoElSide > boundaries;
-                findNeighElementbyMatId(gelside,boundaries,matidsbcfrac);
-                int nneihbound=boundaries.size();
-                if(nneihbound>=1){ //If fracBound material = Vol Boundary Material
-                    TPZGeoElSide gelneig;
-                    int nboundneih =boundaries.size();
-                    bool found = false;
-                    for (auto gelsid:boundaries) {
-                        if (gelsid.Element()->Dimension()<gelside.Element()->Dimension()) {
-                            gelneig=gelsid;
-                            found = true;
-                            break;
-                        }
-                    }
-                    if (!found) {
-                        DebugStop();
-                    }
-                    int mid=gelneig.Element()->MaterialId();
-                    CreateInterfaceElements(gelside, gelneig, mid);
-                    
+            if (gelneigMyBCFrac.size()==1) {
+                int matid = -1;
+                for(auto id:matsbcfrac){
+                    matid=id;
+                }
+                CreateInterfaceElements(gelside, gelneigMyBCFrac[0], matid);
+                is_fracbound=true;
+            }
+                
+            if (gelneigMyIntersecFrac.size()>=1) {
+                std::vector<TPZGeoElSide> realIntersect;
+                findNeighElementbyMatId(gelside,realIntersect,intersecId);
+                if(!realIntersect.size()){
+                    DebugStop();
                 }
                 else{
-                    DebugStop(); // at this point there should be a neighbor that is boundary
+                    int matid=100;
+                    CreateInterfaceElements(gelside, realIntersect[0], matid);
                 }
+                is_fracintersect=true;
             }
+            if (!is_fracfrac && !is_fracbound && !is_fracintersect) {
+                DebugStop();
+            }
+
         }
     }
 }
-
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
