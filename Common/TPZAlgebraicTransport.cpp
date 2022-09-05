@@ -739,8 +739,10 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
                 
             REAL fluxInt = transport.fIntegralFlux[iel];
             if(IsZero(fluxInt)){
-                numZeroFluxByElement[leftIndex]++;
-                numZeroFluxByElement[rightIndex]++;
+                if(leftIndex >= 0)
+                    numZeroFluxByElement[leftIndex]++;
+                if(rightIndex >= 0)
+                    numZeroFluxByElement[rightIndex]++;
             }
             
             SumFluxByElement[leftIndex] += fluxInt;
