@@ -160,7 +160,8 @@ public:
     int outletmatid;
     int interfaceid;
     bool fHasPropQ=false;
-    REAL massOut =0.0;
+    REAL massOut = 0.0;
+    REAL initialMass = 0.;
     
     //number of volumetric elements in the transport mesh
     int fNVolumesTransport = 0;

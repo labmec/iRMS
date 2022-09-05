@@ -630,7 +630,7 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
         fluxIntegratedOutlet += (satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
     }
 //    fluxIntegratedOutlet += massOut;
-    REAL massConservation = fluxIntegratedInlet +intMass + fluxIntegratedOutlet + massOut;
+    REAL massConservation = fluxIntegratedInlet + intMass + fluxIntegratedOutlet + massOut - initialMass;
     if(std::abs(massConservation) < 1.0e-8 ){
         std::cout << "Global mass conservation is ok! Total massLoss = " << massConservation << std::endl;
     }
@@ -639,7 +639,7 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
         std::cout << "Global mass loss: " << massConservation << std::endl;
         DebugStop();
     }
-    massOut +=fluxIntegratedOutlet;
+    massOut += fluxIntegratedOutlet;
 }
 
 
