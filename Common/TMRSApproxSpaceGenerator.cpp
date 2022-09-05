@@ -4130,7 +4130,7 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
             std::set<int> myFracId;
             std::set<int> myFracIntersectId;
             std::set<int> intersecId;
-            intersecId.insert(299);
+            intersecId.insert( mSimData.mTGeometry.m_pressureMatId );
             myFracId.insert(matfrac);
             int matIntersec = fracprop.m_fracIntersectMatID;
             myFracIntersectId.insert(matIntersec);
@@ -4138,6 +4138,7 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
             bool is_fracfrac=false;
             bool is_fracbound=false;
             bool is_fracintersect=false;
+            
             
             std::vector<TPZGeoElSide> gelneigMyFrac;
             std::vector<TPZGeoElSide> gelneigMyBCFrac;
@@ -4179,7 +4180,26 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
                 is_fracintersect=true;
             }
             if (!is_fracfrac && !is_fracbound && !is_fracintersect) {
-                DebugStop();
+                std::vector<TPZGeoElSide> realBC;
+                int dim = gel->Dimension()+1;
+                std::set<int>matids;
+                std::set<int> bcmatids;
+                GetMaterialIds(dim, matids, bcmatids);
+                findNeighElementbyMatId(gelside,realBC,bcmatids);
+                TPZGeoElSide gelsidecorrect;
+                bool found = false;
+                for(auto gelside2: realBC){
+                    int dimel=gelside2.Element()->Dimension();
+                    if(dimel== gel->Dimension()-1){
+                        found=true;
+                        CreateInterfaceElements(gelside, gelside2, gelside2.Element()->MaterialId());
+                        break;
+                    }
+                }
+                if(!found){
+                    DebugStop();
+                }
+               
             }
 
         }
