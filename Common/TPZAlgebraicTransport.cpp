@@ -620,17 +620,32 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
     REAL fluxIntegratedInlet=0.0;
     int nOutletInterfaces = fInterfaceData[outletmatid].fIntegralFlux.size();
     REAL fluxIntegratedOutlet=0.0;
+    int nNoFluxFaces = fInterfaceData[4].fIntegralFlux.size();
+    REAL fluxIntegratedNoFlux=0.0;
     for (int iInlet=0; iInlet<ninletInterfaces; iInlet++) {
          fluxIntegratedInlet += fInterfaceData[inletmatid].fIntegralFlux[iInlet]*fdt*itime;
     }
     for (int iOutlet=0; iOutlet<nOutletInterfaces; iOutlet++) {
         std::pair<int64_t, int64_t> left_right = fInterfaceData[outletmatid].fLeftRightVolIndex[iOutlet];
         REAL satOutlet = fCellsData.fSaturation[left_right.first];
-        REAL satOutletAnt = fCellsData.fSaturationLastState[left_right.first];
         fluxIntegratedOutlet += (satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
     }
-//    fluxIntegratedOutlet += massOut;
-    REAL massConservation = fluxIntegratedInlet + intMass + fluxIntegratedOutlet + massOut - initialMass;
+    for (int iNF=0; iNF<nNoFluxFaces; iNF++) {
+        std::pair<int64_t, int64_t> left_right = fInterfaceData[4].fLeftRightVolIndex[iNF];
+        const int indexCell = left_right.first;
+        REAL satNF = fCellsData.fSaturation[indexCell];
+        const REAL noFluxIntegral = fInterfaceData[4].fIntegralFlux[iNF];
+        if(fabs(noFluxIntegral) > 1.e-8){
+            const int indexgeoel = fCellsData.fGeoIndex[indexCell];
+            std::cout << "In cell " << indexCell << ", and geoel index " << indexgeoel << ", noFluxIntegral = " << noFluxIntegral << std::endl;
+        }
+        fluxIntegratedNoFlux += (satNF)*noFluxIntegral*fdt;
+    }
+
+    if(fabs(fluxIntegratedNoFlux) > 1.e-10 ){
+        std::cout << "\n=====> WARNING! Flux through no flux bc is significant. Total = " << fluxIntegratedNoFlux << std::endl;
+    }
+    REAL massConservation = fluxIntegratedInlet + intMass + fluxIntegratedOutlet - fluxIntegratedNoFlux + massOut - initialMass;
     if(std::abs(massConservation) < 1.0e-8 ){
         std::cout << "Global mass conservation is ok! Total massLoss = " << massConservation << std::endl;
     }
