@@ -512,6 +512,7 @@ void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
 }
 
 void TMRSSFIAnalysis::VerifyElementFluxes(){
+    const REAL tol = 1.e-10;
     TPZMultiphysicsCompMesh *mixedmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_mixed_module->Mesh()) ;
     TPZCompMesh *cmesh =mixedmesh->MeshVector()[0];
 //    std::ofstream file("fuxmesh.txt");
@@ -566,11 +567,12 @@ void TMRSSFIAnalysis::VerifyElementFluxes(){
             sumel += sideOrient*meshSol.GetVal(cmesh->Block().Index(sequence,ieq),0);
             }
         }
-        if(std::abs(sumel)> 1.0e-8 ){
+        if(std::abs(sumel)> tol ){
+            std::cout << "\n\nERROR! Conservation of element index " << cel->Reference()->Index() << " is " << sumel << std::endl;
             DebugStop();
         }
-//            std::cout<<"Gel Index: "<< cel->Reference()->Index() <<" SumEl: "<<sumel<<std::endl;
     }
+    std::cout << "\n\n===>Nice! All flux elements satisfy conservation up to tolerance " << tol << std::endl;
 }
 
 void TMRSSFIAnalysis::TransferToTransportModule(){

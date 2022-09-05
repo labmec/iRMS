@@ -1767,7 +1767,6 @@ void VerifyIfNeumannIsExactlyZero(const int matidNeumann, TPZMultiphysicsCompMes
         const int64_t seq = con.SequenceNumber();
         const int64_t firsteq = fluxmesh->Block().Position(seq);
         const int64_t blocksize = fluxmesh->Block().Size(seq);
-        const int64_t lasteq = firsteq + blocksize;
         
         for (int i = 0; i < blocksize; i++) {
             const REAL solzero = solmat(i,0);
@@ -1781,6 +1780,9 @@ void VerifyIfNeumannIsExactlyZero(const int matidNeumann, TPZMultiphysicsCompMes
     if (!passed) {
         std::cout << "\n\nERROR! Zero Neumann filter did not work. Check above for diagnostics" << std::endl;
         DebugStop();
+    }
+    else {
+        std::cout << "\n===> Filter Worked! All Neumann zero are zero." << std::endl;
     }
 }
 

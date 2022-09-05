@@ -258,8 +258,9 @@ void TMRSMixedAnalysis::Solve(){
 }
 
 void TMRSMixedAnalysis::VerifyElementFluxes(){
+    const REAL tol = 1.e-10;
 	TPZMultiphysicsCompMesh *mixedmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh()) ;
-	TPZCompMesh *cmesh =mixedmesh->MeshVector()[0];
+	TPZCompMesh *cmesh = mixedmesh->MeshVector()[0];
 //	std::ofstream file("fuxmesh.txt");
 	const TPZFMatrix<STATE> &meshSol = cmesh->Solution();
 //	mixedmesh->MeshVector()[0]->Print(file);
@@ -317,12 +318,13 @@ void TMRSMixedAnalysis::VerifyElementFluxes(){
 			int blocksize = cmesh->Block().Size(sequence);
 			for(int ieq=0; ieq< blocksize; ieq++)
 			{
-			sumel += sideOrient*meshSol.GetVal(cmesh->Block().Index(sequence,ieq),0);
+                sumel += sideOrient*meshSol.GetVal(cmesh->Block().Index(sequence,ieq),0);
 			}
 		}
-		if(std::abs(sumel)> 1.0e-8 ){
+		if(std::abs(sumel)> tol ){
+            std::cout << "\n\nERROR! Conservation of element index " << cel->Reference()->Index() << " is " << sumel << std::endl;
 			DebugStop();
 		}
-//            std::cout<<"Gel Index: "<< cel->Reference()->Index() <<" SumEl: "<<sumel<<std::endl;
 	}
+    std::cout << "\n\n===>Nice! All flux elements satisfy conservation up to tolerance " << tol << std::endl;
 }
