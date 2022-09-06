@@ -356,9 +356,10 @@ void RunProblem(string& filenameBase, const int simcase)
 	// ----- Simulation and printing parameters -----
     const bool isRefineMesh = false;
     const bool isPostProc = true;
+    const bool isPostProcessFracDiagnostics = true;
     const bool isFilterZeroNeumann = false;
-	bool isMHM = true;
-    bool needsMergeMeshes = true;
+	bool isMHM = true; // may be set in json
+    bool needsMergeMeshes = true; // may be set in json
     
     // ----- output folder stuff -----
     if(filenameBase.back() != '/') filenameBase = filenameBase + "/";
@@ -536,8 +537,7 @@ void RunProblem(string& filenameBase, const int simcase)
             sfi_analysis->RunTimeStep();
             if(it == 1){
                 sfi_analysis->PostProcessTimeStep(typeToPPinit);
-                const bool PostProcessQuantities = true;
-                if(PostProcessQuantities){
+                if(isPostProcessFracDiagnostics){
                     std::set<int> bcflux = {2,3,4}; // computes integral of quantity over these matids
                     ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
                 }
@@ -624,8 +624,7 @@ void RunProblem(string& filenameBase, const int simcase)
 //        TPZCompMesh *pressure = mixed_operator->MeshVector()[1];
 //        pressure->Solution().Print("pressure multipliers");
         // Computes the integral of the normal flux on the boundaries.
-        const bool PostProcessQuantities = true;
-        if(PostProcessQuantities){
+        if(isPostProcessFracDiagnostics){
             std::set<int> bcflux = {2,3,4}; // computes integral of quantity over these matids
             ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
         }

@@ -746,7 +746,7 @@ void TPZAnalysisAuxEigen::Solve(){
 //    Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
 //    m_ds=ds;
     if (!isFirst) {
-        m_analysis2.setTolerance(1e-10);
+        m_analysis2.setTolerance(1e-14);
         m_analysis2.setMaxIterations(1000);
         m_analysis2.compute(m_transmissibility);
         isFirst=true;

@@ -642,16 +642,28 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
         fluxIntegratedNoFlux += (satNF)*noFluxIntegral*fdt;
     }
 
+    REAL massConservation = fluxIntegratedInlet + intMass + fluxIntegratedOutlet + massOut - initialMass;
+    std::cout << "\n ------------------ Global Conservation Diagnostics ------------------" << std::endl;
+    std::cout << "Inlet mass: " << std::setprecision(14) << fluxIntegratedInlet << std::endl;
+    std::cout << "Outlet mass: " << fluxIntegratedOutlet << std::endl;
+    std::cout << "Inlet - Outlet: " << fluxIntegratedInlet + fluxIntegratedOutlet << std::endl;
     if(fabs(fluxIntegratedNoFlux) > 1.e-10 ){
-        std::cout << "\n=====> WARNING! Flux through no flux bc is significant. Total = " << fluxIntegratedNoFlux << std::endl;
+        std::cout << "=====> WARNING! Flux through no flux bc is significant. Total = " << fluxIntegratedNoFlux << std::endl;
     }
-    REAL massConservation = fluxIntegratedInlet + intMass + fluxIntegratedOutlet - fluxIntegratedNoFlux + massOut - initialMass;
+    else{
+        std::cout << "NoFlux mass: " << fluxIntegratedNoFlux << std::endl;
+    }    
+    std::cout << "System mass: " << intMass << std::endl;
+    std::cout << "Initial mass: " << initialMass << std::endl;
+    std::cout << "System mass - Initial mass: " << intMass - initialMass << std::endl;
+    std::cout << "Accumulated outlet mass: " << massOut << std::endl;
+
     if(std::abs(massConservation) < 1.0e-8 ){
-        std::cout << "Global mass conservation is ok! Total massLoss = " << massConservation << std::endl;
+        std::cout << "\t===> Global mass conservation is ok! Total massLoss = " << std::setprecision(14) << massConservation << std::endl;
     }
     else{
         std::cout << "\t====> ERROR! Global mass conservation NOT ok! <=====" << std::endl;
-        std::cout << "Global mass loss: " << massConservation << std::endl;
+        std::cout << "Global mass loss: " << std::setprecision(14) << massConservation << std::endl;
         DebugStop();
     }
     massOut += fluxIntegratedOutlet;

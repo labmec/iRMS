@@ -41,6 +41,7 @@
 
 	"FractureHybridPressureMatId": 299,
     "FractureInitMatId": 300,
+    "useMHM": true,
     "RunWithTransport": true,
     "DeltaT": 1.0e7,
     "NSteps": 100,
