@@ -80,7 +80,6 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
         }
       
         int nc = cel->NConnects();
-        bool found = false;
         if(LagrangeLevelNotCondensed >=0)
         {
             for (int ic=0; ic<nc; ic++) {
@@ -97,14 +96,13 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
                 if((c.LagrangeMultiplier() >= LagrangeLevelNotCondensed && c.NElConnected() == 1) )
                 {
                     c.IncrementElConnected();
-                    found = true;
                 }
             }
         }
         int ic;
         for (ic=0; ic<nc; ic++) {
             TPZConnect &c = cel->Connect(ic);
-            if (c.HasDependency() || c.NElConnected() > 1) {
+            if (c.HasDependency() || c.NElConnected() > 1) { // if the el has dependency or if it is a boundary
                 continue;
             }
             break;
@@ -114,7 +112,6 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
         bool cancondense = (ic != (nc));
         if(cancondense)
         {
-//            if(LagrangeLevelNotCondensed >= 0 && !found) DebugStop();
             TPZGeoEl *gel = cel->Reference();
             TPZFastCondensedElement *cond = new TPZFastCondensedElement(cel, keepmatrix);
             cond->SetLambda(1.0);

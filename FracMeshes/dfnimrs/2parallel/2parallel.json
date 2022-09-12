@@ -12,7 +12,7 @@
     //     "Nels": [2,1,1]
     //     // "nelDiv": [1,1,1]
     // },
-    "Mesh" : "examples/overlap_cases/twoElCoarse.msh",
+    "Mesh" : "2parallel_coarse.msh",
     "TolDist": 1e-4,
     "TolAngle": 1e-4,
     // "Mesh" : "examples/cube.msh",
@@ -47,6 +47,8 @@
     ],        
     "FractureHybridPressureMatId": 299,
     "FractureInitMatId": 300,
+    "useMHM": false,
+    "RunWithTransport": false,
     "Fractures":[
         { //Fracture 0
             "Index": 0,

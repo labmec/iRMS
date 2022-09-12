@@ -4349,7 +4349,9 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
 //        subcmesh->SetAnalysisSkyline(0, 0, gui);
 //		subcmesh->SetAnalysisFStruct(0);
 		// MATRIX HAS TO BE SPARSE TO DO PIVOTING
-		subcmesh->SetAnalysisSparse(8);
+        const int nthreads = 0;
+//		subcmesh->SetAnalysisSparse(nthreads);
+        subcmesh->SetAnalysisSkyline(nthreads, 0, gui);
     }
     //    GroupandCondenseElements();
     //    GroupandCondenseElementsEigen();

@@ -326,5 +326,5 @@ void TMRSMixedAnalysis::VerifyElementFluxes(){
 			DebugStop();
 		}
 	}
-    std::cout << "\n\n===>Nice! All flux elements satisfy conservation up to tolerance " << tol << std::endl;
+    std::cout << "\n\n===> Nice! All flux elements satisfy conservation up to tolerance " << tol << std::endl;
 }
