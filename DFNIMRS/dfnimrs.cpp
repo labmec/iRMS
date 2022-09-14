@@ -13,7 +13,7 @@
 #include <libInterpolate/AnyInterpolator.hpp>
 #include "TPZSimpleTimer.h"
 #include "pzintel.h"
-
+#include "pzsmanal.h"
 // include dfn filereader
 #include "filereader.h"
 
@@ -39,7 +39,7 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
 
 void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTransfer& sim_data);
 
-void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte);
+void FillPCteSol(TPZCompMesh* mpcmesh, const REAL pcte);
 
 // Quick fix functions. Should be deleted in the future (May 2022)
 void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh);
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 23;
+    int simcase = 1;
     if (argc > 1) {
         filenameBase = basemeshpath + argv[1];
     }
@@ -354,6 +354,8 @@ struct FractureQuantities {
 
 };
 
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
 
 void RunProblem(string& filenameBase, const int simcase)
 {
@@ -584,26 +586,76 @@ void RunProblem(string& filenameBase, const int simcase)
         mixAnalisys->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
         if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,mixAnalisys->StructMatrix(),mixed_operator);
         
-//        {
-//            std::ofstream out(outputFolder + "mixedCMesh.txt");
-//            mixed_operator->Print(out);
-//        }
+        {
+            std::ofstream out(outputFolder + "mixedCMesh.txt");
+            mixed_operator->Print(out);
+        }
         mixAnalisys->Assemble();
 		
 		// Testing if constant pressure leads to zero residual in cte pressure problem
-		const bool testCtePressure = false;
+		const bool testCtePressure = true;
 		if(testCtePressure){
-			const int neq = mixAnalisys->Mesh()->NEquations();
-			TPZFMatrix<STATE> res(neq,1,0.);
-			FillPCteSol(mixed_operator,1.);
-			mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-//			mixAnalisys->PostProcessTimeStep(2);
-//			mixAnalisys->PostProcessTimeStep(3);
-			TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
-			mat->Multiply(mixed_operator->Solution(), res);
-			res = res + mixAnalisys->Rhs();
-			std::ofstream out(outputFolder + "problematicEls.txt");
-			mixAnalisys->PrintVectorByElement(out, res, 1.e-6);
+            const int neq = mixAnalisys->Mesh()->NEquations();
+            TPZFMatrix<STATE> res(neq,1,0.);
+            FillPCteSol(mixed_operator,1.);
+            mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+//            mixAnalisys->PostProcessTimeStep(2);
+//            mixAnalisys->PostProcessTimeStep(3);
+            TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
+            mat->Multiply(mixed_operator->Solution(), res);
+            res = res + mixAnalisys->Rhs();
+            std::ofstream out(outputFolder + "problematicElsGlob.txt");
+            mixAnalisys->PrintVectorByElement(out, res, 1.e-6);
+            if(sim_data.mTNumerics.m_mhm_mixed_Q){
+                for(auto cel : mixed_operator->ElementVec()){
+                    TPZSubCompMesh* subcmesh = dynamic_cast<TPZSubCompMesh*>(cel);
+                    if(subcmesh){
+                        FillPCteSol(subcmesh,1.);
+//                        TPZSubMeshAnalysis* sanal = dynamic_cast<TPZSubMeshAnalysis*>(subcmesh->Analysis().operator->());
+//                        TPZMatrix<STATE>* mat = sanal->Matrix().operator->();
+//                        TPZMatRed<STATE, TPZFMatrix<STATE>>* matred = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE>>*>(mat);
+//
+//                        matred->ResetReduced();
+//                        TPZFMatrix<STATE> res(subcmesh->TPZCompMesh::NEquations(),1,0.);
+//                        TPZFMatrix<STATE> k = *mat;
+//                        k.SetIsDecomposed(0);
+//                        for (int i = 0; i < matred->Dim0(); i++) {
+//                            for (int j = matred->Dim0(); j < matred->Dim0() + matred->Dim1(); j++) {
+//                                k(i,j) = matred->fK01orig(i,j-matred->Dim0());
+//                            }
+//                        }
+//
+//                        TPZFMatrix<STATE> subcmeshsolint = subcmesh->TPZCompMesh::Solution();
+//                        TPZEquationFilter& subcmeshfilter = sanal->StructMatrix()->EquationFilter();
+//                        if(subcmeshfilter.IsActive()){
+//                            TPZFMatrix<STATE> subcmeshsolintfilter(subcmeshfilter.NActiveEquations(),1,0.);
+//                            subcmeshsolint.Resize(subcmesh->TPZCompMesh::NEquations(), 1);
+//                            subcmeshfilter.Gather(subcmeshsolint, subcmeshsolintfilter);
+//                            subcmeshsolint = subcmeshsolintfilter;
+//                        }
+//                        subcmeshsolint.Resize(k.Rows(), 1);
+//                        subcmeshsolint.Print("solint=",std::cout,EMathematicaInput);
+//
+//                        k.Multiply(subcmeshsolint, res);
+//                        res.Print("res=",std::cout,EMathematicaInput);
+//                        k.Print("k=",std::cout,EMathematicaInput);
+//                        TPZFMatrix<STATE> rhsint(matred->Dim0(),1,0.);
+//                        for(int i = 0 ; i < matred->Dim0() ; i++) rhsint(i,0) = res(i,0);
+//                        rhsint.Print("rhsint=",std::cout,EMathematicaInput);
+//                        rhsint = rhsint + matred->fF0orig;
+//                        rhsint.Resize(k.Rows(),1);
+//                        matred->fF0orig.Print("f0=",std::cout,EMathematicaInput);
+//                        std::string outname = outputFolder + "problematicEls_subcmesh_" + to_string(subcmesh->Index()) + ".txt";
+//                        std::ofstream outs(outname);
+//                        if(subcmeshfilter.IsActive()){
+//                            TPZFMatrix<STATE> rhsexpand(subcmeshfilter.NEqExpand(),1,0.);
+//                            subcmeshfilter.Scatter(rhsint, rhsexpand);
+//                            rhsint = rhsexpand;
+//                        }
+//                        subcmesh->Analysis()->PrintVectorByElement(outs, rhsint);
+                    }
+                }
+            }
 		}
 		
 		// Solving problem
@@ -654,8 +706,6 @@ void RunProblem(string& filenameBase, const int simcase)
     delete gmeshfine;
     delete gmeshcoarse;
 }
-
-
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
@@ -883,7 +933,6 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
     return gmeshFine;
 }
 
-
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
@@ -918,7 +967,6 @@ void MapFractureIntersection(const std::string &filenameBase, std::map<std::stri
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
-
 
 void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes, bool& isMHM, bool& needsMergeMeshes) {
 	using json = nlohmann::json;
@@ -1284,6 +1332,7 @@ void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh) {
                 gel->SetMaterialId(4);
     }
 }
+
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
@@ -1397,7 +1446,7 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte) {
+void FillPCteSol(TPZCompMesh* mpcmesh, const REAL pcte) {
 	
 	int64_t nc = mpcmesh->NConnects();
 	TPZFMatrix<STATE> &sol = mpcmesh->Solution();
@@ -1407,7 +1456,7 @@ void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte) {
 		if(seqnum < 0) continue;
 		unsigned char lagrange = c.LagrangeMultiplier();
 		STATE fill = 0.;
-		if(lagrange == 1 || lagrange == 3 || lagrange == 5)
+		if(lagrange == 1 || lagrange == 3 || lagrange == 6 || lagrange == 7)
 		{
 			fill = pcte;
 		}

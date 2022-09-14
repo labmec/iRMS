@@ -4346,12 +4346,18 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         TPZCompEl *cel = cmesh->Element(it.second);
         TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cel);
         TPZAutoPointer<TPZGuiInterface> gui;
-//        subcmesh->SetAnalysisSkyline(0, 0, gui);
-//		subcmesh->SetAnalysisFStruct(0);
-		// MATRIX HAS TO BE SPARSE TO DO PIVOTING
-        const int nthreads = 0;
-//		subcmesh->SetAnalysisSparse(nthreads);
-        subcmesh->SetAnalysisSkyline(nthreads, 0, gui);
+
+        const int nthreads = mSimData.mTNumerics.m_nThreadsMixedProblem;
+        const bool isUseSparse = true;
+        if(isUseSparse){
+            // Pardiso does pivoting which is necessary in some problems
+            subcmesh->SetAnalysisSparse(nthreads);
+        }
+        else{
+            // Skyline does not do pivoting and unfortunately, it is necessary for certain problems.
+            // So, using it might lead to zero pivot and therefore it is strongly not recommended.
+            subcmesh->SetAnalysisSkyline(nthreads, 0, gui);
+        }
     }
     //    GroupandCondenseElements();
     //    GroupandCondenseElementsEigen();

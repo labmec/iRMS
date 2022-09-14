@@ -503,12 +503,14 @@ void TPZReservoirTools::PushConnectBackward(TPZCompMesh *cmesh, char LagrangeSta
         }
     }
     if(pushconnect == -1) return;
-//    TPZConnect &c = cmesh->ConnectVec()[pushconnect];
-//    c.SetLagrangeMultiplier(LagrangeDest);
+    TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cmesh);
+    TPZConnect &c = cmesh->ConnectVec()[pushconnect];
+    c.SetLagrangeMultiplier(LagrangeDest);
+    
     // Renumber the connect such that the ordering is consistent
     cmesh->SaddlePermute();
+    
     // If the mesh is a SubCompMesh put the external connects last
-    TPZSubCompMesh *subcmesh = dynamic_cast<TPZSubCompMesh *>(cmesh);
     if(subcmesh)
     {
         subcmesh->PermuteExternalConnects();
