@@ -6,6 +6,7 @@
 #include "TMRSApproxSpaceGenerator.h"
 #include "imrs_config.h"
 #include "pzlog.h"
+#include "TPZSimpleTimer.h"
 #include <tpzgeoelrefpattern.h>
 #include "json.hpp"
 #include <filesystem>
@@ -31,7 +32,7 @@ namespace fs = std::filesystem;
 // ----- End of namespaces -----
 
 // ----- Functions -----
-void RunProblem(string& filenameBase);
+void RunProblem(string& filenameBase, const bool isLinPressure);
 void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gmeshcoarse, int& initVolForMergeMeshes, bool& isMHM, bool& needsMergeMeshes);
 void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 										  std::map<int,std::pair<int,int>>& matidtoFractures,
@@ -40,6 +41,7 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
 void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gmesh);
 
 void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTransfer& sim_data);
+void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh);
 
 void FillPCteSol(TPZMultiphysicsCompMesh* mpcmesh, const REAL pcte);
 
@@ -74,7 +76,8 @@ static TPZLogger mainlogger("cubicdomain");
 int main(int argc, char* argv[]){
     string basemeshpath(FRACMESHES);
     string filenameBase = basemeshpath + "/dfnimrs/intersectSnap";
-    RunProblem(filenameBase);
+    const bool isLinPressure = false;
+    RunProblem(filenameBase,isLinPressure);
     return 0;
 }
 #else
@@ -84,14 +87,24 @@ int main(int argc, char* argv[]){
 TEST_CASE("Four_El_Two_Frac_Snap_cte_pressure","[test_dfnimrs]"){
     string basemeshpath(FRACMESHES);
     string filenameBase = basemeshpath + "/dfnimrs/intersectSnap";
-    RunProblem(filenameBase);
+    const bool isLinPressure = false;
+    RunProblem(filenameBase,isLinPressure);
 }
 
 // ---- Test 1 ----
 TEST_CASE("Four_El_Two_Frac_cte_pressure","[test_dfnimrs]"){
     string basemeshpath(FRACMESHES);
     string filenameBase = basemeshpath + "/dfnimrs/twoElCoarse";
-    RunProblem(filenameBase);
+    const bool isLinPressure = false;
+    RunProblem(filenameBase,isLinPressure);
+}
+
+// ---- Test 2 ----
+TEST_CASE("Six_El_One_Frac_lin_pressure","[test_dfnimrs]"){
+    string basemeshpath(FRACMESHES);
+    string filenameBase = basemeshpath + "/dfnimrs/boxPerpFlux6el";
+    const bool isLinPressure = true;
+    RunProblem(filenameBase,isLinPressure);
 }
 
 #endif
@@ -100,7 +113,7 @@ TEST_CASE("Four_El_Two_Frac_cte_pressure","[test_dfnimrs]"){
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void RunProblem(string& filenameBase)
+void RunProblem(string& filenameBase, const bool isLinPressure)
 {
     string basemeshpath(FRACMESHES);
 #ifdef PZ_LOG
@@ -121,6 +134,7 @@ void RunProblem(string& filenameBase)
 	const bool isRunWithTranport = false;
 	bool isMHM = true;
     bool needsMergeMeshes = true;
+    const bool isFilterZeroNeumann = GENERATE(true,false);
 	const int n_threads = 8;
     
     // ----- output folder stuff -----
@@ -240,6 +254,7 @@ void RunProblem(string& filenameBase)
     TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
     mixAnalisys->SetDataTransfer(&sim_data);
     mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
+    if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,mixAnalisys->StructMatrix(),mixed_operator);
     //        {
     //            std::ofstream out(outputFolder + "mixedCMesh.txt");
     //            mixed_operator->Print(out);
@@ -311,8 +326,14 @@ void RunProblem(string& filenameBase)
     
 #ifndef USEMAIN
     // ----- Comparing with analytical solution -----
-    REQUIRE( integratedpressure == Approx( 8.0 ) ); // Approx is from catch2 lib
-    REQUIRE( integratedflux == Approx( 0.) ); // Approx is from catch2 lib
+    if(isLinPressure){
+        REQUIRE( integratedpressure == Approx( 4.0 ) ); // Approx is from catch2 lib
+        REQUIRE( integratedflux == Approx( 8.*1./2.1) ); // Domain is 2x2x2 and flux is dp/dx = (1-0)/(1+0.1+1)
+    }
+    else{
+        REQUIRE( integratedpressure == Approx( 8.0 ) );
+        REQUIRE( integratedflux == Approx( 0.) );
+    }
 #endif
     
     auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count()/1000.;
@@ -1030,11 +1051,115 @@ const STATE ComputeIntegralOverDomain(TPZCompMesh* cmesh, const std::string& var
     if (varname == "Pressure")
         return vecint[0];
     else if (varname == "Flux")
-        return vecint[1];
+        return vecint[0];
     else
         DebugStop();
     
     return -100000; // default value so compiler does not complain
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh) {
+
+    std::cout << "\n---------------------- Filtering zero neumann equations ----------------------" << std::endl;
+    TPZSimpleTimer timer_filter("Timer Filter Equations");
+    
+   
+    std::set<int64_t> matidset;
+    
+    // First find all the zero neumann in in the 3d domain
+    std::cout << "Domain BC matids: ";
+    for(auto &chunk : sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
+        const int bc_id = chunk.first;
+        const std::pair<int,REAL>& typeAndVal = chunk.second;
+        const int bc_type = typeAndVal.first;
+        const REAL val = typeAndVal.second;
+        if(bc_type == 1 && fabs(val) < ZeroTolerance()){
+            std::cout << bc_id << " ";
+            matidset.insert(bc_id);
+        }
+    }
+    
+    // Then all the zero neumann in the fractures
+    std::cout << "\nFracture BC matids: ";
+    for (auto& chunk : sim_data.mTBoundaryConditions.mBCFlowFracMatIdToTypeValue) {
+        const int bc_id   = chunk.first;
+        const std::pair<int,REAL>& typeAndVal = chunk.second;
+        const int bc_type = typeAndVal.first;
+        const REAL val = typeAndVal.second;
+        if(bc_type == 1 && fabs(val) < ZeroTolerance()){
+            std::cout << bc_id << " ";
+            matidset.insert(bc_id);
+        }
+    }
+    
+    // Set equations to be filted
+    std::set<int64_t> eqset;
+    cmesh->GetEquationSetByMat(matidset, eqset);
+    if (eqset.size()) {
+        strmat->EquationFilter().ExcludeEquations(eqset);
+    }
+    
+    int count = 0;
+    for(auto cel : cmesh->ElementVec()){
+        TPZSubCompMesh* subcmesh = dynamic_cast<TPZSubCompMesh*>(cel);
+        if (subcmesh) {
+            std::cout << "\n\t------- Submesh " << count << " -------" << std::endl;
+//            if(count == 1 || count == 3){
+//                count++;
+//                std::cout << "===> Skipping filter" << std::endl;
+//                continue;
+//            }
+            count++;
+#ifdef PZDEBUG
+            {
+                std::string filename = outputFolder + "submesh_" + to_string(count) + ".vtk";
+                std::ofstream out(filename);
+                TPZVTKGeoMesh::PrintCMeshVTK(subcmesh, out);
+            }
+#endif
+            std::set<int64_t> eqsetsub;
+            subcmesh->GetEquationSetByMat(matidset, eqsetsub);
+            const int64_t ninteq = subcmesh->NumInternalEquations();
+            const int64_t neq = subcmesh->TPZCompMesh::NEquations();
+            if (eqsetsub.size()) {
+                subcmesh->Analysis()->StructMatrix()->EquationFilter().SetNumEq(neq); // Setting again bcz els could have been condensed
+                subcmesh->Analysis()->StructMatrix()->EquationFilter().ExcludeEquations(eqsetsub); // will set as active all eqs (internal and external) that are not zero neumann
+                auto& activeeq = subcmesh->Analysis()->StructMatrix()->EquationFilter().GetActiveEquations();
+                
+                std::cout << "size eqsetsub = " << eqsetsub.size() << " | eqsetsub = " << eqsetsub;
+                std::cout << "size activeeq = " << activeeq.size() << " | active eq = " << activeeq << std::endl;
+                auto& excludedeq = subcmesh->Analysis()->StructMatrix()->EquationFilter().GetExcludedEquations();
+                std::cout << "size excludedeq = " << excludedeq.size() << " | excluded eq = " << excludedeq << std::endl;
+                const int64_t nexteq = neq - ninteq;
+#ifdef PZDEBUG
+                // All the external equations must be present in the active equations
+                int64_t count = 0;
+                for(auto& eq : activeeq){
+                    if(eq > ninteq-1) count++;
+                }
+                if(count < nexteq) DebugStop();
+#endif
+                // Now we want to set as active only the ones that are internal and not zero Neumann
+                // Since activeeq is ordered, we simply pick equations until we reach the first non internal equation
+                TPZVec<int64_t> activeinternal(ninteq);
+                int64_t i = 0;
+                for(auto& eq : activeeq){
+                    if(eq > ninteq-1) break;
+                    activeinternal[i++] = eq;
+                }
+                activeinternal.Resize(i);
+                subcmesh->Analysis()->StructMatrix()->EquationFilter().Reset();
+                subcmesh->Analysis()->StructMatrix()->EquationFilter().SetActiveEquations(activeinternal); // sets new filter
+                // Note that, in subcmesh, after we create the data structure of the matred matrices, we need to the
+                // set the external equations as active again
+            }
+        }
+    }
+    
+    std::cout << "\n==> Total Filter time: " << timer_filter.ReturnTimeDouble()/1000. << " seconds" << std::endl;
 }
 
 // ---------------------------------------------------------------------

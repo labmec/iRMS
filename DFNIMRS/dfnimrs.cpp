@@ -24,7 +24,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // ----- Global vars -----
-const int glob_n_threads = 0;
+const int glob_n_threads = 8;
 
 // ----- End of namespaces -----
 
