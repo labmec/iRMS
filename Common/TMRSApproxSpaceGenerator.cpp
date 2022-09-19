@@ -605,6 +605,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         try {
             auto bottomconnectindex = hdivcollapsed->ConnectIndex(nconnects);
         } catch (...) {
+            PZError << "This warning was not a problem since I am at a try catch";
             continue;
         }
         TPZGeoElSide gelside(gel);
@@ -5365,18 +5366,18 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
     int gluematid = mSimData.mTFracIntersectProperties.m_FractureGlueId;
     if(gluematid < 0) DebugStop();
     TPZGeoElSide prev = first3D;
-    {
-        TPZCompEl *cel = first3D.Element()->Reference();
-        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(cel);
-        auto cindex = intel->SideConnectIndex(0, first3D.Side());
-        std::cout << "Side connect index first " << cindex << std::endl;
-    }
-    {
-        TPZCompEl *cel = last3D.Element()->Reference();
-        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(cel);
-        auto cindex = intel->SideConnectIndex(0, last3D.Side());
-        std::cout << "Side connect index last " << cindex << std::endl;
-    }
+//    {
+//        TPZCompEl *cel = first3D.Element()->Reference();
+//        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(cel);
+//        auto cindex = intel->SideConnectIndex(0, first3D.Side());
+//        std::cout << "Side connect index first " << cindex << std::endl;
+//    }
+//    {
+//        TPZCompEl *cel = last3D.Element()->Reference();
+//        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(cel);
+//        auto cindex = intel->SideConnectIndex(0, last3D.Side());
+//        std::cout << "Side connect index last " << cindex << std::endl;
+//    }
     for (auto it = ordered.begin(); it != ordered.end(); it++) {
         if(prev != first3D)
         {
@@ -5391,7 +5392,7 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
             {
                 auto cel = fluxmesh->ApproxSpace().CreateCompEl(glue, *fluxmesh);
                 auto cindex = cel->ConnectIndex(0);
-                std::cout << "Glue connect index " << cindex << std::endl;
+//                std::cout << "Glue connect index " << cindex << std::endl;
             }
             TPZGeoElSide gels(glue);
             gels.SetConnectivity(it->second);
@@ -5404,19 +5405,19 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
     }
     prev.SetConnectivity(last3D);
 #ifdef PZDEBUG
-    {
-        int64_t index = first3D.Element()->Index();
-        std::cout << "el index " << first3D.Element()->Index() << " dim " << first3D.Element()->Dimension() <<
-        " matid " << first3D.Element()->MaterialId() <<
-        " domain " << this->mSubdomainIndexGel[index] << std::endl;
-        for(auto neigh = first3D.Neighbour(); neigh != first3D; neigh++)
-        {
-            int64_t index = neigh.Element()->Index();
-            std::cout << "el index " << neigh.Element()->Index() << " dim " << neigh.Element()->Dimension() <<
-            " matid " << neigh.Element()->MaterialId() <<
-            " domain " << this->mSubdomainIndexGel[index] << std::endl;
-        }
-    }
+//    {
+//        int64_t index = first3D.Element()->Index();
+//        std::cout << "el index " << first3D.Element()->Index() << " dim " << first3D.Element()->Dimension() <<
+//        " matid " << first3D.Element()->MaterialId() <<
+//        " domain " << this->mSubdomainIndexGel[index] << std::endl;
+//        for(auto neigh = first3D.Neighbour(); neigh != first3D; neigh++)
+//        {
+//            int64_t index = neigh.Element()->Index();
+//            std::cout << "el index " << neigh.Element()->Index() << " dim " << neigh.Element()->Dimension() <<
+//            " matid " << neigh.Element()->MaterialId() <<
+//            " domain " << this->mSubdomainIndexGel[index] << std::endl;
+//        }
+//    }
 #endif
 }
 
