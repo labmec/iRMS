@@ -15076,5 +15076,7 @@ Physical Curve("fracIntersection_5_7") = fracIntersection_5_7[];
 
 Coherence Mesh;
 Transfinite Curve {:} = 2;
+//Transfinite Surface{:};
+//Transfinite Volume{:};
 Recombine Surface{:};
 Recombine Volume{:};

@@ -70,6 +70,7 @@ enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
 // ----- Logger -----
 #ifdef PZ_LOG
 static TPZLogger mainlogger("imrs");
+static TPZLogger fracIntersectLogger("imrs_fracIntersect");
 #endif
 
 //-------------------------------------------------------------------------------------------------
@@ -939,6 +940,7 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
 
 void MapFractureIntersection(const std::string &filenameBase, std::map<std::string,int> &matmap, int firstfracintersect, std::map<int,std::pair<int,int>> &matidtoFractures)
 {
+    // This method loops over the physical tags for intersections created by DFNMesh
     // Creating gmsh reader
     TPZGmshReader  Geometry;
     std::string filename = filenameBase + "_fine.msh";
@@ -948,6 +950,7 @@ void MapFractureIntersection(const std::string &filenameBase, std::map<std::stri
     // loop over all physical tags of dimension 1
     const std::string begins("fracIntersection");
     const int beglength = begins.size();
+    // Here we select fracture intersection tags
     for(auto iter : physicaltags[1])
     {
         auto name = iter.second;
@@ -959,7 +962,9 @@ void MapFractureIntersection(const std::string &filenameBase, std::map<std::stri
             std::string strfac2 = name.substr(pos2+1);
             int frac1 = std::stoi(strfac1);
             int frac2 = std::stoi(strfac2);
-            matmap[name] = firstfracintersect;
+            matmap[name] = firstfracintersect; // firstfracintersect is an id used that it is not any of the used ids so far (it is unique)
+            
+            // This map stores for each fracture with matid firstfracintersect the fracs frac1 and frac2. Each intersection has a unique id given by firstfracintersect
             matidtoFractures[firstfracintersect] = std::pair<int,int>(frac1,frac2);
             firstfracintersect++;
         }
@@ -1143,30 +1148,65 @@ void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 		auto it = matidtoFractures.find(matid);
 		if(it != matidtoFractures.end())
 		{
-			if(gel->Dimension() == 3) DebugStop();
+			if(gel->Dimension() > 1) DebugStop(); // has to be 1d (intersection)
 			TPZGeoElSide gelside(gel);
 			int frac1 = it->second.first;
-			int matid1 = fracInitMatId + frac1*fracinc + 2;
-			int frac1bcid = fracInitMatId + frac1*fracinc + 1;
+            int matidfrac1 = fracInitMatId + frac1*fracinc;
+			int matid1 = matidfrac1 + 2;
+			int frac1bcid = matidfrac1 + 1;
 			auto frac1bc = gelside.HasNeighbour(frac1bcid);
+            auto frac1el = gelside.HasNeighbour(matidfrac1);
+            if(!frac1el) DebugStop(); // Element has to have a fracture boundary
 			if(frac1bc)
 			{
+#ifdef PZ_LOG
+                if(fracIntersectLogger.isDebugEnabled()){
+                    std::stringstream sout;
+                    sout << "Changing matid of el with matid " << frac1bc.Element()->MaterialId() << " to matid " << matid1 << std::endl;
+                    LOGPZ_DEBUG(fracIntersectLogger, sout.str())
+                }
+#endif
 				frac1bc.Element()->SetMaterialId(matid1);
 			}
 			else
 			{
+#ifdef PZ_LOG
+                if(fracIntersectLogger.isDebugEnabled()){
+                    std::stringstream sout;
+                    sout << "Creating boundary condition with matid " << matid1 << std::endl;
+                    LOGPZ_DEBUG(fracIntersectLogger, sout.str())
+                }
+#endif
 				TPZGeoElBC(gelside,matid1);
 			}
 			int frac2 = it->second.second;
-			int matid2 = fracInitMatId + frac2*fracinc + 2;
-			int frac2bcid = fracInitMatId + frac2*fracinc + 1;
+            int matidfrac2 = fracInitMatId + frac2*fracinc;
+			int matid2 = matidfrac2 + 2;
+			int frac2bcid = matidfrac2 + 1;
 			auto frac2bc = gelside.HasNeighbour(frac2bcid);
+            auto frac2el = gelside.HasNeighbour(matidfrac2);
+            if(!frac2el) DebugStop();
 			if(frac2bc)
 			{
+#ifdef PZ_LOG
+                if(fracIntersectLogger.isDebugEnabled()){
+                    std::stringstream sout;
+                    sout << "Changing matid of el with matid " << frac2bc.Element()->MaterialId() << " to matid " << matid2 << std::endl;
+                    LOGPZ_DEBUG(fracIntersectLogger, sout.str())
+                }
+#endif
+
 				frac2bc.Element()->SetMaterialId(matid2);
 			}
 			else
 			{
+#ifdef PZ_LOG
+                if(fracIntersectLogger.isDebugEnabled()){
+                    std::stringstream sout;
+                    sout << "Creating boundary condition with matid " << matid2 << std::endl;
+                    LOGPZ_DEBUG(fracIntersectLogger, sout.str())
+                }
+#endif
 				TPZGeoElBC(gelside,matid2);
 			}
 			// create the geometric element for receiving the hybridized pressure element
@@ -1389,9 +1429,9 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
                 if (interEls.size() > 2) {
                     DebugStop(); // there are 3 intersection elements in the same place! Please check why...
                 }
-                cout << "Found two intersection elements at the same place!" << endl;
+                cout << "Found two intersection elements at the same place! Is this a problem?" << endl;
                 cout << "Manually deleting intersection geoel..." << endl;
-                
+
                 TPZGeoEl* gelduplicate = interEls[1];
                 const int64_t duplicateIndex = gelduplicate->Index();
                 gelduplicate->RemoveConnectivities();
