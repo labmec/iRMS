@@ -190,7 +190,7 @@ Flux on the fracture
 \nabla\cdot\mathbf{u}_{2}-\sum\mathbf{u}_{3}\cdot\mathbf{n} & = & 0 & \ \ \ in\ \ \Omega_{2}\\
 \\
 \text{u}_{3}\cdot\mathbf{n}+2\frac{\mathbf{K}_{2}}{\mu\ a_{2}}\left(p_{2}-p_{3}\right) & = & 0 & \ \ \ in\ \ \Gamma_{2}
-\end{array}\end{cases}
+\end{array}\end{cases}\label{eq:relationp3p2}
 \end{equation}
 
 \end_inset
@@ -383,7 +383,7 @@ integrating by parts:
 \begin_inset Formula 
 \begin{equation}
 \begin{array}{ccccc}
-\int_{\Omega_{3}}\widetilde{\mathbf{u}}_{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}+\int_{\Omega_{3}}\nabla\cdot\widetilde{\mathbf{u}}_{3}\ p_{3}\ \partial\Omega_{3} & +\int_{\partial\Omega_{3}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{2}\ \partial\Omega_{3}= & - & \int_{\partial\Omega_{3}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}} & \forall\widetilde{\mathbf{u}}_{3}\in H(div)\\
+\int_{\Omega_{3}}\widetilde{\mathbf{u}}_{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}-\int_{\Omega_{3}}\nabla\cdot\widetilde{\mathbf{u}}_{3}\ p_{3}\ \partial\Omega_{3} & +\int_{\partial\Omega_{3}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{2}\ \partial\Omega_{3}= & - & \int_{\partial\Omega_{3}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}} & \forall\widetilde{\mathbf{u}}_{3}\in H(div)\\
 \\
 \int_{\Omega_{3}}\widetilde{p}_{3}\nabla\cdot\mathbf{u}_{3}\ \partial\Omega_{3} & = & 0 &  & \forall\widetilde{p}_{3}\in L^{2}
 \end{array}
@@ -457,7 +457,22 @@ integrating by parts:
 \end_layout
 
 \begin_layout Standard
-And multiplying the second equation by -1 to make it symmetric
+And multiplying the second equation by -1 to make it symmetric and substituting
+ 
+\begin_inset Formula $p_{3}$
+\end_inset
+
+ by the last equation in 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:relationp3p2"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Standard
