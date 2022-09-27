@@ -257,129 +257,90 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> 
 template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef){
     
+    // Note: All the matrix and residue terms can be compared with the equations in docs/Formulation.lyx.
+    //       These terms are accompanied by letter a,b,c,... which related the equatiosn with the c++ code.
+    // Note2: The saturation dependent term are implemente in TPZFastCondensedCompEl
+    
+    // Flux is 0 and pressure is 1
     int qb = 0;
     int pb = 1;
- //   int sb = 2;
     
-    TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
+    // Getting the shape functions for flux and pressure
+//    TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
+    TPZFNMatrix<110,REAL> phi_qs       = datavec[qb].fDeformedDirections; // fDeformedDirections stores the shape function for flux
     TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;
     TPZFNMatrix<300,REAL> dphi_qs      = datavec[qb].dphix;
     TPZFNMatrix<100,REAL> dphi_ps      = datavec[pb].dphix;
     
-    
+    // Getting divergent of phi and of flux (in case it is non linear)
     TPZFNMatrix<40, REAL> div_phi = datavec[qb].divphi;
     REAL div_q = datavec[qb].divsol[0][0];
     
+    // Number of shape function for flux and pressure
     int nphi_q       = datavec[qb].fVecShapeIndex.NElements();
     int nphi_p       = phi_ps.Rows();
     int first_q      = 0;
     int first_p      = nphi_q + first_q;
     
+    // Flux and pressure solution (for non linear analyzes)
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     STATE p                  = datavec[pb].sol[0][0];
     
-    // Get the data at integrations points
+    // Get the memory at the integrations point
     long gp_index = datavec[qb].intGlobPtIndex;
     TMEM & memory = this->GetMemory().get()->operator[](gp_index);
     
-//    std::cout<<"Kapa inv= "<<memory.m_kappa_inv<<std::endl;
-//    std::cout<<"Kapa= "<<memory.m_kappa<<std::endl;
-    TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
-    
-//    TRSLinearInterpolator & Krw = mSimData.mTPetroPhysics.mLayer_Krw_RelPerModel[0];
-//    TRSLinearInterpolator & Kro = mSimData.mTPetroPhysics.mLayer_Kro_RelPerModel[0];
-//
-//    std::function<std::tuple<double, double, double> (TRSLinearInterpolator &, TRSLinearInterpolator &, double, double)> & lambda = mSimData.mTMultiphaseFunctions.mLayer_lambda[0];
-    
-    
-//    // Total mobility
-//    std::tuple<double, double, double> lambda_t = lambda(Krw,Kro,memory.sw_n(),p);
+    // Helper variables
+    TPZFNMatrix<3,STATE> kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
+        
+    // Term related to fluid mobility
     REAL lambda_v = 1.0;
-    
-    // Getting the permeability correction based on the angle between
-    // the plane of the element axes and the global coordinate system
-    // Cosine of angle is calculated with the dot product of the normals
-    // Obs: unit normals are assumed
-//    TPZManVector<REAL,3> elnormal(3,0.), dirNoChange(3,0.), dirToChange(3,0.), axes1(3,0.), axes2(3,0.);
-//    for (int i = 0; i < 3; i++) {
-//        axes1[i] = datavec[0].axes(0,i);
-//        axes2[i] = datavec[0].axes(1,i);
-//    }
-//    Cross(axes1,axes2,elnormal);
-//    TPZManVector<REAL,3> onez(3,0.);
-//    onez[2] = 1.;
-//    Cross(onez,elnormal,dirNoChange);
-//    const REAL normDirNoChange = Norm(dirNoChange);
-//    for (int i = 0; i < 3; i++)
-//        dirNoChange[i] = dirNoChange[i] / normDirNoChange;
-//
-//    Cross(elnormal, dirNoChange, dirToChange);
-//    const REAL cosangle = fabs(Dot(elnormal,onez));
-//    const REAL cosangle_2 = cosangle*cosangle;
-//
-////    TPZFNMatrix<9,REAL> kappa_inv_loc(3,3);
-////    kappa_inv_loc.Zero();
-//    for (int i = 0; i < 3; i++) {
-//        for (int j = 0; j < 3; j++) {
-//            memory.m_kappa(i,j) = dirNoChange[i]*dirNoChange[j] +
-//                (dirToChange[i]*dirToChange[j])/cosangle_2 +
-//                elnormal[i] * elnormal[j];
-//        }
-//    }
-    
-    // end of modifying permeability
-    
-//    memory.m_kappa.Inverse(memory.m_kappa_inv,ELU);
-    
+            
+    // kappa_inv_q = K^-1 * q
+    // Used for non linear problems
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
         }
     }
     
-    for (int iq = 0; iq < nphi_q; iq++)
-    {
+    for (int iq = 0; iq < nphi_q; iq++) {
         
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
-            phi_q_i(i,0) = phi_qs(iq,0) * datavec[qb].fDeformedDirections(i,iq);
-            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
+            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
         
-        ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
+        ef(iq + first_q) += weight * ( - kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms a and b in docs/Formulation.lyx
         
-        for (int jq = 0; jq < nphi_q; jq++)
-        {
+        for (int jq = 0; jq < nphi_q; jq++) {
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(jq,0) * datavec[qb].fDeformedDirections(j,jq);
+                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(j,jq);
                 }
             }
             
             STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
             for (int j = 0; j < 3; j++) {
-                kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_qs(j,iq);
             }
             
-            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
+            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;  // term f in docs/Formulation.lyx
         }
         
-        for (int jp = 0; jp < nphi_p; jp++)
-        {
-            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
+        for (int jp = 0; jp < nphi_p; jp++) {
+            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // term g in docs/Formulation.lyx
         }
         
     }
     
-    for (int ip = 0; ip < nphi_p; ip++)
-    {
+    for (int ip = 0; ip < nphi_p; ip++) {
         
-        ef(ip + first_p) += -1.0 * weight * (div_q) * phi_ps(ip,0);
+        ef(ip + first_p) += -1.0 * weight * (div_q) * phi_ps(ip,0); // term e in docs/Formulation.lyx
         
-        for (int jq = 0; jq < nphi_q; jq++)
-        {
-            ek(ip + first_p, jq + first_q) += -1.0 * weight * div_phi(jq,0) * phi_ps(ip,0);
+        for (int jq = 0; jq < nphi_q; jq++) {
+            ek(ip + first_p, jq + first_q) += -1.0 * weight * div_phi(jq,0) * phi_ps(ip,0); // term i in docs/Formulation.lyx
         }
         
     }

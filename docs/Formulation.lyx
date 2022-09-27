@@ -499,11 +499,11 @@ And accounting for the intersection (which is hybridized):
 \begin_inset Formula 
 \begin{equation}
 \begin{array}{ccccc}
-\int_{\Omega_{2}}\widetilde{\mathbf{u}}_{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Omega_{2}}\nabla\cdot\widetilde{\mathbf{u}}_{2}\ p_{2}\ \partial\Omega_{2} & + & \int_{\Omega_{2}}p_{1}(\tilde{\mathbf{u}}_{2}\cdot\mathbf{n})\ \partial\Omega_{2}\\
+\int_{\Omega_{2}}\widetilde{\mathbf{u}}_{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Omega_{2}}\nabla\cdot\widetilde{\mathbf{u}}_{2}\ p_{2}\ \partial\Omega_{2} & + & {\color{teal}\int_{\Omega_{2}}p_{1}(\tilde{\mathbf{u}}_{2}\cdot\mathbf{n})\ \partial\Omega_{2}}\\
 \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)p_{2}\ -\int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\frac{\mu}{2}a_{2}\mathbf{K}_{2}^{-1}\left(\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Omega_{2} & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
 \\
 -\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}+\int_{\partial\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}\\
-\int_{\Omega_{1}}\widetilde{p}_{1}\sum\mathbf{u}_{2}\cdot\mathbf{n}\ \partial\Omega_{1} & = & 0 &  & \forall\widetilde{p}_{1}\in L^{2}
+{\color{teal}\int_{\Omega_{1}}\widetilde{p}_{1}\sum\mathbf{u}_{2}\cdot\mathbf{n}\ \partial\Omega_{1}} & = & 0 &  & \forall\widetilde{p}_{1}\in L^{2}
 \end{array}
 \end{equation}
 
@@ -513,11 +513,83 @@ And accounting for the intersection (which is hybridized):
 \end_layout
 
 \begin_layout Section
-Residuum and Stiffness Matrix
+Spatial discretization
+\end_layout
+
+\begin_layout Standard
+The trial functions are given by
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+p_{3}(x,y,z) & =\sum\alpha_{j}\phi_{p,j}^{3}(x,y,z)\\
+p_{2}(\hat{x},\hat{y}) & =\sum\beta_{j}\phi_{p,j}^{2}(\hat{x},\hat{y})\\
+p_{1}(\bar{x}) & =\sum\gamma_{j}\phi_{p,j}^{1}(\bar{x})\\
+\mathbf{u}_{3}(x,y,z) & =\sum\delta_{j}\bm{\phi}_{u,j}^{3}(x,y,z)\\
+\mathbf{u}_{2}(\hat{x},\hat{y}) & =\sum\varphi_{j}\bm{\phi}_{u,j}^{2}(\hat{x},\hat{y})
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Residue and Stiffness Matrix
 \end_layout
 
 \begin_layout Subsection
 Flux on the reservoir
+\end_layout
+
+\begin_layout Standard
+Flux in the reservoir is implemented in the material TMRSDarcyFlowWithMem.
+ The residue is given by:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+R_{3}=\overset{a}{\overbrace{-\int_{\Omega_{3}}\bm{\phi}_{u,i}^{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}}}+\overset{b}{\overbrace{\int_{\Omega_{3}}\nabla\cdot\bm{\phi}_{u,i}^{3}\ p_{3}\ \partial\Omega_{3}}}\overset{c}{\overbrace{-\int_{\partial\Omega_{3}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ p_{2}\ \partial\Omega_{3}}}\overset{d}{\overbrace{-\int_{\partial\Omega_{3}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+R_{3,2}=\overset{e}{\overbrace{-\int_{\Omega_{3}}\phi_{p,i}^{3}\nabla\cdot\mathbf{u}_{3}\ \partial\Omega_{3}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K_{3}=\underset{f}{\underbrace{\int_{\Omega_{3}}\bm{\phi}_{u,i}^{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\bm{\phi}_{u,j}^{3}\ \partial\Omega_{3}}}\underset{g}{\underbrace{-\int_{\Omega_{3}}\nabla\cdot\bm{\phi}_{u,i}^{3}\ \phi_{p,j}^{3}\ \partial\Omega_{3}}}\underset{h}{\underbrace{+\int_{\partial\Omega_{3}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ \phi_{p,j}^{2}\ \partial\Omega_{3}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K_{3,2}=\underset{i}{\underbrace{\int_{\Omega_{3}}\phi_{p,i}^{3}\nabla\cdot\bm{\phi}_{u,j}^{3}\ \partial\Omega_{3}}}
+\]
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
