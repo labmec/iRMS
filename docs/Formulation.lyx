@@ -447,7 +447,7 @@ integrating by parts:
 \int_{\Omega_{2}}\widetilde{\mathbf{u}}_{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Omega_{2}}\nabla\cdot\widetilde{\mathbf{u}}_{2}\ p_{2}\ \partial\Omega_{2} & +\\
 \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{3}\ \partial\Omega_{2} & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
 \\
-\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Gamma_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}
+\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\partial\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}
 \end{array}
 \end{equation}
 
@@ -482,13 +482,46 @@ noprefix "false"
 \int_{\Omega_{2}}\widetilde{\mathbf{u}}_{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Omega_{2}}\nabla\cdot\widetilde{\mathbf{u}}_{2}\ p_{2}\ \partial\Omega_{2} & +\\
 \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)p_{2}\ -\int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\frac{\mu}{2}a_{2}\mathbf{K}_{2}^{-1}\left(\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Omega_{2} & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
 \\
--\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}+\int_{\Gamma_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}
+-\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}+\int_{\partial\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}
 \end{array}
 \end{equation}
 
 \end_inset
 
 
+\end_layout
+
+\begin_layout Standard
+And accounting for the intersection (which is hybridized):
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\begin{array}{ccccc}
+\int_{\Omega_{2}}\widetilde{\mathbf{u}}_{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Omega_{2}}\nabla\cdot\widetilde{\mathbf{u}}_{2}\ p_{2}\ \partial\Omega_{2} & + & \int_{\Omega_{2}}p_{1}(\tilde{\mathbf{u}}_{2}\cdot\mathbf{n})\ \partial\Omega_{2}\\
+\int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)p_{2}\ -\int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\frac{\mu}{2}a_{2}\mathbf{K}_{2}^{-1}\left(\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Omega_{2} & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
+\\
+-\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}+\int_{\partial\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}\\
+\int_{\Omega_{1}}\widetilde{p}_{1}\sum\mathbf{u}_{2}\cdot\mathbf{n}\ \partial\Omega_{1} & = & 0 &  & \forall\widetilde{p}_{1}\in L^{2}
+\end{array}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Residuum and Stiffness Matrix
+\end_layout
+
+\begin_layout Subsection
+Flux on the reservoir
+\end_layout
+
+\begin_layout Subsection
+Flux on the fracture
 \end_layout
 
 \end_body

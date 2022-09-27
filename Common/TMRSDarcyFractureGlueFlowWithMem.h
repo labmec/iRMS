@@ -26,6 +26,7 @@ struct TGlueMem
     TPZManVector<REAL,3> m_xco;
     std::pair<int,int> m_fracs;
     REAL m_dist;
+    REAL m_flux;
     
     /// Class name
     const std::string Name() const

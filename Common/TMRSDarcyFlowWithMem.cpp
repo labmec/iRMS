@@ -330,10 +330,6 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     // end of modifying permeability
     
 //    memory.m_kappa.Inverse(memory.m_kappa_inv,ELU);
-  
-    
-    int s_i, s_j;
-    int v_i, v_j;
     
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
@@ -344,12 +340,9 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     for (int iq = 0; iq < nphi_q; iq++)
     {
         
-        v_i = datavec[qb].fVecShapeIndex[iq].first;
-        s_i = datavec[qb].fVecShapeIndex[iq].second;
-        
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
-            phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
+            phi_q_i(i,0) = phi_qs(iq,0) * datavec[qb].fDeformedDirections(i,iq);
             kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
         }
         
@@ -357,14 +350,10 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
         
         for (int jq = 0; jq < nphi_q; jq++)
         {
-            
-            v_j = datavec[qb].fVecShapeIndex[jq].first;
-            s_j = datavec[qb].fVecShapeIndex[jq].second;
-            
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(jq,0) * datavec[qb].fDeformedDirections(j,jq);
                 }
             }
             

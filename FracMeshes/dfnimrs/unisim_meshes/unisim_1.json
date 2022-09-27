@@ -59,5 +59,6 @@
     "FractureGluePerm": 1,
     "useMHM":false,
     "needsMerge":false,
+    "RunWithTransport": false,
     "SimulationDim": 2
 }
