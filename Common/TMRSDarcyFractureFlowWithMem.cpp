@@ -93,11 +93,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
     int qb = 0;
     int pb = 1;
-  //  int sb = 2;
     
-    
-    //    datavec[qb].Print(std::cout);
-    TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
+    TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].fDeformedDirections; // fDeformedDirections stores the shape function for flux
     TPZFNMatrix<100,REAL> phi_ps       = datavec[pb].phi;
     TPZFNMatrix<300,REAL> dphi_qs      = datavec[qb].dphix;
     TPZFNMatrix<100,REAL> dphi_ps      = datavec[pb].dphix;
@@ -110,7 +107,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     int nphi_p       = phi_ps.Rows();
     int first_q      = 0;
     int first_p      = nphi_q + first_q;
-    int nvecs = datavec[qb].fDeformedDirections.Cols();
+    int nvecs       = phi_qs.Cols();
     
     // first index in fVecShapeIndex corresponding to the first transverse flux
     int first_transverse_q = 0;
@@ -119,21 +116,15 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     int nconnects = datavec[qb].fHDivNumConnectShape.size();
     second_transverse_q = nvecs-datavec[qb].fHDivNumConnectShape[nconnects-1];
     first_transverse_q = second_transverse_q-datavec[qb].fHDivNumConnectShape[nconnects-2];
-//    for(int i=0; i< nphi_q; i++)
-//    {
-//        if(first_transverse_q == 0 && datavec[qb].fVecShapeIndex[i].first == nvecs-2) first_transverse_q = i;
-//        if(second_transverse_q == 0 && datavec[qb].fVecShapeIndex[i].first == nvecs-1) second_transverse_q = i;
-//    }
+
     if(first_transverse_q == 0 || second_transverse_q == 0 || first_transverse_q == second_transverse_q)
     {
         DebugStop();
     }
     
-    
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     STATE p                  = datavec[pb].sol[0][0];
   
-    
     // Get the data at integrations points
     long gp_index = datavec[qb].intGlobPtIndex;
     if(gp_index < 0) DebugStop();
@@ -142,9 +133,6 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0),kappa_inv_qFrac(3,1,0.0) ;
     
     REAL ad = memory.m_ad;
-    
-    int s_i, s_j;
-    int v_i, v_j;
     for (int i = 0; i < 3; i++) {
         if(memory.m_kappa_inv(i,i) != memory.m_kappa_inv((i+1)%3,(i+1)%3)) DebugStop();
         for (int j = 0; j < 3; j++) {
@@ -155,43 +143,36 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
     for (int iq = 0; iq < first_transverse_q; iq++)
     {
-        v_i = datavec[qb].fVecShapeIndex[iq].first;
-        s_i = datavec[qb].fVecShapeIndex[iq].second;
+
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
-            phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
-            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
+            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
-        
-        ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
+       // @TODO: Verify fracture ad here!!!
+        ef(iq + first_q) += weight * ( (1.0/ad)*kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));  // terms j and k in docs/Formulation.lyx
         
         for (int jq = 0; jq < first_transverse_q; jq++)
         {
-            
-            v_j = datavec[qb].fVecShapeIndex[jq].first;
-            s_j = datavec[qb].fVecShapeIndex[jq].second;
-//            if(v_j < nvecs-2){
+
                 kappa_inv_phi_q_j.Zero();
                 for (int i = 0; i < 3; i++) {
                     for (int j = 0; j < 3; j++) {
-                        kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) / ad * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                        kappa_inv_phi_q_j(i,0) += (memory.m_kappa_inv(i,j) / ad) * phi_qs(j,jq);
                     }
                 }
                 
                 STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j_dot_phi_q_i +=  kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                    kappa_inv_phi_q_j_dot_phi_q_i +=  kappa_inv_phi_q_j(j,0)*phi_qs(j,iq);
                 }
                 
-                ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
+                ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i; // term s in docs/Formulation.lyx
             }
-            if(v_j >=  nvecs-2){
-                DebugStop();
-            }
+            
             for (int jp = 0; jp < nphi_p; jp++)
             {
-                ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
-                ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
+                ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // term t in docs/Formulation.lyx
+                ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // term x in docs/Formulation.lyx
                
             }
         
@@ -200,9 +181,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     // compute the contribution of the hdivbound
     for (int iq = first_transverse_q; iq < second_transverse_q; iq++)
     {
-        //        datavec[qb].Print(std::cou        t);
-        v_i = datavec[qb].fVecShapeIndex[iq].first;
-        s_i = datavec[qb].fVecShapeIndex[iq].second;
+        //datavec[qb].Print(std::cout);
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
 
         for (int i = 0; i < 3; i++) {
@@ -210,17 +189,13 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         }
         
         for (int i = 0; i < 3; i++) {
-            phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
-            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
+            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
 
-        ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
+        ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms j and k in docs/Formulation.lyx
         for (int jq = first_transverse_q; jq < second_transverse_q; jq++)
         {
 
-            v_j = datavec[qb].fVecShapeIndex[jq].first;
-            s_j = datavec[qb].fVecShapeIndex[jq].second;
-//            if(v_j != v_i) DebugStop();
             kappa_inv_phi_q_j.Zero();
 
             // kappanormal is the orthogonal permeability
@@ -232,30 +207,27 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             // factor = 1
             for (int j = 0; j < 3; j++) {
                 REAL KappaInvVal = memory.m_kappa_inv(j,j);
-                kappa_inv_phi_q_j(j,0) = 0.5 * ad * KappaInvVal * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                kappa_inv_phi_q_j(j,0) = 0.5 * ad * KappaInvVal * phi_qs(j,jq);
             }
-            
 
             // kappa_inv_phi_q_j_dot_phi_q_i is the dot product of both vectors
             STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
             for (int j = 0; j < 3; j++) {
-                kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_qs(j,iq);
             }
-            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
+            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i; // part of term w in docs/Formulation.lyx
         }
         for (int jp = 0; jp < nphi_p; jp++)
         {
-            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
-            ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
+            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // part of term t in docs/Formulation.lyx
+            ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // part of term x in docs/Formulation.lyx
 
         }
     }
 //    // compute the contribution of the hdivbound
     for (int iq = second_transverse_q; iq < nphi_q; iq++)
     {
-        //        datavec[qb].Print(std::cou        t);
-        v_i = datavec[qb].fVecShapeIndex[iq].first;
-        s_i = datavec[qb].fVecShapeIndex[iq].second;
+
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
 
         for (int i = 0; i < 3; i++) {
@@ -263,18 +235,13 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         }
         
         for (int i = 0; i < 3; i++) {
-            phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
-            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
+            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
         
-        ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
+        ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms j and k in docs/Formulation.lyx
         for (int jq = second_transverse_q; jq < nphi_q; jq++)
         {
-            v_j = datavec[qb].fVecShapeIndex[jq].first;
-            s_j = datavec[qb].fVecShapeIndex[jq].second;
-//            if(v_j != v_i) DebugStop();
             kappa_inv_phi_q_j.Zero();
-
             // kappanormal is the orthogonal permeability
             // phi_qs is the scalar function corresponding to jq (scalar)
             // s_j is the index of the scalar function corresponding to jq
@@ -282,25 +249,21 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             // kappa_inv_phi_q_j = vector equal to 1/kappa phi_qs * phi_qs * vector(v_j)
             for (int j = 0; j < 3; j++) {
                 REAL KappaInvVal = memory.m_kappa_inv(j,j);
-                kappa_inv_phi_q_j(j,0) += 0.5 * ad * KappaInvVal * phi_qs(s_j,0) * datavec[qb].fDeformedDirections(j,v_j);
+                kappa_inv_phi_q_j(j,0) += 0.5 * ad * KappaInvVal * phi_qs(j,jq);
             }
-            
             // kappa_inv_phi_q_j_dot_phi_q_i is the dot product of both vectors
             STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
             for (int j = 0; j < 3; j++) {
-                kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_q_i(j,0);
+                kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_qs(j,iq);
             }
-            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;
-
+            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i; // part of term w in docs/Formulation.lyx
         }
         for (int jp = 0; jp < nphi_p; jp++)
         {
-            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
-            ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0);
-
+            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // part of term t in docs/Formulation.lyx
+            ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // part of term x in docs/Formulation.lyx
         }
     }
-    
     
     if(this->mSimData.mTNumerics.m_four_approx_spaces_Q){
         ContributeFourSpaces(datavec,weight,ek,ef);
@@ -404,7 +367,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDa
             STATE p_D = bc_data[0];
             for (int iq = 0; iq < nphi_q; iq++)
             {
-                ef(iq + first_q) += weight * p_D * phi_qs(iq,0);
+                ef(iq + first_q) += weight * p_D * phi_qs(iq,0); // term m in docs/Formulation.lyx
             }
         }
             break;

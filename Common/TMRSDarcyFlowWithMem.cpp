@@ -466,7 +466,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
             STATE p_D = bc_data[0];
             for (int iq = 0; iq < nphi_q; iq++)
             {
-                ef(iq + first_q) += weight * p_D * phi_qs(iq,0);
+                ef(iq + first_q) += weight * p_D * phi_qs(iq,0); // term d in docs/Formulation.lyx
             }
         }
             break;
@@ -480,7 +480,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
                 REAL qn = 0.0;
                 qn = q[0];
 
-                ef(iq + first_q) += weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0);
+                ef(iq + first_q) += weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0); 
                 for (int jq = 0; jq < nphi_q; jq++)
                 {
                     ek(iq + first_q,jq + first_q) += weight * gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
