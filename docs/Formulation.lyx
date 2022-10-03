@@ -103,10 +103,6 @@ Flux on the reservoir
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 where 
 \begin_inset Formula $\mathbf{K}_{3}$
 \end_inset
@@ -161,10 +157,6 @@ p_{3} & = & p_{3_{D}} &  & on\ \partial\Omega_{3_{D}}\\
 
 \end_inset
 
-
-\end_layout
-
-\begin_layout Standard
 where 
 \begin_inset Formula $p_{3_{D}}$
 \end_inset
@@ -174,6 +166,53 @@ where
 \end_inset
 
  is the imposed flow.
+\end_layout
+
+\begin_layout Standard
+Also, at the boundary of the 3D domain with the fracture, we have
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\text{u}_{3}\cdot\mathbf{n}+2\frac{K_{2}^{eq}}{\mu\ a_{2}}\left(p_{2}-p_{3}\right)=0\ \ \ in\ \ \Gamma_{2}\label{eq:FractureResFlow}
+\end{equation}
+
+\end_inset
+
+where 
+\begin_inset Formula $p_{2}$
+\end_inset
+
+ is the fracture pressure, 
+\begin_inset Formula $a_{2}$
+\end_inset
+
+ is the fracture opening, 
+\begin_inset Formula $K_{2}^{eq}$
+\end_inset
+
+ is the fracture equivalent tangential permeability, and 
+\begin_inset Formula $\Gamma_{2}$
+\end_inset
+
+ is the fracture surface (faces).
+ It is convinient to isolate 
+\begin_inset Formula $p_{3}$
+\end_inset
+
+, i.e.:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+p_{3}=p_{2}+\frac{\mu a_{2}}{2K_{2}^{eq}}\mathbf{u}_{3}\cdot\mathbf{n}\label{eq:FractureResFlowP3}
+\end{equation}
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -187,9 +226,7 @@ Flux on the fracture
 \begin{array}{cccc}
 \mu\frac{1}{a_{2}}\mathbf{K}_{2}^{-1}\mathbf{u}_{2}\ +\text{\ensuremath{\ \nabla p_{2}}} & = & 0 & \ \ \ in\ \ \Omega_{2}\\
 \\
-\nabla\cdot\mathbf{u}_{2}-\sum\mathbf{u}_{3}\cdot\mathbf{n} & = & 0 & \ \ \ in\ \ \Omega_{2}\\
-\\
-\text{u}_{3}\cdot\mathbf{n}+2\frac{\mathbf{K}_{2}}{\mu\ a_{2}}\left(p_{2}-p_{3}\right) & = & 0 & \ \ \ in\ \ \Gamma_{2}
+\nabla\cdot\mathbf{u}_{2}-\sum\mathbf{u}_{3}\cdot\mathbf{n} & = & 0 & \ \ \ in\ \ \Omega_{2}
 \end{array}\end{cases}\label{eq:relationp3p2}
 \end{equation}
 
@@ -383,9 +420,62 @@ integrating by parts:
 \begin_inset Formula 
 \begin{equation}
 \begin{array}{ccccc}
-\int_{\Omega_{3}}\widetilde{\mathbf{u}}_{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}-\int_{\Omega_{3}}\nabla\cdot\widetilde{\mathbf{u}}_{3}\ p_{3}\ \partial\Omega_{3} & +\int_{\partial\Omega_{3}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{2}\ \partial\Omega_{3}= & - & \int_{\partial\Omega_{3}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}} & \forall\widetilde{\mathbf{u}}_{3}\in H(div)\\
+\int_{\Omega_{3}}\widetilde{\mathbf{u}}_{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}-\int_{\Omega_{3}}\nabla\cdot\widetilde{\mathbf{u}}_{3}\ p_{3}\ \partial\Omega_{3} & +\overset{\text{fracture term}}{\overbrace{\int_{\Gamma_{2}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{3}\ \partial\Gamma_{2}}}= & - & \int_{\partial\Omega_{3}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}} & \forall\widetilde{\mathbf{u}}_{3}\in H(div)\\
 \\
 \int_{\Omega_{3}}\widetilde{p}_{3}\nabla\cdot\mathbf{u}_{3}\ \partial\Omega_{3} & = & 0 &  & \forall\widetilde{p}_{3}\in L^{2}
+\end{array}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Now, substituting Eq.
+ 
+\begin_inset CommandInset ref
+LatexCommand eqref
+reference "eq:FractureResFlowP3"
+plural "false"
+caps "false"
+noprefix "false"
+
+\end_inset
+
+ in the fracture term:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\begin{array}{ccccc}
+\int_{\Omega_{3}}\widetilde{\mathbf{u}}_{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}-\int_{\Omega_{3}}\nabla\cdot\widetilde{\mathbf{u}}_{3}\ p_{3}\ \partial\Omega_{3} & +\overset{\text{fracture term}}{\overbrace{\int_{\Gamma_{2}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ \left(p_{2}+\frac{\mu a_{2}}{2K_{2}^{eq}}\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Gamma_{2}}}=\\
+ & -\int_{\partial\Omega_{3}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}} &  &  & \forall\widetilde{\mathbf{u}}_{3}\in H(div)\\
+\int_{\Omega_{3}}\widetilde{p}_{3}\nabla\cdot\mathbf{u}_{3}\ \partial\Omega_{3} & = & 0 &  & \forall\widetilde{p}_{3}\in L^{2}
+\end{array}
+\end{equation}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Factoring, using 
+\begin_inset Formula $K_{transv}=\frac{\mu a_{2}}{2K_{2}^{eq}}$
+\end_inset
+
+ and multiplying the second equation by -1 to make the terms symmetric:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{equation}
+\begin{array}{ccccc}
+\int_{\Omega_{3}}\widetilde{\mathbf{u}}_{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}-\int_{\Omega_{3}}\nabla\cdot\widetilde{\mathbf{u}}_{3}\ p_{3}\ \partial\Omega_{3} & +\overset{\text{fracture term}}{\overbrace{\int_{\Gamma_{2}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)p_{2}\ \partial\Gamma_{2}\ +\int_{\Gamma_{2}}K_{transv}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\left(\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Gamma_{2}}}=\\
+ & -\int_{\partial\Omega_{3}}\left(\widetilde{\mathbf{u}}_{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}} &  &  & \forall\widetilde{\mathbf{u}}_{3}\in H(div)\\
+-\int_{\Omega_{3}}\widetilde{p}_{3}\nabla\cdot\mathbf{u}_{3}\ \partial\Omega_{3} & = & 0 &  & \forall\widetilde{p}_{3}\in L^{2}
 \end{array}
 \end{equation}
 
@@ -445,9 +535,9 @@ integrating by parts:
 \begin{equation}
 \begin{array}{ccccc}
 \int_{\Omega_{2}}\widetilde{\mathbf{u}}_{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Omega_{2}}\nabla\cdot\widetilde{\mathbf{u}}_{2}\ p_{2}\ \partial\Omega_{2} & +\\
-\int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{3}\ \partial\Omega_{2} & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
+ & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
 \\
-\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\partial\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}
+\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}
 \end{array}
 \end{equation}
 
@@ -480,9 +570,9 @@ noprefix "false"
 \begin{equation}
 \begin{array}{ccccc}
 \int_{\Omega_{2}}\widetilde{\mathbf{u}}_{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Omega_{2}}\nabla\cdot\widetilde{\mathbf{u}}_{2}\ p_{2}\ \partial\Omega_{2} & +\\
-\int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)p_{2}\ \partial\Omega_{2}\ -\int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\frac{\mu}{2}a_{2}\mathbf{K}_{2}^{-1}\left(\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Omega_{2} & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
+ & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
 \\
--\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}+\int_{\partial\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}
+-\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}+\int_{\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}
 \end{array}
 \end{equation}
 
@@ -500,9 +590,9 @@ And accounting for the intersection (which is hybridized):
 \begin{equation}
 \begin{array}{ccccc}
 \int_{\Omega_{2}}\widetilde{\mathbf{u}}_{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}-\int_{\Omega_{2}}\nabla\cdot\widetilde{\mathbf{u}}_{2}\ p_{2}\ \partial\Omega_{2} & + & {\color{teal}\int_{\Omega_{2}}p_{1}(\tilde{\mathbf{u}}_{2}\cdot\mathbf{n})\ \partial\Omega_{2}}+\\
-\int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)p_{2}\ \partial\Omega_{2}\ -\int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\frac{\mu}{2}a_{2}\mathbf{K}_{2}^{-1}\left(\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Omega_{2} & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
+ & = & - & \int_{\partial\Omega_{2}}\left(\widetilde{\mathbf{u}}_{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}} & \forall\widetilde{\mathbf{u}}_{2}\in H(div)\\
 \\
--\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}+\int_{\partial\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}\\
+-\int_{\Omega_{2}}\widetilde{p}_{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}+\int_{\Omega_{2}}\widetilde{p}_{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2} & = & 0 &  & \forall\widetilde{p}_{2}\in L^{2}\\
 {\color{teal}\int_{\Omega_{1}}\widetilde{p}_{1}\sum\mathbf{u}_{2}\cdot\mathbf{n}\ \partial\Omega_{1}} & = & 0 &  & \forall\widetilde{p}_{1}\in L^{2}
 \end{array}
 \end{equation}
@@ -539,6 +629,19 @@ p_{1}(\bar{x}) & =\sum\gamma_{j}\phi_{p,j}^{1}(\bar{x})\\
 Residue and Stiffness Matrix
 \end_layout
 
+\begin_layout Standard
+Note that the residues are implement times -1 so that the solution is already
+ 
+\begin_inset Formula $\Delta sol$
+\end_inset
+
+ and not 
+\begin_inset Formula $-\Delta sol$
+\end_inset
+
+.
+\end_layout
+
 \begin_layout Subsection
 Flux on the reservoir
 \end_layout
@@ -550,8 +653,20 @@ Flux in the reservoir is implemented in the material TMRSDarcyFlowWithMem.
 
 \begin_layout Standard
 \begin_inset Formula 
+\begin{align*}
+R_{3,1} & =\overset{a}{\overbrace{-\int_{\Omega_{3}}\bm{\phi}_{u,i}^{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}}}+\overset{b}{\overbrace{\int_{\Omega_{3}}\nabla\cdot\bm{\phi}_{u,i}^{3}\ p_{3}\ \partial\Omega_{3}}}-\overset{c_{1}}{\overbrace{\int_{\Gamma_{2}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ p_{2}\ \partial\Gamma_{2}}}-\overset{c_{2}}{\overbrace{\int_{\Gamma_{2}}K_{transv}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ \left(\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Gamma_{2}}}\\
+ & -\overset{d}{\overbrace{\int_{\partial\Omega_{3}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}}}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
 \[
-R_{3,1}=\overset{a}{\overbrace{-\int_{\Omega_{3}}\bm{\phi}_{u,i}^{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}}}+\overset{b}{\overbrace{\int_{\Omega_{3}}\nabla\cdot\bm{\phi}_{u,i}^{3}\ p_{3}\ \partial\Omega_{3}}}-\overset{c}{\overbrace{\int_{\partial\Omega_{3}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ p_{2}\ \partial\Omega_{3}}}-\overset{d}{\overbrace{\int_{\partial\Omega_{3}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}}}}
+R_{3,2}=\overset{e}{\overbrace{\int_{\Omega_{3}}\phi_{p,i}^{3}\nabla\cdot\mathbf{u}_{3}\ \partial\Omega_{3}}}
 \]
 
 \end_inset
@@ -562,7 +677,7 @@ R_{3,1}=\overset{a}{\overbrace{-\int_{\Omega_{3}}\bm{\phi}_{u,i}^{3}\cdot\left(\
 \begin_layout Standard
 \begin_inset Formula 
 \[
-R_{3,2}=-\overset{e}{\overbrace{\int_{\Omega_{3}}\phi_{p,i}^{3}\nabla\cdot\mathbf{u}_{3}\ \partial\Omega_{3}}}
+K_{3,1}=\underset{f}{\underbrace{\int_{\Omega_{3}}\bm{\phi}_{u,i}^{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\bm{\phi}_{u,j}^{3}\ \partial\Omega_{3}}}-\underset{g}{\underbrace{\int_{\Omega_{3}}\nabla\cdot\bm{\phi}_{u,i}^{3}\ \phi_{p,j}^{3}\ \partial\Omega_{3}}}+\underset{h_{1}}{\underbrace{\int_{\Gamma_{2}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ \phi_{p,j}^{2}\ \partial\Gamma_{2}}}+\underset{h_{2}}{\underbrace{\int_{\Gamma_{2}}K_{transv}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ \left(\bm{\phi}_{u,j}^{3}\cdot\mathbf{n}\right)\ \partial\Gamma_{2}}}
 \]
 
 \end_inset
@@ -573,18 +688,7 @@ R_{3,2}=-\overset{e}{\overbrace{\int_{\Omega_{3}}\phi_{p,i}^{3}\nabla\cdot\mathb
 \begin_layout Standard
 \begin_inset Formula 
 \[
-K_{3,1}=\underset{f}{\underbrace{\int_{\Omega_{3}}\bm{\phi}_{u,i}^{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\bm{\phi}_{u,j}^{3}\ \partial\Omega_{3}}}-\underset{g}{\underbrace{\int_{\Omega_{3}}\nabla\cdot\bm{\phi}_{u,i}^{3}\ \phi_{p,j}^{3}\ \partial\Omega_{3}}}+\underset{h}{\underbrace{\int_{\partial\Omega_{3}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ \phi_{p,j}^{2}\ \partial\Omega_{3}}}
-\]
-
-\end_inset
-
-
-\end_layout
-
-\begin_layout Standard
-\begin_inset Formula 
-\[
-K_{3,2}=\underset{i}{\underbrace{\int_{\Omega_{3}}\phi_{p,i}^{3}\nabla\cdot\bm{\phi}_{u,j}^{3}\ \partial\Omega_{3}}}
+K_{3,2}=\underset{i}{-\underbrace{\int_{\Omega_{3}}\phi_{p,i}^{3}\nabla\cdot\bm{\phi}_{u,j}^{3}\ \partial\Omega_{3}}}
 \]
 
 \end_inset
@@ -600,9 +704,9 @@ Flux on the fracture
 \begin_inset Formula 
 \[
 R_{2,1}=\begin{cases}
-\overset{j}{-\overbrace{\int_{\Omega_{2}}\bm{\phi}_{u,i}^{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}}}+\overset{k}{\overbrace{\int_{\Omega_{2}}\nabla\cdot\bm{\phi}_{u,i}^{2}\ p_{2}\ \partial\Omega_{2}}}-\overset{l}{\overbrace{\int_{\Omega_{2}}p_{1}(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n})\ \partial\Omega_{2}}}-\overset{m}{\overbrace{\int_{\partial\Omega_{2}}\left(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n}\right)p_{2}\ \partial\Omega_{2}}}\\
+\overset{j}{-\overbrace{\int_{\Omega_{2}}\bm{\phi}_{u,i}^{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}}}+\overset{k}{\overbrace{\int_{\Omega_{2}}\nabla\cdot\bm{\phi}_{u,i}^{2}\ p_{2}\ \partial\Omega_{2}}}-\overset{l}{\overbrace{\int_{\Omega_{2}}p_{1}(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n})\ \partial\Omega_{2}}}\\
 \\
-+\overbrace{\int_{\partial\Omega_{2}}\left(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n}\right)\frac{\mu}{2}a_{2}\mathbf{K}_{2}^{-1}\left(\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Omega_{2}}^{n}-\overbrace{\int_{\partial\Omega_{2}}\left(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}}}^{o}
+-\overbrace{\int_{\partial\Omega_{2}}\left(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}}}^{o}
 \end{cases}
 \]
 
@@ -614,7 +718,7 @@ R_{2,1}=\begin{cases}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-R_{2,2}=\overset{p}{\overbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}}}-\overset{q}{\overbrace{\int_{\partial\Omega_{2}}\phi_{p,i}^{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2}}}
+R_{2,2}=\overset{p}{\overbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}}}-\overset{q}{\overbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2}}}
 \]
 
 \end_inset
@@ -637,9 +741,7 @@ R_{2,3}=\overset{r}{-\overbrace{{\color{teal}\int_{\Omega_{1}}\widetilde{p}_{1}\
 \begin_inset Formula 
 \[
 K_{2,1}=\begin{cases}
-\underset{s}{\underbrace{\int_{\Omega_{2}}\bm{\phi}_{u,j}^{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\bm{\phi}_{u,j}^{2}\ \partial\Omega_{2}}}-\underset{t}{\underbrace{\int_{\Omega_{2}}\nabla\cdot\bm{\phi}_{u,i}^{2}\ \phi_{p,j}^{2}\ \partial\Omega_{2}}}+\underset{u}{\underbrace{\int_{\Omega_{2}}p_{1}(\bm{\phi}_{u,j}^{2}\cdot\mathbf{n})\ \partial\Omega_{2}}}+\underset{v}{\underbrace{\int_{\partial\Omega_{2}}\left(\bm{\phi}_{u,j}^{2}\cdot\mathbf{n}\right)\phi_{p,j}^{2}\ \partial\Omega_{2}}} & -\\
-\underset{w}{\underbrace{\int_{\partial\Omega_{2}}\left(\bm{\phi}_{u,j}^{2}\cdot\mathbf{n}\right)\frac{\mu}{2}a_{2}\mathbf{K}_{2}^{-1}\left(\bm{\phi}_{u,j}^{3}\cdot\mathbf{n}\right)\ \partial\Omega_{2}}}
-\end{cases}
+\underset{s}{\underbrace{\int_{\Omega_{2}}\bm{\phi}_{u,i}^{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\bm{\phi}_{u,j}^{2}\ \partial\Omega_{2}}}-\underset{t}{\underbrace{\int_{\Omega_{2}}\nabla\cdot\bm{\phi}_{u,i}^{2}\ \phi_{p,j}^{2}\ \partial\Omega_{2}}}+\underset{u}{\underbrace{\int_{\Omega_{2}}\phi_{p,j}^{1}(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n})\ \partial\Omega_{2}}}\end{cases}
 \]
 
 \end_inset
@@ -650,7 +752,7 @@ K_{2,1}=\begin{cases}
 \begin_layout Standard
 \begin_inset Formula 
 \[
-K_{2,2}=\underset{x}{-\underbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\nabla\cdot\bm{\phi}_{u,j}^{2}\ \partial\Omega_{2}}}+\underset{y}{\underbrace{\int_{\partial\Omega_{2}}\phi_{p,i}^{2}\sum\bm{\phi}_{u,j}^{3}\cdot\mathbf{n}\ \partial\Omega_{2}}}
+K_{2,2}=\underset{x}{-\underbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\nabla\cdot\bm{\phi}_{u,j}^{2}\ \partial\Omega_{2}}}+\underset{y}{\underbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\sum\bm{\phi}_{u,j}^{3}\cdot\mathbf{n}\ \partial\Omega_{2}}}
 \]
 
 \end_inset
@@ -661,8 +763,91 @@ K_{2,2}=\underset{x}{-\underbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\nabla\cdot\bm{
 \begin_layout Standard
 \begin_inset Formula 
 \[
-K_{2,3}=\underset{z}{\underbrace{\int_{\Omega_{1}}\widetilde{p}_{1}\sum\bm{\phi}_{u,j}^{2}\cdot\mathbf{n}\ \partial\Omega_{1}}}
+K_{2,3}=\underset{z}{\underbrace{\int_{\Omega_{1}}\phi_{p,i}^{1}\sum\bm{\phi}_{u,j}^{2}\cdot\mathbf{n}\ \partial\Omega_{1}}}
 \]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Matrix Form
+\end_layout
+
+\begin_layout Standard
+In this section, the terms are put in one single global matrix for better
+ visualization:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+K_{glob}=\left[\begin{array}{ccccc}
+K_{u_{3},u_{3}} & K_{u_{3},p_{3}} & 0 & K_{u_{3},p_{2}} & 0\\
+K_{p_{3},u_{3}} & 0 & 0 & 0 & 0\\
+0 & 0 & K_{u_{2},u_{2}} & K_{u_{2},p_{2}} & K_{u_{2},p_{1}}\\
+K_{p_{2},u_{3}} & 0 & K_{p_{2},u_{2}} & 0 & 0\\
+0 & 0 & K_{p_{1},u_{2}} & 0 & 0
+\end{array}\right]
+\]
+
+\end_inset
+
+where the terms are:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+K_{u_{3},u_{3}} & =\underset{f}{\underbrace{\int_{\Omega_{3}}\bm{\phi}_{u,i}^{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\bm{\phi}_{u,j}^{3}\ \partial\Omega_{3}}}+\underset{h_{2}}{\underbrace{\int_{\Gamma_{2}}K_{transv}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ \left(\bm{\phi}_{u,j}^{3}\cdot\mathbf{n}\right)\ \partial\Gamma_{2}}}\\
+K_{u_{3},p_{3}} & =-\underset{g}{\underbrace{\int_{\Omega_{3}}\nabla\cdot\bm{\phi}_{u,i}^{3}\ \phi_{p,j}^{3}\ \partial\Omega_{3}}}\\
+K_{u_{3},p_{2}} & =\underset{h_{1}}{\underbrace{\int_{\Gamma_{2}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ \phi_{p,j}^{2}\ \partial\Gamma_{2}}}\ \text{(this term can be seen as \ensuremath{\phi_{p,j}^{2}\nabla\cdot\bm{\phi}_{u,i}^{3}} of the hdivcollapsed element)}\\
+K_{p_{3},u_{3}} & =\underset{i}{-\underbrace{\int_{\Omega_{3}}\phi_{p,i}^{3}\nabla\cdot\bm{\phi}_{u,j}^{3}\ \partial\Omega_{3}}}\\
+K_{u_{2},u_{2}} & =\underset{s}{\underbrace{\int_{\Omega_{2}}\bm{\phi}_{u,i}^{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\bm{\phi}_{u,j}^{2}\ \partial\Omega_{2}}}\\
+K_{u_{2},p_{2}} & =-\underset{t}{\underbrace{\int_{\Omega_{2}}\nabla\cdot\bm{\phi}_{u,i}^{2}\ \phi_{p,j}^{2}\ \partial\Omega_{2}}}\\
+K_{u_{2},p_{1}} & =\underset{u}{\underbrace{\int_{\Omega_{2}}\phi_{p,j}^{1}(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n})\ \partial\Omega_{2}}}\\
+K_{p_{2},u_{3}} & =\underset{y}{\underbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\sum\bm{\phi}_{u,j}^{3}\cdot\mathbf{n}\ \partial\Omega_{2}}}\ \text{(this term can be seen as \ensuremath{\phi_{p,i}^{2}\sum\nabla\cdot\bm{\phi}_{u,j}^{3}} of the hdivcollapsed element)}\\
+K_{p_{2},u_{2}} & =\underset{x}{-\underbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\nabla\cdot\bm{\phi}_{u,j}^{2}\ \partial\Omega_{2}}}\\
+K_{p_{1},u_{2}} & =\underset{z}{\underbrace{\int_{\Omega_{1}}\phi_{p,i}^{1}\sum\bm{\phi}_{u,j}^{2}\cdot\mathbf{n}\ \partial\Omega_{1}}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+And the residual is:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+R=\left[\begin{array}{c}
+R_{u_{3}}\\
+R_{p_{3}}\\
+R_{u_{2}}\\
+R_{p_{2}}\\
+R_{p_{1}}
+\end{array}\right]
+\]
+
+\end_inset
+
+with:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+R_{u_{3}} & =\overset{a}{\overbrace{-\int_{\Omega_{3}}\bm{\phi}_{u,i}^{3}\cdot\left(\mu\mathbf{K}_{3}^{-1}\right)\mathbf{u}_{3}\ \partial\Omega_{3}}}+\overset{b}{\overbrace{\int_{\Omega_{3}}\nabla\cdot\bm{\phi}_{u,i}^{3}\ p_{3}\ \partial\Omega_{3}}}-\overset{c_{1}}{\overbrace{\int_{\Gamma_{2}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ p_{2}\ \partial\Gamma_{2}}}-\overset{c_{2}}{\overbrace{\int_{\Gamma_{2}}K_{transv}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ \left(\mathbf{u}_{3}\cdot\mathbf{n}\right)\ \partial\Gamma_{2}}}\\
+ & -\overset{d}{\overbrace{\int_{\partial\Omega_{3}}\left(\bm{\phi}_{u,i}^{3}\cdot\mathbf{n}\right)\ p_{3_{D}}\ \partial\Omega_{3_{D}}}}\\
+R_{p_{3}} & =\overset{e}{\overbrace{\int_{\Omega_{3}}\phi_{p,i}^{3}\nabla\cdot\mathbf{u}_{3}\ \partial\Omega_{3}}}\\
+R_{u_{2}} & =\overset{j}{-\overbrace{\int_{\Omega_{2}}\bm{\phi}_{u,i}^{2}\cdot\left(\frac{\mu}{a_{d}}\mathbf{K}_{2}^{-1}\right)\mathbf{u}_{2}\ \partial\Omega_{2}}}+\overset{k}{\overbrace{\int_{\Omega_{2}}\nabla\cdot\bm{\phi}_{u,i}^{2}\ p_{2}\ \partial\Omega_{2}}}-\overset{l}{\overbrace{\int_{\Omega_{2}}p_{1}(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n})\ \partial\Omega_{2}}}-\overbrace{\int_{\partial\Omega_{2}}\left(\bm{\phi}_{u,i}^{2}\cdot\mathbf{n}\right)\ p_{2_{D}}\ \partial\Omega_{2_{D}}}^{o}\\
+R_{p_{2}} & =\overset{p}{\overbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\nabla\cdot\mathbf{u}_{2}\ \partial\Omega_{2}}}-\overset{q}{\overbrace{\int_{\Omega_{2}}\phi_{p,i}^{2}\sum\mathbf{u}_{3}\cdot\mathbf{n}\ \partial\Omega_{2}}}\ \text{(these two terms can be seen as \ensuremath{\phi_{p,i}^{2}\nabla\cdot\mathbf{u}_{2}} of the hdivcollapsed element)}\\
+R_{p_{1}} & =\overset{r}{{\normalcolor {\color{black}-\overbrace{{\color{teal}{\color{black}\int_{\Omega_{1}}\phi_{p,i}^{1}\sum\mathbf{u}_{2}\cdot\mathbf{n}\ \partial\Omega_{1}}}}}}}
+\end{align*}
 
 \end_inset
 

@@ -337,7 +337,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     
     for (int ip = 0; ip < nphi_p; ip++) {
         
-        ef(ip + first_p) += -1.0 * weight * (div_q) * phi_ps(ip,0); // term e in docs/Formulation.lyx
+        ef(ip + first_p) += weight * (div_q) * phi_ps(ip,0); // term e in docs/Formulation.lyx
         
         for (int jq = 0; jq < nphi_q; jq++) {
             ek(ip + first_p, jq + first_q) += -1.0 * weight * div_phi(jq,0) * phi_ps(ip,0); // term i in docs/Formulation.lyx

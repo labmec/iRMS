@@ -101,7 +101,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
     
     TPZFNMatrix<40, REAL> div_phi = datavec[qb].divphi;
-  //  REAL div_q = datavec[qb].divsol[0][0];
+    REAL div_q = datavec[qb].divsol[0][0];
     
     int nphi_q       = datavec[qb].fVecShapeIndex.NElements();
     int nphi_p       = phi_ps.Rows();
@@ -130,7 +130,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     if(gp_index < 0) DebugStop();
     TMEM & memory = this->GetMemory().get()->operator[](gp_index);
     
-    TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0),kappa_inv_qFrac(3,1,0.0) ;
+    TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
     
     REAL ad = memory.m_ad;
     for (int i = 0; i < 3; i++) {
@@ -146,13 +146,12 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
 
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(i,iq);
+            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
        // @TODO: Verify fracture ad here!!!
-        ef(iq + first_q) += weight * (-1.0)*(kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));  // terms j and k in docs/Formulation.lyx
+        ef(iq + first_q) += weight * (-kappa_inv_q_dot_phi_q_i / ad + p * div_phi(iq,0));  // terms j and k in docs/Formulation.lyx
         
-        for (int jq = 0; jq < first_transverse_q; jq++)
-        {
+        for (int jq = 0; jq < first_transverse_q; jq++) {
 
                 kappa_inv_phi_q_j.Zero();
                 for (int i = 0; i < 3; i++) {
@@ -163,20 +162,21 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
                 
                 STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j_dot_phi_q_i +=  kappa_inv_phi_q_j(j,0)*phi_qs(j,iq);
+                    kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_qs(j,iq);
                 }
                 
                 ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i; // term s in docs/Formulation.lyx
             }
             
-            for (int jp = 0; jp < nphi_p; jp++)
-            {
+            for (int jp = 0; jp < nphi_p; jp++) {
                 ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // term t in docs/Formulation.lyx
                 ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // term x in docs/Formulation.lyx
-               
             }
-        
     }
+    for (int ip = 0; ip < nphi_p; ip++) {
+        ef(ip + first_p) = weight * phi_ps(ip,0) * div_q; // term p in docs/Formulation.lyx
+    }
+    
 //    
     // compute the contribution of the hdivbound
     for (int iq = first_transverse_q; iq < second_transverse_q; iq++)
@@ -189,22 +189,15 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         }
         
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(i,iq);
+            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
 
-        ef(iq + first_q) += weight * ((-0.5*ad)*kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms n and o in docs/Formulation.lyx
-        for (int jq = first_transverse_q; jq < second_transverse_q; jq++)
-        {
+        ef(iq + first_q) += weight * (-0.5*ad*kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // terms c2 and c1 in docs/Formulation.lyx
+        
+        for (int jq = first_transverse_q; jq < second_transverse_q; jq++) {
 
             kappa_inv_phi_q_j.Zero();
 
-            // kappanormal is the orthogonal permeability
-            // phi_qs is the scalar function corresponding to jq (scalar)
-            // s_j is the index of the scalar function corresponding to jq
-            // v_j is the index of the vector corresponding to jq
-            // kappa_inv_phi_q_j = vector equal to 1/kappa phi_qs * phi_qs * vector(v_j)
-            // ad = 1
-            // factor = 1
             for (int j = 0; j < 3; j++) {
                 REAL KappaInvVal = memory.m_kappa_inv(j,j);
                 kappa_inv_phi_q_j(j,0) = 0.5 * ad * KappaInvVal * phi_qs(j,jq);
@@ -215,18 +208,16 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             for (int j = 0; j < 3; j++) {
                 kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_qs(j,iq);
             }
-            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i; // part of term w in docs/Formulation.lyx
+            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i; // term h2 in docs/Formulation.lyx
         }
         for (int jp = 0; jp < nphi_p; jp++)
         {
-            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // part of term t in docs/Formulation.lyx
-            ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // part of term x in docs/Formulation.lyx
-
+            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // term y in docs/Formulation.lyx (they really contribute as a divergent!)
+            ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // term h1 in docs/Formulation.lyx
         }
     }
 //    // compute the contribution of the hdivbound
-    for (int iq = second_transverse_q; iq < nphi_q; iq++)
-    {
+    for (int iq = second_transverse_q; iq < nphi_q; iq++) {
 
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
 
@@ -235,18 +226,15 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         }
         
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(i,iq);
+            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
         
-        ef(iq + first_q) += weight * ((-0.5*ad)* kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms j and k in docs/Formulation.lyx
+        ef(iq + first_q) += weight * ((-0.5*ad)* kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms c2 and c1 in docs/Formulation.lyx
+        
         for (int jq = second_transverse_q; jq < nphi_q; jq++)
         {
             kappa_inv_phi_q_j.Zero();
-            // kappanormal is the orthogonal permeability
-            // phi_qs is the scalar function corresponding to jq (scalar)
-            // s_j is the index of the scalar function corresponding to jq
-            // v_j is the index of the vector corresponding to jq
-            // kappa_inv_phi_q_j = vector equal to 1/kappa phi_qs * phi_qs * vector(v_j)
+
             for (int j = 0; j < 3; j++) {
                 REAL KappaInvVal = memory.m_kappa_inv(j,j);
                 kappa_inv_phi_q_j(j,0) += 0.5 * ad * KappaInvVal * phi_qs(j,jq);
@@ -256,12 +244,12 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             for (int j = 0; j < 3; j++) {
                 kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_qs(j,iq);
             }
-            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i; // part of term w in docs/Formulation.lyx
+            ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i; // term h2 in docs/Formulation.lyx
         }
         for (int jp = 0; jp < nphi_p; jp++)
         {
-            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // part of term t in docs/Formulation.lyx
-            ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // part of term x in docs/Formulation.lyx
+            ek(iq + first_q, jp + first_p) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // term y in docs/Formulation.lyx
+            ek(jp + first_p, iq + first_q) += weight * ( - div_phi(iq,0) ) * phi_ps(jp,0); // term h1 in docs/Formulation.lyx
         }
     }
     
@@ -367,7 +355,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDa
             STATE p_D = bc_data[0];
             for (int iq = 0; iq < nphi_q; iq++)
             {
-                ef(iq + first_q) += weight * (-1.0)*p_D * phi_qs(iq,0); // term m in docs/Formulation.lyx
+                ef(iq + first_q) += weight * (-1.0)*p_D * phi_qs(iq,0); // term o in docs/Formulation.lyx
             }
         }
             break;

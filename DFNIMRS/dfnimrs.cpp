@@ -140,7 +140,7 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/2parallel/";
                 break;
             case 7:
-                filenameBase = basemeshpath + "/dfnimrs/2paralleloverlap/";
+                filenameBase = basemeshpath + "/dfnimrs/2parallel_overlap/";
                 break;
             case 8:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/";
@@ -409,6 +409,7 @@ void RunProblem(string& filenameBase, const int simcase)
     TMRSDataTransfer sim_data;
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
 	sim_data.mTNumerics.m_mhm_mixed_Q = isMHM;
+    sim_data.mTNumerics.m_need_merge_meshes_Q = needsMergeMeshes;
 	sim_data.mTNumerics.m_SpaceType = TMRSDataTransfer::TNumerics::E4Space;
 
 	// ----- Filling data transfer from json input file -----
@@ -473,7 +474,14 @@ void RunProblem(string& filenameBase, const int simcase)
 //		std::ofstream name(outputFolder + "GeoMesh_Fine_AfterMergeMeshes.vtk");
 //		TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
         std::ofstream name2(outputFolder + "GeoMesh_MHM_domain.vtk");
-        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
+        if(needsMergeMeshes){
+            std::ofstream name2(outputFolder + "GeoMesh_MHM_domain.vtk");
+            TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name2,aspace.mSubdomainIndexGel);
+        }
+        else{
+            std::ofstream name(outputFolder + "GeoMesh_Fine_AfterMergeMeshes.vtk");
+            TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
+        }
 	}
     
 	// ----- Changing BCs for some testing cases -----
@@ -666,23 +674,17 @@ void RunProblem(string& filenameBase, const int simcase)
 		
         TPZFastCondensedElement::fSkipLoadSolution = false;
 
-		
-		// The problem is linear, and therefore, we can just call assemble and solve once.
-		// However, the system is assembled in a "nonlinear" fashion, thus, the solution represents
-		// -DeltaU. So, to obtain the correct solution, we multiply it by -1.
-		// Note: This has to be done after LoadSolution()!
-
-        REAL res_norm = Norm(mixAnalisys->Rhs());
-        REAL normsol = Norm(mixed_operator->Solution());
-//        mixed_operator->UpdatePreviousState(-1.);
-        mixAnalisys->LoadSolution();
-        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-        mixAnalisys->LoadSolution();
-        mixAnalisys-> Assemble();
-//        mixAnalisys->fsoltransfer.TransferToMultiphysics();
-      
-        REAL res_norm1 = Norm(mixAnalisys->Rhs());
-        REAL normsol1 = Norm(mixed_operator->Solution());
+        const bool checkRhsAndExit = true;
+        if(checkRhsAndExit){
+            std::cout << "\n------------------ Checking RHS norm ------------------" << std::endl;
+//            mixed_operator->UpdatePreviousState(-1.);
+            std::cout << "\nNorm(rhs) before = " << Norm(mixAnalisys->Rhs()) << std::endl;
+            mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+            mixAnalisys->Assemble();;
+            std::cout << "\nNorm(rhs) = " << Norm(mixAnalisys->Rhs()) << std::endl;
+            std::cout << "\ncheckRhsAndExit is on. Just exiting now..." << std::endl;
+            return;
+        }
         
         mixAnalisys->fsoltransfer.TransferFromMultiphysics();
 //        if(isFilterZeroNeumann) VerifyIfNeumannIsExactlyZero(4,mixed_operator);
@@ -1883,7 +1885,7 @@ void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer& sim_data, TP
     for(auto cel : cmesh->ElementVec()){
         TPZSubCompMesh* subcmesh = dynamic_cast<TPZSubCompMesh*>(cel);
         if (subcmesh) {
-            std::cout << "\n\t------- Submesh " << count << " -------" << std::endl;
+//            std::cout << "\n\t------- Submesh " << count << " -------" << std::endl;
 //            if(count == 1 || count == 3){
 //                count++;
 //                std::cout << "===> Skipping filter" << std::endl;
@@ -1906,10 +1908,10 @@ void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer& sim_data, TP
                 subcmesh->Analysis()->StructMatrix()->EquationFilter().ExcludeEquations(eqsetsub); // will set as active all eqs (internal and external) that are not zero neumann
                 auto& activeeq = subcmesh->Analysis()->StructMatrix()->EquationFilter().GetActiveEquations();
                 
-                std::cout << "size eqsetsub = " << eqsetsub.size() << " | eqsetsub = " << eqsetsub;
-                std::cout << "size activeeq = " << activeeq.size() << " | active eq = " << activeeq << std::endl;
+//                std::cout << "size eqsetsub = " << eqsetsub.size() << " | eqsetsub = " << eqsetsub;
+//                std::cout << "size activeeq = " << activeeq.size() << " | active eq = " << activeeq << std::endl;
                 auto& excludedeq = subcmesh->Analysis()->StructMatrix()->EquationFilter().GetExcludedEquations();
-                std::cout << "size excludedeq = " << excludedeq.size() << " | excluded eq = " << excludedeq << std::endl;
+//                std::cout << "size excludedeq = " << excludedeq.size() << " | excluded eq = " << excludedeq << std::endl;
                 const int64_t nexteq = neq - ninteq;
 #ifdef PZDEBUG
                 // All the external equations must be present in the active equations
