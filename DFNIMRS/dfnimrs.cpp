@@ -93,7 +93,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 1;
+    int simcase = 5;
     if (argc > 1) {
         std::cout << "\n===========> Running with provided argv path!" << std::endl;
         filenameBase = basemeshpath + argv[1];
@@ -665,13 +665,25 @@ void RunProblem(string& filenameBase, const int simcase)
 		mixAnalisys->VerifyElementFluxes();
 		
         TPZFastCondensedElement::fSkipLoadSolution = false;
-        mixed_operator->LoadSolution(mixed_operator->Solution());
+
 		
 		// The problem is linear, and therefore, we can just call assemble and solve once.
 		// However, the system is assembled in a "nonlinear" fashion, thus, the solution represents
 		// -DeltaU. So, to obtain the correct solution, we multiply it by -1.
 		// Note: This has to be done after LoadSolution()!
-		mixed_operator->UpdatePreviousState(-1.);
+
+        REAL res_norm = Norm(mixAnalisys->Rhs());
+        REAL normsol = Norm(mixed_operator->Solution());
+//        mixed_operator->UpdatePreviousState(-1.);
+        mixAnalisys->LoadSolution();
+        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+        mixAnalisys->LoadSolution();
+        mixAnalisys-> Assemble();
+//        mixAnalisys->fsoltransfer.TransferToMultiphysics();
+      
+        REAL res_norm1 = Norm(mixAnalisys->Rhs());
+        REAL normsol1 = Norm(mixed_operator->Solution());
+        
         mixAnalisys->fsoltransfer.TransferFromMultiphysics();
 //        if(isFilterZeroNeumann) VerifyIfNeumannIsExactlyZero(4,mixed_operator);
         

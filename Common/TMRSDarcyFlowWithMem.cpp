@@ -466,7 +466,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
             STATE p_D = bc_data[0];
             for (int iq = 0; iq < nphi_q; iq++)
             {
-                ef(iq + first_q) += weight * p_D * phi_qs(iq,0); // term d in docs/Formulation.lyx
+                ef(iq + first_q) += weight *(-1.0)* p_D * phi_qs(iq,0); // term d in docs/Formulation.lyx
             }
         }
             break;
@@ -480,7 +480,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
                 REAL qn = 0.0;
                 qn = q[0];
 
-                ef(iq + first_q) += weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0); 
+                ef(iq + first_q) += weight * gBigNumber *(-1.0)* (qn - qn_N) * phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++)
                 {
                     ek(iq + first_q,jq + first_q) += weight * gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
@@ -496,7 +496,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
                 const REAL qn_N = bc_data[0];
                 REAL qn = 0.0;
                 qn = q[0];
-                ef(iq + first_q) += weight * (qn - qn_N) * phi_qs(iq,0);
+                ef(iq + first_q) += weight * (qn - qn_N) *(-1.0)* phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++){
                     ek(iq + first_q,jq + first_q) += weight/v1 * phi_qs(jq,0) * phi_qs(iq,0);
                 }
@@ -509,7 +509,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
             {
               STATE p_D = bc_data[0];
 
-              ef(ip + first_p) += - weight * gBigNumber * p_D * phi_ps(ip,0);
+              ef(ip + first_p) += - weight * gBigNumber * p_D *(-1.0)* phi_ps(ip,0);
               for (int jp = 0; jp < nphi_p; jp++)
               {
                   ek(ip + first_p,jp + first_p) += weight * gBigNumber * phi_ps(jp,0) * phi_ps(ip,0);

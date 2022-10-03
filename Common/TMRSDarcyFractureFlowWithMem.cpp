@@ -149,7 +149,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
        // @TODO: Verify fracture ad here!!!
-        ef(iq + first_q) += weight * ( (1.0/ad)*kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));  // terms j and k in docs/Formulation.lyx
+        ef(iq + first_q) += weight * (-1.0)*(kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));  // terms j and k in docs/Formulation.lyx
         
         for (int jq = 0; jq < first_transverse_q; jq++)
         {
@@ -192,7 +192,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
 
-        ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms j and k in docs/Formulation.lyx
+        ef(iq + first_q) += weight * ((-0.5*ad)*kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms n and o in docs/Formulation.lyx
         for (int jq = first_transverse_q; jq < second_transverse_q; jq++)
         {
 
@@ -238,7 +238,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
         
-        ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms j and k in docs/Formulation.lyx
+        ef(iq + first_q) += weight * ((-0.5*ad)* kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms j and k in docs/Formulation.lyx
         for (int jq = second_transverse_q; jq < nphi_q; jq++)
         {
             kappa_inv_phi_q_j.Zero();
@@ -367,7 +367,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDa
             STATE p_D = bc_data[0];
             for (int iq = 0; iq < nphi_q; iq++)
             {
-                ef(iq + first_q) += weight * p_D * phi_qs(iq,0); // term m in docs/Formulation.lyx
+                ef(iq + first_q) += weight * (-1.0)*p_D * phi_qs(iq,0); // term m in docs/Formulation.lyx
             }
         }
             break;
@@ -381,7 +381,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDa
                 REAL qn = 0.0;
                 qn = q[0];
                 
-                ef(iq + first_q) += weight * gBigNumber * (qn - qn_N) * phi_qs(iq,0);
+                ef(iq + first_q) += weight * gBigNumber * (-1.0)*(qn - qn_N) * phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++)
                 {
                     ek(iq + first_q,jq + first_q) += weight * gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
@@ -399,7 +399,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDa
                 const REAL qn_N = bc_data[0];
                 REAL qn = 0.0;
                 qn = q[0];
-                ef(iq + first_q) += weight * (qn - qn_N) * phi_qs(iq,0);
+                ef(iq + first_q) += weight *(-1.0)* (qn - qn_N) * phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++){
                     ek(iq + first_q,jq + first_q) += weight/v1 * phi_qs(jq,0) * phi_qs(iq,0);
                 }
