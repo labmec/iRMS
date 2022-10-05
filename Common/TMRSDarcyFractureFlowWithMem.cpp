@@ -149,7 +149,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
        // @TODO: Verify fracture ad here!!!
-        ef(iq + first_q) += weight * (-kappa_inv_q_dot_phi_q_i / ad + p * div_phi(iq,0));  // terms j and k in docs/Formulation.lyx
+        ef(iq + first_q) += weight*(-kappa_inv_q_dot_phi_q_i /ad + p * div_phi(iq,0));  // terms j and k in docs/Formulation.lyx
         
         for (int jq = 0; jq < first_transverse_q; jq++) {
 
@@ -174,7 +174,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             }
     }
     for (int ip = 0; ip < nphi_p; ip++) {
-        ef(ip + first_p) = weight * phi_ps(ip,0) * div_q; // term p in docs/Formulation.lyx
+//        ef(ip + first_p) = weight * phi_ps(ip,0) * div_q; // term p in docs/Formulation.lyx
     }
     
 //    
@@ -192,7 +192,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
 
-        ef(iq + first_q) += weight * (-0.5*ad*kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // terms c2 and c1 in docs/Formulation.lyx
+        ef(iq + first_q) += weight*(-0.5*ad*kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms c2 and c1 in docs/Formulation.lyx
         
         for (int jq = first_transverse_q; jq < second_transverse_q; jq++) {
 
@@ -229,7 +229,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
         
-        ef(iq + first_q) += weight * ((-0.5*ad)* kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0)); // part of terms c2 and c1 in docs/Formulation.lyx
+        ef(iq + first_q) += weight *((-0.5*ad)*kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // part of terms c2 and c1 in docs/Formulation.lyx
         
         for (int jq = second_transverse_q; jq < nphi_q; jq++)
         {

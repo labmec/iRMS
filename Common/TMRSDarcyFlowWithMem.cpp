@@ -483,7 +483,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
                 ef(iq + first_q) += weight * gBigNumber *(-1.0)* (qn - qn_N) * phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++)
                 {
-                    ek(iq + first_q,jq + first_q) += weight * gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
+                    ek(iq + first_q,jq + first_q) += weight *gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
                 }
                 
             }

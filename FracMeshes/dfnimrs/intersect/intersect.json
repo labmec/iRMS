@@ -23,6 +23,7 @@
     "FractureHybridPressureMatId": 299,
     "FractureInitMatId": 300,
     "RunWithTransport": false,
+    "useMHM": true,
     "Fractures":[
         {
             "Index": 0,

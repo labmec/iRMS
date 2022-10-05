@@ -93,7 +93,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 5;
+    int simcase = 2;
     if (argc > 1) {
         std::cout << "\n===========> Running with provided argv path!" << std::endl;
         filenameBase = basemeshpath + argv[1];
@@ -680,9 +680,18 @@ void RunProblem(string& filenameBase, const int simcase)
 //            mixed_operator->UpdatePreviousState(-1.);
             std::cout << "\nNorm(rhs) before = " << Norm(mixAnalisys->Rhs()) << std::endl;
             mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-            mixAnalisys->Assemble();;
+            mixAnalisys->Assemble();
             std::cout << "\nNorm(rhs) = " << Norm(mixAnalisys->Rhs()) << std::endl;
             std::cout << "\ncheckRhsAndExit is on. Just exiting now..." << std::endl;
+            
+            // ----- Post processing -----
+            if (isPostProc) {
+                mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+                int dimToPost = 3;
+                mixAnalisys->PostProcessTimeStep(dimToPost);
+                dimToPost = 2;
+                mixAnalisys->PostProcessTimeStep(dimToPost);
+            }
             return;
         }
         
