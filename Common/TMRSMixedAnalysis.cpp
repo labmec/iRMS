@@ -114,6 +114,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
       
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
+        
 
 #ifdef PZDEBUG
         {

@@ -27,6 +27,7 @@ struct TGlueMem
     std::pair<int,int> m_fracs;
     REAL m_dist;
     REAL m_flux;
+    REAL m_dp;
     
     /// Class name
     const std::string Name() const

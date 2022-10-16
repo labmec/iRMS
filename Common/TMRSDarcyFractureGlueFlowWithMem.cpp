@@ -70,12 +70,12 @@ void TMRSDarcyFractureGlueFlowWithMem::Contribute(const TPZVec<TPZMaterialDataT<
     REAL kappaNormal = m_permeability;
     REAL dist = memory.m_dist;
     memory.m_flux = q[0];
-//    std::cout<<"dist: "<<dist<< " perm: "<<kappaNormal<< " matid: "<<this->Id()<<std::endl;
+
     REAL fact  = weight*dist/kappaNormal;
     auto &phi = datavec[0].phi;
     int nphi = datavec[qb].phi.Rows();
     for (int i=0; i<nphi; i++) {
-        ef(i,0) += phi(i)*fact*q[0];
+        ef(i,0) += -1.0*phi(i)*fact*q[0];
         for (int j=0; j<nphi; j++) {
             ek(i,j) += fact*phi(i)*phi(j);
         }
@@ -93,12 +93,11 @@ void TMRSDarcyFractureGlueFlowWithMem::Contribute(const TPZVec<TPZMaterialDataT<
     REAL kappaNormal = m_permeability;
     REAL dist = memory.m_dist;
     memory.m_flux = q[0];
-//    std::cout<<"dist: "<<dist<< " perm: "<<kappaNormal<< " matid: "<<this->Id()<<std::endl;
     REAL fact  = weight*dist/kappaNormal;
     auto &phi = datavec[0].phi;
     int nphi = datavec[qb].phi.Rows();
     for (int i=0; i<nphi; i++) {
-        ef(i,0) += phi(i)*fact*q[0];
+        ef(i,0) += -1.0*phi(i)*fact*q[0];
     }
 }
 

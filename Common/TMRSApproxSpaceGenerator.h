@@ -81,6 +81,7 @@ private:
     /// create HDivBound glue elements between the fractures
     void OrderFractures(TPZCompMesh *cmesh, TPZVec<TPZGeoElSide> &fracvec);
     
+    
     /// Creates the H(div) spaces of the fracture elements
     void CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh);	
 	
@@ -379,6 +380,9 @@ public:
     
 	/// Returns true if the matid is a fracture matid
     bool IsFracMatId(int matiD);
+    
+    // update dp in MemoryFractureGlue
+    void UpdateMemoryFractureGlue(TPZCompMesh *cmesh);
     
 	/// Returns true if the matid is a fracture bc matid
     bool IsFracBCMatId(int matiD) { return IsFracMatId(matiD-1); }

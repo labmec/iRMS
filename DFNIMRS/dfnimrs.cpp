@@ -93,7 +93,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 2;
+    int simcase = 9;
     if (argc > 1) {
         std::cout << "\n===========> Running with provided argv path!" << std::endl;
         filenameBase = basemeshpath + argv[1];
@@ -146,7 +146,19 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/";
                 break;
             case 9:
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona";
+//                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona";
+//                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod/Reference";
+//                  filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod/Overlap";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod/FakeOverlap";
+                
+                // sem a fratura que está conectada e com a fratura que nao está conectada....
+//                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod_Mod/Reference";
+//                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod_Mod/Overlap";
+                
+                // com a fratura que está conectada e sem a que nao esta conectada....
+//                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod_Mod_Mod/Reference";
+//                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod_Mod_Mod/Overlap";
+
                 break;
             case 10:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/";
@@ -438,11 +450,20 @@ void RunProblem(string& filenameBase, const int simcase)
 			gel->Divide(children);
 		}
 	}
+    // ----- Changing BCs for some testing cases -----
+    if(simcase == 6 || simcase == 7){
+        //linear pressure...
+        ModifyBCsFor2ParallelFractures(gmeshfine);
+        std::ofstream name3(outputFolder + "ModBCs.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
+    }
 	
 	// ----- Setting gmesh -----
 	// Code takes a fine and a coarse mesh to generate MHM data structure
 	aspace.SetGeometry(gmeshfine,gmeshcoarse);
-
+    
+    std::ofstream name4(outputFolder + "gmeshfine.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name4);
 	{
         {
             int dim = gmeshfine->Dimension();
@@ -484,13 +505,7 @@ void RunProblem(string& filenameBase, const int simcase)
         }
 	}
     
-	// ----- Changing BCs for some testing cases -----
-    if(simcase == 6 || simcase == 7){
-        //linear pressure...
-        ModifyBCsFor2ParallelFractures(gmeshfine);
-//        std::ofstream name3(outputFolder + "ModBCs.vtk");
-//        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
-    }
+
     
     // ----- Creates the multiphysics compmesh -----
 	const int order = 1;
@@ -503,6 +518,7 @@ void RunProblem(string& filenameBase, const int simcase)
     bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
+    sim_data.mTNumerics.m_run_with_transport=false;
     if(sim_data.mTNumerics.m_run_with_transport){
 
 		// Create transport mesh. TODO: Create transport data structure without the need for a mesh
@@ -553,6 +569,7 @@ void RunProblem(string& filenameBase, const int simcase)
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
             sfi_analysis->RunTimeStep();
+            aspace.UpdateMemoryFractureGlue(mixed_operator);
             if(it == 1){
                 sfi_analysis->PostProcessTimeStep(typeToPPinit);
                 if(isPostProcessFracDiagnostics){
@@ -594,99 +611,71 @@ void RunProblem(string& filenameBase, const int simcase)
         mixAnalisys->SetDataTransfer(&sim_data);
         UsePardiso_Q = true;
         mixAnalisys->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
-        if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,mixAnalisys->StructMatrix(),mixed_operator);
+//        if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,mixAnalisys->StructMatrix(),mixed_operator);
         
         {
             std::ofstream out(outputFolder + "mixedCMesh.txt");
             mixed_operator->Print(out);
         }
         mixAnalisys->Assemble();
+        
+        
 		
 		// Testing if constant pressure leads to zero residual in cte pressure problem
-		const bool testCtePressure = false;
-		if(testCtePressure){
-            const int neq = mixAnalisys->Mesh()->NEquations();
-            TPZFMatrix<STATE> res(neq,1,0.);
-            FillPCteSol(mixed_operator,1.);
-            mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-//            mixAnalisys->PostProcessTimeStep(2);
-//            mixAnalisys->PostProcessTimeStep(3);
-            TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
-            mat->Multiply(mixed_operator->Solution(), res);
-            res = res + mixAnalisys->Rhs();
-            std::ofstream out(outputFolder + "problematicElsGlob.txt");
-            mixAnalisys->PrintVectorByElement(out, res, 1.e-6);
-            if(sim_data.mTNumerics.m_mhm_mixed_Q){
-                for(auto cel : mixed_operator->ElementVec()){
-                    TPZSubCompMesh* subcmesh = dynamic_cast<TPZSubCompMesh*>(cel);
-                    if(subcmesh){
-                        FillPCteSol(subcmesh,1.);
-//                        TPZSubMeshAnalysis* sanal = dynamic_cast<TPZSubMeshAnalysis*>(subcmesh->Analysis().operator->());
-//                        TPZMatrix<STATE>* mat = sanal->Matrix().operator->();
-//                        TPZMatRed<STATE, TPZFMatrix<STATE>>* matred = dynamic_cast<TPZMatRed<STATE, TPZFMatrix<STATE>>*>(mat);
+//		const bool testCtePressure = false;
+//		if(testCtePressure){
+//            const int neq = mixAnalisys->Mesh()->NEquations();
+//            TPZFMatrix<STATE> res(neq,1,0.);
+//            FillPCteSol(mixed_operator,1.);
+//            mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+////            mixAnalisys->PostProcessTimeStep(2);
+////            mixAnalisys->PostProcessTimeStep(3);
+//            TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
+//            mat->Multiply(mixed_operator->Solution(), res);
+//            res = res + mixAnalisys->Rhs();
+//            std::ofstream out(outputFolder + "problematicElsGlob.txt");
+//            mixAnalisys->PrintVectorByElement(out, res, 1.e-6);
+//            if(sim_data.mTNumerics.m_mhm_mixed_Q){
+//                for(auto cel : mixed_operator->ElementVec()){
+//                    TPZSubCompMesh* subcmesh = dynamic_cast<TPZSubCompMesh*>(cel);
+//                    if(subcmesh){
+//                        FillPCteSol(subcmesh,1.);
 //
-//                        matred->ResetReduced();
-//                        TPZFMatrix<STATE> res(subcmesh->TPZCompMesh::NEquations(),1,0.);
-//                        TPZFMatrix<STATE> k = *mat;
-//                        k.SetIsDecomposed(0);
-//                        for (int i = 0; i < matred->Dim0(); i++) {
-//                            for (int j = matred->Dim0(); j < matred->Dim0() + matred->Dim1(); j++) {
-//                                k(i,j) = matred->fK01orig(i,j-matred->Dim0());
-//                            }
-//                        }
-//
-//                        TPZFMatrix<STATE> subcmeshsolint = subcmesh->TPZCompMesh::Solution();
-//                        TPZEquationFilter& subcmeshfilter = sanal->StructMatrix()->EquationFilter();
-//                        if(subcmeshfilter.IsActive()){
-//                            TPZFMatrix<STATE> subcmeshsolintfilter(subcmeshfilter.NActiveEquations(),1,0.);
-//                            subcmeshsolint.Resize(subcmesh->TPZCompMesh::NEquations(), 1);
-//                            subcmeshfilter.Gather(subcmeshsolint, subcmeshsolintfilter);
-//                            subcmeshsolint = subcmeshsolintfilter;
-//                        }
-//                        subcmeshsolint.Resize(k.Rows(), 1);
-//                        subcmeshsolint.Print("solint=",std::cout,EMathematicaInput);
-//
-//                        k.Multiply(subcmeshsolint, res);
-//                        res.Print("res=",std::cout,EMathematicaInput);
-//                        k.Print("k=",std::cout,EMathematicaInput);
-//                        TPZFMatrix<STATE> rhsint(matred->Dim0(),1,0.);
-//                        for(int i = 0 ; i < matred->Dim0() ; i++) rhsint(i,0) = res(i,0);
-//                        rhsint.Print("rhsint=",std::cout,EMathematicaInput);
-//                        rhsint = rhsint + matred->fF0orig;
-//                        rhsint.Resize(k.Rows(),1);
-//                        matred->fF0orig.Print("f0=",std::cout,EMathematicaInput);
-//                        std::string outname = outputFolder + "problematicEls_subcmesh_" + to_string(subcmesh->Index()) + ".txt";
-//                        std::ofstream outs(outname);
-//                        if(subcmeshfilter.IsActive()){
-//                            TPZFMatrix<STATE> rhsexpand(subcmeshfilter.NEqExpand(),1,0.);
-//                            subcmeshfilter.Scatter(rhsint, rhsexpand);
-//                            rhsint = rhsexpand;
-//                        }
-//                        subcmesh->Analysis()->PrintVectorByElement(outs, rhsint);
-                    }
-                }
-            }
-		}
+//                    }
+//                }
+//            }
+//		}
 		
 		// Solving problem
 		mixAnalisys->Solve();
-		mixAnalisys->VerifyElementFluxes();
-		
         TPZFastCondensedElement::fSkipLoadSolution = false;
-
+//        int dimToPost = 3;
+////        mixed_operator->UpdatePreviousState(-1.0);
+//        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+//        mixed_operator->LoadSolution(mixed_operator->Solution());
+//        mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+//        mixAnalisys->PostProcessTimeStep(dimToPost);
+//		mixAnalisys->VerifyElementFluxes();
+		
+    
+       
         const bool checkRhsAndExit = true;
         if(checkRhsAndExit){
-            std::cout << "\n------------------ Checking RHS norm ------------------" << std::endl;
-//            mixed_operator->UpdatePreviousState(-1.);
+//            std::cout << "\n------------------ Checking RHS norm ------------------" << std::endl;
+////            mixed_operator->UpdatePreviousState(-1.);
             std::cout << "\nNorm(rhs) before = " << Norm(mixAnalisys->Rhs()) << std::endl;
+            mixed_operator->LoadSolution(mixed_operator->Solution());
             mixAnalisys->fsoltransfer.TransferFromMultiphysics();
             mixAnalisys->Assemble();
+            mixed_operator->LoadReferences();
+            mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+            aspace.UpdateMemoryFractureGlue(mixed_operator);
             std::cout << "\nNorm(rhs) = " << Norm(mixAnalisys->Rhs()) << std::endl;
             std::cout << "\ncheckRhsAndExit is on. Just exiting now..." << std::endl;
             
             // ----- Post processing -----
             if (isPostProc) {
-                mixAnalisys->fsoltransfer.TransferFromMultiphysics();
+//                mixAnalisys->fsoltransfer.TransferFromMultiphysics();
                 int dimToPost = 3;
                 mixAnalisys->PostProcessTimeStep(dimToPost);
                 dimToPost = 2;
@@ -787,6 +776,21 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
         BCTransportMatIdToTypeValue[matid] = std::make_pair(type, value);
 	}
 	
+    std::set<int> fracorder;
+    if(input.find("Fractures") != input.end()){
+    for(auto& frac : input["Fractures"]){
+        const int i = frac["Index"];
+        fracorder.insert(i);
+    }
+    }
+    
+    std::map<int, int> RealFracOrder;
+    int count =0;
+    for ( auto it = fracorder.begin(); it != fracorder.end(); it++ ){
+        RealFracOrder[*it]=count;
+        count++;
+    }
+    
 	// ------------------------ Reading fractures and fracture bcs matids ------------------------
     int initfracmatid =input["FractureInitMatId"];
     int actualfracid = initfracmatid;
@@ -794,8 +798,11 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     REAL inersecLenght =0;
     for(auto& fracture : input["Fractures"]){
         const int i = fracture["Index"];
+        int valTest = RealFracOrder[i];
+        
         std::string name = "Fracture" + std::to_string(i);
-        const int matid = actualfracid;
+        int matid = actualfracid;
+        matid = initfracmatid + valTest*5;
         const REAL permerm = fracture["K"];
 		const REAL fracWidth = fracture["width"];
 //		const REAL fracWidth = 0.1;
@@ -1087,15 +1094,18 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	if(input.find("FractureInitMatId") == input.end()) DebugStop();
 	const int fracInitMatId = input["FractureInitMatId"];
     const int fracinc = 5;
-	
+   
+            
 	// ------------------------ Loop over fractures in Json ------------------------
 	int fracCounter = 0;
     bool isFracSim=false;
     if(input.find("Fractures") != input.end()){
 	for(auto& frac : input["Fractures"]){
+        const int i = frac["Index"];
 		const int matid = fracInitMatId + fracCounter*fracinc;
         const int bcmatid = fracInitMatId + fracCounter*fracinc+1;
-		string fracname = "Fracture" + to_string(fracCounter);
+//		string fracname = "Fracture" + to_string(fracCounter);
+        string fracname = "Fracture" + to_string(fracCounter);
 		string bcfracname = "BCfrac" + to_string(fracCounter);
 		const int currentFracId = fracInitMatId + fracinc * fracCounter;
         dim_name_and_physical_tagFine[2][fracname] = currentFracId;

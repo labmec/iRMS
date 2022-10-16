@@ -878,6 +878,8 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCompMesh(TPZCompMesh* cmesh,
     
     // ===> Fix blocks
     cmesh->InitializeBlock();
+    
+    
 }
 
 // ---------------------------------------------------------------------
@@ -3039,6 +3041,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     AddMultiphysicsMaterialsToCompMesh(order,matsWithMem, matsWithOutMem);
     mMixedOperator->BuildMultiphysicsSpaceWithMemory(active_approx_spaces,mesh_vec,matsWithMem, matsWithOutMem );
     if(isFracSim()){
+//        mMixedOperator->LoadReferences();
         this->InitializeMemoryFractureGlue();
     }
     
@@ -5343,8 +5346,9 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
         }
         if(!first3D || !last3D) DebugStop();
     }
+    
     // order the TPZGeoElSide as a function of their position in the normal direction
-    std::multimap<int, TPZGeoElSide> ordered;
+    std::multimap<REAL, TPZGeoElSide> ordered;
     {
         TPZManVector<REAL,3> xcenter(3);
         TPZGeoElSide gelside = fracvec[0];
@@ -5354,6 +5358,7 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
             auto &dfn = mSimData.mTFracProperties.m_fracprops[matid].m_polydata;
             TPZManVector<REAL,3> projected(3);
             projected = dfn.GetProjectedX(xcenter);
+            
             REAL dist = 0.;
             for(int c=0; c<3; c++) dist += (projected[c]-xcenter[c])*normal[c];
             ordered.insert({dist,fracvec[i]});
@@ -5363,24 +5368,16 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
     for (int i = 0; i<fracvec.size(); i++) {
         fracvec[i].RemoveConnectivity();
     }
+  
+    
     int gluematid = mSimData.mTFracIntersectProperties.m_FractureGlueId;
     if(gluematid < 0) DebugStop();
     TPZGeoElSide prev = first3D;
-//    {
-//        TPZCompEl *cel = first3D.Element()->Reference();
-//        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(cel);
-//        auto cindex = intel->SideConnectIndex(0, first3D.Side());
-//        std::cout << "Side connect index first " << cindex << std::endl;
-//    }
-//    {
-//        TPZCompEl *cel = last3D.Element()->Reference();
-//        TPZInterpolatedElement *intel = dynamic_cast<TPZInterpolatedElement *>(cel);
-//        auto cindex = intel->SideConnectIndex(0, last3D.Side());
-//        std::cout << "Side connect index last " << cindex << std::endl;
-//    }
+
     for (auto it = ordered.begin(); it != ordered.end(); it++) {
         if(prev != first3D)
         {
+            std::cout<<"FindGlue:: "<<std::endl;
             TPZGeoElBC gbc(prev,gluematid);
             TPZGeoEl *glue = gbc.CreatedElement();
             auto glueindex = glue->Index();
@@ -5392,7 +5389,7 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
             {
                 auto cel = fluxmesh->ApproxSpace().CreateCompEl(glue, *fluxmesh);
                 auto cindex = cel->ConnectIndex(0);
-//                std::cout << "Glue connect index " << cindex << std::endl;
+                std::cout << "Glue connect index " << cindex << std::endl;
             }
             TPZGeoElSide gels(glue);
             gels.SetConnectivity(it->second);
@@ -5421,6 +5418,7 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
 #endif
 }
 
+
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
@@ -5437,6 +5435,8 @@ void TMRSApproxSpaceGenerator::OrderOverlappingFractures()
         TPZGeoElSide gelside(gel);
         // if fracglue elements were inserted, the fracture elements are ordered already
         if(gelside.HasNeighbour(fracgluematid)) continue;
+        
+        
         TPZStack<TPZGeoElSide> allfracs;
         allfracs.Push(gelside);
         for (auto neigh = gelside.Neighbour(); neigh != gelside; neigh++) {
@@ -5463,6 +5463,7 @@ void TMRSApproxSpaceGenerator::InitializeMemoryFractureGlue()
     for (int64_t el = 0; el<nel; el++) {
         TPZCompEl *cel = mMixedOperator->Element(el);
         TPZMaterial *mat = cel->Material();
+        
         if(mat == matglue)
         {
             TPZGeoEl *gel = cel->Reference();
@@ -5475,6 +5476,8 @@ void TMRSApproxSpaceGenerator::InitializeMemoryFractureGlue()
             int nextmatid = next.Element()->MaterialId();
             auto &fracprev = mSimData.mTFracProperties.m_fracprops[prevmatid].m_polydata;
             auto &fracnext = mSimData.mTFracProperties.m_fracprops[nextmatid].m_polydata;
+            
+         
             TPZManVector<int64_t> memindices;
             cel->GetMemoryIndices(memindices);
             const TPZIntPoints &intpoints = cel->GetIntegrationRule();
@@ -5499,5 +5502,58 @@ void TMRSApproxSpaceGenerator::InitializeMemoryFractureGlue()
     }
 }
 
+void TMRSApproxSpaceGenerator::UpdateMemoryFractureGlue(TPZCompMesh *cmesh)
+{
+    int64_t nel = cmesh->NElements();
+    int matglueid = mSimData.mTFracIntersectProperties.m_FractureGlueId;
+    TMRSDarcyFractureGlueFlowWithMem *matglue = dynamic_cast<TMRSDarcyFractureGlueFlowWithMem *>(mMixedOperator->FindMaterial(matglueid));
+    if(!matglue) DebugStop();
+    std::shared_ptr<TPZAdmChunkVector<TGlueMem>> memvec = matglue->GetMemory();
+    for (int64_t el = 0; el<nel; el++) {
+        TPZCompEl *cel = cmesh->Element(el);
+        if(!cel){continue;}
+        TPZSubCompMesh *subcmesh=dynamic_cast<TPZSubCompMesh *>(cel);
+        if (subcmesh) {
+            UpdateMemoryFractureGlue(subcmesh);
+        }
+        TPZMaterial *mat = cel->Material();
+        if(mat == matglue)
+        {
+            TPZGeoEl *gel = cel->Reference();
+            TPZGeoElSide gelside(gel);
+            TPZGeoElSide prev(gelside);
+            prev--;
+            TPZGeoElSide next(gelside);
+            next++;
+            int prevmatid = prev.Element()->MaterialId();
+            int nextmatid = next.Element()->MaterialId();
+            TPZManVector<int64_t> memindices;
+            cel->GetMemoryIndices(memindices);
+            const TPZIntPoints &intpoints = cel->GetIntegrationRule();
+            int npoints = intpoints.NPoints();
+            if(memindices.size() != npoints) DebugStop();
+            for (int ip = 0; ip < npoints; ip++) {
+                REAL weight;
+                TPZManVector<REAL,3> pt(gel->Dimension());
+                intpoints.Point(ip, pt, weight);
+                TPZManVector<REAL,3> xco(3);
+                gel->X(pt, xco);
+                int64_t globindex = memindices[ip];
+                std::pair<int, int> fracids = (*memvec)[globindex].m_fracs;
+//              (*memvec)[globindex].m_xco = xco;
+                REAL dist = (*memvec)[globindex].m_dist;
+                TPZVec<STATE> solution1, solution2;
+                TPZCompEl *cel2 =  next.Element()->Reference();
+                next.Element()->Reference()->Solution(pt, 2, solution1); //pressure
+                prev.Element()->Reference()->Solution(pt, 2, solution2); //pressure
+                REAL dp =solution1[0] - solution2[0];
+                (*memvec)[globindex].m_dp = dp;
+                REAL flux = (*memvec)[globindex].m_flux;
+                
+            }
+            
+        }
+    }
+}
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------

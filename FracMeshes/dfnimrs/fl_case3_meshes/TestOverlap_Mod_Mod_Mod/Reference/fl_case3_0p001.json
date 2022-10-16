@@ -6,14 +6,14 @@
     //     "Nels": [1,2,3],
     //     "MMeshType": "EHexahedral"
     // },
-    "Mesh": "fl_case3.msh",
+    "Mesh": "fl_case3_coarse.msh", // filename in the current directory
     "PreRefine": 0,
-    "TolDist": 0.0022,
-    "TolAngle": 0.012,
+    "TolDist": 0.001,
+    "TolAngle": 1.0e-4,
 	"useMHM": true,
-    "RunWithTransport": true,
+    "RunWithTransport": false,
     "DeltaT": 1.0e-2,
-    "NSteps": 100,
+    "NSteps": 100,    
     "Domains": [
         {
             "name": "k33",
@@ -22,9 +22,9 @@
             "phi": 0.2
         }
     ],
-    "NCoarseGroups": 468,
+    "NCoarseGroups": 960,
     "FractureGlueMatId": 1000000,
-    "FractureGluePerm": 0.5e2,
+    "FractureGluePerm": 1.0,
     "Boundary": [
         {
             "name": "inlet",
@@ -33,14 +33,8 @@
             "value": -1.0
         },
         {
-            "name": "outlet1",
+            "name": "outlet",
             "matid": 3,
-            "type": 0,  // imposed pressure
-            "value": 0.0
-        },
-        {
-            "name": "outlet2",
-            "matid": 5,
             "type": 0,  // imposed pressure
             "value": 0.0
         },
@@ -83,20 +77,20 @@
                 [0.830, 2.200, 0.300]
             ]
         },
-        {
-            "Index": 1,
-            "K" : 1.0e4,
-            "phi": 0.2,
-            "width": 1.0e-2,
-            "Limit": "Erecovered",
-            "Comment": "One of the 2 small vertical parallels",
-            "Nodes":[ 
-                [0.770, 1.900, 0.300],
-                [0.770, 1.900, 0.700],
-                [0.770, 2.200, 0.700],
-                [0.770, 2.200, 0.300]
-            ]
-        },
+        // {
+ //            "Index": 1,
+ //            "K" : 1.0e4,
+ //            "phi": 0.2,
+ //            "width": 1.0e-2,
+ //            "Limit": "Erecovered",
+ //            "Comment": "One of the 2 small vertical parallels",
+ //            "Nodes":[
+ //                [0.770, 1.900, 0.300],
+ //                [0.770, 1.900, 0.700],
+ //                [0.770, 2.200, 0.700],
+ //                [0.770, 2.200, 0.300]
+ //            ]
+ //        },
         {
             "Index": 7,
             "K" : 1.0e4,
@@ -111,20 +105,20 @@
                 [0.050, 1.990, 0.500]
             ]
         },
-        {
-            "Index": 3,
-            "K" : 1.0e4,
-            "phi": 0.2,
-            "width": 1.0e-2,
-            "Limit": "Erecovered",
-            "Comment": "One of the 2 that cross each other",
-            "Nodes":[ 
-                [0.170, 1.900, 0.300],
-                [0.170, 1.900, 0.700],
-                [0.230, 2.200, 0.700],
-                [0.230, 2.200, 0.300]
-            ]
-        },
+        // {
+ //            "Index": 3,
+ //            "K" : 1.0e4,
+ //            "phi": 0.2,
+ //            "width": 1.0e-2,
+ //            "Limit": "Erecovered",
+ //            "Comment": "One of the 2 that cross each other",
+ //            "Nodes":[
+ //                [0.170, 1.900, 0.300],
+ //                [0.170, 1.900, 0.700],
+ //                [0.230, 2.200, 0.700],
+ //                [0.230, 2.200, 0.300]
+ //            ]
+ //        },
         {
             "Index": 2,
             "K" : 1.0e4,
@@ -146,27 +140,27 @@
             "width": 1.0e-2,
             "Limit": "Erecovered",
             "Comment": "Big diagonal above",
-            "Nodes":[ 
+            "Nodes":[
                 [0.950, 1.000, 0.500],
                 [0.950, 2.200, 0.850],
                 [0.050, 2.200, 0.850],
                 [0.050, 1.000, 0.500]
             ]
-        },
-        {
-            "Index": 6,
-            "K" : 1.0e4,
-            "phi": 0.2,
-            "width": 1.0e-2,
-            "Limit": "Erecovered",
-            "Comment": "Big diagonal below",
-            "Nodes":[ 
-                [0.950, 1.000, 0.480],
-                [0.950, 2.200, 0.140],
-                [0.050, 2.200, 0.140],
-                [0.050, 1.000, 0.480]
-            ]
-        }
+        }// ,
+//         {
+//             "Index": 6,
+//             "K" : 1.0e4,
+//             "phi": 0.2,
+//             "width": 1.0e-2,
+//             "Limit": "Erecovered",
+//             "Comment": "Big diagonal below",
+//             "Nodes":[
+//                 [0.950, 1.000, 0.480],
+//                 [0.950, 2.200, 0.140],
+//                 [0.050, 2.200, 0.140],
+//                 [0.050, 1.000, 0.480]
+//             ]
+//         }
     ]
 }
 
