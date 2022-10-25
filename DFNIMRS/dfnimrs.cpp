@@ -93,7 +93,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 9;
+    int simcase = 3;
     if (argc > 1) {
         std::cout << "\n===========> Running with provided argv path!" << std::endl;
         filenameBase = basemeshpath + argv[1];
@@ -116,6 +116,8 @@ int main(int argc, char* argv[]){
         // 19: Case4 mesh 2018
         // 20: Unisim
         // 21: Flemisch case 4 with constant pressure
+        // 24: Jose Results Simple Overlap
+        // 25: Jose Results Benchmark
         switch (simcase) {
             case 0:
                 filenameBase = basemeshpath + "/dfnimrs/twoelCoarse";
@@ -147,9 +149,16 @@ int main(int argc, char* argv[]){
                 break;
             case 9:
 //                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona";
+//                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/fl_case3_dis_0_p1_tol_1em4";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/testingNoSnapBound/fl_case3_0p1";
+                
+                
+                
+                
+               
 //                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod/Reference";
 //                  filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod/Overlap";
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod/FakeOverlap";
+//                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod/FakeOverlap";
                 
                 // sem a fratura que está conectada e com a fratura que nao está conectada....
 //                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/TestOverlap_Mod_Mod/Reference";
@@ -201,6 +210,16 @@ int main(int argc, char* argv[]){
                 break;
             case 23:
                 filenameBase = basemeshpath + "/dfnimrs/boxPerpFlux6el";
+                break;
+            case 24:
+//                filenameBase = basemeshpath + "/TesisResults/2parallel_no_overlap";
+//                filenameBase = basemeshpath + "/TesisResults/2parallel_one_overlap";
+////                                   filenameBase = basemeshpath + "/TesisResults/2parallel_two_overlap";
+//                filenameBase = basemeshpath + "/TesisResults/2parallel_three_overlap";
+                  filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_0p001";
+                break;
+            case 25:
+                filenameBase = basemeshpath + "/TesisResults/2parallel_no_overlap";
                 break;
             default:
                 break;
@@ -451,7 +470,7 @@ void RunProblem(string& filenameBase, const int simcase)
 		}
 	}
     // ----- Changing BCs for some testing cases -----
-    if(simcase == 6 || simcase == 7){
+    if(simcase == 6 || simcase == 7 || simcase == 24){
         //linear pressure...
         ModifyBCsFor2ParallelFractures(gmeshfine);
         std::ofstream name3(outputFolder + "ModBCs.vtk");
@@ -518,7 +537,7 @@ void RunProblem(string& filenameBase, const int simcase)
     bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-    sim_data.mTNumerics.m_run_with_transport=false;
+//    sim_data.mTNumerics.m_run_with_transport=false;
     if(sim_data.mTNumerics.m_run_with_transport){
 
 		// Create transport mesh. TODO: Create transport data structure without the need for a mesh
@@ -628,8 +647,8 @@ void RunProblem(string& filenameBase, const int simcase)
 //            TPZFMatrix<STATE> res(neq,1,0.);
 //            FillPCteSol(mixed_operator,1.);
 //            mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-////            mixAnalisys->PostProcessTimeStep(2);
-////            mixAnalisys->PostProcessTimeStep(3);
+////                       mixAnalisys->PostProcessTimeStep(2);
+////                        mixAnalisys->PostProcessTimeStep(3);
 //            TPZMatrix<STATE>* mat = mixAnalisys->MatrixSolver<STATE>().Matrix().operator->();
 //            mat->Multiply(mixed_operator->Solution(), res);
 //            res = res + mixAnalisys->Rhs();

@@ -4352,7 +4352,7 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         TPZAutoPointer<TPZGuiInterface> gui;
 
         const int nthreads = mSimData.mTNumerics.m_nThreadsMixedProblem;
-        const bool isUseSparse = true;
+        const bool isUseSparse = false;
         if(isUseSparse){
             // Pardiso does pivoting which is necessary in some problems
             subcmesh->SetAnalysisSparse(nthreads);
@@ -4552,6 +4552,9 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         cout << "ERROR! Please, set TMRSApproxSpaceGenerator::::fInitMatIdForMergeMeshes" << endl;
         DebugStop();
     }
+    
+//    int fine_skeleton_matid = mSimData.mTGeometry.m_skeletonMatId;
+//    int coarse_skeleton_matid = 18;
     
     int fine_skeleton_matid = mSimData.mTGeometry.m_skeletonMatId;
     int coarse_skeleton_matid = 18;
