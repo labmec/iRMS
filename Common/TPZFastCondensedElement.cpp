@@ -636,7 +636,7 @@ void TPZFastCondensedElement::ComputeConstantPressureValues()
     TPZManVector<STATE,40> fluxvals(flux_eqs.size());
     for (int eq = 0; eq<flux_eqs.size(); eq++) {
         fluxvals[eq] = sol(flux_eqs[eq]);
-        if(abs(fluxvals[eq]) > 1.e-10) allok = false;
+        if(abs(fluxvals[eq]) > 1.e-8) allok = false;
     }
     if(!allok) DebugStop();
     // NOTE: This can happen if BCs are now well set

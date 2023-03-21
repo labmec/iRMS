@@ -10,8 +10,8 @@
     "PreRefine": 0,
     "TolDist": 0.1,
     "TolAngle": 1.0e-4,
-	"useMHM": false,
-    "RunWithTransport": false,
+	"useMHM": true,
+    "RunWithTransport": true,
     "DeltaT": 1.0e-2,
     "NSteps": 100,    
     "Domains": [

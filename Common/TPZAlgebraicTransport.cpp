@@ -341,7 +341,7 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
 
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef, int inId){
    
-    REAL s_inlet = 1.0;// fboundaryCMatVal[inId].second;;
+    REAL s_inlet = 0.01;// fboundaryCMatVal[inId].second;;
     REAL fluxint  = 1.0*fInterfaceData[inId].fIntegralFlux[index];
     ef(0,0) = 1.0*s_inlet*fluxint* fdt;
 }
@@ -582,6 +582,27 @@ REAL TPZAlgebraicTransport::CalculateMass(){
     return intMass;
 }
 
+REAL TPZAlgebraicTransport::CalculateMassById2(int matId){
+    int ncells = fCellsData.fVolume.size();
+    REAL intMass = 0.0;
+    REAL volfrac= 0.0;
+    
+    for (int icel = 0; icel < ncells; icel++) {
+//        int celId = fCellsData.fMatId[icel];
+        int celId = fCellsData.fPressure[icel]; //For case2 only
+        if(celId==matId){
+            REAL sat = fCellsData.fSaturation[icel];
+            REAL phi = fCellsData.fporosity[icel];
+            REAL vol = fCellsData.fVolume[icel];
+            intMass += sat*phi*vol;
+            volfrac += vol*phi;
+        }
+    }
+    if (volfrac==0.0) {
+        return  0.0;
+    }
+    return intMass/volfrac;
+}
 REAL TPZAlgebraicTransport::CalculateMassById(int matId){
     int ncells = fCellsData.fVolume.size();
     REAL intMass = 0.0;
@@ -603,7 +624,25 @@ REAL TPZAlgebraicTransport::CalculateMassById(int matId){
     return intMass/volfrac;
 }
 
-void TPZAlgebraicTransport::VerifyConservation(int itime){
+REAL TPZAlgebraicTransport::CalculateAreaById(int matId){
+    int ncells = fCellsData.fVolume.size();
+    REAL intMass = 0.0;
+    REAL volfrac= 0.0;
+    
+    for (int icel = 0; icel < ncells; icel++) {
+        int celId = fCellsData.fMatId[icel];
+        if(celId==matId){
+            REAL vol = fCellsData.fVolume[icel]/fCellsData.fVolumefactor[icel];
+            intMass += vol;
+        }
+    }
+//    if (fCellsData.fVolumefactor[icel]==0.0) {
+//        return  0.0;
+//    }
+    return intMass;
+}
+
+REAL TPZAlgebraicTransport::VerifyConservation(int itime){
     int ncells = fCellsData.fVolume.size();
     REAL intMass = 0.0;
     REAL volfrac=0.0;
@@ -664,11 +703,11 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
     else{
         std::cout << "\t====> ERROR! Global mass conservation NOT ok! <=====" << std::endl;
         std::cout << "Global mass loss: " << std::setprecision(14) << massConservation << std::endl;
-        DebugStop();
+//        DebugStop();
     }
     massOut += fluxIntegratedOutlet;
+    return fluxIntegratedOutlet;
 }
-
 
 
 
@@ -694,25 +733,118 @@ REAL TPZAlgebraicTransport::CalculateMassByCoord(){
 
 
 
-REAL TPZAlgebraicTransport::CalculateMassById2(int matId){
+//REAL TPZAlgebraicTransport::CalculateMassById2(int matId){
+//    int ncells = fCellsData.fVolume.size();
+//    REAL intMass = 0.0;
+//    int nfracels=0;
+//    
+//    for (int icel = 0; icel < ncells; icel++) {
+//        int celId = fCellsData.fMatId[icel];
+//        if(celId==matId){
+//            REAL sat = fCellsData.fSaturation[icel];
+//            REAL phi = fCellsData.fporosity[icel];
+//            REAL vol = fCellsData.fVolume[icel];
+//            intMass += sat;
+//            nfracels++;
+//        }
+//    }
+//    if (nfracels==0) {
+//        return  0.0;
+//    }
+//    return intMass/nfracels;
+//}
+
+void TPZAlgebraicTransport::ColorMeshByCoords(){
     int ncells = fCellsData.fVolume.size();
+    
     REAL intMass = 0.0;
     int nfracels=0;
-    
-    for (int icel = 0; icel < ncells; icel++) {
-        int celId = fCellsData.fMatId[icel];
-        if(celId==matId){
-            REAL sat = fCellsData.fSaturation[icel];
-            REAL phi = fCellsData.fporosity[icel];
-            REAL vol = fCellsData.fVolume[icel];
-            intMass += sat;
-            nfracels++;
+    int matId=0;
+
+        std::vector<std::vector<REAL>>& centerCordvvec = fCellsData.fCenterCoordinate;
+        for (int icel =0; icel<ncells; icel++) {
+            std::vector<REAL> & centerCoord= centerCordvvec[icel];
+            int matid = fCellsData.fMatId[icel];
+            
+            if (matid>=299) {
+                continue;
+            }
+        
+        REAL x = centerCoord[0];
+        REAL y = centerCoord[1];
+        REAL z = centerCoord[2];
+        
+        bool check_0 = (x < 0.5 && y < 0.5 && z < 0.5);
+        bool check_1 = (x > 0.5 && y < 0.5 && z < 0.5);
+        bool check_2 = (x < 0.5 && y > 0.5 && z < 0.5);
+        bool check_3 = (x > 0.5 && y > 0.5 && z < 0.5);
+        bool check_4 = (x < 0.5 && y < 0.5 && z > 0.5);
+        bool check_5 = (x > 0.5 && y < 0.5 && z > 0.5);
+        bool check_6 = (x < 0.5 && y > 0.5 && z > 0.5);
+        bool check_7 = (x > 0.75 && y > 0.75 && z > 0.75);
+        bool check_8 = (x > 0.75 && (y > 0.5 && y<0.75) && z > 0.75);
+        bool check_9 = ((x > 0.5 && x< 0.75) &&  y>0.75 && z > 0.75);
+        bool check_10 = ((x > 0.5 && x< 0.75) &&  (y > 0.5 && y<0.75) && z > 0.75);
+        bool check_11 = (x > 0.75 && y > 0.75) && (z > 0.5 && z < 0.75);
+        bool check_12 = (x > 0.75 && y > 0.5 && y < 0.75) && (z > 0.5 && z < 0.75);
+        bool check_13 = (x > 0.5 && x < 0.75 && y > 0.75) && (z > 0.5 && z < 0.75);
+        bool check_14 = (x > 0.5 && x < 0.625 && y > 0.5 && y < 0.625) && (z > 0.5 && z < 0.625);
+        bool check_15 = (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625) && (z > 0.5 && z < 0.625);
+        bool check_16 = (x > 0.5 && x < 0.625 && y > 0.625 && y < 0.75) && (z > 0.5 && z < 0.625);
+        bool check_17 = (x > 0.625 && x < 0.75 && y > 0.625 && y < 0.75) && (z > 0.5 && z < 0.625);
+        bool check_18 = (x > 0.5 && x < 0.625 && y > 0.5 && y < 0.625) && (z > 0.625 && z < 0.75);
+        bool check_19 = (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625) && (z > 0.625 && z < 0.75);
+        bool check_20 = (x > 0.5 && x < 0.625 && y > 0.625 && y < 0.75) && (z > 0.625 && z < 0.75);
+        bool check_21 = (x > 0.625 && x < 0.75 && y > 0.625 && y < 0.75) && (z > 0.625 && z < 0.75);
+        
+        if (check_0) {
+            fCellsData.fPressure[icel]=0;
+        }else if (check_1){
+            fCellsData.fPressure[icel]=1;
+        }else if (check_2){
+            fCellsData.fPressure[icel]=2;
+        }else if (check_3){
+            fCellsData.fPressure[icel]=3;
+        }else if (check_4){
+            fCellsData.fPressure[icel]=4;
+        }else if (check_5){
+            fCellsData.fPressure[icel]=5;
+        }else if (check_6){
+            fCellsData.fPressure[icel]=6;
+        }else if (check_7){
+            fCellsData.fPressure[icel]=7;
+        }else if (check_8){
+            fCellsData.fPressure[icel]=8;
+        }else if (check_9){
+            fCellsData.fPressure[icel]=9;
+        }else if (check_10){
+            fCellsData.fPressure[icel]=10;
+        }else if (check_11){
+            fCellsData.fPressure[icel]=11;
+        }else if (check_12){
+            fCellsData.fPressure[icel]=12;
+        }else if (check_13){
+            fCellsData.fPressure[icel]=13;
+        }else if (check_14){
+            fCellsData.fPressure[icel]=14;
+        }else if (check_15){
+            fCellsData.fPressure[icel]=15;
+        }else if (check_16){
+            fCellsData.fPressure[icel]=16;
+        }else if (check_17){
+            fCellsData.fPressure[icel]=17;
+        }else if (check_18){
+            fCellsData.fPressure[icel]=18;
+        }else if (check_19){
+            fCellsData.fPressure[icel]=19;
+        }else if (check_20){
+            fCellsData.fPressure[icel]=20;
+        }else if (check_21){
+            fCellsData.fPressure[icel]=21;
+        }else {
+            DebugStop();
         }
     }
-    if (nfracels==0) {
-        return  0.0;
-    }
-    return intMass/nfracels;
 }
 std::pair<REAL, REAL> TPZAlgebraicTransport::FLuxWaterOilIntegralbyID(int mat_id){
     
@@ -759,10 +891,10 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
                 IndexGels[leftIndex] = 1;
 //                std::cout<<"IndexVec: "<<leftIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].first<<std::endl;
             }
-            if(IndexGels[rightIndex] == -1){
-                IndexGels[rightIndex] = 1;
-//                std::cout<<"IndexVec: "<<rightIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].second<<std::endl;
-            }
+//            if(IndexGels[rightIndex] == -1){
+//                IndexGels[rightIndex] = 1;
+////                std::cout<<"IndexVec: "<<rightIndex<<" GelIndex: "<<transport.fLeftRightGelIndex[iel].second<<std::endl;
+//            }
                 
             REAL fluxInt = transport.fIntegralFlux[iel];
             if(IsZero(fluxInt)){

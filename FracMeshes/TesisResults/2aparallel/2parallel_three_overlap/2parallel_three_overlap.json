@@ -49,10 +49,10 @@
     "FractureGlueMatId": 298,
     "FractureGluePerm" : 1.0,
     "FractureInitMatId": 300,
-    "RunWithTransport": false,
+    "RunWithTransport": true,
     "useMHM": true,
     "DeltaT":0.1,
-    "NSteps": 1,
+    "NSteps": 100,
     "Fractures":[
         { //Fracture 0
             "Index": 0,

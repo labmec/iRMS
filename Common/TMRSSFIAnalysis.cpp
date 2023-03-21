@@ -173,6 +173,9 @@ void TMRSSFIAnalysis::FillProperties(){
                     int id = std::get<0>(i);
                     REAL porosity =std::get<1>(i);
                     REAL volfactor =std::get<2>(i);
+                    if(matid>= 300){
+                        int ok=0;
+                    }
                     if(id == matid){
                         m_transport_module->fAlgebraicTransport.fCellsData.fporosity[icell] = porosity;
                         m_transport_module->fAlgebraicTransport.fCellsData.fVolumefactor[icell] = volfactor;

@@ -55,7 +55,7 @@
         {
             "Index": 0,
             "Limit": "Etruncated",
-			"K" : 1.0e4,
+			 "K" : 1.0e-4,
 			"phi": 0.9,
             "width": 1e-4,
             "Nodes": [
@@ -68,7 +68,7 @@
         {
             "Index": 1,
             "Limit": "Etruncated",
-            "K" : 1.0e4,
+             "K" : 1.0e-4,
             "phi": 0.9,
             "width": 1e-4,
             "Nodes": [
@@ -81,7 +81,7 @@
         {
             "Index": 2,
             "Limit": "Etruncated",
-            "K" : 1.0e4,
+             "K" : 1.0e-4,
             "phi": 0.9,
             "width": 1e-4,
             "Nodes": [
@@ -94,7 +94,7 @@
         {
             "Index": 3,
             "Limit": "Etruncated",
-            "K" : 1.0e4,
+             "K" : 1.0e-4,
             "phi": 0.9,
             "width": 1e-4,
             "Nodes": [
@@ -107,7 +107,7 @@
         {
             "Index": 4,
             "Limit": "Etruncated",
-            "K" : 1.0e4,
+             "K" : 1.0e-4,
             "phi": 0.9,
             "width": 1e-4,
             "Nodes": [
@@ -120,7 +120,7 @@
         {
             "Index": 5,
             "Limit": "Etruncated",
-            "K" : 1.0e4,
+             "K" : 1.0e-4,
             "phi": 0.9,
             "width": 1e-4,
             "Nodes": [
@@ -133,7 +133,7 @@
         {
             "Index": 6,
             "Limit": "Etruncated",
-            "K" : 1.0e4,
+             "K" : 1.0e-4,
             "phi": 0.9,
             "width": 1e-4,
             "Nodes": [
@@ -146,7 +146,7 @@
         {
             "Index": 7,
             "Limit": "Etruncated",
-            "K" : 1.0e4,
+             "K" : 1.0e-4,
             "phi": 0.9,
             "width": 1e-4,
             "Nodes": [
@@ -159,7 +159,7 @@
         {
             "Index": 8,
             "Limit": "Etruncated",
-            "K" : 1.0e4,
+             "K" : 1.0e-4,
             "phi": 0.9,
             "width": 1e-4,
             "Nodes": [

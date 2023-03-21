@@ -319,8 +319,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         int pb = 1;
         long gp_index = datavec[pb].intGlobPtIndex;
         TMEM & memory = this->GetMemory().get()->operator[](gp_index);
-        TPZVec<REAL> q_n = datavec[qb].sol[0][0];
-        memory.m_flux = q_n;
+//        TPZVec<REAL> q_n = datavec[qb].sol[0][0];
+//        memory.m_flux = q_n;
         
         REAL p_n = datavec[pb].sol[0][0];
         memory.m_p = p_n;

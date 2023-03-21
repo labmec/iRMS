@@ -238,8 +238,10 @@ public:
     void TakeOrientationAndLowerIndexDimVolDimFrac(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matid);
     void TakeOrientationAndLowerIndexDimDim(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matid);
     void TakeOrientationAndLowerIndexFracFrac(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matid);
-    TPZMultiphysicsElement* findMultiphysics(TPZElementGroup *group);
+    void TakeOrientationAndLowerIndexFracFracOverlap(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matID);
     
+    TPZMultiphysicsElement* findMultiphysics(TPZElementGroup *group);
+    void findCommonConnectIndexes( TPZInterpolatedElement *InterpolL,  TPZInterpolatedElement *InterpolR, int &indexL, int &indexR, int &indexConnect);
     std::pair<int, int> FindMortar(TPZGeoElSide &gelside);
     std::pair<int, int> FindMortar(TPZGeoElSide &gelside, int targetId);
     void TestSideOrient(TPZCompMesh *MultFlux);

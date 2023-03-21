@@ -236,9 +236,12 @@ void TPZAlgebraicDataTransfer::IdentifyVolumeGeometricElements2()
                 TakeOrientationAndLowerIndexDimVolDimFrac(rightside, leftside, orientationR, lowerIndexR, orientationL, lowerIndexL,it->first);
             }else if ((dimL == dimR) &&  (dimR== meshdim)){
                 TakeOrientationAndLowerIndexDimDim(rightside, leftside, orientationR, lowerIndexR, orientationL, lowerIndexL,it->first);
+                
             }
             else if ((dimL == dimR) && dimR == meshdim-1){
-                TakeOrientationAndLowerIndexFracFrac(rightside, leftside, orientationR, lowerIndexR, orientationL, lowerIndexL,it->first);
+//                TakeOrientationAndLowerIndexFracFrac(rightside, leftside, orientationR, lowerIndexR, orientationL, lowerIndexL,it->first);
+                TakeOrientationAndLowerIndexFracFracOverlap(rightside, leftside, orientationR, lowerIndexR, orientationL, lowerIndexL,it->first);
+
 //                DebugStop();
             } else{
                 DebugStop();
@@ -381,6 +384,9 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimVolDimFrac(TPZComp
     TPZCompElHDivBound2<pzshape::TPZShapeLinear> *hdivBoundLinR= dynamic_cast<TPZCompElHDivBound2<pzshape::TPZShapeLinear> *>(hdivBoundR);
     
     lowerIndexR = SideLowerIndex(gelR,SideR);
+    if(gelR->Index()==3126){
+        int ok=1;
+    }
     bool found = false;
     int connect_indexR =-1;
     if(hdivCollapsedCR){
@@ -472,6 +478,7 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimDim(TPZCompElSide 
     TPZCompElHDiv<pzshape::TPZShapeCube> *hdivCL = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(hdivL);
     TPZCompElHDiv<pzshape::TPZShapeTetra> *hdivTL = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTetra> *>(hdivL);
     TPZCompElHDiv<pzshape::TPZShapePrism> *hdivPL= dynamic_cast<TPZCompElHDiv<pzshape::TPZShapePrism> *>(hdivL);
+    
     lowerIndexL = SideLowerIndex(gelL, SideL);
     int firstsideL = gelL->NSides() - gelL->NSides(2)-1;
     int connect_indexL =-1;
@@ -562,8 +569,15 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexFracFrac(TPZCompElSid
     int firstsideL = gelL->NSides() - gelL->NSides(1) -1;
     int connect_indexL =-1;
     if(hdivCollapsedCL){
-        orientationL = hdivCollapsedCL->SideOrient(SideL - firstsideL);
-        connect_indexL = hdivCollapsedCL->ConnectIndex(SideL - firstsideL);
+        if(SideL == nsidesm){
+            orientationL = hdivCollapsedCL->GetSideOrient(SideL);
+            connect_indexL = hdivCollapsedCL->ConnectIndex(SideL - firstsideL);
+        }
+        else{
+            orientationL = hdivCollapsedCL->GetSideOrient(SideL);
+            connect_indexL = hdivCollapsedCL->ConnectIndex(SideL - firstsideL);
+        }
+        
     }
     else if(hdivCollapsedTL){
         orientationL = hdivCollapsedTL->SideOrient(SideL - firstsideL);
@@ -592,11 +606,11 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexFracFrac(TPZCompElSid
 
     int firstsideR = gelR->NSides() - gelL->NSides(1) -1;
     if(hdivCollapsedCR){
-        orientationR = hdivCollapsedCR->SideOrient(SideR - firstsideR);
+        orientationR = hdivCollapsedCR->GetSideOrient(SideR);
         connect_indexR = hdivCollapsedCR->ConnectIndex(SideR - firstsideR);
     }
     else if(hdivCollapsedTR){
-        orientationR = hdivCollapsedTR->SideOrient(SideR - firstsideR);
+        orientationR = hdivCollapsedTR->GetSideOrient(SideR - firstsideR);
         connect_indexR = hdivCollapsedTR->ConnectIndex(SideR - firstsideR);
     }
     else{
@@ -619,6 +633,132 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexFracFrac(TPZCompElSid
     fConnectsByInterfaceMatID[connect_indexL] = matID;
     }
     
+}
+
+void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexFracFracOverlap(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matID){
+    
+    TPZCompEl *celL = celSideL.Element();
+    if(celL->NConnects() > 1) DebugStop();
+    TPZGeoEl *gelL = celL->Reference();
+    TPZMultiphysicsElement *MultL = dynamic_cast<TPZMultiphysicsElement *>(gelL->Reference());
+    int SideL =celSideL.Side();
+    int nsidesm = gelL->NSides();
+    
+    orientationL = 0;
+    int connect_index =1;
+    TPZCompEl *celR = celSideR.Element();
+    if(celR->NConnects() > 1) DebugStop();
+    TPZGeoEl *gelR = celR->Reference();
+    TPZMultiphysicsElement *MultR = dynamic_cast<TPZMultiphysicsElement *>(gelR->Reference());
+    int SideR =celSideR.Side();
+    orientationR = 0;
+    int connect_indexR =-2;
+    
+    
+    TPZInterpolatedElement *InterpolL = dynamic_cast<TPZInterpolatedElement *>(MultL->Element(0));
+    TPZInterpolatedElement *InterpolR = dynamic_cast<TPZInterpolatedElement *>(MultR->Element(0));
+    
+    TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *collapsedQuadL = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>* >(MultL->Element(0));
+    TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *collapsedTriangleL = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>* >(MultL->Element(0));
+    
+    TPZCompElHDivCollapsed<pzshape::TPZShapeQuad> *collapsedQuadR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeQuad>* >(MultR->Element(0));
+    TPZCompElHDivCollapsed<pzshape::TPZShapeTriang> *collapsedTriangleR = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>* >(MultR->Element(0));
+    
+    
+    int firstsideL = gelL->NSides() - gelL->NSides(1) -1;
+    int connect_indexL =-1;
+    int commonindex=-1;
+    findCommonConnectIndexes(InterpolL, InterpolR, connect_indexL, connect_indexR, commonindex);
+    int shiftL=0;
+    int shiftR=0;
+    
+    lowerIndexL =SideLowerIndex(gelL, SideL);
+    lowerIndexR =SideLowerIndex(gelR, SideR);
+    if (collapsedQuadL && connect_indexL==5) {
+        shiftL=1;
+        lowerIndexL=4;
+    }
+    if (collapsedQuadL && connect_indexL==6) {
+        shiftL=1;
+        lowerIndexL=5;
+    }
+    if (collapsedQuadR && connect_indexR==5) {
+        shiftR=1;
+        lowerIndexR=4;
+    }
+    if (collapsedQuadR && connect_indexR==6) {
+        shiftR=1;
+        lowerIndexR=5;
+    }
+    
+    
+    if (collapsedTriangleL && connect_indexL==4) {
+        shiftL=1;
+        lowerIndexL=3;
+    }
+    if (collapsedTriangleL && connect_indexL==5) {
+        shiftL=1;
+        lowerIndexL=4;
+    }
+    if (collapsedTriangleR && connect_indexR==4) {
+        shiftR=1;
+        lowerIndexR=3;
+    }
+    if (collapsedTriangleR && connect_indexR==5) {
+        shiftR=1;
+        lowerIndexR=4;
+    }
+    
+    if(InterpolL){
+        orientationL = InterpolL->GetSideOrient(connect_indexL + gelL->NCornerNodes()-shiftL);
+    }
+    if(InterpolR){
+        orientationR = InterpolR->GetSideOrient(connect_indexR + gelR->NCornerNodes()-shiftR);
+    }
+    if(orientationL*orientationR != -1 ){
+        DebugStop();
+    }
+    
+    
+    if(fInterfaceByGeom(gelL->Index(),lowerIndexL)!=-1){
+        DebugStop();
+    }  if(fInterfaceByGeom(gelR->Index(),lowerIndexR)!=-1){
+        DebugStop();
+    }
+//    if(connect_indexR!=connect_indexL){
+//        DebugStop();
+//    }
+    if(fConnectsByInterfaceMatID[commonindex]>0){
+        DebugStop();
+    }
+    else{
+    fConnectsByInterfaceMatID[commonindex] = matID;
+    }
+    
+//
+}
+void TPZAlgebraicDataTransfer::findCommonConnectIndexes( TPZInterpolatedElement *InterpolL,  TPZInterpolatedElement *InterpolR, int &indexL, int &indexR, int &indexConnect){
+    
+    int nconL = InterpolL->NConnects();
+    int nconR = InterpolR->NConnects();
+    indexL =-1;
+    indexR =-1;
+    indexConnect = -1;
+    for(int iconL = 0; iconL < nconL; iconL++){
+        int connecindexL = InterpolL->ConnectIndex(iconL);
+        for(int iconR = 0; iconR < nconR; iconR++){
+            int connecindexR = InterpolR->ConnectIndex(iconR);
+            if (connecindexR==connecindexL) {
+                indexL=iconL;
+                indexR=iconR;
+                indexConnect=connecindexR;
+                return;
+            }
+        }
+    }
+    if(indexConnect==-1){
+        DebugStop();
+    }
 }
 // identify material of a face which is connected to a given geometric element
 std::vector<int> TPZAlgebraicDataTransfer::IdentifyMaterial(TPZGeoElSideIndex gelindex, int64_t faceindex)

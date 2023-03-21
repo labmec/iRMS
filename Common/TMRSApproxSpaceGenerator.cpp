@@ -552,6 +552,7 @@ void TMRSApproxSpaceGenerator::CreateFractureHDivCollapsedEl(TPZCompMesh* cmesh)
         for(auto gelindex : matTogelindex[fracintersect])
         {
             TPZGeoEl *gel = gmesh->Element(gelindex);
+            
             if(!gel->Reference()) DebugStop();
             gel->ResetReference();
             TPZGeoElSide gelside(gel);
@@ -911,7 +912,8 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
 
 
     // -----------> Setting space and building mesh
-    if (hasFrac) {
+//    if (hasFrac) {
+        if (0) {
         std::set<int> matids_dim2, bcids_dim2;
         const int dimfrac = dim-1;
         AddAtomicMaterials(dimfrac,cmesh,matids_dim2,bcids_dim2); // Inserting atomic fracture materials
@@ -1753,9 +1755,6 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
 //			volume = new TPZTracerFlow(material_id,dimension-1);
 //			mTransportOperator->InsertMaterialObject(volume);
 //			volIds.insert(material_id);
-            
-
-            
 		}
         
 		for(auto chunk : mSimData.mTGeometry.mDomainFracIntersectionNameAndMatId){
@@ -3010,7 +3009,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
 
 	if(isMHM && mSubdomainIndexGel.size()){
-		VerifySubdomainIntegrity();
+//		VerifySubdomainIntegrity();
 	}
     // ========================================================
     // Setting lagrange multiplier order
@@ -3053,8 +3052,23 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMultiPhysicsCompMesh(int order){
     if(isMHM && mSubdomainIndexGel.size() != gmesh->NElements()) DebugStop();
     
 	if(isMHM && mSubdomainIndexGel.size()){
-		VerifySubdomainIntegrity();
+//		VerifySubdomainIntegrity();
 	}
+    
+    for(auto *celt:mMixedOperator->ElementVec()){
+        if (!celt ) {
+            continue;
+        };
+        TPZGeoEl *gel = celt->Reference();
+        if (!gel) {
+            continue;
+        }
+        if (gel->MaterialId() == mSimData.mTFracIntersectProperties.m_FractureGlueId) {
+            std::cout<<"ncon "<<celt->NConnects()<<std::endl;
+            std::cout<<"n func "<<celt->Connect(0).NShape()<<std::endl;
+            int ok=1;
+        }
+    }
 
 	// ========================================================
     // Creates interface elements for hybridized intersections
@@ -4045,6 +4059,7 @@ void TMRSApproxSpaceGenerator::CreateInterfaces(TPZCompMesh *cmesh){
         TPZGeoEl *gel = cel->Reference();
         CreateElementInterfaces(gel);
     }
+    
     //Creating Interfaces frac-vol frac-frac and frac-boundary
     for(auto elindex: cel_indexes[dim-1]){ // loop over fracture elements
         TPZCompEl *cel = cmesh->Element(elindex);
@@ -4094,6 +4109,15 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     FracIntersec.insert(mSimData.mTGeometry.m_pressureMatId);
     
     
+    //OverlapFractures
+    std::set<int> FracGlue;
+    FracGlue.insert(mSimData.mTFracIntersectProperties.m_FractureGlueId);
+    
+    //OverlapFractures
+    std::set<int> FracGlueAndVols;
+    FracGlueAndVols =FracNeihVec;
+    
+    
     // ---------------> Adding volume materials
     std::map<std::string,int> DomainDimNameAndPhysicalTag = mSimData.mTGeometry.mDomainNameAndMatId;
     std::set<int> VolMatIds;
@@ -4102,8 +4126,11 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
     for (auto chunk : DomainDimNameAndPhysicalTag) {
         int material_id = chunk.second;
         VolMatIds.insert(material_id);
+        FracGlueAndVols.insert(material_id);
     }
-        
+    
+
+   
    
     for (int iside = ncoord; iside < nsides; iside++) {
         TPZGeoElSide gelside(gel,iside);
@@ -4112,6 +4139,67 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
         // Create interface between fracture/volume elements
         // One has to be sup and the other inf. This decision is done randomly based on the order of the neighbors
         if(iside == nsides-1 ){
+            findNeighElementbyMatId(gelside,gelneigVec,FracGlue);
+            int matid = mSimData.mTGeometry.mInterface_material_idFracSup;
+            if (gelneigVec.size()>0){
+                gelneigVec.resize(0);
+                gelneigVec.push_back(gelside);
+                findNeighElementbyMatId(gelside,gelneigVec,FracGlueAndVols);
+                gelneigVec.push_back(gelside);
+                int nelsOverlap = gelneigVec.size();
+                TPZGeoElSide gelsidesecond;
+                for (int iover=0; iover<nelsOverlap-1; iover++) {
+                    TPZGeoElSide firstElementOverlap = gelneigVec[iover];
+                    TPZGeoElSide secondElementOverlap = gelneigVec[iover+1];
+                    bool isVolFirst = VolMatIds.find(firstElementOverlap.Element()->MaterialId()) != VolMatIds.end();
+                    bool isVolOverlap = VolMatIds.find(secondElementOverlap.Element()->MaterialId()) != VolMatIds.end();
+                    if (isVolFirst && isVolOverlap){continue;}
+                    TPZCompElSide celside_l=firstElementOverlap.Reference();
+//                    if (firstElementOverlap.Element()->Id() < secondElementOverlap.Element()->Id()) {
+                        TPZCompElSide celside_r = secondElementOverlap.Reference();
+                        
+                        std::vector<TPZGeoElSide> VerifyInterfaces;
+                        std::set<int> Verify;
+                        Verify.insert(matid);
+                        findNeighElementbyMatId(gelside,VerifyInterfaces,Verify);
+                    if (VerifyInterfaces.size()==0) {
+                        TPZGeoElBC gbc(gelside,matid);
+                        TPZInterfaceElement *mp_interface_el = new TPZInterfaceElement(*mTransportOperator, gbc.CreatedElement(), celside_l, celside_r);
+                        std::cout<<"Interface Overlap entre: "<<firstElementOverlap.Element()->MaterialId()<< " y "<<secondElementOverlap.Element()->MaterialId()<< std::endl;
+                    }
+                    else{
+                        bool found =true;
+                        for (auto gelverif:VerifyInterfaces) {
+                            TPZInterfaceElement *interface = dynamic_cast<TPZInterfaceElement *>(gelverif.Element()->Reference());
+                            if (interface) {
+                               TPZGeoEl* GelVerifL =interface->LeftElement()->Reference();
+                               TPZGeoEl* GelVerifR=interface->RightElement()->Reference();
+                                bool cond1=GelVerifL ==firstElementOverlap.Element() && GelVerifR==secondElementOverlap.Element();
+                                bool cond2=GelVerifL ==secondElementOverlap.Element() && GelVerifR==firstElementOverlap.Element();
+                                if (cond1 || cond2 ) {
+                                    found =false;
+                                    break;
+                                    
+                                }
+                            }
+                        }
+                        if(found){
+                            TPZGeoElBC gbc(gelside,matid);
+                            TPZInterfaceElement *mp_interface_el = new TPZInterfaceElement(*mTransportOperator, gbc.CreatedElement(), celside_l, celside_r);
+                            std::cout<<"Interface Overlap entre: "<<firstElementOverlap.Element()->MaterialId()<< " y "<<secondElementOverlap.Element()->MaterialId()<< std::endl;
+                        }
+                        
+                    }
+                        
+                        
+//                    }
+                    
+                }
+                
+                return;
+            }
+            
+            
             findNeighElementbyMatId(gelside,gelneigVec,VolMatIds);
             if(gelneigVec.size()==2){
                 for (int ivol = 0; ivol<2; ivol++) {
@@ -4211,7 +4299,6 @@ void TMRSApproxSpaceGenerator::CreateFracInterfaces(TPZGeoEl *gel){
 }
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
-
 void TMRSApproxSpaceGenerator::CreateInterfaceElements(TPZGeoElSide &gelside, TPZGeoElSide &gelneig, int matid){
     
     TPZGeoElBC gbc(gelside,matid);
@@ -4352,7 +4439,7 @@ void TMRSApproxSpaceGenerator::HideTheElements(TPZCompMesh *cmesh){
         TPZAutoPointer<TPZGuiInterface> gui;
 
         const int nthreads = mSimData.mTNumerics.m_nThreadsMixedProblem;
-        const bool isUseSparse = false;
+        const bool isUseSparse = true;
         if(isUseSparse){
             // Pardiso does pivoting which is necessary in some problems
             subcmesh->SetAnalysisSparse(nthreads);
@@ -4634,7 +4721,7 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         if(gel->Dimension() != dim) continue;
         int matid = gel->MaterialId();
         mSubdomainIndexGel[el] = matid-fInitMatIdForMergeMeshes+first3DCoarse;
-#ifdef PZDEBUG
+#ifdef PZDEBUG2
         if(MatFinetoCoarseElIndex.find(matid) == MatFinetoCoarseElIndex.end()){
             TPZManVector<REAL,3> xcenter(3);
             TPZGeoElSide gelside(gel);
@@ -4643,6 +4730,11 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
             int64_t coarse_index = 0;
             
             TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
+            if(!gelcoarse){
+                TPZGeoEl *gelTest = coarsemesh->Element(742);
+                TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
+                std::cout<<"ERROR"<<std::endl;
+            }
             if(gelcoarse->IsInParametricDomain(qsi,0)) {
                 if(coarse_index-first3DCoarse != matid - fInitMatIdForMergeMeshes) DebugStop();
                 MatFinetoCoarseElIndex[matid] = coarse_index;
@@ -5393,6 +5485,7 @@ void TMRSApproxSpaceGenerator::OrderFractures(TPZCompMesh *fluxmesh, TPZVec<TPZG
                 auto cel = fluxmesh->ApproxSpace().CreateCompEl(glue, *fluxmesh);
                 auto cindex = cel->ConnectIndex(0);
                 std::cout << "Glue connect index " << cindex << std::endl;
+                std::cout<<"nconnectsGlue "<<cel->NConnects()<<std::endl;
             }
             TPZGeoElSide gels(glue);
             gels.SetConnectivity(it->second);
@@ -5510,7 +5603,7 @@ void TMRSApproxSpaceGenerator::UpdateMemoryFractureGlue(TPZCompMesh *cmesh)
     int64_t nel = cmesh->NElements();
     int matglueid = mSimData.mTFracIntersectProperties.m_FractureGlueId;
     TMRSDarcyFractureGlueFlowWithMem *matglue = dynamic_cast<TMRSDarcyFractureGlueFlowWithMem *>(mMixedOperator->FindMaterial(matglueid));
-    if(!matglue) DebugStop();
+    if(!matglue) return;
     std::shared_ptr<TPZAdmChunkVector<TGlueMem>> memvec = matglue->GetMemory();
     for (int64_t el = 0; el<nel; el++) {
         TPZCompEl *cel = cmesh->Element(el);

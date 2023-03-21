@@ -214,11 +214,14 @@ public:
     REAL CalculateMassById2(int matId);
     REAL CalculateMassByCoord();
     REAL CalculateMassByCoord2();
+    REAL CalculateAreaById(int matId);
+    
     std::pair<REAL, REAL> FLuxWaterOilIntegralbyID(int mat_id);
     void VerifyElementFLuxes();
-    void VerifyConservation(int itime);
+    REAL VerifyConservation(int itime);
     void ZeroFluxes();
     void PrintFluxes();
+    void ColorMeshByCoords();
 };
 
 #endif /* AlgebraicTransport_h */

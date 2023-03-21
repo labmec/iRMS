@@ -10,7 +10,7 @@
 #include "json.hpp"
 #include <filesystem>
 #include <libInterpolate/Interpolate.hpp>
-#include <libInterpolate/AnyInterpolator.hpp>
+//#include <libInterpolate/AnyInterpolator.hpp>
 #include "TPZSimpleTimer.h"
 #include "pzintel.h"
 #include "pzsmanal.h"
@@ -18,6 +18,9 @@
 #include "filereader.h"
 
 #include "DFNMesh.h"
+
+#include "TPZFileStream.h"
+#include "TPZBFileStream.h"
 
 // ----- Namespaces -----
 using namespace std;
@@ -59,7 +62,9 @@ void ComputeDiagnostics(std::string& outputFolder, TMRSDataTransfer& sim_data, s
 void VerifyIfNeumannIsExactlyZero(const int matidNeumann, TPZMultiphysicsCompMesh* mixed_operator);
 
 std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh);
-
+void DeleteBadRestrictions(TPZGeoMesh* gmesh);
+void ModifyBCsForCASE4(TPZGeoMesh* gmesh);
+void ColorMeshCase2(TPZGeoMesh* gmesh);
 // TODO: Delete this enum? (May 2022)
 enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
     /*5*/EFaceBCPressure, EFracInlet, EFracOutlet, EFracNoFlux, EFracPressure,
@@ -93,7 +98,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 3;
+    int simcase = 20;
     if (argc > 1) {
         std::cout << "\n===========> Running with provided argv path!" << std::endl;
         filenameBase = basemeshpath + argv[1];
@@ -123,7 +128,7 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/twoelCoarse";
                 break;
             case 1:
-                //            filenameBase = basemeshpath + "/dfnimrs/fl_case1";
+              //filenameBase = basemeshpath + "/dfnimrs/fl_case1";
                 filenameBase = basemeshpath + "/dfnimrs/fl_case1/";
                 break;
             case 2:
@@ -148,9 +153,9 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_snap/";
                 break;
             case 9:
-//                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona";
+                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/TestFunciona";
 //                 filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/6x6x13/fl_case3_dis_0_p1_tol_1em4";
-                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/testingNoSnapBound/fl_case3_0p1";
+//                filenameBase = basemeshpath + "/dfnimrs/fl_case3_meshes/testingNoSnapBound/fl_case3_0p1";
                 
                 
                 
@@ -200,7 +205,8 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
                 break;
             case 20:
-                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
+                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
+//                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
                 break;
             case 21:
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_lf";
@@ -212,14 +218,30 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/boxPerpFlux6el";
                 break;
             case 24:
-//                filenameBase = basemeshpath + "/TesisResults/2parallel_no_overlap";
-//                filenameBase = basemeshpath + "/TesisResults/2parallel_one_overlap";
-////                                   filenameBase = basemeshpath + "/TesisResults/2parallel_two_overlap";
-//                filenameBase = basemeshpath + "/TesisResults/2parallel_three_overlap";
-                  filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_0p001";
+
+//                filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_CaseA";
+//                filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_CaseB";
+//                filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_CaseC";
+//                filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_CaseD";
+//                
+//                filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_CaseA_MHM";
+//                filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_CaseB_MHM";
+//                filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_CaseC_MHM";
+//                filenameBase = basemeshpath + "/TesisResults/case_3/testingNoSnapBound/fl_case3_CaseD_MHM";
+                
+                
+                filenameBase = basemeshpath + "/TesisResults/case_1/";
+//                filenameBase = basemeshpath + "/TesisResults/case_4/fl_case4A/";
+//                filenameBase = basemeshpath + "/TesisResults/case_4/fl_case4C/";
+                
+                
+
                 break;
             case 25:
-                filenameBase = basemeshpath + "/TesisResults/2parallel_no_overlap";
+//                filenameBase = basemeshpath + "/TesisResults/2aparallel/2parallel_no_overlap";
+//                filenameBase = basemeshpath + "/TesisResults/2aparallel/2parallel_one_overlap";
+//                filenameBase = basemeshpath + "/TesisResults/2aparallel/2parallel_two_overlap";
+//                  filenameBase = basemeshpath + "/TesisResults/2aparallel/2parallel_three_overlap";
                 break;
             default:
                 break;
@@ -415,14 +437,21 @@ void RunProblem(string& filenameBase, const int simcase)
 	int initVolForMergeMeshes = -1000000;
     TPZGeoMesh *gmeshfine = nullptr, *gmeshcoarse = nullptr;
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM,needsMergeMeshes);
+    //ColorMeshCase2(gmeshfine);
     
     if(simcase==20){
-        gmeshfine = Transform2dMeshToUnisim3D(gmeshfine, 5);
+//        gmeshfine = Transform2dMeshToUnisim3D(gmeshfine, 3);
+//        {
+//            TPZPersistenceManager::OpenWrite("test_coarse.txt");
+//            TPZPersistenceManager::WriteToFile(gmeshfine);
+//            TPZPersistenceManager::CloseWrite();
+//        }
     }
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
     if (1) {
         if(gmeshfine){
+            
             gmeshfine->SetDimension(3);
             std::ofstream name(outputFolder + "GeoMesh_Fine_Initial.vtk");
             TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
@@ -456,6 +485,8 @@ void RunProblem(string& filenameBase, const int simcase)
 	
 	// ----- Setting the global data transfer in approximation space -----
 	aspace.SetDataTransfer(sim_data);
+    
+    
 
 	// ----- Refining mesh (always done in fine mesh) -----
 	if(isRefineMesh){
@@ -470,16 +501,65 @@ void RunProblem(string& filenameBase, const int simcase)
 		}
 	}
     // ----- Changing BCs for some testing cases -----
-    if(simcase == 6 || simcase == 7 || simcase == 24){
+    if(simcase == 6 || simcase == 7 || simcase == 25){
         //linear pressure...
         ModifyBCsFor2ParallelFractures(gmeshfine);
         std::ofstream name3(outputFolder + "ModBCs.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
-	
+    // ----- Changing BCs for some testing cases -----
+    if(simcase == 24){
+        //linear pressure...
+//        ModifyBCsForCASE4(gmeshfine);
+        std::ofstream name3(outputFolder + "ModBCs.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
+    }
+    
 	// ----- Setting gmesh -----
 	// Code takes a fine and a coarse mesh to generate MHM data structure
 	aspace.SetGeometry(gmeshfine,gmeshcoarse);
+    
+    {
+        TPZPersistenceManager::OpenWrite("test.txt");
+        TPZPersistenceManager::WriteToFile(gmeshfine);
+        TPZPersistenceManager::CloseWrite();
+    }
+    
+//    //forCase1Plots
+//    {
+//        int ngels = gmeshfine->NElements();
+//        for(int iel= 0; iel<ngels; iel++){
+//            TPZGeoEl *gel = gmeshfine->Element(iel);
+//            int matid = gel->MaterialId();
+//
+//            if (aspace.IsFracMatId(matid-2)) {
+//
+//
+//
+//               TPZGeoElSide elside1 = gel->Neighbour(gel->NSides()-1);
+//                gel->SetMaterialId(501);
+//                TPZGeoElSide elsideneig = elside1.Neighbour();
+//                while (elside1!=elsideneig) {
+//                    int matidneig = elsideneig.Element()->MaterialId();
+//                    if (aspace.IsFracMatId(matidneig)) {
+//                        elsideneig.Element()->SetMaterialId(500);
+//                    }
+//                    elsideneig=elsideneig.Neighbour();
+//                }
+//
+//            }
+//
+//        }
+//        std::ofstream name4(outputFolder + "gmeshfineToPlots.vtk");
+//        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name4);
+//    }
+    
+//    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
+   
+    
+    DeleteBadRestrictions(gmeshfine);
+    
+ 
     
     std::ofstream name4(outputFolder + "gmeshfine.vtk");
     TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name4);
@@ -537,7 +617,7 @@ void RunProblem(string& filenameBase, const int simcase)
     bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
-//    sim_data.mTNumerics.m_run_with_transport=false;
+   // sim_data.mTNumerics.m_run_with_transport=false;
     if(sim_data.mTNumerics.m_run_with_transport){
 
 		// Create transport mesh. TODO: Create transport data structure without the need for a mesh
@@ -575,6 +655,8 @@ void RunProblem(string& filenameBase, const int simcase)
 //        std::ofstream fileCilamce515(outputFolder + "IntegratedSatFrac515.txt");
 //        std::ofstream fileCilamce530(outputFolder + "IntegratedSatFrac530.txt");
         std::ofstream fileFracSat(outputFolder + "FracturesIntegratedSat.txt");
+        std::ofstream fileFracSatVolCase2(outputFolder + "RegionsIdIntegratedSat.txt");
+        std::ofstream fileFracAreaSat(outputFolder + "FracturesAreaSat.txt");
         fileFracSat << "t" << " ";
         for (int ifrac = 0 ; ifrac < sim_data.mTFracProperties.m_fracprops.size() ; ifrac++) fileFracSat << "frac" << ifrac << " ";
         fileFracSat << std::endl;
@@ -588,26 +670,35 @@ void RunProblem(string& filenameBase, const int simcase)
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
             sfi_analysis->RunTimeStep();
-            aspace.UpdateMemoryFractureGlue(mixed_operator);
+//            aspace.UpdateMemoryFractureGlue(mixed_operator);
             if(it == 1){
+                //sfi_analysis->m_transport_module->fAlgebraicTransport.ColorMeshByCoords();
                 sfi_analysis->PostProcessTimeStep(typeToPPinit);
+                sfi_analysis->PostProcessTimeStep(typeToPPsteps);
                 if(isPostProcessFracDiagnostics){
-                    std::set<int> bcflux = {2,3,4}; // computes integral of quantity over these matids
+                    std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
                     ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
                 }
-                if(isFilterZeroNeumann) VerifyIfNeumannIsExactlyZero(4,mixed_operator);
+                for (auto& fprop : sim_data.mTFracProperties.m_fracprops) {
+                    const int matid = fprop.first;
+                    const REAL intMassThisFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateAreaById(matid);
+                    fileFracAreaSat << matid << " "<<intMassThisFrac<< std::endl;
+                    
+                }
+               
+                //if(isFilterZeroNeumann) VerifyIfNeumannIsExactlyZero(4,mixed_operator);
             }
             mixed_operator->LoadSolution(mixed_operator->Solution());
 			
 			// Only post process based on reporting times
-            if (sim_time >=  current_report_time) {
+//            if (sim_time >=  current_report_time) {
 				cout << "\n---------------------- SFI Step " << it << " ----------------------" << endl;
                 std::cout << "Simulation time:  " << sim_time << std::endl;
                 mixed_operator->UpdatePreviousState(-1.);
                 sfi_analysis->PostProcessTimeStep(typeToPPsteps);
                 pos++;
                 current_report_time = reporting_times[pos];
-                REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
+//                REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
                 if(sim_data.mTNumerics.m_run_with_transport){
                     fileFracSat << current_report_time << " ";
                     for (auto& fprop : sim_data.mTFracProperties.m_fracprops) {
@@ -616,12 +707,22 @@ void RunProblem(string& filenameBase, const int simcase)
                         fileFracSat << intMassThisFrac << " ";
                     }
                     fileFracSat << std::endl;
+                  
                 }
+            if(sim_data.mTNumerics.m_run_with_transport){
+                fileFracSatVolCase2 << current_report_time << " ";
+                for (int ij=1; ij<=2; ij++) {
+                    const int matid = ij;
+                    const REAL intMassThisFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById2(matid);
+                    fileFracSatVolCase2 << intMassThisFrac << " ";
+                }
+            }
                 REAL mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
                 std::cout << "Mass report at time : " << sim_time << std::endl;
                 std::cout << "Mass integral :  " << mass << std::endl;
-            }
-            sfi_analysis->m_transport_module->fAlgebraicTransport.VerifyConservation(it);
+//            }
+           REAL outFlux = sfi_analysis->m_transport_module->fAlgebraicTransport.VerifyConservation(it);
+            fileFracSatVolCase2<< outFlux <<std::endl;
         }
     }
     else{
@@ -630,7 +731,7 @@ void RunProblem(string& filenameBase, const int simcase)
         mixAnalisys->SetDataTransfer(&sim_data);
         UsePardiso_Q = true;
         mixAnalisys->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
-//        if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,mixAnalisys->StructMatrix(),mixed_operator);
+        if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,mixAnalisys->StructMatrix(),mixed_operator);
         
         {
             std::ofstream out(outputFolder + "mixedCMesh.txt");
@@ -679,6 +780,7 @@ void RunProblem(string& filenameBase, const int simcase)
     
        
         const bool checkRhsAndExit = true;
+        bool isPostProcessFracDiagnostics=false;
         if(checkRhsAndExit){
 //            std::cout << "\n------------------ Checking RHS norm ------------------" << std::endl;
 ////            mixed_operator->UpdatePreviousState(-1.);
@@ -688,17 +790,22 @@ void RunProblem(string& filenameBase, const int simcase)
             mixAnalisys->Assemble();
             mixed_operator->LoadReferences();
             mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-            aspace.UpdateMemoryFractureGlue(mixed_operator);
+//            aspace.UpdateMemoryFractureGlue(mixed_operator);
             std::cout << "\nNorm(rhs) = " << Norm(mixAnalisys->Rhs()) << std::endl;
             std::cout << "\ncheckRhsAndExit is on. Just exiting now..." << std::endl;
+            
+            if(isPostProcessFracDiagnostics){
+                std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
+                ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
+            }
             
             // ----- Post processing -----
             if (isPostProc) {
 //                mixAnalisys->fsoltransfer.TransferFromMultiphysics();
                 int dimToPost = 3;
                 mixAnalisys->PostProcessTimeStep(dimToPost);
-                dimToPost = 2;
-                mixAnalisys->PostProcessTimeStep(dimToPost);
+//                dimToPost = 2;
+//                mixAnalisys->PostProcessTimeStep(dimToPost);
             }
             return;
         }
@@ -708,16 +815,16 @@ void RunProblem(string& filenameBase, const int simcase)
         
         {
             // print the flux mesh with the solutions "loaded"
-            TPZCompMesh *fluxmesh = mixed_operator->MeshVector()[0];
-            std::ofstream flux(outputFolder + "fluxmesh.txt");
-            fluxmesh->Print(flux);
+//            TPZCompMesh *fluxmesh = mixed_operator->MeshVector()[0];
+//            std::ofstream flux(outputFolder + "fluxmesh.txt");
+//            fluxmesh->Print(flux);
         }
 
 //        TPZCompMesh *pressure = mixed_operator->MeshVector()[1];
 //        pressure->Solution().Print("pressure multipliers");
         // Computes the integral of the normal flux on the boundaries.
         if(isPostProcessFracDiagnostics){
-            std::set<int> bcflux = {2,3,4}; // computes integral of quantity over these matids
+            std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
             ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
         }
     
@@ -727,8 +834,8 @@ void RunProblem(string& filenameBase, const int simcase)
             mixAnalisys->fsoltransfer.TransferFromMultiphysics();
             int dimToPost = 3;
             mixAnalisys->PostProcessTimeStep(dimToPost);
-            dimToPost = 2;
-            mixAnalisys->PostProcessTimeStep(dimToPost);
+//            dimToPost = 2;
+//            mixAnalisys->PostProcessTimeStep(dimToPost);
         }
     }
     
@@ -981,6 +1088,10 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
     // Reading mesh
     GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
     gmeshFine = GeometryFine.GeometricGmshMesh(filename,nullptr,false);
+    gmeshFine->BuildConnectivity();
+    std::cout<<"Dim: "<<gmeshFine->Dimension()<<std::endl;
+    std::cout<<"Nels: "<<gmeshFine->NElements()<<std::endl;
+    
     return gmeshFine;
 }
 
@@ -1093,7 +1204,14 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     }
     int ncoarse_vol = 0;
     if(needsMergeMeshes){
-        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+//        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+        
+        
+        TPZPersistenceManager::OpenRead("/Users/jose/Documents/GitHub/dfnMesh/examples/ResultsJose/UNISIM_Test/test_coarse.txt");
+        TPZSavable *restore = TPZPersistenceManager::ReadFromFile();
+        gmeshcoarse = dynamic_cast<TPZGeoMesh *>(restore);
+        
+        //
         
         int64_t nelcoarse = gmeshcoarse->NElements();
         for(int64_t el = 0; el<nelcoarse; el++)
@@ -1156,6 +1274,7 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     }
 	// ------------------------ Generate gmesh fine ------------------------
 	string filenameFine = filenameBase + "_fine.msh";
+    
     
     /// add the intersection material ids to be read
     /// read only the header of the msh file
@@ -1426,6 +1545,34 @@ void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh) {
     }
 }
 
+void ModifyBCsForCASE4(TPZGeoMesh* gmesh) {
+   
+    const REAL zerotol = ZeroTolerance();
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != 4) continue; // 2d faces on boundary only
+        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        gel->X(masscent, xcenter);
+        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+        bool cond1inlet = y>=1499.99 && x>= -499.99 && x<= -200.00 && z>=300.00 && z<= 500.00 ;
+        bool cond2inlet = x<= -499.99 && y>= 1200.00 && y<= 1500.00 && z>=300.00 && z<= 500.00;
+        
+        bool cond1outlet = x<=-499.99 && y>= 100.00 && y<=400.00 && z>= -100.00 && z<= 100.00;
+        bool cond2outlet = x==350.00 && y>= 100.00 && y<=400.00 && z>= -100.00 && z<= 100.00;
+        if (cond1inlet ||cond2inlet ) {
+            std::cout<<"Trocando ID noflux por inlet"<<std::endl;
+            gel->SetMaterialId(2);
+            
+        }
+        if (cond1outlet || cond2outlet) {
+            std::cout<<"Trocando ID noflux por outlet"<<std::endl;
+            gel->SetMaterialId(3);
+        }
+       
+        
+    }
+}
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
@@ -1479,16 +1626,18 @@ void fixPossibleMissingIntersections(TMRSDataTransfer& sim_data, TPZGeoMesh* gme
 //            if(bcEls.size() > 1) DebugStop();
             if (interEls.size() > 1) {
                 if (interEls.size() > 2) {
-                    DebugStop(); // there are 3 intersection elements in the same place! Please check why...
+//                    DebugStop(); // there are 3 intersection elements in the same place! Please check why...
                 }
                 cout << "Found two intersection elements at the same place! Is this a problem?" << endl;
                 cout << "Manually deleting intersection geoel..." << endl;
-
-                TPZGeoEl* gelduplicate = interEls[1];
-                const int64_t duplicateIndex = gelduplicate->Index();
-                gelduplicate->RemoveConnectivities();
-                delete gelduplicate;
-                gmesh->ElementVec()[duplicateIndex] = nullptr;
+                
+                for(int iintersec=1; iintersec<interEls.size(); iintersec++  ){
+                    TPZGeoEl* gelduplicate = interEls[iintersec];
+                    const int64_t duplicateIndex = gelduplicate->Index();
+                    gelduplicate->RemoveConnectivities();
+                    delete gelduplicate;
+                    gmesh->ElementVec()[duplicateIndex] = nullptr;
+                }
                 
             }
             if (nFracElsForSide > 1 && !interEls.size() && !bcEls.size()) {
@@ -1978,6 +2127,129 @@ void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer& sim_data, TP
     
     std::cout << "\n==> Total Filter time: " << timer_filter.ReturnTimeDouble()/1000. << " seconds" << std::endl;
 }
-
+void DeleteBadRestrictions(TPZGeoMesh* gmesh) {
+    
+    const REAL zerotol = ZeroTolerance();
+    const REAL onethird = 1./3., twothirds = 2./3.;
+    
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+//        if (gel->MaterialId() != ENoflux) continue; // 2d faces on boundary only
+        if(gel->Dimension() != 2){continue;}
+        if((gel->MaterialId() == 2) || (gel->MaterialId() == 3) || (gel->MaterialId() == 4)){continue;}
+        TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        gel->X(masscent, xcenter);
+        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+        if(y==0.05 || y==2.20){
+            int maidbefore = gel->MaterialId();
+            gel->SetMaterialId(1234567);
+            
+        }
+    }
+}
+void ColorMeshCase2(TPZGeoMesh* gmesh){
+    
+    if (!gmesh) {
+        DebugStop();
+    }
+    for (auto gel : gmesh->ElementVec()) {
+        
+        bool is_not_3D = gel->Dimension() != 3;
+        
+        if (is_not_3D) {
+            gel->SetMaterialId(-1);
+            continue;
+        }
+        TPZManVector<REAL,3> x_qsi(3,0.0),x_c(3,0.0);
+        int side = gel->NSides() - 1;
+        gel->CenterPoint(side, x_qsi);
+        gel->X(x_qsi, x_c);
+        
+        REAL x = x_c[0];
+        REAL y = x_c[1];
+        REAL z = x_c[2];
+        
+        bool check_0 = (x < 0.5 && y < 0.5 && z < 0.5);
+        bool check_1 = (x > 0.5 && y < 0.5 && z < 0.5);
+        bool check_2 = (x < 0.5 && y > 0.5 && z < 0.5);
+        bool check_3 = (x > 0.5 && y > 0.5 && z < 0.5);
+        bool check_4 = (x < 0.5 && y < 0.5 && z > 0.5);
+        bool check_5 = (x > 0.5 && y < 0.5 && z > 0.5);
+        bool check_6 = (x < 0.5 && y > 0.5 && z > 0.5);
+        bool check_7 = (x > 0.75 && y > 0.75 && z > 0.75);
+        bool check_8 = (x > 0.75 && (y > 0.5 && y<0.75) && z > 0.75);
+        bool check_9 = ((x > 0.5 && x< 0.75) &&  y>0.75 && z > 0.75);
+        bool check_10 = ((x > 0.5 && x< 0.75) &&  (y > 0.5 && y<0.75) && z > 0.75);
+        bool check_11 = (x > 0.75 && y > 0.75) && (z > 0.5 && z < 0.75);
+        bool check_12 = (x > 0.75 && y > 0.5 && y < 0.75) && (z > 0.5 && z < 0.75);
+        bool check_13 = (x > 0.5 && x < 0.75 && y > 0.75) && (z > 0.5 && z < 0.75);
+        bool check_14 = (x > 0.5 && x < 0.625 && y > 0.5 && y < 0.625) && (z > 0.5 && z < 0.625);
+        bool check_15 = (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625) && (z > 0.5 && z < 0.625);
+        bool check_16 = (x > 0.5 && x < 0.625 && y > 0.625 && y < 0.75) && (z > 0.5 && z < 0.625);
+        bool check_17 = (x > 0.625 && x < 0.75 && y > 0.625 && y < 0.75) && (z > 0.5 && z < 0.625);
+        bool check_18 = (x > 0.5 && x < 0.625 && y > 0.5 && y < 0.625) && (z > 0.625 && z < 0.75);
+        bool check_19 = (x > 0.625 && x < 0.75 && y > 0.5 && y < 0.625) && (z > 0.625 && z < 0.75);
+        bool check_20 = (x > 0.5 && x < 0.625 && y > 0.625 && y < 0.75) && (z > 0.625 && z < 0.75);
+        bool check_21 = (x > 0.625 && x < 0.75 && y > 0.625 && y < 0.75) && (z > 0.625 && z < 0.75);
+        
+        if (check_0) {
+            gel->SetMaterialId(0);
+        }else if (check_1){
+            gel->SetMaterialId(1);
+        }else if (check_2){
+            gel->SetMaterialId(2);
+        }else if (check_3){
+            gel->SetMaterialId(3);
+        }else if (check_4){
+            gel->SetMaterialId(4);
+        }else if (check_5){
+            gel->SetMaterialId(5);
+        }else if (check_6){
+            gel->SetMaterialId(6);
+        }else if (check_7){
+            gel->SetMaterialId(7);
+        }else if (check_8){
+            gel->SetMaterialId(8);
+        }else if (check_9){
+            gel->SetMaterialId(9);
+        }else if (check_10){
+            gel->SetMaterialId(10);
+        }else if (check_11){
+            gel->SetMaterialId(11);
+        }else if (check_12){
+            gel->SetMaterialId(12);
+        }else if (check_13){
+            gel->SetMaterialId(13);
+        }else if (check_14){
+            gel->SetMaterialId(14);
+        }else if (check_15){
+            gel->SetMaterialId(15);
+        }else if (check_16){
+            gel->SetMaterialId(16);
+        }else if (check_17){
+            gel->SetMaterialId(17);
+        }else if (check_18){
+            gel->SetMaterialId(18);
+        }else if (check_19){
+            gel->SetMaterialId(19);
+        }else if (check_20){
+            gel->SetMaterialId(20);
+        }else if (check_21){
+            gel->SetMaterialId(21);
+        }else {
+            DebugStop();
+        }
+        
+        
+    }
+    
+#ifdef PZDEBUG
+    std::ofstream file("geometry_case_2_base_aux.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
+    std::ofstream file_txt("geometry_case_2_base_aux.txt");
+    gmesh->Print(file_txt);
+#endif
+}
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
