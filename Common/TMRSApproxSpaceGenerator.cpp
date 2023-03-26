@@ -912,8 +912,8 @@ TPZCompMesh * TMRSApproxSpaceGenerator::HdivFluxCmesh(int order){
 
 
     // -----------> Setting space and building mesh
-//    if (hasFrac) {
-        if (0) {
+    if (hasFrac) {
+//        if (0) {
         std::set<int> matids_dim2, bcids_dim2;
         const int dimfrac = dim-1;
         AddAtomicMaterials(dimfrac,cmesh,matids_dim2,bcids_dim2); // Inserting atomic fracture materials
@@ -4728,13 +4728,10 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
             gelside.CenterX(xcenter);
             TPZManVector<REAL,3> qsi(dim,0.);
             int64_t coarse_index = 0;
-            
-            TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
-            if(!gelcoarse){
-                TPZGeoEl *gelTest = coarsemesh->Element(742);
-                TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
-                std::cout<<"ERROR"<<std::endl;
+            if(el == 3039){
+                int ok=0;
             }
+            TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
             if(gelcoarse->IsInParametricDomain(qsi,0)) {
                 if(coarse_index-first3DCoarse != matid - fInitMatIdForMergeMeshes) DebugStop();
                 MatFinetoCoarseElIndex[matid] = coarse_index;
@@ -4924,13 +4921,25 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         REAL Sum = 0.;
         for(int i=1; i<gelvec.size(); i++) Sum += gelvec[i]->Volume();
         REAL diff = Area-Sum;
+        if(std::abs(diff)>0.0001){
+            std::cout<<"diff: "<<diff<<std::endl;
+            int ok=0;
+        }
 //        std::cout << "Skeleton area of el " << fine_skel << " area " << Area << " sum of small " << Sum << std::endl;
 #endif
         TPZGeoMesh gmeshrefpattern;
         TPZRefPatternTools::GenerateGMeshFromElementVec(gelvec,gmeshrefpattern);
+        std::ofstream file("MESHERROR.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(&gmeshrefpattern, file);
+        std::ofstream file2("MESHERROR.txt");
+        gmeshrefpattern.Print(file2);
+        
+//        if(std::abs(diff)<0.0001){
         TPZAutoPointer<TPZRefPattern> refpat = new TPZRefPattern(gmeshrefpattern);
         TPZGeoEl *gelcoarse = finemesh->Element(fine_skel);
         gelcoarse->SetRefPattern(refpat);
+//        }
+        
         for(int i=1; i<gelvec.size(); i++){
             gelvec[i]->SetFather(gelvec[0]);
             gelvec[0]->SetSubElement(i-1, gelvec[i]);
