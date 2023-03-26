@@ -1,8 +1,8 @@
 {
     "$schema": "../dfn_schema.json",
     "Mesh": "unisim_coarse.msh",
-    "TolDist":  100.50,
-    "TolAngle": 10.2,
+    "TolDist":  1.50,
+    "TolAngle": 0.2,
     "Domains": [
         {
             "name": "k33",

@@ -4929,10 +4929,6 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
 #endif
         TPZGeoMesh gmeshrefpattern;
         TPZRefPatternTools::GenerateGMeshFromElementVec(gelvec,gmeshrefpattern);
-        std::ofstream file("MESHERROR.vtk");
-        TPZVTKGeoMesh::PrintGMeshVTK(&gmeshrefpattern, file);
-        std::ofstream file2("MESHERROR.txt");
-        gmeshrefpattern.Print(file2);
         
 //        if(std::abs(diff)<0.0001){
         TPZAutoPointer<TPZRefPattern> refpat = new TPZRefPattern(gmeshrefpattern);
