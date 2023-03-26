@@ -440,15 +440,6 @@ void RunProblem(string& filenameBase, const int simcase)
 	ReadMeshesDFN(filenameBase, gmeshfine, gmeshcoarse, initVolForMergeMeshes,isMHM,needsMergeMeshes);
     //ColorMeshCase2(gmeshfine);
     
-    if(simcase==20){
-//        gmeshfine = Transform2dMeshToUnisim3D(gmeshfine, 1);
-//        {
-//
-//            TPZPersistenceManager::OpenWrite("test_coarse.txt");
-//            TPZPersistenceManager::WriteToFile(gmeshcoarse);
-//            TPZPersistenceManager::CloseWrite();
-//        }
-    }
     // ----- Printing gmesh -----
 #ifdef PZDEBUG
     if (1) {
@@ -1207,34 +1198,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     int ncoarse_vol = 0;
     if(needsMergeMeshes){
 
-        
-//        if (1) {
-//            // Creating gmsh reader
-//            TPZGmshReader  GeometryFine;
-//            REAL l = 1.0;
-//            GeometryFine.SetCharacteristiclength(l);
-//
-//            // Reading mesh
-//            GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagCoarse);
-//            gmeshcoarse = GeometryFine.GeometricGmshMesh(meshfile,nullptr,false);
-//            gmeshcoarse->BuildConnectivity();
-//            gmeshcoarse = Transform2dMeshToUnisim3D(gmeshcoarse, 1);
-//
-//            std::cout<<"Dim: "<<gmeshcoarse->Dimension()<<std::endl;
-//            std::cout<<"Nels: "<<gmeshcoarse->NElements()<<std::endl;
-//        }
-//        else{
             gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
-//        }
-        
-//        CreateUnsim3DCoarseMesh( filenameBase,  gmeshfine,gmeshcoarse, initVolForMergeMeshes,  isMHM,needsMergeMeshes);
-//        TPZPersistenceManager::OpenRead("/Users/jose/Documents/GitHub/dfnMesh/examples/ResultsJose/UNISIM_Test/test_coarse.txt");
-//        TPZSavable *restore = TPZPersistenceManager::ReadFromFile();
-//        gmeshcoarse = dynamic_cast<TPZGeoMesh *>(restore);
-//
-        //
-//        gmeshcoarse = GenerateUnisimMesh(2);
-//        gmeshcoarse->BuildConnectivity();
+
         int64_t nelcoarse = gmeshcoarse->NElements();
         for(int64_t el = 0; el<nelcoarse; el++)
         {
