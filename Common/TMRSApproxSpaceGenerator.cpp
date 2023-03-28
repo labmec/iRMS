@@ -4715,23 +4715,79 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     int64_t nel_fine = finemesh->NElements();
     mSubdomainIndexGel.Resize(nel_fine);
     mSubdomainIndexGel.Fill(-1);
+
+        
+        //
+//        int ok=0;
+//        int nsubdomains =4347;
+//        TPZFMatrix<REAL> indexAreasFaathersAndSons(nsubdomains,5,0.0);
+//        int counter =0;
+//        for (int jcoarse=0; jcoarse< coarsemesh->NElements(); jcoarse++) {
+//            TPZGeoEl *coarseGel = coarsemesh->Element(jcoarse);
+//            if (!coarseGel) continue;
+//            if (coarseGel->Dimension()!=3) continue;
+//            int col = 1;
+//            REAL VolCoarse = coarseGel->Volume();
+//
+//            int dim = coarseGel->Dimension();
+//            TPZManVector<REAL,3> param(dim,0.);
+//            REAL detjac;
+//            TPZFNMatrix<9> jacinv(dim,dim),jacobian(dim,dim),axes(dim,3), gradx(3,dim);
+//            //supondo jacobiano constante: X linear
+//            coarseGel->CenterPoint(coarseGel->NSides()-1,param);
+//            coarseGel->GradX(param, gradx);
+//            TPZFMatrix<REAL> cooridnates;
+//            coarseGel->NodesCoordinates(cooridnates);
+//            cooridnates.Print(std::cout);
+//            coarseGel->Jacobian(gradx,jacobian,axes,detjac,jacinv);
+//
+//
+//            std::cout<<"IndexCoarse: "<<jcoarse<<" vol: "<<VolCoarse<<std::endl;
+//            indexAreasFaathersAndSons(counter,0)=jcoarse;
+//            indexAreasFaathersAndSons(counter,1)=VolCoarse;
+//            counter++;
+//        }
+//        int oka2=0;
+        //
+       
+        
     for (int64_t el = 0; el<nel_fine; el++) {
         auto *gel = finemesh->Element(el);
         if(!gel || gel->HasSubElement()) continue;
         if(gel->Dimension() != dim) continue;
         int matid = gel->MaterialId();
         mSubdomainIndexGel[el] = matid-fInitMatIdForMergeMeshes+first3DCoarse;
-#ifdef PZDEBUG2
+//        REAL volssons = gel->Volume();
+//        TPZFMatrix<REAL> cooridnates;
+//        gel->NodesCoordinates(cooridnates);
+//        cooridnates.Print(std::cout);
+//        int node1= gel->NodeIndex(0);
+//        int node2= gel->NodeIndex(1);
+//        int node3= gel->NodeIndex(2);
+//        int node4=  gel->NodeIndex(3);
+//
+//        //Coarse
+//        TPZGeoEl *gcor = coarsemesh->Element(matid-fInitMatIdForMergeMeshes+first3DCoarse);
+//        int node11= gcor->NodeIndex(0);
+//        int node22= gcor->NodeIndex(1);
+//        int node33= gcor->NodeIndex(2);
+//        int node44=  gcor->NodeIndex(3);
+//
+//
+//        indexAreasFaathersAndSons(matid-fInitMatIdForMergeMeshes,2) += volssons;
+//        indexAreasFaathersAndSons(matid-fInitMatIdForMergeMeshes,3) += 1;
+//        indexAreasFaathersAndSons(matid-fInitMatIdForMergeMeshes,4) += gel->Index();
+#ifdef PZDEBUG
         if(MatFinetoCoarseElIndex.find(matid) == MatFinetoCoarseElIndex.end()){
             TPZManVector<REAL,3> xcenter(3);
             TPZGeoElSide gelside(gel);
             gelside.CenterX(xcenter);
             TPZManVector<REAL,3> qsi(dim,0.);
             int64_t coarse_index = 0;
-            if(el == 3039){
+            if(el == 3462){
                 int ok=0;
             }
-            TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim);
+            TPZGeoEl *gelcoarse = coarsemesh->FindElementCaju(xcenter, qsi, coarse_index, dim, matid-fInitMatIdForMergeMeshes+first3DCoarse);
             if(gelcoarse->IsInParametricDomain(qsi,0)) {
                 if(coarse_index-first3DCoarse != matid - fInitMatIdForMergeMeshes) DebugStop();
                 MatFinetoCoarseElIndex[matid] = coarse_index;
@@ -4744,6 +4800,14 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         MatFinetoCoarseElIndex[matid] = matid-fInitMatIdForMergeMeshes+first3DCoarse;
 #endif
     }
+        
+//        for(int cindex =0; cindex<indexAreasFaathersAndSons.Rows(); cindex++){
+//            
+//            std::cout<<"index: "<<indexAreasFaathersAndSons(cindex,0)<<" VolFather: "<<indexAreasFaathersAndSons(cindex,1)<<" VolSons: "<<indexAreasFaathersAndSons(cindex,2)<< " diff: "<<indexAreasFaathersAndSons(cindex,1)-indexAreasFaathersAndSons(cindex,2)<< " nSons: "<< indexAreasFaathersAndSons(cindex,3) << " SonIndex: "<< indexAreasFaathersAndSons(cindex,4) << std::endl;
+//        }
+       
+        
+        
 #ifdef PZDEBUG
 //    for(auto it : MatFinetoCoarseElIndex){
 //        std::cout << "Fine mat id " << it.first << " coarse element index " << it.second << std::endl;
@@ -4908,6 +4972,8 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
     // create the refinement patterns between small element/side and skeleton elements
     // facelist : key : left/right domain
     // second : list of geometric element indexes of (dim-1) face elements
+        
+   
     for (auto it : facelist) {
         if(FineFaceEl.find(it.first) == FineFaceEl.end()) DebugStop();
         int64_t fine_skel = FineFaceEl[it.first]; // change name
@@ -4927,8 +4993,11 @@ void TMRSApproxSpaceGenerator::MergeMeshes(TPZGeoMesh *finemesh, TPZGeoMesh *coa
         }
 //        std::cout << "Skeleton area of el " << fine_skel << " area " << Area << " sum of small " << Sum << std::endl;
 #endif
+       
         TPZGeoMesh gmeshrefpattern;
         TPZRefPatternTools::GenerateGMeshFromElementVec(gelvec,gmeshrefpattern);
+        std::ofstream file("gmeshrefpattern.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(&gmeshrefpattern, file);
         
 //        if(std::abs(diff)<0.0001){
         TPZAutoPointer<TPZRefPattern> refpat = new TPZRefPattern(gmeshrefpattern);

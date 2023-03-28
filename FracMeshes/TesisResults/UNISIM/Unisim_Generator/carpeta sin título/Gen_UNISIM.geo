@@ -1,7 +1,7 @@
 Mesh.Algorithm = 1;
 ht=2500;
 hs=2500;
-divR = 2;
+divR = 4;
 divTheta= 2;
 divLateralLines=2;
 progre = 2.0;

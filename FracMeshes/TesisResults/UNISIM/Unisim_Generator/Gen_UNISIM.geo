@@ -1,13 +1,13 @@
 Mesh.Algorithm = 1;
 ht=2500;
 hs=2500;
-divR = 3;
-divTheta= 3;
+divR = 2;
+divTheta= 2;
 divLateralLines=2;
 progre = 2.0;
 rwells = 50.5;
 h2=100;
-nLayers=3;
+nLayers=1;
 
 Point(1)= {5408.7, 100., 0, ht};
 Point(2)= {4805.66, 204.12, 0, ht};

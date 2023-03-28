@@ -65,6 +65,7 @@ std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcM
 void DeleteBadRestrictions(TPZGeoMesh* gmesh);
 void ModifyBCsForCASE4(TPZGeoMesh* gmesh);
 void ColorMeshCase2(TPZGeoMesh* gmesh);
+void VerifyGeoMesh(TPZGeoMesh* gmesh);
 //TPZGeoMesh * GenerateUnisimMesh();
 // TODO: Delete this enum? (May 2022)
 enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
@@ -513,9 +514,9 @@ void RunProblem(string& filenameBase, const int simcase)
 	aspace.SetGeometry(gmeshfine,gmeshcoarse);
     
     {
-        TPZPersistenceManager::OpenWrite("test.txt");
-        TPZPersistenceManager::WriteToFile(gmeshfine);
-        TPZPersistenceManager::CloseWrite();
+//        TPZPersistenceManager::OpenWrite("test.txt");
+//        TPZPersistenceManager::WriteToFile(gmeshfine);
+//        TPZPersistenceManager::CloseWrite();
     }
     
 //    //forCase1Plots
@@ -1082,6 +1083,8 @@ TPZGeoMesh* generateGMeshWithPhysTagVec(std::string& filename, TPZManVector<std:
     GeometryFine.SetDimNamePhysical(dim_name_and_physical_tagFine);
     gmeshFine = GeometryFine.GeometricGmshMesh(filename,nullptr,false);
     gmeshFine->BuildConnectivity();
+    std::ofstream file("FINE.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmeshFine, file);
     std::cout<<"Dim: "<<gmeshFine->Dimension()<<std::endl;
     std::cout<<"Nels: "<<gmeshFine->NElements()<<std::endl;
     
@@ -1198,8 +1201,9 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     int ncoarse_vol = 0;
     if(needsMergeMeshes){
 
-            gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+//            gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
 
+        gmeshcoarse = GenerateUnisimMesh(3);
         int64_t nelcoarse = gmeshcoarse->NElements();
         for(int64_t el = 0; el<nelcoarse; el++)
         {
@@ -1288,6 +1292,11 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     if (isFracSim) {
         CreateIntersectionElementForEachFrac(gmeshfine,matidtoFractures,fracInitMatId,fracinc,FractureHybridPressureMatId);
     }
+    
+    
+    VerifyGeoMesh(gmeshcoarse);
+    VerifyGeoMesh(gmeshfine);
+    int ok1=1;
 	
 }
 
@@ -2237,6 +2246,88 @@ void ColorMeshCase2(TPZGeoMesh* gmesh){
     std::ofstream file_txt("geometry_case_2_base_aux.txt");
     gmesh->Print(file_txt);
 #endif
+}
+void VerifyGeoMesh(TPZGeoMesh* gmesh){
+    int nels = gmesh->NElements();
+    for (int iel=0; iel< nels; iel++) {
+        
+        TPZGeoEl *gel = gmesh->Element(iel);
+        int dim = gel->Dimension();
+        if (dim!=3) {
+            continue;
+        }
+        TPZFMatrix<Fad<REAL>> gradx(3,3);
+        Fad<REAL> detjac;
+        TPZVec<REAL> qsi(3.0);
+        gel->CenterPoint(gel->NSides()-1, qsi);
+        
+        TPZVec<Fad<REAL>> qsifad(3);
+        qsifad[0]=qsi[0];
+        qsifad[1]=qsi[1];
+        qsifad[2]=qsi[2];
+        gel->GradX(qsifad, gradx);
+        gel->ComputeDetjac(gradx, detjac);
+        if(detjac <0.001){
+            DebugStop();
+        }
+        
+        int nsides = gel->NSides();
+        int nlines = gel->NSides(1);
+        int ncord = gel->NSides(0);
+        int first2DSide = ncord +nlines;
+        for (int iside=first2DSide; iside< nsides-1; iside++) {
+            TPZGeoElSide gelside(gel, iside);
+            TPZGeoElSide neig = gelside.Neighbour();
+            bool found3Dneig = false;
+            bool foundBound = false;
+            int countSameDim = 0;
+            int countDimM1 = 0;
+            
+            while (gelside!=neig) {
+                int dimension = neig.Element()->Dimension();
+                int mat = neig.Element()->MaterialId();
+                if (dimension==3) {
+                    countSameDim++;
+                    found3Dneig=true;
+                }
+                if (mat==3 || mat==4 || mat==5) {
+                    countDimM1++;
+                    foundBound=true;
+                }
+                neig = neig.Neighbour();
+            }
+            
+            //Verify Internal Elements
+            if (found3Dneig && countSameDim!=1) {
+                std::cout<<"3D && +1 Boundary"<<std::endl;
+                std::cout<<"ElIndex: "<<gel->Index()<<" nNeig Dim 3: "<<countSameDim<<std::endl;
+                gelside.Element()->CreateBCGeoEl(iside, 548);
+            }
+            
+            //Verify Internal Elements
+            if (!found3Dneig && !foundBound) {
+                std::cout<<"No3D && No2D"<<std::endl;
+                std::cout<<"ElIndex: "<<gel->Index()<<" nNeig Dim 3: "<<countSameDim<<std::endl;
+                gelside.Element()->CreateBCGeoEl(iside, 549);
+            }
+           
+            //Verify Internal Elements
+            if (foundBound && countDimM1!=1) {
+                std::cout<<"Bound && +1 Boundary"<<std::endl;
+                std::cout<<"ElIndex: "<<gel->Index()<<" nNeig Dim 3: "<<countSameDim<<std::endl;
+                gelside.Element()->CreateBCGeoEl(iside, 550);
+            }
+            
+            //Verify Internal Elements
+            if (!found3Dneig && ! foundBound) {
+                std::cout<<"3D && +1 Boundary"<<std::endl;
+                std::cout<<"ElIndex: "<<gel->Index()<<" nNeig Dim 3: "<<countSameDim<<std::endl;
+                gelside.Element()->CreateBCGeoEl(iside, 551);
+            }
+        }
+    }
+    std::ofstream file("VerifyMesh.vtk");
+    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
 }
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
