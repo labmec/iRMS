@@ -2282,7 +2282,9 @@ void VerifyGeoMesh(TPZGeoMesh* gmesh){
             bool foundBound = false;
             int countSameDim = 0;
             int countDimM1 = 0;
-            
+            if(gel->Index() == 3705){
+                int ok=0;
+            }
             while (gelside!=neig) {
                 int dimension = neig.Element()->Dimension();
                 int mat = neig.Element()->MaterialId();
@@ -2308,7 +2310,9 @@ void VerifyGeoMesh(TPZGeoMesh* gmesh){
             if (!found3Dneig && !foundBound) {
                 std::cout<<"No3D && No2D"<<std::endl;
                 std::cout<<"ElIndex: "<<gel->Index()<<" nNeig Dim 3: "<<countSameDim<<std::endl;
+                std::ofstream file("testlaampara.vtk");
                 gelside.Element()->CreateBCGeoEl(iside, 549);
+                TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
             }
            
             //Verify Internal Elements
