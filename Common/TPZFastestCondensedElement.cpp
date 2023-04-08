@@ -58,7 +58,7 @@ void TPZFastestCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZEleme
     TPZFMatrix<STATE> solvec(fEK.fMat.Rows(),1,0.);
     GetSolutionVector(solvec);
     
-
+//    ef.fMat *=0.0;
     ef.fMat *= -1.0*Glambda;
 //    ef.fMat(nrows-1) = fCompressibiilityRhsTerm;
     

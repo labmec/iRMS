@@ -1299,12 +1299,14 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
                 TPZCompEl *celcondensed = fluxmesh->Element(celindex);
                 TPZFastCondensedElement *fast = dynamic_cast<TPZFastCondensedElement *>(celcondensed);
                  TPZCondensedCompEl *condensed = dynamic_cast<TPZCondensedCompEl * >(celcondensed);
-                if(!fast && !condensed) continue;
+                if(!fast) continue;
+//                if(!fast && !condensed) continue;
                 if (fast) {
                     transport.fMixedCell[count] = fast;
                 }
                 else{
-                     transport.fMixedCell[count] = condensed;
+                    DebugStop();
+//                     transport.fMixedCell[count] = condensed;
                 }
                 
                 int64_t AlgCelIndex = Alg_Cell_Index[gelindex];
@@ -1447,9 +1449,11 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         std::vector<REAL> center(3,0.0);
         TPZManVector<REAL,3> coord(3,0.0);
         gel->X(ximasscent, coord);
-   
+        REAL zcord =coord[2];
         REAL s0_v = 0.0;
-        
+        if(zcord>1.0){
+            s0_v = 1.0;
+        }
         transport.fCellsData.fSaturation[i]=s0_v;
         transport.fCellsData.fSaturationLastState[i]=s0_v;
         
@@ -1572,15 +1576,15 @@ void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
             DebugStop();
         }
 #endif
-//        for (int icell = 0; icell < ncells; icell++)
-//        {
-//            int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
-//            REAL lambda = meshit.fTransport->fCellsData.flambda[cellindex];
-//            meshit.fMixedCell[icell]->SetLambda(lambda);
-//
-//            REAL mixedDensity =meshit.fTransport->fCellsData.fMixedDensity[cellindex];
-//            meshit.fMixedCell[icell]->SetMixedDensity(mixedDensity);
-//
+        for (int icell = 0; icell < ncells; icell++)
+        {
+            int64_t cellindex = meshit.fAlgebraicTransportCellIndex[icell];
+            REAL lambda = meshit.fTransport->fCellsData.flambda[cellindex];
+            meshit.fMixedCell[icell]->SetLambda(lambda);
+
+            REAL mixedDensity =meshit.fTransport->fCellsData.fMixedDensity[cellindex];
+            meshit.fMixedCell[icell]->SetMixedDensity(mixedDensity);
+
 //            REAL porosity = meshit.fTransport->fCellsData.fporosity[cellindex];
 //            REAL dt = meshit.fTransport->fdt;
 //            REAL sw = meshit.fTransport->fCellsData.fSaturation[cellindex];
@@ -1594,11 +1598,11 @@ void TPZAlgebraicDataTransfer::TransferLambdaCoefficients()
 //            REAL rhoWlast =meshit.fTransport->fCellsData.fDensityWaterLastState[cellindex];
 //            REAL rhoOlast =meshit.fTransport->fCellsData.fDensityOilLastState[cellindex];
 //            REAL comptermrhs = (porosity/dt)*((swlast*rhoWlast)+(solast*rhoOlast));
-//
+
 //            meshit.fMixedCell[icell]->SetCompressibiilityTerm(compterm, comptermrhs);
-//
-//
-//        }
+
+
+        }
     }
 }
 void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){

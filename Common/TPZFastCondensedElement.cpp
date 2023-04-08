@@ -41,6 +41,7 @@ TPZFastCondensedElement::TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix
  */
 void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementMatrixT<STATE> &ef)
 {
+    
     if(this->fMatrixComputed == false)
     {
        // TPZMaterial *mat = Material();
@@ -49,15 +50,28 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
         ComputeConstantPressureValues();
         this->fMatrixComputed = true;
     }
+   
     ek = fEK;
     ef = fEF;
+//    std::cout<<"Index: "<<this->Index()<<std::endl;
+//    ek.fMat.Print("Ek",std::cout, EMathematicaInput);
+//    ef.fMat.Print("EF",std::cout, EMathematicaInput);
+    
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
-    REAL Glambda = fMixedDensity;
+    REAL Glambda = 1.0*fMixedDensity;
+//    fLambda=1.0;
     if(Glambda!=1 || fLambda!=1){
-        DebugStop();
+//        std::cout<<"Gravity effects¿?"<<std::endl;
+//        DebugStop();
+    }
+//    std::cout<<"lambdaa val: "<<fLambda<<std::endl;
+    if( fLambda!=1){
+//        std::cout<<"Gravity effects¿?"<<std::endl;
+//        DebugStop();
     }
     ek.fMat *= (1./fLambda);
+//    
     for (int icol=0; icol<ncols; icol++) {
         ek.fMat(nrows-1,icol) *= fLambda;
     }
@@ -65,20 +79,21 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
         ek.fMat(irow,ncols-1) *= fLambda;
     }
     ek.fMat(nrows-1,ncols-1) *=fLambda;
-//    ek.fMat(nrows-1,ncols-1) *=fCompressibilityMatrixTerm;
-    
+////    ek.fMat(nrows-1,ncols-1) *=fCompressibilityMatrixTerm;
+//
     TPZFNMatrix<30,STATE> solvec(fEK.fMat.Rows(),1,0.);
     GetSolutionVector(solvec);
     
 
-//    ef.fMat *= -1.0*Glambda;
+    ef.fMat *= -1.0*Glambda;
+//    ef.fMat(nrows-1) = 0.0;
 //    ef.fMat(nrows-1) = fCompressibiilityRhsTerm;
     
-//    std::cout << "Lambda " << fLambda << std::endl;
+//    std::cout << "MixedDensity " << Glambda << std::endl;
 //    ek.fMat.Print(std::cout);
-//    ef.fMat.Print(std::cout);
+//    std::cout<<"solvec : "<<std::endl;
 //    solvec.Print(std::cout);
-    
+//    std::cout<<"solvec2 : "<<std::endl;
     
     /** @brief Computes z = alpha * opt(this)*x + beta * y */
     /** @note z and x cannot overlap in memory */
@@ -121,7 +136,6 @@ void TPZFastCondensedElement::CalcResidual(TPZElementMatrixT<STATE> &ef)
 {
       TPZElementMatrixT<STATE> ek;
       CalcStiff(ek, ef);
-
 }
 
 

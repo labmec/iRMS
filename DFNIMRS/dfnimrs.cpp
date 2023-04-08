@@ -207,7 +207,8 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
                 break;
             case 20:
-                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
+//                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
+                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
 //                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
                 break;
             case 21:
@@ -627,7 +628,8 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Creating coupled pressure/flow and transport analysis
         TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
         sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
-        sfi_analysis->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
+//        sfi_analysis->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
+        sfi_analysis->Configure(0, UsePardiso_Q, UsingPzSparse);
         if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
         const int n_steps = sim_data.mTNumerics.m_n_steps;
         const REAL dt = sim_data.mTNumerics.m_dt;
@@ -661,35 +663,40 @@ void RunProblem(string& filenameBase, const int simcase)
       
 		// Looping over time steps
         for (int it = 1; it <= n_steps; it++) {
+         
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
+            sfi_analysis->m_mixed_module->AllZero(mixed_operator);
+            sfi_analysis->m_mixed_module->Rhs().Zero();
+            sfi_analysis->m_mixed_module->Solution().Zero();
+            //
             sfi_analysis->RunTimeStep();
-//            aspace.UpdateMemoryFractureGlue(mixed_operator);
-            if(it == 1){
+           
+//            if(it == 1){
                 //sfi_analysis->m_transport_module->fAlgebraicTransport.ColorMeshByCoords();
                 sfi_analysis->PostProcessTimeStep(typeToPPinit);
                 sfi_analysis->PostProcessTimeStep(typeToPPsteps);
-                if(isPostProcessFracDiagnostics){
-                    std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
-                    ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
-                }
-                for (auto& fprop : sim_data.mTFracProperties.m_fracprops) {
-                    const int matid = fprop.first;
-                    const REAL intMassThisFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateAreaById(matid);
-                    fileFracAreaSat << matid << " "<<intMassThisFrac<< std::endl;
-                    
-                }
-               
+//                if(isPostProcessFracDiagnostics){
+//                    std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
+//                    ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
+//                }
+//                for (auto& fprop : sim_data.mTFracProperties.m_fracprops) {
+//                    const int matid = fprop.first;
+//                    const REAL intMassThisFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateAreaById(matid);
+//                    fileFracAreaSat << matid << " "<<intMassThisFrac<< std::endl;
+//
+//                }
+//
                 //if(isFilterZeroNeumann) VerifyIfNeumannIsExactlyZero(4,mixed_operator);
-            }
-            mixed_operator->LoadSolution(mixed_operator->Solution());
+//            }
+//            mixed_operator->LoadSolution(mixed_operator->Solution());
 			
 			// Only post process based on reporting times
 //            if (sim_time >=  current_report_time) {
 				cout << "\n---------------------- SFI Step " << it << " ----------------------" << endl;
                 std::cout << "Simulation time:  " << sim_time << std::endl;
-                mixed_operator->UpdatePreviousState(-1.);
-                sfi_analysis->PostProcessTimeStep(typeToPPsteps);
+//                mixed_operator->UpdatePreviousState(-1.);
+//                sfi_analysis->PostProcessTimeStep(typeToPPsteps);
                 pos++;
                 current_report_time = reporting_times[pos];
 //                REAL InntMassFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMassById(10);
@@ -1014,18 +1021,24 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
 	sim_data.mTGeometry.mSkeletonDiv = 0;
-	sim_data.mTNumerics.m_sfi_tol = 0.0001;
-	sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-	sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+	sim_data.mTNumerics.m_sfi_tol = 1.0e-9;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-9;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-9;
+    sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-10;
+    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-9;
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
+    
+    //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
-	grav[1] = 0.0;//-9.8*(1.0e-6); // hor
+	grav[2] = -0.000098;//-9.8*(1.0e-6); //
+    sim_data.mTFluidProperties.mOilDensityRef = 800.00;
+    sim_data.mTFluidProperties.mWaterDensityRef = 1000.00;
 	sim_data.mTNumerics.m_gravity = grav;
-	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
-	sim_data.mTNumerics.m_max_iter_sfi=1;
-	sim_data.mTNumerics.m_max_iter_mixed=1;
-	sim_data.mTNumerics.m_max_iter_transport=1;
+	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;//glob_n_threads;
+	sim_data.mTNumerics.m_max_iter_sfi=10000;
+	sim_data.mTNumerics.m_max_iter_mixed=1000;
+	sim_data.mTNumerics.m_max_iter_transport=1000;
 	
 	// PostProcess controls
 //	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
@@ -1201,9 +1214,10 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     int ncoarse_vol = 0;
     if(needsMergeMeshes){
 
-//            gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
-
-        gmeshcoarse = GenerateUnisimMesh(3);
+        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+        std::ofstream file("test13.vtk");
+        TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, file);
+//        gmeshcoarse = GenerateUnisimMesh(3);
         int64_t nelcoarse = gmeshcoarse->NElements();
         for(int64_t el = 0; el<nelcoarse; el++)
         {

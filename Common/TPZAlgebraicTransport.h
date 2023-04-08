@@ -192,10 +192,11 @@ public:
     void ContributeResidual(int index, TPZFMatrix<double> &ef);
     
     void ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId=100);
-    void ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef);
+    void ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId);
+    void ContributeInterfaceIHUOutlet(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId);
     
     void ContributeInterfaceResidual(int index, TPZFMatrix<double> &ef, int interfaceID=100);
-    void ContributeInterfaceIHUResidual(int index, TPZFMatrix<double> &ef);
+    void ContributeInterfaceIHUResidual(int index, TPZFMatrix<double> &ef, int interfaceId);
     
     void ContributeBCInletInterface(int index,TPZFMatrix<double> &ef, int InletID = -2);
     void ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int OutId=-4);

@@ -276,8 +276,8 @@ public:
             mWaterViscosity=1.0;
             mOilDensityRef = 1000;
             mWaterDensityRef = 1000;
-            mWaterCompressibility = 1.0e-8;
-            mOilCompressibility = 1.0e-7;
+            mWaterCompressibility = 0.0;//compresibilidade
+            mOilCompressibility = 0.0;//compresibilidade
             mReferencePressure = 1.013e5;
             mOilDensityF = 0;
             mWaterDensityF =0;

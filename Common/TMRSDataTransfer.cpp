@@ -62,6 +62,7 @@ int TMRSDataTransfer::ClassId() const{
 }
 void TMRSDataTransfer::TFluidProperties::CreateLinearDensityFunction(){
     mWaterDensityF = [this](REAL &p){
+       
         REAL dp = p - mReferencePressure;
         REAL rho = mWaterDensityRef*(1+ mWaterCompressibility*dp);
         REAL drho_dp = mWaterCompressibility*mWaterDensityRef;

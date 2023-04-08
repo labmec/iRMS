@@ -216,7 +216,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
 
     //Linear problem Benchmark
    
-    if(Norm(Rhs()) < 1.0e-4){
+    if(Norm(Rhs()) < 1.0e-8){
         std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
         std::cout << "Number of iterations = " << 1 << std::endl;
         std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
@@ -226,9 +226,9 @@ void TMRSTransportAnalysis::RunTimeStep(){
        
         NewtonIteration();
         dx = Solution();
-//        std::cout<<"Sol Correct: "<<std::endl;
         x += dx;
-        
+//        std::cout<<"Sol Correct: "<<std::endl;
+//        std::cout<<x<<std::endl;
 
         LoadSolution(x);
 //        cmesh->LoadSolutionFromMultiPhysics();
@@ -259,7 +259,6 @@ void TMRSTransportAnalysis::RunTimeStep(){
         }
 
     }
-    
 }
 
 void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
@@ -285,8 +284,8 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     NewtonIteration();
     x += Solution();
     
-//    std::cout<<"SOLUTION: "<<std::endl;
-//    std::cout<<x<<std::endl;
+    std::cout<<"SOLUTION_Initial Guess: "<<std::endl;
+    std::cout<<x<<std::endl;
     LoadSolution(x);
     if(cmesh){
         cmesh->LoadSolutionFromMultiPhysics();

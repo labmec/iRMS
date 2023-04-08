@@ -296,22 +296,43 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     // Term related to fluid mobility
     REAL lambda_v = 1.0;
             
+    
+   
     // kappa_inv_q = K^-1 * q
     // Used for non linear problems
+    
+    std::vector<REAL> m_gravity(3,0.0);
+    m_gravity[2] =  -0.000098;
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
             kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
         }
     }
-    
+   
     for (int iq = 0; iq < nphi_q; iq++) {
-        
+        REAL g_dot_phi_q_i=0.0;
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
+        
         for (int i = 0; i < 3; i++) {
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
+            g_dot_phi_q_i           += m_gravity[i]*phi_qs(i,iq);
         }
         
+        //
+//        STATE kappa_inv_q_dot_phi_q_i = 0.0;
+//        STATE g_dot_phi_q_i = 0.0;
+//        for (int i = 0; i < 3; i++) {
+//            phi_q_i(i,0) = phi_qs(s_i,0) * datavec[qb].fDeformedDirections(i,v_i);
+//            kappa_inv_q_dot_phi_q_i        += kappa_inv_q(i,0)*phi_q_i(i,0);
+//            g_dot_phi_q_i                  += m_gravity[i]*phi_q_i(i,0);
+//        }
+        
+//        ef(iq + first_q) += weight * ( kappa_inv_q_dot_phi_q_i - p * div_phi(iq,0));
+//        ef(iq + first_q) += -1.0 * weight * (  g_dot_phi_q_i );
+        //
+        
         ef(iq + first_q) += weight * ( - kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms a and b in docs/Formulation.lyx
+        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
         
         for (int jq = 0; jq < nphi_q; jq++) {
             kappa_inv_phi_q_j.Zero();

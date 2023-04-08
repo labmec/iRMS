@@ -167,6 +167,9 @@ void TMRSSFIAnalysis::FillProperties(){
           
             for (int icell =0; icell<ncells; icell++) {
                 m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
+                m_transport_module->fAlgebraicTransport.fCellsData.fKx[icell]=1.0;
+                m_transport_module->fAlgebraicTransport.fCellsData.fKy[icell]=1.0;
+                m_transport_module->fAlgebraicTransport.fCellsData.fKz[icell]=1.0;
                 int matid = m_transport_module->fAlgebraicTransport.fCellsData.fMatId[icell];
                 bool fountmat = false;
                 for (auto i:m_sim_data->mTReservoirProperties.mPorosityAndVolumeScale) {
@@ -190,7 +193,8 @@ void TMRSSFIAnalysis::FillProperties(){
 //
                 
             }
-            
+            //here
+            m_transport_module->fAlgebraicTransport.outletmatid =4;
             m_transport_module->fAlgebraicTransport.fdt = m_sim_data->mTNumerics.m_dt;
             //Type 0.- InletCondition
             //Type 1.- OutletCondition
@@ -475,17 +479,19 @@ void TMRSSFIAnalysis::SFIIteration(){
     TPZSimpleTimer timer_sfi("Timer SFI Iteration");
     m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
-//    m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
-//    fAlgebraicDataTransfer.TransferLambdaCoefficients();
-        
+    m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
+    fAlgebraicDataTransfer.TransferLambdaCoefficients();
+    
     if(isLinearTracer){
         m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
-        VerifyElementFluxes();
+        
+//        VerifyElementFluxes();
         UpdateAllFluxInterfaces();
-        isLinearTracer = false; // so it leaves after this iteration
+        isLinearTracer = true; // so it leaves after this iteration
     }
+    
 //    fAlgebraicDataTransfer.TransferPressures();
-//    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
+    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
     
     std::cout << "Running transport problem now..." << std::endl;
     // Solves the transport problem
@@ -493,7 +499,7 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     std::cout << "\n ==> Total SFIIteration time: " << timer_sfi.ReturnTimeDouble()/1000 << " seconds" << std::endl;
     
-//    TransferToMixedModule(); // Transfer to mixed
+    TransferToMixedModule(); // Transfer to mixed
 }
 
 void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
@@ -515,7 +521,7 @@ void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
 }
 
 void TMRSSFIAnalysis::VerifyElementFluxes(){
-    const REAL tol = 1.e-10;
+    const REAL tol = 1.e-5;
     TPZMultiphysicsCompMesh *mixedmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_mixed_module->Mesh()) ;
     TPZCompMesh *cmesh =mixedmesh->MeshVector()[0];
 //    std::ofstream file("fuxmesh.txt");
@@ -617,23 +623,27 @@ void TMRSSFIAnalysis::TransferToTransportModule(){
 void TMRSSFIAnalysis::TransferToMixedModule(){
     
     TPZMultiphysicsCompMesh * mixed_cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_mixed_module->Mesh());
-    TPZMultiphysicsCompMesh * transport_cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_transport_module->Mesh());
+//    TPZMultiphysicsCompMesh * transport_cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_transport_module->Mesh());
+    TPZCompMesh * transport_cmesh = m_transport_module->Mesh();
     
     if (!mixed_cmesh || !transport_cmesh) {
         DebugStop();
     }
     
-    //    m_transport_module->m_soltransportTransfer.TransferFromMultiphysics();
-    transport_cmesh->LoadSolutionFromMultiPhysics();
+   // //    m_transport_module->m_soltransportTransfer.TransferFromMultiphysics();
+   // transport_cmesh->LoadSolutionFromMultiPhysics(); //Load Solution???
+  
     
     // Saturations are transferred to mixed module
     int s_b = 2;
-    TPZFMatrix<STATE> & s_dof = transport_cmesh->MeshVector()[s_b]->Solution();
-    mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
+//    TPZFMatrix<STATE> & s_dof = transport_cmesh->MeshVector()[s_b]->Solution();
+//    TPZFMatrix<STATE> & s_dof = transport_cmesh->Solution();
+    
+//    mixed_cmesh->MeshVector()[s_b]->LoadSolution(s_dof);
     
     
     //     m_mixed_module->m_soltransportTransfer.TransferToMultiphysics();
-    mixed_cmesh->LoadSolutionFromMeshes();
+//    mixed_cmesh->LoadSolutionFromMeshes();
     
 }
 

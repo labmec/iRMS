@@ -98,24 +98,25 @@ void TMRSMixedAnalysis::RunTimeStep(){
     REAL corr_norm = 1.0;
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_mixed;
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_mixed;
-    
     TPZFMatrix<STATE> dx,x(Solution());
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
+        dx = Solution();
+        corr_norm = Norm(dx);
+        res_norm = Norm(Rhs());
         NewtonIteration();
+       
         dx = Solution();
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
         x +=dx;
-//        cmesh->UpdatePreviousState(-1.);
         fsoltransfer.TransferFromMultiphysics();
-
+        cmesh->UpdatePreviousState(1.0);
+        
         Assemble();
-      
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
         
-
 #ifdef PZDEBUG
         {
             if(std::isnan(corr_norm) || std::isnan(res_norm))
@@ -131,6 +132,12 @@ void TMRSMixedAnalysis::RunTimeStep(){
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             break;
+        }
+        else if (m_k_iteration == n) {
+            std::cout << "Mixed operator: " << std::endl;
+            std::cout<<"Mixed not converge =( "<<std::endl;
+            std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
+            std::cout << "Number of iterations = " << m_k_iteration << std::endl;
         }
     }
 }
@@ -148,11 +155,14 @@ void TMRSMixedAnalysis::NewtonIteration(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-//            int numthreads = 0;
+            int numthreads = 0;
 //                sub->SetAnalysisSparse(0); sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
-//                TPZSymetricSpStructMatrixEigen matrix(sub);
-//                //matrix.SetNumThreads(n_threads);
-//                sub->Analysis()->SetStructuralMatrix(matrix);
+                TPZSSpStructMatrix<STATE> matrix(sub);
+                matrix.SetNumThreads(numthreads);
+                sub->Analysis()->SetStructuralMatrix(matrix);
+//                TPZStepSolver<STATE> step;
+//                step.SetDirect(ELDLt);
+//                sub->Analysis()->SetSolver(step);
             }
         }
         mIsFirstAssembleQ=false;
@@ -212,11 +222,12 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
     }
     else{
 #ifdef USENEWVTK
-        const std::string plotfile = file.substr(0, file.find(".")); //sem o .vtk no final
+        std::string plotfile = file.substr(0, file.find(".")); //sem o .vtk no final
         for (auto nm : vecnames) {
             scalnames.Push(nm);
         }
-        
+        plotfile = plotfile+std::to_string(fpostprocessindex);
+        fpostprocessindex++;
         auto vtk = TPZVTKGenerator(fCompMesh, scalnames, plotfile, vtkRes, dimToPost);
         vtk.SetNThreads(8);
         vtk.Do();
@@ -328,4 +339,34 @@ void TMRSMixedAnalysis::VerifyElementFluxes(){
 		}
 	}
     std::cout << "\n\n===> Nice! All flux elements satisfy conservation up to tolerance " << tol << std::endl;
+}
+void TMRSMixedAnalysis::AllZero(TPZCompMesh *cmesh){
+    
+    std::ofstream filetoprint("malha_antes.txt");
+    cmesh->Print(filetoprint);
+    
+    cmesh->Solution().Zero();
+    cmesh->SolutionN().Zero();
+    int count=0;
+    TPZMultiphysicsCompMesh *multcmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(cmesh);
+    if(multcmesh){
+        multcmesh->Solution().Zero();
+
+        multcmesh->ComputeNodElCon();
+        multcmesh->CleanUpUnconnectedNodes();
+        fsoltransfer.TransferFromMultiphysics();
+        for (auto atomicmesh: multcmesh->MeshVector()) {
+            std::cout<<count<<std::endl;
+            count++;
+            atomicmesh->Solution().Zero();
+        }
+    }
+    int nels = cmesh->NElements();
+    for (int iel=0; iel<nels; iel++) {
+        TPZCompEl *cel = cmesh->Element(iel);
+        if(!cel) continue;
+        TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *> (cel);
+        if(!sub) continue;
+        AllZero(sub);
+    }
 }

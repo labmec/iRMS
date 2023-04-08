@@ -67,7 +67,7 @@ void TPZAnalysisAuxEigen::Assemble(){
     int internal_faces_id3 = 103;
     int outletfrac_id = 104;
     int inlet_faces_id = fAlgebraicTransport->inletmatid;
-    int outlet_faces_id =fAlgebraicTransport->outletmatid;
+    int outlet_faces_id = fAlgebraicTransport->outletmatid;
     
     int n_internal_faces = fAlgebraicTransport->fInterfaceData[internal_faces_id].fFluxSign.size();
     int n_internal_faces1 = fAlgebraicTransport->fInterfaceData[internal_faces_id1].fFluxSign.size();

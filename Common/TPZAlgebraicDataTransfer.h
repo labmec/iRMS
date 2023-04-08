@@ -101,7 +101,7 @@ public:
         std::vector<int64_t> fEqNum;
         
         TPZAlgebraicTransport *fTransport;
-        std::vector<TPZCondensedCompEl *> fMixedCell;
+        std::vector<TPZFastCondensedElement *> fMixedCell;
 
         TransportToMixedCorrespondence() : fMixedMesh(0), fAlgebraicTransportCellIndex(0), fEqNum(0),fTransport(0) {}
 

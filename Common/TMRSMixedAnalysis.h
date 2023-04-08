@@ -30,6 +30,7 @@ public:
     /// Data transfer object
     TMRSDataTransfer * m_sim_data;
     TPZMFSolutionTransfer fsoltransfer;
+    int fpostprocessindex=0;
     
     /// Number of iterations
     int m_k_iteration;
@@ -77,6 +78,8 @@ public:
 	
 	/// Verifies if the sum of the fluxes over all faces of an element is zero
 	void VerifyElementFluxes();
+    
+    void AllZero(TPZCompMesh *cmesh);
 };
 
 #endif /* TMRSMixedAnalysis_h */
