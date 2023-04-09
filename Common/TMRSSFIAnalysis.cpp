@@ -419,6 +419,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
         
         SFIIteration();
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
+        
         m_x_transport = m_transport_module->Solution();
         if(Norm(m_transport_module->Solution())==0){
             error_rel_transport =Norm(m_x_transport - m_transport_module->Solution());
@@ -426,20 +427,23 @@ void TMRSSFIAnalysis::RunTimeStep(){
         error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         }
         stop_criterion_Q = error_rel_transport < eps_tol; // Stop by saturation variation
-        if (stop_criterion_Q && m_k_iteration >= 1) {
+        if (stop_criterion_Q && m_k_iteration > 1) {
             std::cout << "SFI converged " << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
-//            std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
-//            std::cout << "Transport problem variation = " << error_rel_transport << std::endl;
+            std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
+            std::cout << "Transport problem variation = " << error_rel_transport << std::endl;
             m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
+//            m_mixed_module->PostProcessTimeStep();
             break;
         }
-     
-       
-        
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
-        break;
+        
+        m_mixed_module->AllZero(m_mixed_module->Mesh());
+        m_mixed_module->Mesh()->UpdatePreviousState(1.0);
+        m_mixed_module->fsoltransfer.TransferFromMultiphysics();
+//        m_mixed_module->PostProcessTimeStep();
+//        break;
     }
     
     if (!stop_criterion_Q) {
@@ -484,8 +488,8 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     if(isLinearTracer){
         m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
-        
-//        VerifyElementFluxes();
+//        m_mixed_module->PostProcessTimeStep();
+        VerifyElementFluxes();
         UpdateAllFluxInterfaces();
         isLinearTracer = true; // so it leaves after this iteration
     }
@@ -521,7 +525,7 @@ void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
 }
 
 void TMRSSFIAnalysis::VerifyElementFluxes(){
-    const REAL tol = 1.e-5;
+    const REAL tol = 1.e-7;
     TPZMultiphysicsCompMesh *mixedmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_mixed_module->Mesh()) ;
     TPZCompMesh *cmesh =mixedmesh->MeshVector()[0];
 //    std::ofstream file("fuxmesh.txt");

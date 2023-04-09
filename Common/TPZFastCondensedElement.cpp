@@ -60,7 +60,8 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
     REAL Glambda = 1.0*fMixedDensity;
-//    fLambda=1.0;
+    std::cout<<"fLambda: "<<fLambda<<" "<<std::endl;
+//    fLambda = 1.0;
     if(Glambda!=1 || fLambda!=1){
 //        std::cout<<"Gravity effects¿?"<<std::endl;
 //        DebugStop();
@@ -70,7 +71,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
 //        std::cout<<"Gravity effects¿?"<<std::endl;
 //        DebugStop();
     }
-    ek.fMat *= (1./fLambda);
+    ek.fMat *= (1.0/fLambda);
 //    
     for (int icol=0; icol<ncols; icol++) {
         ek.fMat(nrows-1,icol) *= fLambda;

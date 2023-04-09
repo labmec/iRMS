@@ -1037,7 +1037,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = 0;//glob_n_threads;
 	sim_data.mTNumerics.m_max_iter_sfi=10000;
-	sim_data.mTNumerics.m_max_iter_mixed=1000;
+	sim_data.mTNumerics.m_max_iter_mixed=100;
 	sim_data.mTNumerics.m_max_iter_transport=1000;
 	
 	// PostProcess controls

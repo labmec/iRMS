@@ -110,10 +110,13 @@ void TMRSMixedAnalysis::RunTimeStep(){
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
         x +=dx;
-        fsoltransfer.TransferFromMultiphysics();
+//        LoadSolution(x);
         cmesh->UpdatePreviousState(1.0);
+        fsoltransfer.TransferFromMultiphysics();
+//        this->PostProcessTimeStep();
         
         Assemble();
+//        Solve();
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
         
