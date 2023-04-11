@@ -167,15 +167,14 @@ void TMRSSFIAnalysis::FillProperties(){
           
             for (int icell =0; icell<ncells; icell++) {
                 m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
-                m_transport_module->fAlgebraicTransport.fCellsData.fKx[icell]=1.0;
-                m_transport_module->fAlgebraicTransport.fCellsData.fKy[icell]=1.0;
-                m_transport_module->fAlgebraicTransport.fCellsData.fKz[icell]=1.0;
+               
                 int matid = m_transport_module->fAlgebraicTransport.fCellsData.fMatId[icell];
                 bool fountmat = false;
                 for (auto i:m_sim_data->mTReservoirProperties.mPorosityAndVolumeScale) {
                     int id = std::get<0>(i);
                     REAL porosity =std::get<1>(i);
                     REAL volfactor =std::get<2>(i);
+                  
                     if(matid>= 300){
                         int ok=0;
                     }
@@ -183,6 +182,26 @@ void TMRSSFIAnalysis::FillProperties(){
                         m_transport_module->fAlgebraicTransport.fCellsData.fporosity[icell] = porosity;
                         m_transport_module->fAlgebraicTransport.fCellsData.fVolumefactor[icell] = volfactor;
                         m_transport_module->fAlgebraicTransport.fCellsData.fVolume[icell] *= volfactor;
+                        
+                        //volumetric
+                        
+                        //fracture
+                        bool isfrac = m_sim_data->mTFracProperties.m_fracprops.find(matid) != m_sim_data->mTFracProperties.m_fracprops.end();
+                        REAL valperm=1.0;
+                        if(isfrac){
+                            auto fracprop = m_sim_data->mTFracProperties.m_fracprops[matid];
+                            valperm = fracprop.m_perm;
+                            
+                        }
+                        else{
+                            auto kappa = m_sim_data->mTReservoirProperties.m_permeabilitiesbyId;
+                            valperm = kappa[matid];
+                        }
+                        m_transport_module->fAlgebraicTransport.fCellsData.fKx[icell] = valperm;
+                        m_transport_module->fAlgebraicTransport.fCellsData.fKy[icell] = valperm;
+                        std::cout<<"Warning: fkz"<<std::endl;
+                        m_transport_module->fAlgebraicTransport.fCellsData.fKz[icell] = 1.0e-6;
+                    
                         fountmat =true;
                         break;
                     }
@@ -418,9 +437,10 @@ void TMRSSFIAnalysis::RunTimeStep(){
     for (m_k_iteration = 1; m_k_iteration <= n_iterations; m_k_iteration++) {
         
         SFIIteration();
+        m_mixed_module->VerifyElementFluxes();
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
         
-        m_x_transport = m_transport_module->Solution();
+//        m_x_transport = m_transport_module->Solution();
         if(Norm(m_transport_module->Solution())==0){
             error_rel_transport =Norm(m_x_transport - m_transport_module->Solution());
         }else{
@@ -455,7 +475,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
         m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
         return;
     }
-    
+    std::cout<<"SFI it: " <<m_k_iteration<<std::endl;
     
 }
 
@@ -488,8 +508,8 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     if(isLinearTracer){
         m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
-//        m_mixed_module->PostProcessTimeStep();
-        VerifyElementFluxes();
+//      m_mixed_module->PostProcessTimeStep();
+        
         UpdateAllFluxInterfaces();
         isLinearTracer = true; // so it leaves after this iteration
     }

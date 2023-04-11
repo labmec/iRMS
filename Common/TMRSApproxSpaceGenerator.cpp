@@ -3866,6 +3866,9 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
                 for (int j = 0; j < 3; j++) {
                     mem.m_kappa(j,j) = kappa;
                     mem.m_kappa_inv(j,j) = 1.0/kappa;
+                    if(i==2){
+                        mem.m_kappa_inv(j,j) = 1.0/1.0e-6;
+                    }
                 }
             }
         }

@@ -63,36 +63,36 @@ int TMRSDataTransfer::ClassId() const{
 void TMRSDataTransfer::TFluidProperties::CreateLinearDensityFunction(){
     mWaterDensityF = [this](REAL &p){
        
-        REAL dp = p - mReferencePressure;
-        REAL rho = mWaterDensityRef*(1+ mWaterCompressibility*dp);
-        REAL drho_dp = mWaterCompressibility*mWaterDensityRef;
+        REAL dp =0.0;// p - mReferencePressure;
+        REAL rho = mWaterDensityRef;//*(1+ mWaterCompressibility*dp);
+        REAL drho_dp = 0.0;//mWaterCompressibility*mWaterDensityRef;
         std::tuple<REAL, REAL> valderiv(rho, drho_dp);
         return valderiv;
     };
     mOilDensityF = [this](REAL &p){
-        REAL dp = p - mReferencePressure;
-        REAL rho = mOilDensityRef*(1+ mOilCompressibility*dp);
-        REAL drho_dp = mOilCompressibility*mOilDensityRef;
+        REAL dp =0.0;// p - mReferencePressure;
+        REAL rho = mOilDensityRef;//*(1+ mOilCompressibility*dp);
+        REAL drho_dp = 0.0;//mOilCompressibility*mOilDensityRef;
         std::tuple<REAL, REAL> valderiv(rho, drho_dp);
         return valderiv;
     };
 }
 void TMRSDataTransfer::TFluidProperties::CreateExponentialDensityFunction(){
     mWaterDensityF = [this](REAL &p){
-        REAL dp = p - mReferencePressure;
-        REAL rho = mWaterDensityRef * std::exp(std::exp( (mWaterCompressibility*(dp))));
+        REAL dp = 0.0;//p - mReferencePressure;
+        REAL rho = mWaterDensityRef;// * std::exp(std::exp( (mWaterCompressibility*(dp))));
         
-        REAL drho_dp = mWaterCompressibility*mWaterDensityRef * std::exp(std::exp( (mWaterCompressibility*(dp))));
+        REAL drho_dp = 0.0;// mWaterCompressibility*mWaterDensityRef * std::exp(std::exp( (mWaterCompressibility*(dp))));
         std::tuple<REAL, REAL> valderiv(rho, drho_dp);
         return valderiv;
         
     };
     
     mOilDensityF = [this](REAL &p){
-        REAL dp = p - mReferencePressure;
-        REAL rho = mOilDensityRef * std::exp(((mOilCompressibility*(dp))));
+        REAL dp = 0.0;// p - mReferencePressure;
+        REAL rho = mOilDensityRef;// * std::exp(((mOilCompressibility*(dp))));
         
-        REAL drho_dp = mOilCompressibility* mOilDensityRef * std::exp(((mOilCompressibility*(dp))));
+        REAL drho_dp = 0.0;//mOilCompressibility* mOilDensityRef * std::exp(((mOilCompressibility*(dp))));
         std::tuple<REAL, REAL> valderiv(rho, drho_dp);
         return valderiv;
     };

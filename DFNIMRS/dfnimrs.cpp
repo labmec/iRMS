@@ -27,7 +27,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // ----- Global vars -----
-const int glob_n_threads = 8;
+const int glob_n_threads = 16;
 
 // ----- End of namespaces -----
 
@@ -628,8 +628,8 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Creating coupled pressure/flow and transport analysis
         TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
         sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
-//        sfi_analysis->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
-        sfi_analysis->Configure(0, UsePardiso_Q, UsingPzSparse);
+        sfi_analysis->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
+//        sfi_analysis->Configure(0, UsePardiso_Q, UsingPzSparse);
         if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
         const int n_steps = sim_data.mTNumerics.m_n_steps;
         const REAL dt = sim_data.mTNumerics.m_dt;
@@ -666,6 +666,8 @@ void RunProblem(string& filenameBase, const int simcase)
          
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
+           
+//            FilterZeroNeumann(outputFolder,sim_data,sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
             sfi_analysis->m_mixed_module->AllZero(mixed_operator);
             sfi_analysis->m_mixed_module->Rhs().Zero();
             sfi_analysis->m_mixed_module->Solution().Zero();
@@ -997,11 +999,13 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     }
     
     // Transport properties
+    REAL day = 86400.00;
     if(input.find("RunWithTransport") != input.end()){
         sim_data.mTNumerics.m_run_with_transport = input["RunWithTransport"];
         if(sim_data.mTNumerics.m_run_with_transport){
             if(input.find("DeltaT") == input.end()) DebugStop();
             sim_data.mTNumerics.m_dt = input["DeltaT"];
+            sim_data.mTNumerics.m_dt *= day;
             if(input.find("NSteps") == input.end()) DebugStop();
             sim_data.mTNumerics.m_n_steps = input["NSteps"];
         }
@@ -1021,24 +1025,26 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
 	sim_data.mTGeometry.mSkeletonDiv = 0;
-	sim_data.mTNumerics.m_sfi_tol = 1.0e-9;
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-9;
-    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-9;
+	sim_data.mTNumerics.m_sfi_tol = 1.0e-8;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-8;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-8;
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-10;
     sim_data.mTNumerics.m_res_tol_mixed = 1.0e-9;
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
-	grav[2] = -0.000098;//-9.8*(1.0e-6); //
+	grav[2] = -9.8*1.0e-6; //
     sim_data.mTFluidProperties.mOilDensityRef = 800.00;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.00;
+    sim_data.mTFluidProperties.mOilViscosity=0.001;
+    sim_data.mTFluidProperties.mWaterViscosity=0.001;
 	sim_data.mTNumerics.m_gravity = grav;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
-    sim_data.mTNumerics.m_nThreadsMixedProblem = 0;//glob_n_threads;
-	sim_data.mTNumerics.m_max_iter_sfi=10000;
-	sim_data.mTNumerics.m_max_iter_mixed=100;
-	sim_data.mTNumerics.m_max_iter_transport=1000;
+    sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
+	sim_data.mTNumerics.m_max_iter_sfi=1000;
+	sim_data.mTNumerics.m_max_iter_mixed=3;
+	sim_data.mTNumerics.m_max_iter_transport=500;
 	
 	// PostProcess controls
 //	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
@@ -2281,9 +2287,9 @@ void VerifyGeoMesh(TPZGeoMesh* gmesh){
         qsifad[2]=qsi[2];
         gel->GradX(qsifad, gradx);
         gel->ComputeDetjac(gradx, detjac);
-        if(detjac <0.001){
-            DebugStop();
-        }
+//        if(detjac <0.001){
+//            DebugStop();
+//        }
         
         int nsides = gel->NSides();
         int nlines = gel->NSides(1);

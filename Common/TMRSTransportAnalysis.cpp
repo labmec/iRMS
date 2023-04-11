@@ -209,14 +209,14 @@ void TMRSTransportAnalysis::RunTimeStep(){
     correction.Zero();
     
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-//    bool QN_converge_Q = QuasiNewtonSteps(x,20); // assuming linear operator (tangent)
-//    if(QN_converge_Q){
-//        return;
-//    }
+    bool QN_converge_Q = QuasiNewtonSteps(x,2); // assuming linear operator (tangent)
+    if(QN_converge_Q){
+        return;
+    }
 
     //Linear problem Benchmark
    
-    if(Norm(Rhs()) < 1.0e-8){
+    if(Norm(Rhs()) < res_tol){
         std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
         std::cout << "Number of iterations = " << 1 << std::endl;
         std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
@@ -257,7 +257,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
             std::cout << "residue norm = " << res_norm << std::endl;
             break;
         }
-
+        std::cout<<"transport it: "<<m_k_iteration<<std::endl;
     }
 }
 
@@ -284,8 +284,8 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     NewtonIteration();
     x += Solution();
     
-    std::cout<<"SOLUTION_Initial Guess: "<<std::endl;
-    std::cout<<x<<std::endl;
+//    std::cout<<"SOLUTION_Initial Guess: "<<std::endl;
+//    std::cout<<x<<std::endl;
     LoadSolution(x);
     if(cmesh){
         cmesh->LoadSolutionFromMultiPhysics();
@@ -302,8 +302,8 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
 }
 
 bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
-    TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
-    if (!cmesh) {
+   
+    if (!Mesh()) {
         DebugStop();
     }
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
@@ -324,7 +324,7 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         }
 #endif
         LoadSolution(x);
-        cmesh->LoadSolutionFromMultiPhysics();
+//        cmesh->LoadSolutionFromMultiPhysics();
         
         
         if (m_sim_data->mTNumerics.m_ISLinearKrModelQ) {

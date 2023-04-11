@@ -18,6 +18,7 @@
 #include "TPZMFSolutionTransfer.h"
 #include "TPZSymetricSpStructMatrixEigen.h"
 #include "TPZSSpMatrixEigen.h"
+// Uses the new vtk function developed by Fran
 
 class TMRSMixedAnalysis : public TPZLinearAnalysis {
     
@@ -31,7 +32,6 @@ public:
     TMRSDataTransfer * m_sim_data;
     TPZMFSolutionTransfer fsoltransfer;
     int fpostprocessindex=0;
-    
     /// Number of iterations
     int m_k_iteration;
     
@@ -80,6 +80,8 @@ public:
 	void VerifyElementFluxes();
     
     void AllZero(TPZCompMesh *cmesh);
+    
+    void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer* sim_data, TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh);
 };
 
 #endif /* TMRSMixedAnalysis_h */

@@ -1449,9 +1449,14 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         std::vector<REAL> center(3,0.0);
         TPZManVector<REAL,3> coord(3,0.0);
         gel->X(ximasscent, coord);
+        REAL xcord =coord[0];
+        REAL ycord =coord[1];
         REAL zcord =coord[2];
         REAL s0_v = 0.0;
-        if(zcord>1.0){
+//        if(zcord>5.0 && zcord<8.75  && xcord>2.0 && xcord<8.6 && ycord>2.0 && ycord<8.0){
+//            s0_v = 1.0;
+//        }
+        if(zcord>5.0){
             s0_v = 1.0;
         }
         transport.fCellsData.fSaturation[i]=s0_v;

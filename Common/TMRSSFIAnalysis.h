@@ -111,6 +111,8 @@ public:
     // transfer the permeability and lambda to the element solution for post processing
     void SetMixedMeshElementSolution(TPZCompMesh *cmesh);
     
+    
+    
 };
 
 #endif /* TMRSSFIAnalysis_h */

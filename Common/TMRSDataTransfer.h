@@ -203,8 +203,8 @@ public:
         
         /** @brief Default constructor */
         TPetroPhysics(){
-            mOilViscosity=1.0;
-            mWaterViscosity=1.0;
+            mOilViscosity=0.001;
+            mWaterViscosity=0.001;
             CreateLinearKrModel();
             mLayer_Krw_RelPerModel.clear();
             mLayer_Kro_RelPerModel.clear();

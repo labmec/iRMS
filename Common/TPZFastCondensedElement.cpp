@@ -50,7 +50,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
         ComputeConstantPressureValues();
         this->fMatrixComputed = true;
     }
-   
+//    std::cout<<"Soy fast condensed: "<<this->Index()<<" matid: "<<this->Reference()->MaterialId()<<std::endl;
     ek = fEK;
     ef = fEF;
 //    std::cout<<"Index: "<<this->Index()<<std::endl;
@@ -60,7 +60,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
     REAL Glambda = 1.0*fMixedDensity;
-    std::cout<<"fLambda: "<<fLambda<<" "<<std::endl;
+//    std::cout<<"fLambda: "<<fLambda<<" "<<std::endl;
 //    fLambda = 1.0;
     if(Glambda!=1 || fLambda!=1){
 //        std::cout<<"Gravity effects¿?"<<std::endl;
