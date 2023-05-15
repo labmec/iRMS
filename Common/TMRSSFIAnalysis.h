@@ -41,6 +41,8 @@ public:
     
     /// Number of iterations
     int m_k_iteration = 0;
+    REAL fcurrentError=1.0;
+    std::ofstream *freport_data=nullptr;
     
     /// Mixed analysis for managing pressure/flux problem
     TMRSMixedAnalysis * m_mixed_module;

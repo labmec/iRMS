@@ -23,7 +23,7 @@
 #include "TPZSpStructMatrix_Eigen.h"
 #include "TPZSpMatrixEigen.h"
 TMRSTransportAnalysis::TMRSTransportAnalysis(){
-    
+    ftransport_report_data = new std::ofstream("Report_Transport.txt");
 }
 
 TMRSTransportAnalysis::~TMRSTransportAnalysis(){
@@ -36,6 +36,7 @@ TMRSTransportAnalysis::TMRSTransportAnalysis(TPZCompMesh * cmesh_mult, bool must
     if(cmesh){
         m_soltransportTransfer.BuildTransferData(cmesh_mult);
     }
+    ftransport_report_data = new std::ofstream("Report_Transport.txt");
 }
 
 void TMRSTransportAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
@@ -208,9 +209,11 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
     
+    
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
     bool QN_converge_Q = QuasiNewtonSteps(x,2); // assuming linear operator (tangent)
     if(QN_converge_Q){
+        
         return;
     }
 
@@ -239,7 +242,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
         AssembleResidual();
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
-        
+        REAL normsol =Norm(Solution());
 #ifdef PZDEBUG
         {
             if(std::isnan(corr_norm) || std::isnan(res_norm))
@@ -248,6 +251,10 @@ void TMRSTransportAnalysis::RunTimeStep(){
             }
         }
 #endif
+        
+        //
+        (*ftransport_report_data) <<"   M         0           "<<"0          "<<m_k_iteration<<"       "<<res_norm<<"       "<<corr_norm<<std::endl;
+        //
         std::cout << "res_norm " << res_norm << " corr_norm " << corr_norm << std::endl;
         stop_criterion_Q = (res_norm < res_tol);
         stop_criterion_corr_Q = (corr_norm < corr_tol);
@@ -297,6 +304,11 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     AssembleResidual();
     REAL res_norm = Norm(Rhs());
+    REAL normsol = Norm(Solution());
+   
+    (*ftransport_report_data) <<"      "<< "1 "<<"       "<< "   0   "<<"       0       "<<res_norm<<"        "<<normsol<<std::endl;
+    
+    
     std::cout << "Initial guess residue norm : " <<  res_norm << std::endl;
     
 }
@@ -311,7 +323,7 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
         NewtonIteration();
-        
+        REAL normsol = Norm(Solution());
         x += Solution();
         
 #ifdef PZDEBUG
@@ -339,7 +351,7 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         REAL res_norm = Norm(Rhs());
         std::cout << " Residue norm : " <<  res_norm << std::endl;
         
-        res_norm = Norm(Rhs());
+        (*ftransport_report_data) <<"   M         0           "<<m_k_iteration<<"          0       "<<res_norm<<"       "<<normsol<<std::endl;
         
 #ifdef PZDEBUG
         if(std::isnan(res_norm))

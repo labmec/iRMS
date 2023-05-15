@@ -31,7 +31,13 @@ public:
     /// Data transfer object
     TMRSDataTransfer * m_sim_data;
     TPZMFSolutionTransfer fsoltransfer;
+    
+    std::ofstream *fmixed_report_data=nullptr;
+    
     int fpostprocessindex=0;
+    
+    REAL flastAssembleTime=0.0;
+    REAL flastSolveTime = 0.0;
     /// Number of iterations
     int m_k_iteration;
     
@@ -82,6 +88,8 @@ public:
     void AllZero(TPZCompMesh *cmesh);
     
     void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer* sim_data, TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh);
+
+    
 };
 
 #endif /* TMRSMixedAnalysis_h */

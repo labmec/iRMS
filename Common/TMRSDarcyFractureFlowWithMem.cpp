@@ -140,14 +140,25 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*q[j];
         }
     }
+    std::vector<REAL> m_gravity(3,0.0);
+    m_gravity[2] =  9.8*1.0e-6;
     
     for (int iq = 0; iq < first_transverse_q; iq++)
     {
-
+        
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
+        
+        //gravity effects
+        REAL g_dot_phi_q_i=0.0;
+        for (int i = 0; i < 3; i++) {
+            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
+            g_dot_phi_q_i           += m_gravity[i]*phi_qs(i,iq);
+        }
+        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
+        
        // @TODO: Verify fracture ad here!!!
 //        ef(iq + first_q) += weight*(-kappa_inv_q_dot_phi_q_i /ad + p * div_phi(iq,0));  // terms j and k in docs/Formulation.lyx
         ef(iq + first_q) += weight*(-kappa_inv_q_dot_phi_q_i  + p * div_phi(iq,0));  // terms j and k in docs/Formulation.lyx
@@ -191,6 +202,14 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         for (int i = 0; i < 3; i++) {
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
+        
+        //gravity effects
+        REAL g_dot_phi_q_i=0.0;
+        for (int i = 0; i < 3; i++) {
+            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
+            g_dot_phi_q_i           += m_gravity[i]*phi_qs(i,iq);
+        }
+        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
 
         ef(iq + first_q) += weight*(-0.5*ad*kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms c2 and c1 in docs/Formulation.lyx
 //        ef(iq + first_q) += weight*(-kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms c2 and c1 in docs/Formulation.lyx
@@ -229,6 +248,14 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         for (int i = 0; i < 3; i++) {
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
         }
+        //gravity effects
+        REAL g_dot_phi_q_i=0.0;
+        for (int i = 0; i < 3; i++) {
+            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
+            g_dot_phi_q_i           += m_gravity[i]*phi_qs(i,iq);
+        }
+        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
+        
         
         ef(iq + first_q) += weight *((-0.5*ad)*kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // part of terms c2 and c1 in docs/Formulation.lyx
 //        ef(iq + first_q) += weight *(-kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // part of terms c2 and c1 in docs/Formulation.lyx

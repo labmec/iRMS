@@ -56,6 +56,8 @@ private:
     TMRSDataTransfer * m_sim_data;
     
     int fpostprocessindex=0;
+    REAL flastAssembleTime=0.0;
+    REAL flastSolveTime = 0.0;
     
     /// Number of iterations
     int m_k_iteration = 0;
@@ -78,7 +80,7 @@ private:
 //    Eigen::PardisoLU<Eigen::SparseMatrix<REAL>>  m_analysis;
     Eigen::SparseLU<Eigen::SparseMatrix<REAL>>  m_analysis;
 public:
-    
+    std::ofstream *ftransport_report_data=nullptr;
     TPZAlgebraicTransport fAlgebraicTransport;
     
     TPZMFSolutionTransfer m_soltransportTransfer;

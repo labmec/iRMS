@@ -28,6 +28,8 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(){
     m_transport_module = nullptr;
     m_x_mixed.Resize(0, 0);
     m_x_transport.Resize(0, 0);
+    freport_data = new std::ofstream("Report_SFI.txt");
+    fcurrentError=1.0;
 }
 
 TMRSSFIAnalysis::~TMRSSFIAnalysis(){
@@ -38,13 +40,16 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompM
     m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,true);
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
-    
-    
+    freport_data = new std::ofstream("Report_SFI.txt");
+    m_k_iteration=0;
+    fcurrentError=1.0;
 }
 
 void TMRSSFIAnalysis::BuildAlgebraicDataStructure(){
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
     FillProperties();
+    freport_data = new std::ofstream("Report_SFI.txt");
+
 }
 
 TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<REAL(const TPZVec<REAL> & )> & kx, std::function<REAL(const TPZVec<REAL> & )> & ky, std::function<REAL(const TPZVec<REAL> & )> & kz, std::function<REAL(const TPZVec<REAL> & )> & phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
@@ -60,7 +65,10 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
             fAlgebraicDataTransfer.fphi = phi;
             fAlgebraicDataTransfer.fs0 = s0;
     }
-
+    freport_data = new std::ofstream("Report_SFI.txt");
+    m_k_iteration=0;
+    fcurrentError=1.0;
+    
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
 //    FillMaterialMemoryDarcy(1);
 //    std::string fileprops("Props.txt");
@@ -74,6 +82,9 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
 TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
     m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
+    freport_data = new std::ofstream("Report_SFI.txt");
+    m_k_iteration=0;
+    fcurrentError=1.0;
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
     
@@ -199,6 +210,7 @@ void TMRSSFIAnalysis::FillProperties(){
                         }
                         m_transport_module->fAlgebraicTransport.fCellsData.fKx[icell] = valperm;
                         m_transport_module->fAlgebraicTransport.fCellsData.fKy[icell] = valperm;
+//                        m_transport_module->fAlgebraicTransport.fCellsData.fKz[icell] = valperm;
                         std::cout<<"Warning: fkz"<<std::endl;
                         m_transport_module->fAlgebraicTransport.fCellsData.fKz[icell] = 1.0e-6;
                     
@@ -426,41 +438,52 @@ void TMRSSFIAnalysis::RunTimeStep(){
     
     m_x_mixed = m_mixed_module->Solution();
     m_x_transport = m_transport_module->Solution();
-    
-    
     int n_iterations = m_sim_data->mTNumerics.m_max_iter_sfi;
     REAL eps_tol = m_sim_data->mTNumerics.m_sfi_tol;
     bool stop_criterion_Q = false;
+    bool stop_crit1=false;
+    bool stop_crit2=false;
     REAL error_rel_mixed = 1.0;
-    REAL error_rel_transport = 1.0;
     
     for (m_k_iteration = 1; m_k_iteration <= n_iterations; m_k_iteration++) {
         
+        *(m_mixed_module->fmixed_report_data)<<"   "<<m_k_iteration<<"   ";
+        *(m_transport_module->ftransport_report_data)<<"   "<<m_k_iteration<<"   ";
         SFIIteration();
         m_mixed_module->VerifyElementFluxes();
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
         
 //        m_x_transport = m_transport_module->Solution();
         if(Norm(m_transport_module->Solution())==0){
-            error_rel_transport =Norm(m_x_transport - m_transport_module->Solution());
+            fcurrentError =Norm(m_x_transport - m_transport_module->Solution());
         }else{
-        error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
+            fcurrentError = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         }
-        stop_criterion_Q = error_rel_transport < eps_tol; // Stop by saturation variation
+        stop_criterion_Q = fcurrentError < eps_tol; // Stop by saturation variation
+        
+        *freport_data<<"    "<< m_k_iteration <<"          "<<fcurrentError<<std::endl;
+        
         if (stop_criterion_Q && m_k_iteration > 1) {
             std::cout << "SFI converged " << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
-            std::cout << "Transport problem variation = " << error_rel_transport << std::endl;
+            std::cout << "Transport problem variation = " << fcurrentError << std::endl;
             m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
 //            m_mixed_module->PostProcessTimeStep();
             break;
         }
+        else if (m_k_iteration == n_iterations){
+            std::cout << "SFI not converged " << std::endl;
+            std::cout << "Number of iterations = " << m_k_iteration << std::endl;
+            std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
+            std::cout << "Transport problem variation = " << fcurrentError << std::endl;
+            DebugStop();
+        }
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
         
-        m_mixed_module->AllZero(m_mixed_module->Mesh());
-        m_mixed_module->Mesh()->UpdatePreviousState(1.0);
+//        m_mixed_module->AllZero(m_mixed_module->Mesh());
+//        m_mixed_module->Mesh()->UpdatePreviousState(1.0);
         m_mixed_module->fsoltransfer.TransferFromMultiphysics();
 //        m_mixed_module->PostProcessTimeStep();
 //        break;
@@ -471,7 +494,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
         std::cout << "Number of iterations = " << n_iterations << std::endl;
         std::cout << "SFI will continue with : " << std::endl;
         std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
-        std::cout << "Transport problem variation = " << error_rel_transport << std::endl;
+        std::cout << "Transport problem variation = " << fcurrentError << std::endl;
         m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
         return;
     }

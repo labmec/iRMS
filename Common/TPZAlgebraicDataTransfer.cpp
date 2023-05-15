@@ -1449,16 +1449,48 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         std::vector<REAL> center(3,0.0);
         TPZManVector<REAL,3> coord(3,0.0);
         gel->X(ximasscent, coord);
-        REAL xcord =coord[0];
-        REAL ycord =coord[1];
-        REAL zcord =coord[2];
+        REAL x =coord[0];
+        REAL y =coord[1];
+        REAL z =coord[2];
         REAL s0_v = 0.0;
 //        if(zcord>5.0 && zcord<8.75  && xcord>2.0 && xcord<8.6 && ycord>2.0 && ycord<8.0){
 //            s0_v = 1.0;
 //        }
-        if(zcord>5.0){
-            s0_v = 1.0;
-        }
+//        if(zcord>5.0){
+//            s0_v = 1.0;
+//        }
+        
+        //esfera
+//        double centro_x = 5;
+//        double centro_y = 5;
+//        double centro_z = 11.0;
+//        double radio = 3.5;
+//
+//        // Calcula la distancia entre el punto y el centro de la esfera
+//        double distancia = sqrt(pow(x - centro_x, 2) + pow(y - centro_y, 2) + pow(z - centro_z, 2));
+//
+//        // Comprueba si el punto está dentro de la esfera
+//        if (distancia <= radio) {
+//            s0_v=1.0;
+//        } else {
+//            s0_v=0.0;
+//        }
+        
+        //cilindro
+//        double centerX = 6.0; // coordenada x del centro del cilindro
+//        double centerZ = 11.0; // coordenada z del centro del cilindro
+//        double radius = 3.0;  // radio del cilindro
+//        double height = 10.0; // altura del cilindro medida en la dirección y en el plano xz
+//
+//        // Verificar si el punto está dentro del cilindro
+//        double distanceFromCenter = sqrt((x - centerX) * (x - centerX) + (z - centerZ) * (z - centerZ));
+//        if (distanceFromCenter <= radius && y >= 0.0 && y <= height) {
+//            s0_v=1.0;
+//        } else {
+//            s0_v=0.0;
+//        }
+//
+        //
         transport.fCellsData.fSaturation[i]=s0_v;
         transport.fCellsData.fSaturationLastState[i]=s0_v;
         

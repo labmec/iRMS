@@ -87,8 +87,8 @@ Physical Surface("noflux", 14) = {1, 3, 4, 6};
 
 
 Coherence Mesh;
-Transfinite Curve {:} = 2;
-Transfinite Curve {12,11,6,5} = 3;
+Transfinite Curve {:} = 6;
+// Transfinite Curve {12,11,6,5} = 3;
 Transfinite Surface{:};
 Transfinite Volume{:};
 Recombine Surface{:};

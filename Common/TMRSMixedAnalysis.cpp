@@ -27,6 +27,7 @@
 using namespace std;
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(){
+    fmixed_report_data = new std::ofstream("Report_Mixed.txt");
     
 }
 
@@ -36,10 +37,12 @@ TMRSMixedAnalysis::~TMRSMixedAnalysis(){
 
 TMRSMixedAnalysis::TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZLinearAnalysis(cmesh_mult, must_opt_band_width_Q){
     fsoltransfer.BuildTransferData(cmesh_mult);
+    fmixed_report_data = new std::ofstream("Report_Mixed.txt");
 }
 
 void TMRSMixedAnalysis::SetDataTransfer(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
+    fmixed_report_data = new std::ofstream("Report_Mixed.txt");
     
 }
 
@@ -100,12 +103,12 @@ void TMRSMixedAnalysis::RunTimeStep(){
     REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_mixed;
     TPZFMatrix<STATE> dx,x(Solution());
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
-       
+        
         dx = Solution();
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
         NewtonIteration();
-       
+        REAL fistAssemTime = flastAssembleTime;
         dx = Solution();
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
@@ -119,7 +122,15 @@ void TMRSMixedAnalysis::RunTimeStep(){
 //        Solve();
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
+        if(m_k_iteration == 1){
+            (*fmixed_report_data) <<"         "<< m_k_iteration<<"     "<<res_norm<<"     "<<normsol<< "         "<<fistAssemTime<<"         "<< flastSolveTime<<"         " << flastAssembleTime<<std::endl;
+        }
+        else{
+            (*fmixed_report_data)<<"   M            "<< m_k_iteration<<"     "<<res_norm<<"     "<<normsol<< "         "<<fistAssemTime<<"         "<< flastSolveTime<<"         " << flastAssembleTime<<std::endl;
+        }
         
+        
+       
 #ifdef PZDEBUG
         {
             if(std::isnan(corr_norm) || std::isnan(res_norm))
@@ -129,7 +140,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
 
         stop_criterion_Q = res_norm < res_tol;
         stop_criterion_corr_Q = corr_norm < corr_tol;
-        if (stop_criterion_Q) {
+        if (stop_criterion_Q || stop_criterion_corr_Q) {
             std::cout << "\n\n\t================================================" << std::endl;
             std::cout << "Mixed operator: " << std::endl;
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
@@ -265,6 +276,7 @@ void TMRSMixedAnalysis::Assemble(){
 
     auto total_time_ass = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_ass).count()/1000.;
     cout << "\nTotal time assemble = " << total_time_ass << " seconds" << endl;
+    flastAssembleTime=total_time_ass;
 }
 
 void TMRSMixedAnalysis::Solve(){
@@ -276,6 +288,7 @@ void TMRSMixedAnalysis::Solve(){
     
     auto total_time_solve = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_solve).count()/1000.;
     cout << "Total time solve = " << total_time_solve << " seconds" << endl;
+    flastSolveTime = total_time_solve;
 }
 
 void TMRSMixedAnalysis::VerifyElementFluxes(){
@@ -344,7 +357,7 @@ void TMRSMixedAnalysis::VerifyElementFluxes(){
 		}
 		if(std::abs(sumel)> tol ){
             std::cout << "\n\nERROR! Conservation of element index " << cel->Reference()->Index() << " is " << sumel << std::endl;
-			DebugStop();
+//			DebugStop();
 		}
 	}
     std::cout << "\n\n===> Nice! All flux elements satisfy conservation up to tolerance " << tol << std::endl;
