@@ -9,6 +9,7 @@
 
 TPZDarcyFlowWithMem::TPZDarcyFlowWithMem() :  mSimData() {
     m_dimension = 0;
+    m_inv_perm.Zero();
     m_gravity.resize(3);
     for(int i=0; i<3; i++) m_gravity[i] = 0.;
     m_is_four_spaces_Q = true;
@@ -18,6 +19,7 @@ TPZDarcyFlowWithMem::TPZDarcyFlowWithMem() :  mSimData() {
 TPZDarcyFlowWithMem::TPZDarcyFlowWithMem(int mat_id, int dimension) : TBase(mat_id), mSimData(){
     m_dimension = dimension;
     m_gravity.resize(3);
+    m_inv_perm.Zero();
     for(int i=0; i<3; i++) m_gravity[i] = 0.;
     m_is_four_spaces_Q = true;
 }
@@ -31,6 +33,7 @@ TPZDarcyFlowWithMem::TPZDarcyFlowWithMem(const TPZDarcyFlowWithMem & other) : TB
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
     mSimData            = other.mSimData;
     fAlgebraicTransport = other.fAlgebraicTransport;
+    m_inv_perm              =other. m_inv_perm;
 }
 
 
@@ -46,6 +49,7 @@ TPZDarcyFlowWithMem & TPZDarcyFlowWithMem::operator=(const TPZDarcyFlowWithMem &
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
     mSimData            = other.mSimData;
     fAlgebraicTransport = other.fAlgebraicTransport;
+    m_inv_perm          =other.m_inv_perm;
     return *this;
 }
 

@@ -18,6 +18,10 @@
 #include "TMRSMemory.h"
 #include "TMRSTransportMemory.h"
 #include "pzlog.h"
+#include "TMRSDarcyFlowWithMem.h"
+#include "TRMSpatialPropertiesMap.h"
+
+#include "TMRSMemory.h"
 
 #ifdef LOG4CXX
 static LoggerPtr logger(Logger::getLogger("pz.mesh.tpzcondensedcompel"));
@@ -44,7 +48,11 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
     
     if(this->fMatrixComputed == false)
     {
-       // TPZMaterial *mat = Material();
+        TPZMaterial *mat = Material();
+        
+        TMRSDarcyFlowWithMem<TMRSMemory> *matwithmen = dynamic_cast<TMRSDarcyFlowWithMem<TMRSMemory> *>(mat);
+        matwithmen->SetInversePermeability(fInvPerm);
+        
         TPZCondensedCompEl::CalcStiff(fEK, fEF);
         ComputeBodyforceRefValues();
         ComputeConstantPressureValues();

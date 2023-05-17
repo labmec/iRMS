@@ -16,6 +16,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TBase(), mSimData() {
     m_is_four_spaces_Q = false;
     m_scale_pressure = 1;
     m_scale_flux = 1;
+    m_kappa_inv.Zero();
 }
 
 template <class TMEM>
@@ -25,6 +26,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension) : TB
     m_is_four_spaces_Q = false;
     m_scale_pressure = 1;
     m_scale_flux = 1;
+    m_kappa_inv.Zero();
 }
 
 template <class TMEM>
@@ -34,6 +36,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(const TMRSDarcyFlowWithMem & ot
     m_scale_flux        = other.m_scale_flux;
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
     mSimData  = other.mSimData;
+    m_kappa_inv =other.m_kappa_inv;
 }
 
 template <class TMEM>
@@ -47,6 +50,7 @@ TMRSDarcyFlowWithMem<TMEM> & TMRSDarcyFlowWithMem<TMEM>::operator=(const TMRSDar
     m_scale_flux        = other.m_scale_flux;
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
     mSimData  = other.mSimData;
+    m_kappa_inv =other.m_kappa_inv;
     return *this;
 }
 
@@ -300,14 +304,22 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
    
     // kappa_inv_q = K^-1 * q
     // Used for non linear problems
+    //correct
+//    std::vector<REAL> m_gravity(3,0.0);
+//    m_gravity[2] =  9.8*1.0e-6;
+//    for (int i = 0; i < 3; i++) {
+//        for (int j = 0; j < 3; j++) {
+//            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
+//        }
+//    }
     
-    std::vector<REAL> m_gravity(3,0.0);
-    m_gravity[2] =  9.8*1.0e-6;
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < 3; j++) {
-            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
+        std::vector<REAL> m_gravity(3,0.0);
+        m_gravity[2] =  9.8*1.0e-6;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                kappa_inv_q(i,0) += m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
+            }
         }
-    }
    
     for (int iq = 0; iq < nphi_q; iq++) {
         REAL g_dot_phi_q_i=0.0;

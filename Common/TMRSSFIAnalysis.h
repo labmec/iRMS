@@ -63,9 +63,9 @@ public:
     TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompMesh * cmesh_transport, bool must_opt_band_width_Q);
     
     /// Constructor based on a cmesh and optimization band directive
-    TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<REAL(const TPZVec<REAL> & )> & kx, std::function<REAL(const TPZVec<REAL> & )> & ky, std::function<REAL(const TPZVec<REAL> & )> & kz, std::function<REAL(const TPZVec<REAL> & )> & phi, std::function<REAL(const TPZVec<REAL> & )> & s0);
+    TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<REAL(const TPZVec<REAL> & )> & kx, std::function<REAL(const TPZVec<REAL> & )> & ky, std::function<REAL(const TPZVec<REAL> & )> & kz, std::function<REAL(const TPZVec<REAL> & )> & phi, std::function<REAL(const TPZVec<REAL> & )> & s0);
     
-    TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0);
+    TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0);
     void BuildAlgebraicDataStructure();
     
     // Deprecated methods since Apr 2022
@@ -109,7 +109,7 @@ public:
     
     void UpdateMemoryInModules();
     void PostProcessResevoirProp();
-    
+   
     // transfer the permeability and lambda to the element solution for post processing
     void SetMixedMeshElementSolution(TPZCompMesh *cmesh);
     

@@ -60,7 +60,9 @@ void TPZAlgebraicDataTransfer::BuildTransportDataStructure(TPZAlgebraicTransport
     InitializeTransportDataStructure(transport);
     InitializeVectorPointersMixedToTransport(transport);
     InitializeVectorPointersTranportToMixed(transport);
+    TransferPermeabiliyTensor();
     CheckDataTransferTransportToMixed();
+    
 }
 
 // Identify the geometric elements corresponding to interface elements. Order them as
@@ -1249,6 +1251,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
             // skip boundary elements
             if(cel->NConnects() == 1) continue;
             TPZFastCondensedElement *fastel = dynamic_cast<TPZFastCondensedElement *>(cel);
+            
             TPZCondensedCompEl *cond = dynamic_cast<TPZCondensedCompEl *>(cel);
             if(!fastel && !cond) DebugStop();
             
@@ -1353,6 +1356,7 @@ void TPZAlgebraicDataTransfer::BuildTransportToMixedCorrespondenceDatastructure(
 
 void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTransport &transport){
     
+    std::ofstream dataaExport("InitialDataProps.txt");
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
     for(auto mat_iter : fInterfaceGelIndexes)
     {
@@ -1428,9 +1432,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int side = gel->NSides()-1;
         transport.fCellsData.fVolume[i]=volume;
         transport.fCellsData.fMatId[i]=matId;
-        if(matId==299){
-            std::cout<<"IntersecElement: "<<std::endl;
-        }
+      
         if (cel->NConnects()!=1) {
             DebugStop();
         }
@@ -1439,9 +1441,12 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int eq_number = fTransportMesh->Block().Position(block_num);
 
         transport.fCellsData.fEqNumber[i]=eq_number;
-        transport.fCellsData.fDensityOil[i]=1000.00;
+        transport.fCellsData.fDensityOil[i]=800.00;
         transport.fCellsData.fDensityWater[i]=1000.00;
-
+        transport.fCellsData.fViscosity[0]=0.001;
+        transport.fCellsData.fViscosity[1]=0.0015;
+        
+        
         int dim= gel->Dimension();
         transport.fCellsData.fCenterCoordinate[i].resize(3);
         TPZVec<REAL> ximasscent(dim);
@@ -1449,10 +1454,73 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         std::vector<REAL> center(3,0.0);
         TPZManVector<REAL,3> coord(3,0.0);
         gel->X(ximasscent, coord);
-        REAL x =coord[0];
-        REAL y =coord[1];
-        REAL z =coord[2];
+//        REAL x =4080.39; //coord[0];
+//        REAL y =2965.33; //coord[1];
+//        REAL z =3032.63; //coord[2];
+//        coord[0]=x;
+//        coord[1]=y;
+//        coord[2]=z;
         REAL s0_v = 0.0;
+        
+        REAL kx_v=0.0,ky_v=0.0,kz_v=0.0,phi_v=0.0;
+        //
+        if(fkappa_phi){
+                   std::vector<REAL> kappa_phi = fkappa_phi(coord);
+                   kx_v = kappa_phi[0];
+                   ky_v = kappa_phi[1];
+                   kz_v = kappa_phi[2];
+                   phi_v= kappa_phi[3] +0.01;
+               }else{
+                   if(fkx)
+                   {
+                       kx_v   = fkx(coord);
+                   }
+                   if(fky)
+                   {
+                       ky_v   = fky(coord);
+                   }
+                   if(fkz)
+                   {
+                       kz_v   = fkz(coord);
+                   }
+                   if(fphi)
+                   {
+                       phi_v   = fphi(coord);
+                   }
+               }
+               
+               
+               if(fs0)
+               {
+                   s0_v   = fs0(coord);
+               }
+        dataaExport<<kx_v<<" "<<ky_v<<" "<<kz_v<<" "<<phi_v<<std::endl;
+        
+        transport.fCellsData.fSaturation[i]=s0_v;
+        transport.fCellsData.fporosity[i]=phi_v;
+        transport.fCellsData.fKx[i]=kx_v;
+        transport.fCellsData.fKy[i]=ky_v;
+        transport.fCellsData.fKz[i]=kz_v;
+        if (geldim==2) {
+            transport.fCellsData.fVolumefactor[i]=0.001;
+            transport.fCellsData.fVolume[i] *=transport.fCellsData.fVolumefactor[i];
+            transport.fCellsData.fKx[i]=1.0e-4;
+            transport.fCellsData.fKy[i]=1.0e-4;
+            transport.fCellsData.fKz[i]=1.0e-4;
+        }
+        else if(matId==299){
+            transport.fCellsData.fVolumefactor[i]=0.001;
+            transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.001*0.001;
+            transport.fCellsData.fKx[i]=1.0e-4;
+            transport.fCellsData.fKy[i]=1.0e-4;
+            transport.fCellsData.fKz[i]=1.0e-4;
+        }
+        else{
+            transport.fCellsData.fVolumefactor[i]=1.0;
+        }
+        
+        
+        //
 //        if(zcord>5.0 && zcord<8.75  && xcord>2.0 && xcord<8.6 && ycord>2.0 && ycord<8.0){
 //            s0_v = 1.0;
 //        }
@@ -1671,6 +1739,8 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
             TPZFNMatrix<9, REAL> PermeabilityT, InvPerm;
             PermeabilityT.Redim(3, 3);
             InvPerm.Redim(3, 3);
+            PermeabilityT.Zero();
+            InvPerm.Zero();
             int64_t transportcell = meshit.fAlgebraicTransportCellIndex[icell];
             PermeabilityT(0,0) = (celldata.fKx)[transportcell];
             PermeabilityT(1,1) = (celldata.fKy)[transportcell];
@@ -1681,7 +1751,7 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
             TPZGeoEl *gel = cel->Reference();
      //       meshit.fMixedCell[icell]->SetPermTensorAndInv(PermeabilityT,InvPerm) ;
             condensed->SetPermTensorAndInv(PermeabilityT,InvPerm);
-            condensed->SetMixedDensity((celldata.fMixedDensity)[transportcell]);
+          //  condensed->SetMixedDensity((celldata.fMixedDensity)[transportcell]);
             
         }
     }

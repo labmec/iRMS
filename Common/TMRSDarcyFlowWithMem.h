@@ -38,6 +38,8 @@ protected:
     /// Directive that stands for the use of four approximations spaces (iterative method)
     bool m_is_four_spaces_Q;
     
+    TPZFNMatrix<9,REAL> m_kappa_inv;
+    
     TMRSDataTransfer mSimData;
     
 public:
@@ -101,6 +103,11 @@ public:
     
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer & SimData);
+    
+    /// Set data transfer object
+    void SetInversePermeability(TPZFNMatrix<9,REAL> f_kappa_inv){
+        m_kappa_inv = f_kappa_inv;
+    }
     
     /// Print out the data associated with the material
     void Print(std::ostream &out = std::cout) const override;

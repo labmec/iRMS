@@ -637,6 +637,57 @@ void TMRSTransportAnalysis::PostProcessTimeStep(){
     fpostprocessindex++;
 }
 
+void TMRSTransportAnalysis::PostProcessProps(int val){
+    
+    TPZStack<std::string,10> scalnames, vecnames;
+//    scalnames = m_sim_data->mTPostProcess.m_scalnamesTransport;
+    constexpr int vtkRes{0}; //resolucao do vtk
+    int dim = Mesh()->Reference()->Dimension();
+    std::string file = "props.vtk";//m_sim_data->mTPostProcess.m_file_name_transport;
+    int nels = fGeoMesh->NElements();
+    fCompMesh->LoadReferences();
+    TPZVec<REAL> elData(nels,0);
+    int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
+    for (int icell = 0; icell< ncells; icell++) {
+        int indexGeo = fAlgebraicTransport.fCellsData.fGeoIndex[icell];
+        REAL prop=0.0;
+        if(val==0){
+            prop= fAlgebraicTransport.fCellsData.fKx[icell];
+        }
+        if(val==1){
+            prop= fAlgebraicTransport.fCellsData.fporosity[icell];
+        }
+        
+        auto center = fAlgebraicTransport.fCellsData.fCenterCoordinate[icell];
+        TPZGeoEl *gel = fCompMesh->Reference()->Element(indexGeo);
+        if(!gel) DebugStop();
+        
+#ifdef PZDEBUG
+        TPZManVector<REAL,3> xcenter(3,0.), xi(gel->Dimension(),0.);
+        gel->CenterPoint(gel->NSides()-1, xi);
+        gel->X(xi, xcenter);
+        REAL diff = 0;
+        std::vector<REAL> celcenter = fAlgebraicTransport.fCellsData.fCenterCoordinate[icell];
+        for(int i=0; i<3; i++)
+        {
+            diff += fabs(xcenter[i]-celcenter[i]);
+        }
+        if(diff > 1.e-16)
+        {
+            DebugStop();
+        }
+# endif
+        if(fabs(prop) < 1e-20) prop = 0.;
+        elData[indexGeo]=prop;
+    }
+    
+    std::string fileAdjusted = file.substr(0,file.find(".vtk")) + std::to_string(fpostprocessindex) + ".vtk";
+    std::ofstream file_ofstream(fileAdjusted);
+    TPZVTKGeoMesh::PrintGMeshVTK(fCompMesh->Reference(), file_ofstream, elData);
+    fpostprocessindex++;
+}
+
+
 void TMRSTransportAnalysis::UpdateInitialSolutionFromCellsData(){
     TPZMultiphysicsCompMesh * cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(Mesh());
     TPZCompMesh * cmesh2 = dynamic_cast<TPZCompMesh *>(Mesh());

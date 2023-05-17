@@ -21,6 +21,8 @@
 
 #include "TPZFileStream.h"
 #include "TPZBFileStream.h"
+#include "TMRSPropertiesFunctions.h"
+#include "TRMSpatialPropertiesMap.h"
 
 // ----- Namespaces -----
 using namespace std;
@@ -208,8 +210,9 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
                 break;
             case 20:
-//                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
-                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
+//                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
+                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
+//                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
 //                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
                 break;
             case 21:
@@ -637,9 +640,25 @@ void RunProblem(string& filenameBase, const int simcase)
         std::ofstream name2(outputFolder + "TransportOperator.vtk");
         TPZVTKGeoMesh::PrintCMeshVTK(transport_operator, name2);
 #endif
+        // spatial properties
+        // spatial properties
+        
+       
+         int64_t n_cells = 38466;
+         std::string grid_data = "/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_coordinates.dat";
+         std::string props_data = "/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_props.dat";
+         TRMSpatialPropertiesMap properties_map;
+         std::vector<size_t> SAMe_blocks = {5,5,5};
+         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
+
+         TMRSPropertiesFunctions reservoir_properties;
+         reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
+
+         auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
+         auto s0 = reservoir_properties.Create_s0();
 
 		// Creating coupled pressure/flow and transport analysis
-        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q, kappa_phi,s0);
         sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
         sfi_analysis->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
 //        sfi_analysis->Configure(0, UsePardiso_Q, UsingPzSparse);
@@ -658,7 +677,7 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Initializing tranport solution
         sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
         if(restart){
-            Restart(sfi_analysis);
+//            Restart(sfi_analysis);
         }
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         std::cout << "\nMass report at initial time : " << 0.0 << std::endl;
@@ -1257,7 +1276,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     int ncoarse_vol = 0;
     if(needsMergeMeshes){
 
-        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+//        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+        gmeshcoarse = GenerateUnisimMesh(3);
         std::ofstream file("test13.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, file);
 //        gmeshcoarse = GenerateUnisimMesh(3);

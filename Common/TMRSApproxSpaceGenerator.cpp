@@ -3841,7 +3841,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
     if (!MixedOperator) {
         DebugStop();
     }
-    //
+    
     int n_mats = mSimData.mTReservoirProperties.m_permeabilitiesbyId.size();
     for (auto iter = mSimData.mTReservoirProperties.m_permeabilitiesbyId.begin(); iter != mSimData.mTReservoirProperties.m_permeabilitiesbyId.end(); ++iter){
      
@@ -3850,8 +3850,6 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
         
         TPZMaterial * material1 = cmesh->FindMaterial(matId); ;
         TPZMatWithMem<TMRSMemory> * mat_with_memory1 = dynamic_cast<TPZMatWithMem<TMRSMemory> * >(material1);
-        
-        
         // Set initial porosity, permeability, saturations, etc ...
         {
             std::shared_ptr<TPZAdmChunkVector<TMRSMemory>> & memory_vector1 = mat_with_memory1->GetMemory();
@@ -3860,6 +3858,7 @@ void TMRSApproxSpaceGenerator::InitializeFracProperties(TPZMultiphysicsCompMesh 
             for (int i = 0; i < ndata1; i++) {
                 TMRSMemory &mem = memory_vector1.get()->operator [](i);
                 mem.m_kappa.Resize(3, 3);
+                
                 mem.m_kappa.Zero();
                 mem.m_kappa_inv.Resize(3, 3);
                 mem.m_kappa_inv.Zero();

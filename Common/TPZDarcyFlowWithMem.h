@@ -36,6 +36,8 @@ class TPZDarcyFlowWithMem : public TPZMatBase<STATE, TPZMatCombinedSpacesT<STATE
     /// Scale factor for flux variable
     STATE m_scale_flux = 1.0;
     
+    TPZFNMatrix<9, REAL> m_inv_perm;
+    
     /// Directive that stands for the use of four approximations spaces (iterative method)
     bool m_is_four_spaces_Q;
     
@@ -95,6 +97,10 @@ public:
     
     /// Set data transfer object
     void SetDataTransfer(TMRSDataTransfer & SimData);
+    
+    void SetpermeabilityInvTesor( TPZFNMatrix<9, REAL> fPermeabilityInvTensor){
+        m_inv_perm =fPermeabilityInvTensor;
+    }
     
     /// Print out the data associated with the material
     void Print(std::ostream &out = std::cout) const override;

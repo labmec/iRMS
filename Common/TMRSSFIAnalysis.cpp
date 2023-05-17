@@ -52,11 +52,12 @@ void TMRSSFIAnalysis::BuildAlgebraicDataStructure(){
 
 }
 
-TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<REAL(const TPZVec<REAL> & )> & kx, std::function<REAL(const TPZVec<REAL> & )> & ky, std::function<REAL(const TPZVec<REAL> & )> & kz, std::function<REAL(const TPZVec<REAL> & )> & phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
+TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<REAL(const TPZVec<REAL> & )> & kx, std::function<REAL(const TPZVec<REAL> & )> & ky, std::function<REAL(const TPZVec<REAL> & )> & kz, std::function<REAL(const TPZVec<REAL> & )> & phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
     m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
     
     fAlgebraicDataTransfer.SetMeshes(*cmesh_mixed, *cmesh_transport);
+    freport_data = new std::ofstream("Report_SFI.txt");
     bool propsfromPre = m_sim_data->mTReservoirProperties.fPropsFromPreProcess;
     if (propsfromPre==false) {
             fAlgebraicDataTransfer.fkx = kx;
@@ -79,7 +80,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
 
 }
 
-TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMultiphysicsCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
+TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompMesh * cmesh_transport, bool must_opt_band_width_Q, std::function<std::vector<REAL>(const TPZVec<REAL> & )> & kappa_phi, std::function<REAL(const TPZVec<REAL> & )> & s0){
     m_mixed_module = new TMRSMixedAnalysis(cmesh_mixed,must_opt_band_width_Q);
     m_transport_module = new TMRSTransportAnalysis(cmesh_transport,must_opt_band_width_Q);
     freport_data = new std::ofstream("Report_SFI.txt");
@@ -91,10 +92,13 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZMulti
     fAlgebraicDataTransfer.fkappa_phi = kappa_phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+    m_transport_module->PostProcessProps(0);//Permeabilities
+    m_transport_module->PostProcessProps(1);//Porosities
+   // FillProperties();
     
-    FillMaterialMemoryDarcy(1);
-    std::string fileprops("Props.txt");
-    FillProperties(fileprops, &m_transport_module->fAlgebraicTransport);
+//    FillMaterialMemoryDarcy(1);
+//    std::string fileprops("Props.txt");
+//    FillProperties(fileprops, &m_transport_module->fAlgebraicTransport);
 }
 
 void TMRSSFIAnalysis::Configure(int n_threads, bool UsePardiso_Q, bool usepz){
@@ -156,6 +160,13 @@ void TMRSSFIAnalysis::FillMaterialMemoryDarcy(int material_id){
 }
 void TMRSSFIAnalysis::FillProperties(){
     
+    
+    m_transport_module->fAlgebraicTransport.outletmatid =4;
+    m_transport_module->fAlgebraicTransport.inletmatid =3;
+    m_transport_module->fAlgebraicTransport.fdt = m_sim_data->mTNumerics.m_dt;
+    m_transport_module->fAlgebraicTransport.fgravity = m_sim_data->mTNumerics.m_gravity;
+    
+    return;
     bool propsfromPre = m_sim_data->mTReservoirProperties.fPropsFromPreProcess;
     if (propsfromPre==false) {
         if (m_sim_data->mTReservoirProperties.kappa_phi) {
@@ -186,9 +197,7 @@ void TMRSSFIAnalysis::FillProperties(){
                     REAL porosity =std::get<1>(i);
                     REAL volfactor =std::get<2>(i);
                   
-                    if(matid>= 300){
-                        int ok=0;
-                    }
+             
                     if(id == matid){
                         m_transport_module->fAlgebraicTransport.fCellsData.fporosity[icell] = porosity;
                         m_transport_module->fAlgebraicTransport.fCellsData.fVolumefactor[icell] = volfactor;
@@ -355,7 +364,11 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport){
     if (!m_mixed_module|| !m_transport_module) {
         DebugStop();
     }
+    m_transport_module->fAlgebraicTransport.outletmatid =4;
+    m_transport_module->fAlgebraicTransport.inletmatid =3;
 
+    
+  
     
     TPZCompMesh * cmesh = m_mixed_module->Mesh();
     
@@ -412,6 +425,7 @@ void TMRSSFIAnalysis::FillProperties(TPZAlgebraicTransport *algebraicTransport, 
 
 void TMRSSFIAnalysis::SetDataTransferAndBuildAlgDatStruct(TMRSDataTransfer * sim_data){
     m_sim_data = sim_data;
+    
     m_mixed_module->SetDataTransfer(sim_data);
     m_transport_module->SetDataTransfer(sim_data);
     m_transport_module->fAlgebraicTransport.fCellsData.SetDataTransfer(sim_data);
@@ -420,9 +434,9 @@ void TMRSSFIAnalysis::SetDataTransferAndBuildAlgDatStruct(TMRSDataTransfer * sim
     // interfaces and information of neighborhood
     // Also creats the TCellData which holds information such as the saturation, density,
     // porosity, etc. in each element
-    BuildAlgebraicDataStructure();
     
-   
+    //BuildAlgebraicDataStructure();
+    FillProperties();
     m_transport_module->AnalyzePattern();
 }
 
