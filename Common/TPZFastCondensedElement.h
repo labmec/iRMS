@@ -29,6 +29,7 @@ protected:
     REAL fMixedDensity = 1.;
     REAL fCompressibilityMatrixTerm = 1.0;
     REAL fCompressibiilityRhsTerm = 1.0;
+    int fNinternalFlux=1;
     // this constant contains the source term
     REAL fSource = 0.;
     // this flag indicates whether the matrix of the father element has been computed

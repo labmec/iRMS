@@ -109,7 +109,7 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
    
 //    Gravity fluxes contribution
     //@TODO: Modificar entrada
-    if(1){
+    if(0){
         ContributeInterfaceIHU(index, ek, ef,interfaceId);
     }
     
@@ -133,7 +133,9 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
     ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
     
 // Gravity fluxes contribution
+    if(0){
     ContributeInterfaceIHUResidual(index, ef, interfaceID);
+    }
     
 #ifdef PZDEBUG
     if(std::isnan(Norm(ef)))
@@ -144,6 +146,9 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
 }
 
 void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId){
+    
+    //scale factor permeability
+    REAL scale = 1.0;
     
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceId].fLeftRightVolIndex[index];
     std::tuple<REAL, REAL, REAL> normal = fInterfaceData[interfaceId].fNormalFaceDirection[index];
@@ -203,9 +208,9 @@ void TPZAlgebraicTransport::ContributeInterfaceIHU(int index, TPZFMatrix<double>
     REAL Ky_R =  fCellsData.fKy[lr_index.first];
     REAL Kz_R =  fCellsData.fKz[lr_index.first];
     
-    REAL K_x = 2.0*(Kx_L * Kx_R)/(Kx_L + Kx_R);
-    REAL K_y = 2.0*(Ky_L * Ky_R)/(Ky_L + Ky_R);
-    REAL K_z = 2.0*(Kz_L * Kz_R)/(Kz_L + Kz_R);
+    REAL K_x = 2.0*scale*(Kx_L * Kx_R)/(Kx_L + Kx_R);
+    REAL K_y = 2.0*scale*(Ky_L * Ky_R)/(Ky_L + Ky_R);
+    REAL K_z = 2.0*scale*(Kz_L * Kz_R)/(Kz_L + Kz_R);
     
     // Beacuse we assume diagonal abs. perm tensor
     REAL K_times_g_dot_n = (K_x*n[0]*fgravity[0]+K_y*n[1]*fgravity[1]+K_z*n[2]*fgravity[2]);
@@ -314,6 +319,8 @@ void TPZAlgebraicTransport::ContributeInterfaceIHUOutlet(int index, TPZFMatrix<d
 }
 
 void TPZAlgebraicTransport::ContributeInterfaceIHUResidual(int index, TPZFMatrix<double> &ef, int interfaceiD){
+    //scale permeability
+    REAL scale =1.0;
     
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceiD].fLeftRightVolIndex[index];
     std::tuple<REAL, REAL, REAL> normal = fInterfaceData[interfaceiD].fNormalFaceDirection[index];
@@ -373,9 +380,9 @@ void TPZAlgebraicTransport::ContributeInterfaceIHUResidual(int index, TPZFMatrix
     REAL Ky_R =  fCellsData.fKy[lr_index.first];
     REAL Kz_R =  fCellsData.fKz[lr_index.first];
     
-    REAL K_x = 2.0*(Kx_L * Kx_R)/(Kx_L + Kx_R);
-    REAL K_y = 2.0*(Ky_L * Ky_R)/(Ky_L + Ky_R);
-    REAL K_z = 2.0*(Kz_L * Kz_R)/(Kz_L + Kz_R);
+    REAL K_x = 2.0*scale*(Kx_L * Kx_R)/(Kx_L + Kx_R);
+    REAL K_y = 2.0*scale*(Ky_L * Ky_R)/(Ky_L + Ky_R);
+    REAL K_z = 2.0*scale*(Kz_L * Kz_R)/(Kz_L + Kz_R);
     
     // Beacuse we assume diagonal abs. perm tensor
     REAL K_times_g_dot_n = (K_x*n[0]*fgravity[0]+K_y*n[1]*fgravity[1]+K_z*n[2]*fgravity[2]);
@@ -431,7 +438,7 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
 
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef, int inId){
    
-    REAL s_inlet = 0.0;// fboundaryCMatVal[inId].second;;
+    REAL s_inlet = 1.0;// fboundaryCMatVal[inId].second;;
     REAL fluxint  = 1.0*fInterfaceData[inId].fIntegralFlux[index];
     ef(0,0) = 1.0*s_inlet*fluxint* fdt;
 }

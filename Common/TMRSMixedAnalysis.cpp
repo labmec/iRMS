@@ -129,8 +129,6 @@ void TMRSMixedAnalysis::RunTimeStep(){
             (*fmixed_report_data)<<"   M            "<< m_k_iteration<<"     "<<res_norm<<"     "<<normsol<< "         "<<fistAssemTime<<"         "<< flastSolveTime<<"         " << flastAssembleTime<<std::endl;
         }
         
-        
-       
 #ifdef PZDEBUG
         {
             if(std::isnan(corr_norm) || std::isnan(res_norm))
@@ -189,7 +187,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
 //    FilterZeroNeumann( outputFolder, m_sim_data, this->StructMatrix(), Mesh());
     Assemble();
     Solve();
-
+//    this->PostProcessTimeStep();
 }
 
 void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){

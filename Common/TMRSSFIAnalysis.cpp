@@ -552,7 +552,7 @@ void TMRSSFIAnalysis::SFIIteration(){
     }
     
 //    fAlgebraicDataTransfer.TransferPressures();
-    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
+//    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
     
     std::cout << "Running transport problem now..." << std::endl;
     // Solves the transport problem

@@ -239,6 +239,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
         fAlgebraicTransport.fCellsData.UpdateSaturations(x);
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
+//        this->PostProcessTimeStep();
         AssembleResidual();
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());

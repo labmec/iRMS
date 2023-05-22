@@ -67,7 +67,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
     
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
-    REAL Glambda = 1.0*fMixedDensity;
+    REAL Glambda =0.0;// 1.0*fMixedDensity;
 //    std::cout<<"fLambda: "<<fLambda<<" "<<std::endl;
 //    fLambda = 1.0;
     if(Glambda!=1 || fLambda!=1){
@@ -79,22 +79,49 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
 //        std::cout<<"Gravity effects¿?"<<std::endl;
 //        DebugStop();
     }
-    ek.fMat *= (1.0/fLambda);
+    
+//    ek.fMat *= (1.0/fLambda);
+
+    int borderFlux =nrows - fNinternalFlux;
+    int shift =3;
+    for (int i=0; i< nrows - shift; i++) {
+        for (int j=0; j< nrows - shift; j++) {
+            ek.fMat(i,j) *= (1.0/fLambda);
+        }
+    }
+    for (int i=nrows - shift; i< nrows; i++) {
+        for (int j=nrows - shift; j< nrows; j++) {
+            ek.fMat(i,j) *= fLambda;
+        }
+    }
+    
+//    ek.fMat(nrows-1,nrows-1) *= (1.0/fLambda);
+    
+//    for (int i=borderFlux; i< borderFlux + fNinternalFlux-1; i++) {
+//        for (int j= borderFlux; j< + fNinternalFlux-1 ; j++) {
+//            ek.fMat(i,j) *= (fLambda);
+//        }
+//    }
+//    for (int icol=0; icol<ncols; icol++) {
+//        ek.fMat(nrows-1,icol) *= fLambda;
+//    }
+//    for (int irow=0; irow<nrows; irow++) {
+//        ek.fMat(irow,ncols-1) *= fLambda;
+//    }
 //    
-    for (int icol=0; icol<ncols; icol++) {
-        ek.fMat(nrows-1,icol) *= fLambda;
-    }
-    for (int irow=0; irow<nrows; irow++) {
-        ek.fMat(irow,ncols-1) *= fLambda;
-    }
-    ek.fMat(nrows-1,ncols-1) *=fLambda;
+//    //why?
+//    ek.fMat(nrows-1,ncols-1) *= fLambda;
+    
 ////    ek.fMat(nrows-1,ncols-1) *=fCompressibilityMatrixTerm;
 //
     TPZFNMatrix<30,STATE> solvec(fEK.fMat.Rows(),1,0.);
     GetSolutionVector(solvec);
-    
-
+//    std::cout<<"ef antes"<<std::endl;
+//    ef.fMat.Print(std::cout);
+//    std::cout<<"ef despues"<<std::endl;
+  
     ef.fMat *= -1.0*Glambda;
+//    ef.fMat.Print(std::cout);
 //    ef.fMat(nrows-1) = 0.0;
 //    ef.fMat(nrows-1) = fCompressibiilityRhsTerm;
     
@@ -266,6 +293,7 @@ void TPZFastCondensedElement::InternalFluxEquations(TPZVec<int64_t> &eqs)
     }
     TPZBlock &block = cmesh->Block();
     eqs.Resize(numflux_equations, 0);
+    fNinternalFlux = numflux_equations;
     int count = 0;
     for(int ic = 0; ic < nconnects; ic++)
     {

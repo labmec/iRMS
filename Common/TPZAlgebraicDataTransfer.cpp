@@ -1441,10 +1441,10 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int eq_number = fTransportMesh->Block().Position(block_num);
 
         transport.fCellsData.fEqNumber[i]=eq_number;
-        transport.fCellsData.fDensityOil[i]=800.00;
+        transport.fCellsData.fDensityOil[i]=900.00;
         transport.fCellsData.fDensityWater[i]=1000.00;
-        transport.fCellsData.fViscosity[0]=0.001;
-        transport.fCellsData.fViscosity[1]=0.0015;
+        transport.fCellsData.fViscosity[0]=1.0;
+        transport.fCellsData.fViscosity[1]=1.0;
         
         
         int dim= gel->Dimension();
@@ -1463,6 +1463,11 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         REAL s0_v = 0.0;
         
         REAL kx_v=0.0,ky_v=0.0,kz_v=0.0,phi_v=0.0;
+        std::vector<REAL> kappa_phi(4,0.0);
+//        kappa_phi[0]=1.0e-6;
+//        kappa_phi[1]=1.0e-6;
+//        kappa_phi[2]=1.0e-6;
+//        kappa_phi[3]=0.1;
         //
         if(fkappa_phi){
                    std::vector<REAL> kappa_phi = fkappa_phi(coord);
