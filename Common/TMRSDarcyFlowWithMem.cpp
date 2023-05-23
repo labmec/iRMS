@@ -331,7 +331,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
         }
         
         
-//        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
+        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
         ef(iq + first_q) += weight * ( - kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms a and b in docs/Formulation.lyx
        
         
