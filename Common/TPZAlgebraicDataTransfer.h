@@ -171,7 +171,6 @@ public:
         fFluxMesh = &fluxmesh;
         fTransportMesh = &transportmesh;
     }
-    
     // compute the data transfer data structures between the fluxmesh and transport class
     void BuildTransportDataStructure(TPZAlgebraicTransport &transport);
     

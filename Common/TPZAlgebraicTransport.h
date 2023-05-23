@@ -150,7 +150,7 @@ public:
         void SetDataTransfer(TMRSDataTransfer *simdata);
         void Print(std::ostream &out);
     };
-    
+    std::ofstream *freport_data=nullptr;
     
     REAL fdt = 0.1;
     std::map<int, std::pair<int ,REAL>> fboundaryCMatVal;
@@ -223,6 +223,7 @@ public:
     void ZeroFluxes();
     void PrintFluxes();
     void ColorMeshByCoords();
+    REAL ExportPProductionData(int itime);
 };
 
 #endif /* AlgebraicTransport_h */

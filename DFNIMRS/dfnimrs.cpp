@@ -777,7 +777,9 @@ void RunProblem(string& filenameBase, const int simcase)
                 std::cout << "Mass report at time : " << sim_time << std::endl;
                 std::cout << "Mass integral :  " << mass << std::endl;
 //            }
-           REAL outFlux = sfi_analysis->m_transport_module->fAlgebraicTransport.VerifyConservation(it);
+            REAL outFlux = sfi_analysis->m_transport_module->fAlgebraicTransport.VerifyConservation(it);
+            sfi_analysis->m_transport_module->fAlgebraicTransport.ExportPProductionData(it);
+            
             fileFracSatVolCase2<< outFlux <<std::endl;
         }
     }
@@ -1090,7 +1092,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
-	grav[2] = -9.8*1.0e-6; //
+    grav[2] = -9.8;//*1.0e-6; //
     sim_data.mTFluidProperties.mOilDensityRef = 500.00;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.00;
     sim_data.mTPetroPhysics.mOilViscosity=1.0;
