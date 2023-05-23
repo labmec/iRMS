@@ -1128,7 +1128,6 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
         std::cout << "Global mass loss: " << std::setprecision(14) << massConservation << std::endl;
 //        DebugStop();
     }
-    *freport_data<<" "<< fdt<< waterProd1 <<std::endl;
     massOut += fluxIntegratedOutlet;
     
     *freport_data<<fdt<<" "<<waterProd1<<" "<<oilProd1<<" "<<waterProd2<<" "<<oilProd2<<" "<< fluxIntegratedInlet << " " <<massOut<<std::endl;

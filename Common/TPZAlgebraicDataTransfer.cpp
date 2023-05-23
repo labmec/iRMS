@@ -1470,7 +1470,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         kappa_phi[3]=0.1;
         //
         if(fkappa_phi){
-                   std::vector<REAL> kappa_phi = fkappa_phi(coord);
+//                   std::vector<REAL> kappa_phi = fkappa_phi(coord);
                    kx_v = kappa_phi[0];
                    ky_v = kappa_phi[1];
                    kz_v = kappa_phi[2];
@@ -1576,8 +1576,53 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+    std::cout<<"ReadingProps"<<std::endl;
+    FillPropsFromFile(transport);
     this->InitializeVectorPointersTranportToMixed(transport);
     
+}
+
+void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transport){
+    
+    std::ofstream dataaExport("InitialDataProps.txt");
+    TPZGeoMesh *gmesh = fTransportMesh->Reference();
+   
+    auto &volData = fVolumeElements;
+    
+    int64_t nvols = volData.size();
+    transport.fCellsData.SetNumCells(nvols);
+    transport.fCellsData.fViscosity.resize(2);
+    transport.fCellsData.fViscosity[0] = 1.0;
+    transport.fCellsData.fViscosity[1] = 1.0;
+    std::cout << __PRETTY_FUNCTION__ << "Filling in property map\n";
+    
+    
+    bool modpoints = true;
+    std::ifstream file;
+    std::string basemeshpath("/Users/jose/Documents/GitHub/iMRS/FracMeshes/dfnimrs/unisim_meshes/Reservoir_props/InitialDataProps.txt");
+//    basemeshpath = basemeshpath  + name;
+    file.open(basemeshpath);
+    int i=0;
+    REAL kx, ky, kz, por;
+    std::string line;
+    while (std::getline(file, line))
+    {
+        std::istringstream iss(line);
+        std::istringstream issText(line);
+        char l = line[0];
+        double a, b, c;
+        if(iss >> kx >> ky >> kz >> por)
+        {
+            transport.fCellsData.fKx[i]=kx;
+            transport.fCellsData.fKy[i]=ky;
+            transport.fCellsData.fKz[i]=kz;
+            transport.fCellsData.fporosity[i]=por;
+        }
+        else{
+            DebugStop();
+        }
+        i++;
+    };
 }
 
 TPZAlgebraicDataTransfer::TFromMixedToTransport::TFromMixedToTransport() : fMatid(-1),

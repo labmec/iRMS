@@ -176,6 +176,7 @@ public:
     
     // Initialize the datastructures of the transport object
     void InitializeTransportDataStructure(TPZAlgebraicTransport &transport);
+    void FillPropsFromFile(TPZAlgebraicTransport &transport);
     
     // Build the data structure which defines the correspondence between
     // algebraic transport cells and indexes of mixed fast condensed elements
