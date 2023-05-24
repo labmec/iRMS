@@ -29,7 +29,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // ----- Global vars -----
-const int glob_n_threads = 16;
+const int glob_n_threads = 0;
 
 // ----- End of namespaces -----
 
@@ -626,7 +626,7 @@ void RunProblem(string& filenameBase, const int simcase)
     // ----- Analysis parameters -----
     bool must_opt_band_width_Q = true; // This makes solving very fast!
     bool UsingPzSparse = true; // Necessary to use multithread for now...
-    bool UsePardiso_Q = true; // lighting fast!
+    bool UsePardiso_Q = false; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
    // sim_data.mTNumerics.m_run_with_transport=false;
@@ -1096,10 +1096,10 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     grav[2] = -9.8*1.0e-6; //
     sim_data.mTFluidProperties.mOilDensityRef = 1000.00;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.00;
-    sim_data.mTPetroPhysics.mOilViscosity=0.01;
+    sim_data.mTPetroPhysics.mOilViscosity=0.02;
     sim_data.mTPetroPhysics.mWaterViscosity=0.01;
 	sim_data.mTNumerics.m_gravity = grav;
-	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
 	sim_data.mTNumerics.m_max_iter_sfi=30;
 	sim_data.mTNumerics.m_max_iter_mixed=1;

@@ -1577,7 +1577,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     std::cout<<"ReadingProps"<<std::endl;
-//    FillPropsFromFile(transport);
+    FillPropsFromFile(transport);
     this->InitializeVectorPointersTranportToMixed(transport);
     
 }
