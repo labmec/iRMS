@@ -111,7 +111,7 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
    
 //    Gravity fluxes contribution
     //@TODO: Modificar entrada
-    if(1){
+    if(0){
         ContributeInterfaceIHU(index, ek, ef,interfaceId);
     }
     
@@ -135,7 +135,7 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
     ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
     
 // Gravity fluxes contribution
-    if(1){
+    if(0){
     ContributeInterfaceIHUResidual(index, ef, interfaceID);
     }
     
@@ -1074,6 +1074,7 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
     for (int iInlet=0; iInlet<ninletInterfaces; iInlet++) {
          fluxIntegratedInlet += fInterfaceData[inletmatid].fIntegralFlux[iInlet]*fdt*itime;
     }
+    
     for (int iOutlet=0; iOutlet<nOutletInterfaces; iOutlet++) {
         std::pair<int64_t, int64_t> left_right = fInterfaceData[outletmatid].fLeftRightVolIndex[iOutlet];
         REAL satOutlet = fCellsData.fSaturation[left_right.first];
@@ -1089,7 +1090,11 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
             oilProd2 += (1.0 - satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
         }
         else{
-            DebugStop();
+            
+            std::cout<<"verificar produccion de pozos"<<std::endl;
+            waterProd1 +=(satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
+            oilProd1 += (1.0 - satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
+//            DebugStop();
         }
     }
     for (int iNF=0; iNF<nNoFluxFaces; iNF++) {

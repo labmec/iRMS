@@ -211,11 +211,19 @@ void TMRSTransportAnalysis::RunTimeStep(){
     
     
     ComputeInitialGuess(x); // from the linear problem (tangent and residue)
-    bool QN_converge_Q = QuasiNewtonSteps(x,10); // assuming linear operator (tangent)
-    if(QN_converge_Q){
-
+    
+    if(Norm(Rhs()) < res_tol){
+        std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
+        std::cout << "Number of iterations = " << 1 << std::endl;
+        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
         return;
     }
+    
+//    bool QN_converge_Q = QuasiNewtonSteps(x,10); // assuming linear operator (tangent)
+//    if(QN_converge_Q){
+//
+//        return;
+//    }
 
     //Linear problem Benchmark
    

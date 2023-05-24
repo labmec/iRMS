@@ -116,9 +116,11 @@ void TMRSMixedAnalysis::RunTimeStep(){
 //        LoadSolution(x);
         cmesh->UpdatePreviousState(1.0);
         fsoltransfer.TransferFromMultiphysics();
-//        this->PostProcessTimeStep();
+        
         
         Assemble();
+        this->Solver()->ResetMatrix();
+//        Solver()->Matrix()->SetIsDecomposed(0);
 //        Solve();
         res_norm = Norm(Rhs());
         REAL normsol = Norm(Solution());
@@ -187,6 +189,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
 //    FilterZeroNeumann( outputFolder, m_sim_data, this->StructMatrix(), Mesh());
     Assemble();
     Solve();
+    
 //    this->PostProcessTimeStep();
 }
 

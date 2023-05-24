@@ -133,7 +133,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
     
     REAL ad = memory.m_ad;
-    memory.m_kappa_inv =this->m_kappa_inv;
+    memory.m_kappa_inv = this->m_kappa_inv;
     
     for (int i = 0; i < 3; i++) {
         if(memory.m_kappa_inv(i,i) != memory.m_kappa_inv((i+1)%3,(i+1)%3)) DebugStop();

@@ -3,15 +3,15 @@ SetFactory("OpenCASCADE");
 //+
 h=0.0;
 Point(1) = {0.0, 0.0, 0, h};
-Point(2) = {2.0, 0.0, 0, h};
-Point(3) = {0.0, 2.0, 0, h};
-Point(4) = {2.0, 2.0, 0, h};
+Point(2) = {5000.0, 0.0, 0, h};
+Point(3) = {0.0, 5000.0, 0, h};
+Point(4) = {5000.0, 5000.0, 0, h};
 
-Point(5) = {0.0, 0.0, 2, h};
-Point(6) = {2.0, 0.0, 2, h};
+Point(5) = {0.0, 0.0, 300, h};
+Point(6) = {5000.0, 0.0, 300, h};
 
-Point(7) = {0.0, 2.0, 3, h};
-Point(8) = {2.0, 2.0, 3, h};
+Point(7) = {0.0, 5000.0, 300, h};
+Point(8) = {5000.0, 5000.0, 300, h};
 
 Line(1) = {1, 2};
 //+
@@ -75,8 +75,8 @@ Physical Surface("noflux", 15) = {2, 4, 5, 3};
 Physical Volume("k33", 16) = {1};
 
 Coherence Mesh;
-Transfinite Curve {:} = 2;
-//Transfinite Surface{:};
-//Transfinite Volume{:};
+Transfinite Curve {:} = 5;
+Transfinite Surface{:};
+Transfinite Volume{:};
 Recombine Surface{:};
 Recombine Volume{:};

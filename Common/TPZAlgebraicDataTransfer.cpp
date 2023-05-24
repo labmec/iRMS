@@ -1441,10 +1441,10 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int eq_number = fTransportMesh->Block().Position(block_num);
 
         transport.fCellsData.fEqNumber[i]=eq_number;
-        transport.fCellsData.fDensityOil[i]=865.00;
+        transport.fCellsData.fDensityOil[i]=1000.00;
         transport.fCellsData.fDensityWater[i]=1000.00;
-        transport.fCellsData.fViscosity[0]=1.0;
-        transport.fCellsData.fViscosity[1]=2.0;
+        transport.fCellsData.fViscosity[0]=0.001;
+        transport.fCellsData.fViscosity[1]=0.001;
         
         
         int dim= gel->Dimension();
@@ -1462,12 +1462,12 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //        coord[2]=z;
         REAL s0_v = 0.0;
         
-        REAL kx_v=0.0,ky_v=0.0,kz_v=0.0,phi_v=0.1;
+        REAL kx_v=1.0e-7,ky_v=1.0e-7,kz_v=1.0e-7,phi_v=0.7;
         std::vector<REAL> kappa_phi(4,0.0);
-//        kappa_phi[0]=1.0e-6;
-//        kappa_phi[1]=1.0e-6;
-//        kappa_phi[2]=1.0e-6;
-        kappa_phi[3]=0.1;
+        kappa_phi[0]=kx_v;
+        kappa_phi[1]=ky_v;
+        kappa_phi[2]=kz_v;
+        kappa_phi[3]=0.3;
         //
         if(fkappa_phi){
 //                   std::vector<REAL> kappa_phi = fkappa_phi(coord);
@@ -1514,8 +1514,8 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
             transport.fCellsData.fKz[i]=1.0e-4;
         }
         else if(matId==299){
-            transport.fCellsData.fVolumefactor[i]=0.001;
-            transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.001*0.001;
+            transport.fCellsData.fVolumefactor[i]=0.1;
+            transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.1*0.1;
             transport.fCellsData.fKx[i]=1.0e-4;
             transport.fCellsData.fKy[i]=1.0e-4;
             transport.fCellsData.fKz[i]=1.0e-4;
@@ -1577,7 +1577,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     std::cout<<"ReadingProps"<<std::endl;
-    FillPropsFromFile(transport);
+//    FillPropsFromFile(transport);
     this->InitializeVectorPointersTranportToMixed(transport);
     
 }
@@ -1599,6 +1599,7 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
     
     bool modpoints = true;
     std::ifstream file;
+//    std::string basemeshpath("/Users/jose/Documents/GitHub/iMRS/FracMeshes/dfnimrs/unisim_meshes/Reservoir_props/InitialDataProps_FRACSNOREF.txt");
     std::string basemeshpath("/Users/jose/Documents/GitHub/iMRS/FracMeshes/dfnimrs/unisim_meshes/Reservoir_props/InitialDataProps.txt");
 //    basemeshpath = basemeshpath  + name;
     file.open(basemeshpath);
@@ -1613,6 +1614,12 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
         double a, b, c;
         if(iss >> kx >> ky >> kz >> por)
         {
+            por=0.3;
+            if(kx<1.0e-8){
+                kx=1.0e-8;
+                ky=1.0e-8;
+                kz=1.0e-8;
+            }
             transport.fCellsData.fKx[i]=kx;
             transport.fCellsData.fKy[i]=ky;
             transport.fCellsData.fKz[i]=kz;

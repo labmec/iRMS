@@ -331,7 +331,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
         }
         
         
-        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
+//        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
         ef(iq + first_q) += weight * ( - kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms a and b in docs/Formulation.lyx
        
         
@@ -339,7 +339,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 3; j++) {
-                    kappa_inv_phi_q_j(i,0) += memory.m_kappa_inv(i,j) * phi_qs(j,jq);
+                    kappa_inv_phi_q_j(i,0) += m_kappa_inv(i,j) * phi_qs(j,jq);
                 }
             }
             
@@ -450,7 +450,7 @@ template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     
 
-    REAL gBigNumber = 10.0e14; //TPZMaterial::gBigNumber;
+    REAL gBigNumber = 1.0e12; //TPZMaterial::gBigNumber;
 
     int qb = 0, pb = 1;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
