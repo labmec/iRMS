@@ -649,7 +649,7 @@ void RunProblem(string& filenameBase, const int simcase)
          std::string props_data = "/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_props.dat";
          TRMSpatialPropertiesMap properties_map;
          std::vector<size_t> SAMe_blocks = {5,5,5};
-         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
+ //        properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
 
          TMRSPropertiesFunctions reservoir_properties;
          reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
@@ -1080,10 +1080,10 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
 	sim_data.mTGeometry.mSkeletonDiv = 0;
-	sim_data.mTNumerics.m_sfi_tol = 5.0e-5;
+	sim_data.mTNumerics.m_sfi_tol = 1.0e-4;
     
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-8;
-    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-8;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-5;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-5;
     
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
     sim_data.mTNumerics.m_res_tol_mixed = 1.0e-6;
@@ -1093,16 +1093,16 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
     grav[2] = -9.8;//*1.0e-6; //
-    sim_data.mTFluidProperties.mOilDensityRef = 500.00;
+    sim_data.mTFluidProperties.mOilDensityRef = 865.00;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.00;
-    sim_data.mTPetroPhysics.mOilViscosity=1.0;
-    sim_data.mTPetroPhysics.mWaterViscosity=1.0;
+    sim_data.mTPetroPhysics.mOilViscosity=0.002;
+    sim_data.mTPetroPhysics.mWaterViscosity=0.001;
 	sim_data.mTNumerics.m_gravity = grav;
-	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
 	sim_data.mTNumerics.m_max_iter_sfi=30;
-	sim_data.mTNumerics.m_max_iter_mixed=1;
-	sim_data.mTNumerics.m_max_iter_transport=100;
+	sim_data.mTNumerics.m_max_iter_mixed=3;
+	sim_data.mTNumerics.m_max_iter_transport=150;
 	
 	// PostProcess controls
 //	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);

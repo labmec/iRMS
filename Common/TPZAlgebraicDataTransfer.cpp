@@ -1441,10 +1441,10 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int eq_number = fTransportMesh->Block().Position(block_num);
 
         transport.fCellsData.fEqNumber[i]=eq_number;
-        transport.fCellsData.fDensityOil[i]=900.00;
+        transport.fCellsData.fDensityOil[i]=865.00;
         transport.fCellsData.fDensityWater[i]=1000.00;
         transport.fCellsData.fViscosity[0]=1.0;
-        transport.fCellsData.fViscosity[1]=1.0;
+        transport.fCellsData.fViscosity[1]=2.0;
         
         
         int dim= gel->Dimension();
