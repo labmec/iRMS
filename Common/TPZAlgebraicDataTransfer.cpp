@@ -1614,12 +1614,12 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
         double a, b, c;
         if(iss >> kx >> ky >> kz >> por)
         {
-            por=0.3;
-            if(kx<1.0e-8){
-                kx=1.0e-8;
-                ky=1.0e-8;
-                kz=1.0e-8;
-            }
+//            por=0.3;
+//            if(kx<1.0e-8){
+//                kx=1.0e-8;
+//                ky=1.0e-8;
+//                kz=1.0e-8;
+//            }
             transport.fCellsData.fKx[i]=kx;
             transport.fCellsData.fKy[i]=ky;
             transport.fCellsData.fKz[i]=kz;

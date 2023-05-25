@@ -107,6 +107,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         dx = Solution();
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
+        
         NewtonIteration();
         REAL fistAssemTime = flastAssembleTime;
         dx = Solution();
@@ -162,7 +163,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
     
     if(mIsFirstAssembleQ == true)
     {
-        fStructMatrix->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+        fStructMatrix->SetNumThreads(0);
         int64_t nel = fCompMesh->NElements();
         for(int64_t el = 0; el<nel; el++)
         {
@@ -170,7 +171,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
             TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
             if(sub)
             {
-            int numthreads = 16;
+            int numthreads = 0;
 //                sub->SetAnalysisSparse(0); sub->Analysis()->StructMatrix()->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
                 TPZSSpStructMatrix<STATE> matrix(sub);
                 matrix.SetNumThreads(numthreads);
@@ -180,10 +181,23 @@ void TMRSMixedAnalysis::NewtonIteration(){
 //                sub->Analysis()->SetSolver(step);
             }
         }
-        
-        
-        
         mIsFirstAssembleQ=false;
+    }
+    else{
+        fStructMatrix->SetNumThreads(m_sim_data->mTNumerics.m_nThreadsMixedProblem);
+        int64_t nel = fCompMesh->NElements();
+        for(int64_t el = 0; el<nel; el++)
+        {
+            TPZCompEl *cel = fCompMesh->Element(el);
+            TPZSubCompMesh *sub = dynamic_cast<TPZSubCompMesh *>(cel);
+            if(sub)
+            {
+            int numthreads = m_sim_data->mTNumerics.m_nThreadsMixedProblem;
+                TPZSSpStructMatrix<STATE> matrix(sub);
+                matrix.SetNumThreads(numthreads);
+                sub->Analysis()->SetStructuralMatrix(matrix);
+            }
+        }
     }
 //    std::string outputFolder("NOSE");
 //    FilterZeroNeumann( outputFolder, m_sim_data, this->StructMatrix(), Mesh());

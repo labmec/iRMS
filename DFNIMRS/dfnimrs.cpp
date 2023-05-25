@@ -29,7 +29,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // ----- Global vars -----
-const int glob_n_threads = 0;
+const int glob_n_threads = 16;
 
 // ----- End of namespaces -----
 
@@ -626,7 +626,7 @@ void RunProblem(string& filenameBase, const int simcase)
     // ----- Analysis parameters -----
     bool must_opt_band_width_Q = true; // This makes solving very fast!
     bool UsingPzSparse = true; // Necessary to use multithread for now...
-    bool UsePardiso_Q = false; // lighting fast!
+    bool UsePardiso_Q = true; // lighting fast!
     
     cout << "\n---------------------- Creating Analysis (Might optimize bandwidth) ----------------------" << endl;
    // sim_data.mTNumerics.m_run_with_transport=false;
@@ -1083,8 +1083,8 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTGeometry.mSkeletonDiv = 0;
 	sim_data.mTNumerics.m_sfi_tol = 1.0e-4;
     
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-5;
-    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-5;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-4;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-4;
     
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
     sim_data.mTNumerics.m_res_tol_mixed = 1.0e-6;

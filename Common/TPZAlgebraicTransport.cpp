@@ -111,7 +111,7 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
    
 //    Gravity fluxes contribution
     //@TODO: Modificar entrada
-    if(0){
+    if(1){
         ContributeInterfaceIHU(index, ek, ef,interfaceId);
     }
     
@@ -135,7 +135,7 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
     ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
     
 // Gravity fluxes contribution
-    if(0){
+    if(1){
     ContributeInterfaceIHUResidual(index, ef, interfaceID);
     }
     
@@ -1134,7 +1134,6 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
 //        DebugStop();
     }
     massOut += fluxIntegratedOutlet;
-    
     *freport_data<<fdt<<" "<<waterProd1<<" "<<oilProd1<<" "<<waterProd2<<" "<<oilProd2<<" "<< fluxIntegratedInlet << " " <<massOut<<std::endl;
     return fluxIntegratedOutlet;
 }

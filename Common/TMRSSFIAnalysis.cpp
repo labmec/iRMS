@@ -544,11 +544,14 @@ void TMRSSFIAnalysis::SFIIteration(){
     fAlgebraicDataTransfer.TransferLambdaCoefficients();
     
     if(isLinearTracer){
-        m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
-//      m_mixed_module->PostProcessTimeStep();
         
-        UpdateAllFluxInterfaces();
-        isLinearTracer = true; // so it leaves after this iteration
+        if(m_k_iteration<11){
+            m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
+    //      m_mixed_module->PostProcessTimeStep();
+            
+            UpdateAllFluxInterfaces();
+            isLinearTracer = true; // so it leaves after this iteration
+        }
     }
     
 //    fAlgebraicDataTransfer.TransferPressures();

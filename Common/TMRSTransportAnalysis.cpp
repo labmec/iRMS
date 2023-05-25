@@ -219,20 +219,13 @@ void TMRSTransportAnalysis::RunTimeStep(){
         return;
     }
     
-//    bool QN_converge_Q = QuasiNewtonSteps(x,10); // assuming linear operator (tangent)
+//    bool QN_converge_Q = QuasiNewtonSteps(x,75); // assuming linear operator (tangent)
 //    if(QN_converge_Q){
-//
+//        std::cout << "Transport operator: Converged - (QuasiNewtonSteps)" << std::endl;
+//        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
 //        return;
 //    }
 
-    //Linear problem Benchmark
-   
-    if(Norm(Rhs()) < res_tol){
-        std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
-        std::cout << "Number of iterations = " << 1 << std::endl;
-        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
-        return;
-    }
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
@@ -267,7 +260,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
         std::cout << "res_norm " << res_norm << " corr_norm " << corr_norm << std::endl;
         stop_criterion_Q = (res_norm < res_tol);
         stop_criterion_corr_Q = (corr_norm < corr_tol);
-        if (stop_criterion_Q || stop_criterion_corr_Q) {
+        if (stop_criterion_Q) {
+//        if (stop_criterion_Q || stop_criterion_corr_Q) {
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;
