@@ -1441,7 +1441,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int eq_number = fTransportMesh->Block().Position(block_num);
 
         transport.fCellsData.fEqNumber[i]=eq_number;
-        transport.fCellsData.fDensityOil[i]=1000.00;
+        transport.fCellsData.fDensityOil[i]=865.00;
         transport.fCellsData.fDensityWater[i]=1000.00;
         transport.fCellsData.fViscosity[0]=0.001;
         transport.fCellsData.fViscosity[1]=0.001;
@@ -1460,9 +1460,9 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //        coord[0]=x;
 //        coord[1]=y;
 //        coord[2]=z;
-        REAL s0_v = 0.0;
+        REAL s0_v = 0.00;
         
-        REAL kx_v=1.0e-7,ky_v=1.0e-7,kz_v=1.0e-7,phi_v=0.7;
+        REAL kx_v=1.0,ky_v=1.0,kz_v=1.0,phi_v=0.3;
         std::vector<REAL> kappa_phi(4,0.0);
         kappa_phi[0]=kx_v;
         kappa_phi[1]=ky_v;
@@ -1495,10 +1495,10 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
             }
                
                
-               if(fs0)
-               {
-                   s0_v   = fs0(coord);
-               }
+//               if(fs0)
+//               {
+//                   s0_v   = fs0(coord);
+//               }
        
         
         transport.fCellsData.fSaturation[i]=s0_v;
@@ -1507,18 +1507,18 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fKy[i]=ky_v;
         transport.fCellsData.fKz[i]=kz_v;
         if (geldim==2) {
-            transport.fCellsData.fVolumefactor[i]=0.001;
+            transport.fCellsData.fVolumefactor[i]=0.01;
             transport.fCellsData.fVolume[i] *=transport.fCellsData.fVolumefactor[i];
-            transport.fCellsData.fKx[i]=1.0e-4;
-            transport.fCellsData.fKy[i]=1.0e-4;
-            transport.fCellsData.fKz[i]=1.0e-4;
+            transport.fCellsData.fKx[i]=1.0e-6;
+            transport.fCellsData.fKy[i]=1.0e-6;
+            transport.fCellsData.fKz[i]=1.0e-6;
         }
         else if(matId==299){
-            transport.fCellsData.fVolumefactor[i]=0.1;
-            transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.1*0.1;
-            transport.fCellsData.fKx[i]=1.0e-4;
-            transport.fCellsData.fKy[i]=1.0e-4;
-            transport.fCellsData.fKz[i]=1.0e-4;
+            transport.fCellsData.fVolumefactor[i]=0.01;
+            transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.01*0.01;
+            transport.fCellsData.fKx[i]=1.0e-6;
+            transport.fCellsData.fKy[i]=1.0e-6;
+            transport.fCellsData.fKz[i]=1.0e-6;
         }
         else{
             transport.fCellsData.fVolumefactor[i]=1.0;

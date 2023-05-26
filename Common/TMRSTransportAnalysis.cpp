@@ -219,12 +219,12 @@ void TMRSTransportAnalysis::RunTimeStep(){
         return;
     }
     
-//    bool QN_converge_Q = QuasiNewtonSteps(x,75); // assuming linear operator (tangent)
-//    if(QN_converge_Q){
-//        std::cout << "Transport operator: Converged - (QuasiNewtonSteps)" << std::endl;
-//        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
-//        return;
-//    }
+    bool QN_converge_Q = QuasiNewtonSteps(x,500); // assuming linear operator (tangent)
+    if(QN_converge_Q){
+        std::cout << "Transport operator: Converged - (QuasiNewtonSteps)" << std::endl;
+        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
+        return;
+    }
 
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
@@ -260,8 +260,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
         std::cout << "res_norm " << res_norm << " corr_norm " << corr_norm << std::endl;
         stop_criterion_Q = (res_norm < res_tol);
         stop_criterion_corr_Q = (corr_norm < corr_tol);
-        if (stop_criterion_Q) {
-//        if (stop_criterion_Q || stop_criterion_corr_Q) {
+//        if (stop_criterion_Q) {
+        if (stop_criterion_Q || stop_criterion_corr_Q) {
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;
@@ -322,6 +322,7 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         DebugStop();
     }
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
+    REAL corr_tol = m_sim_data->mTNumerics.m_corr_tol_transport;
     std::cout << "Quasi-Newton process : " <<  std::endl;
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
         
@@ -353,6 +354,7 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
         AssembleResidual();
         REAL res_norm = Norm(Rhs());
         std::cout << " Residue norm : " <<  res_norm << std::endl;
+//        REAL corr_norm = Norm(Solution());
         
         (*ftransport_report_data) <<"   M         0           "<<m_k_iteration<<"          0       "<<res_norm<<"       "<<normsol<<std::endl;
         
@@ -362,9 +364,9 @@ bool TMRSTransportAnalysis::QuasiNewtonSteps(TPZFMatrix<STATE> &x, int n){
             DebugStop();
         }
 #endif
-        
+        bool  stop_criterion_corr_Q = (normsol < corr_tol);
         bool stop_criterion_Q = (res_norm < res_tol);
-        if (stop_criterion_Q) {
+        if (stop_criterion_Q || stop_criterion_corr_Q) {
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Quasi-Newton iterations = " << m_k_iteration << std::endl;
             std::cout << "Residue norm = " << res_norm << std::endl;

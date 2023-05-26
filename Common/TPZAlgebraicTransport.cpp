@@ -111,7 +111,7 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
    
 //    Gravity fluxes contribution
     //@TODO: Modificar entrada
-    if(1){
+    if(0){
         ContributeInterfaceIHU(index, ek, ef,interfaceId);
     }
     
@@ -135,7 +135,7 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
     ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
     
 // Gravity fluxes contribution
-    if(1){
+    if(0){
     ContributeInterfaceIHUResidual(index, ef, interfaceID);
     }
     
@@ -1049,10 +1049,53 @@ void TPZAlgebraicTransport::ZeroFluxes(){
 }
 REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
     
+    REAL WaterIntegralInlet =0.0;
+    REAL OilIntegralInlet = 0.0;
+    REAL WaterIntegralOutlet =0.0;
+    REAL OilIntegralOutlet = 0.0;
+    
+    //
     REAL waterProd1=0.0;
     REAL waterProd2=0.0;
     REAL oilProd1=0.0;
     REAL oilProd2=0.0;
+    
+    int ninterInlet = fInterfaceData[inletmatid].fIntegralFlux.size();
+    
+    //Flujo en la entrada
+    for (int iface =0 ; iface < ninterInlet; iface++) {
+        int LeftElIndex = fInterfaceData[inletmatid].fLeftRightVolIndex[iface].first;
+        REAL fracFluxWater = fCellsData.fWaterfractionalflow[LeftElIndex];
+        REAL fracFluxOil = fCellsData.fOilfractionalflow[LeftElIndex];
+        REAL FluxInttegral = fInterfaceData[inletmatid].fIntegralFlux[iface];
+        WaterIntegralInlet += FluxInttegral*1.0;
+    }
+    
+    //
+    //Flujo en la salida
+    int ninterOutlet = fInterfaceData[outletmatid].fIntegralFlux.size();
+    for (int iface =0 ; iface < ninterOutlet; iface++) {
+        int LeftElIndex = fInterfaceData[outletmatid].fLeftRightVolIndex[iface].first;
+        REAL fracFluxWater = fCellsData.fWaterfractionalflow[LeftElIndex];
+        REAL fracFluxOil = fCellsData.fOilfractionalflow[LeftElIndex];
+        REAL FluxInttegral = fInterfaceData[outletmatid].fIntegralFlux[iface];
+        WaterIntegralOutlet += FluxInttegral*fracFluxWater;
+        OilIntegralOutlet += FluxInttegral*fracFluxOil;
+        
+        std::vector<double> cords = fCellsData.fCenterCoordinate[LeftElIndex];
+        
+        //prod1
+        if (cords[0]> 2302.00 && cords[0]<2524) {
+            waterProd1 = FluxInttegral*fracFluxWater;
+            oilProd1 = FluxInttegral*fracFluxOil;
+        }
+        //prod2
+        else if(cords[0]> 3992.0 && cords[0]<4214.00){
+            waterProd2 = FluxInttegral*fracFluxWater;
+            oilProd2 = FluxInttegral*fracFluxOil;
+        }
+    }
+
     
     int ncells = fCellsData.fVolume.size();
     REAL intMass = 0.0;
@@ -1062,78 +1105,12 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
         REAL phi = fCellsData.fporosity[icel];
         REAL vol = fCellsData.fVolume[icel];
         intMass += sat*phi*vol;
-        volfrac += vol*phi;
-    }
-    
-    int ninletInterfaces = fInterfaceData[inletmatid].fIntegralFlux.size();
-    REAL fluxIntegratedInlet=0.0;
-    int nOutletInterfaces = fInterfaceData[outletmatid].fIntegralFlux.size();
-    REAL fluxIntegratedOutlet=0.0;
-    int nNoFluxFaces = fInterfaceData[4].fIntegralFlux.size();
-    REAL fluxIntegratedNoFlux=0.0;
-    for (int iInlet=0; iInlet<ninletInterfaces; iInlet++) {
-         fluxIntegratedInlet += fInterfaceData[inletmatid].fIntegralFlux[iInlet]*fdt*itime;
-    }
-    
-    for (int iOutlet=0; iOutlet<nOutletInterfaces; iOutlet++) {
-        std::pair<int64_t, int64_t> left_right = fInterfaceData[outletmatid].fLeftRightVolIndex[iOutlet];
-        REAL satOutlet = fCellsData.fSaturation[left_right.first];
-        fluxIntegratedOutlet += (satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
-        
-        std::vector<double> cords = fCellsData.fCenterCoordinate[left_right.first];
-        if (cords[0]> 2302.00 && cords[0]<2524) {
-            waterProd1 +=(satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
-            oilProd1 += (1.0 - satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
-        }
-        else if(cords[0]> 3992.0 && cords[0]<4214.00){
-            waterProd2 +=(satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
-            oilProd2 += (1.0 - satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
-        }
-        else{
-            
-            std::cout<<"verificar produccion de pozos"<<std::endl;
-            waterProd1 +=(satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
-            oilProd1 += (1.0 - satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
-//            DebugStop();
-        }
-    }
-    for (int iNF=0; iNF<nNoFluxFaces; iNF++) {
-        std::pair<int64_t, int64_t> left_right = fInterfaceData[4].fLeftRightVolIndex[iNF];
-        const int indexCell = left_right.first;
-        REAL satNF = fCellsData.fSaturation[indexCell];
-        const REAL noFluxIntegral = fInterfaceData[4].fIntegralFlux[iNF];
-        if(fabs(noFluxIntegral) > 1.e-8){
-            const int indexgeoel = fCellsData.fGeoIndex[indexCell];
-            std::cout << "In cell " << indexCell << ", and geoel index " << indexgeoel << ", noFluxIntegral = " << noFluxIntegral << std::endl;
-        }
-        fluxIntegratedNoFlux += (satNF)*noFluxIntegral*fdt;
     }
 
-    REAL massConservation = fluxIntegratedInlet + intMass + fluxIntegratedOutlet + massOut - initialMass;
-    std::cout << "\n ------------------ Global Conservation Diagnostics ------------------" << std::endl;
-    std::cout << "Inlet mass: " << std::setprecision(14) << fluxIntegratedInlet << std::endl;
-    std::cout << "Outlet mass: " << fluxIntegratedOutlet << std::endl;
-    std::cout << "Inlet - Outlet: " << fluxIntegratedInlet + fluxIntegratedOutlet << std::endl;
-    if(fabs(fluxIntegratedNoFlux) > 1.e-10 ){
-        std::cout << "=====> WARNING! Flux through no flux bc is significant. Total = " << fluxIntegratedNoFlux << std::endl;
-    }
-    else{
-        std::cout << "NoFlux mass: " << fluxIntegratedNoFlux << std::endl;
-    }
-    std::cout << "System mass: " << intMass << std::endl;
-    std::cout << "Initial mass: " << initialMass << std::endl;
-    std::cout << "System mass - Initial mass: " << intMass - initialMass << std::endl;
-    std::cout << "Accumulated outlet mass: " << massOut << std::endl;
-
-    if(std::abs(massConservation) < 1.0e-8 ){
-        std::cout << "\t===> Global mass conservation is ok! Total massLoss = " << std::setprecision(14) << massConservation << std::endl;
-    }
-    else{
-        std::cout << "\t====> ERROR! Global mass conservation NOT ok! <=====" << std::endl;
-        std::cout << "Global mass loss: " << std::setprecision(14) << massConservation << std::endl;
-//        DebugStop();
-    }
-    massOut += fluxIntegratedOutlet;
-    *freport_data<<fdt<<" "<<waterProd1<<" "<<oilProd1<<" "<<waterProd2<<" "<<oilProd2<<" "<< fluxIntegratedInlet << " " <<massOut<<std::endl;
-    return fluxIntegratedOutlet;
+    
+    massOut += WaterIntegralOutlet;
+    
+    *freport_data<<fdt*itime<<" "<<WaterIntegralInlet<<" "<<waterProd1<<" "<<oilProd1<<" "<<waterProd2<<" "<<oilProd2<<" "<<" "<< intMass << " " <<massOut<<std::endl;
+    
+    return 0.0;
 }

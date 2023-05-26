@@ -650,10 +650,10 @@ void RunProblem(string& filenameBase, const int simcase)
          std::string props_data = "/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_props.dat";
          TRMSpatialPropertiesMap properties_map;
          std::vector<size_t> SAMe_blocks = {5,5,5};
-//         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
+         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
 
          TMRSPropertiesFunctions reservoir_properties;
-         reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
+//         reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
 
          auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
          auto s0 = reservoir_properties.Create_s0();
@@ -704,6 +704,9 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Looping over time steps
         for (int it = 1; it <= n_steps; it++) {
          
+//            if(it%10==0){
+//                sfi_analysis->isLinearTracer = true;
+//            }
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
            
@@ -1094,10 +1097,10 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
     grav[2] = -9.8*1.0e-6; //
-    sim_data.mTFluidProperties.mOilDensityRef = 1000.00;
+    sim_data.mTFluidProperties.mOilDensityRef = 865.00;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.00;
-    sim_data.mTPetroPhysics.mOilViscosity=0.02;
-    sim_data.mTPetroPhysics.mWaterViscosity=0.01;
+    sim_data.mTPetroPhysics.mOilViscosity=1.0;
+    sim_data.mTPetroPhysics.mWaterViscosity=1.0;
 	sim_data.mTNumerics.m_gravity = grav;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;

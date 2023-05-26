@@ -120,7 +120,14 @@ void TMRSMixedAnalysis::RunTimeStep(){
         
         
         Assemble();
-        this->Solver()->ResetMatrix();
+        
+//        TPZMatrixSolver<STATE> *matsol = dynamic_cast<TPZMatrixSolver<STATE> *>(fSolver);
+//        matsol->Matrix()->SetIsDecomposed(0);
+        
+//        this->Solver()->ResetMatrix();
+    
+//        this->Solver()->
+          
 //        Solver()->Matrix()->SetIsDecomposed(0);
 //        Solve();
         res_norm = Norm(Rhs());
@@ -202,7 +209,12 @@ void TMRSMixedAnalysis::NewtonIteration(){
 //    std::string outputFolder("NOSE");
 //    FilterZeroNeumann( outputFolder, m_sim_data, this->StructMatrix(), Mesh());
     Assemble();
+    
+
+    
     Solve();
+    //   this->MatrixSolver<REAL>().ResetMatrix();
+
     
 //    this->PostProcessTimeStep();
 }

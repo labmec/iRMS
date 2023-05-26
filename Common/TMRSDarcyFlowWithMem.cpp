@@ -312,7 +312,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
 //            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
 //        }
 //    }
-    
+    REAL vl =m_kappa_inv(0,0);
         std::vector<REAL> m_gravity(3,0.0);
         m_gravity[2] =  9.8*1.0e-6;
         for (int i = 0; i < 3; i++) {

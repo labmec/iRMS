@@ -34,11 +34,11 @@ private:
     /// Hold the saturation solution at every step of the non linear iterations. If it is linear, holds the final solution
     TPZFMatrix<STATE> m_x_transport;
     
-    /// Boolean that indicates if the problem is linear. If so, does not need to run newton iterations to converge
-    bool isLinearTracer = true;
+ 
     
 public:
-    
+    /// Boolean that indicates if the problem is linear. If so, does not need to run newton iterations to converge
+    bool isLinearTracer = true;
     /// Number of iterations
     int m_k_iteration = 0;
     REAL fcurrentError=1.0;

@@ -64,7 +64,6 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
 //    std::cout<<"Index: "<<this->Index()<<std::endl;
 //    ek.fMat.Print("Ek",std::cout, EMathematicaInput);
 //    ef.fMat.Print("EF",std::cout, EMathematicaInput);
-    
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
     REAL Glambda = 0.0;//1.0*fMixedDensity;

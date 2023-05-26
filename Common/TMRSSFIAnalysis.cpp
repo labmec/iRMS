@@ -20,6 +20,8 @@
 #include "pzshapepiram.h"
 #include "pzshapepoint.h"
 #include "TPZSimpleTimer.h"
+#include "pznonlinanalysis.h"
+
 
 TMRSSFIAnalysis::TMRSSFIAnalysis(){
     m_sim_data = nullptr;
@@ -526,6 +528,7 @@ void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
     }
     if (type == 1) {
         m_mixed_module->PostProcessTimeStep(dim);
+        m_mixed_module->PostProcessTimeStep(dim-1);
     }
     if (type == 2) {
         m_transport_module->PostProcessTimeStep();
@@ -545,13 +548,13 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     if(isLinearTracer){
         
-        if(m_k_iteration<11){
+//        if(m_k_iteration<11){
             m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
     //      m_mixed_module->PostProcessTimeStep();
             
             UpdateAllFluxInterfaces();
-            isLinearTracer = true; // so it leaves after this iteration
-        }
+            isLinearTracer = false; // so it leaves after this iteration
+//        }
     }
     
 //    fAlgebraicDataTransfer.TransferPressures();
