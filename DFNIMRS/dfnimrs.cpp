@@ -704,9 +704,7 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Looping over time steps
         for (int it = 1; it <= n_steps; it++) {
          
-//            if(it%10==0){
-//                sfi_analysis->isLinearTracer = true;
-//            }
+
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
            
@@ -733,8 +731,11 @@ void RunProblem(string& filenameBase, const int simcase)
             fTimeStep_report<<"   "<<it<<"          "<< sfi_analysis->m_k_iteration<<"        " << sfi_analysis->fcurrentError<<"     "<<std::abs(massconserv - initial_mass)<<std::endl;
 //            if(it == 1){
                 //sfi_analysis->m_transport_module->fAlgebraicTransport.ColorMeshByCoords();
-                sfi_analysis->PostProcessTimeStep(typeToPPinit);
-                sfi_analysis->PostProcessTimeStep(typeToPPsteps);
+            
+                if(it==1 || it%50==0){
+                    sfi_analysis->PostProcessTimeStep(typeToPPinit);
+                    sfi_analysis->PostProcessTimeStep(typeToPPsteps);
+                }
 //                if(isPostProcessFracDiagnostics){
 //                    std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
 //                    ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
