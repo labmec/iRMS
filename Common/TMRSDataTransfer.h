@@ -193,13 +193,13 @@ public:
         /** @brief Contains the oil relative permeability model for each layer */
         std::vector<TRSLinearInterpolator > mLayer_Kro_RelPerModel;
         
-        std::function<std::tuple<REAL, REAL>(REAL &)> mKro;
-        std::function<std::tuple<REAL, REAL>(REAL &)> mKrw;
-        std::function<std::tuple<REAL, REAL>(REAL &)> mFo;
-        std::function<std::tuple<REAL, REAL>(REAL &)> mFw;
-        std::function<std::tuple<REAL, REAL>(REAL &)> mLambdaW;
-        std::function<std::tuple<REAL, REAL>(REAL &)> mLambdaO;
-        std::function<std::tuple<REAL, REAL>(REAL &)> mLambdaTotal;
+        std::function<std::tuple<REAL, REAL, REAL>(REAL &)> mKro;
+        std::function<std::tuple<REAL, REAL, REAL>(REAL &)> mKrw;
+        std::function<std::tuple<REAL, REAL, REAL>(REAL &)> mFo;
+        std::function<std::tuple<REAL, REAL, REAL>(REAL &)> mFw;
+        std::function<std::tuple<REAL, REAL, REAL>(REAL &)> mLambdaW;
+        std::function<std::tuple<REAL, REAL, REAL>(REAL &)> mLambdaO;
+        std::function<std::tuple<REAL, REAL, REAL>(REAL &)> mLambdaTotal;
         
         /** @brief Default constructor */
         TPetroPhysics(){

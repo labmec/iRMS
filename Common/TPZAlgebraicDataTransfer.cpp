@@ -1499,8 +1499,6 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //               {
 //                   s0_v   = fs0(coord);
 //               }
-       
-        
         transport.fCellsData.fSaturation[i]=s0_v;
         transport.fCellsData.fporosity[i]=phi_v;
         transport.fCellsData.fKx[i]=kx_v;
@@ -1509,16 +1507,16 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         if (geldim==2) {
             transport.fCellsData.fVolumefactor[i]=0.01;
             transport.fCellsData.fVolume[i] *=transport.fCellsData.fVolumefactor[i];
-            transport.fCellsData.fKx[i]=1.0e-6;
-            transport.fCellsData.fKy[i]=1.0e-6;
-            transport.fCellsData.fKz[i]=1.0e-6;
+            transport.fCellsData.fKx[i]=1.0e-2;
+            transport.fCellsData.fKy[i]=1.0e-2;
+            transport.fCellsData.fKz[i]=1.0e-2;
         }
         else if(matId==299){
             transport.fCellsData.fVolumefactor[i]=0.01;
             transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.01*0.01;
-            transport.fCellsData.fKx[i]=1.0e-6;
-            transport.fCellsData.fKy[i]=1.0e-6;
-            transport.fCellsData.fKz[i]=1.0e-6;
+            transport.fCellsData.fKx[i]=1.0e-2;
+            transport.fCellsData.fKy[i]=1.0e-2;
+            transport.fCellsData.fKz[i]=1.0e-2;
         }
         else{
             transport.fCellsData.fVolumefactor[i]=1.0;

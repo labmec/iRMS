@@ -528,7 +528,7 @@ void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
     }
     if (type == 1) {
         m_mixed_module->PostProcessTimeStep(dim);
-        m_mixed_module->PostProcessTimeStep(dim-1);
+//        m_mixed_module->PostProcessTimeStep(dim-1);
     }
     if (type == 2) {
         m_transport_module->PostProcessTimeStep();
@@ -553,7 +553,8 @@ void TMRSSFIAnalysis::SFIIteration(){
     //      m_mixed_module->PostProcessTimeStep();
             
             UpdateAllFluxInterfaces();
-            isLinearTracer = false; // so it leaves after this iteration
+        
+             isLinearTracer = false; // so it leaves after this iteration
 //        }
     }
     

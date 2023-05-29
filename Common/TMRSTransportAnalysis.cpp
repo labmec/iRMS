@@ -219,13 +219,14 @@ void TMRSTransportAnalysis::RunTimeStep(){
         return;
     }
     
-    bool QN_converge_Q = QuasiNewtonSteps(x,500); // assuming linear operator (tangent)
-    if(QN_converge_Q){
-        std::cout << "Transport operator: Converged - (QuasiNewtonSteps)" << std::endl;
-        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
-        return;
-    }
+//    bool QN_converge_Q = QuasiNewtonSteps(x,10); // assuming linear operator (tangent)
+//    if(QN_converge_Q){
+//        std::cout << "Transport operator: Converged - (QuasiNewtonSteps)" << std::endl;
+//        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
+//        return;
+//    }
 
+    REAL maxdif =0.0;
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
         NewtonIteration();
@@ -234,10 +235,23 @@ void TMRSTransportAnalysis::RunTimeStep(){
 //        std::cout<<"Sol Correct: "<<std::endl;
 //        std::cout<<x<<std::endl;
 
-        LoadSolution(x);
+   
 //        cmesh->LoadSolutionFromMultiPhysics();
 //        PostProcessTimeStep();
-        fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+        REAL maxvar = fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+        LoadSolution(x);
+        
+        REAL maxDiff=0;
+        int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
+        for (int i=0; i< ncells; i++) {
+            REAL sw1 = fAlgebraicTransport.fCellsData.fSaturationLastState[i];
+            REAL sw2 = fAlgebraicTransport.fCellsData.fSaturation[i];
+            REAL diff = std::abs(sw1-sw2);
+            if (diff>maxDiff) {
+                maxDiff=diff;
+            }
+        }
+        
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
 //        this->PostProcessTimeStep();
@@ -260,8 +274,12 @@ void TMRSTransportAnalysis::RunTimeStep(){
         std::cout << "res_norm " << res_norm << " corr_norm " << corr_norm << std::endl;
         stop_criterion_Q = (res_norm < res_tol);
         stop_criterion_corr_Q = (corr_norm < corr_tol);
+        
+        bool StopQ3 = std::abs(maxvar - maxdif)<0.01;
+        maxdif=maxvar;
 //        if (stop_criterion_Q) {
-        if (stop_criterion_Q || stop_criterion_corr_Q) {
+//        if (stop_criterion_Q || stop_criterion_corr_Q) {
+        if(StopQ3){
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;

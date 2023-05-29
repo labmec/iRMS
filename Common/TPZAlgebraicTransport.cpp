@@ -606,12 +606,31 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton
         }
 }
 
-void TPZAlgebraicTransport::TCellData::UpdateSaturations(TPZFMatrix<STATE> &sw){
+REAL TPZAlgebraicTransport::TCellData::UpdateSaturations(TPZFMatrix<STATE> &sw){
+    
+    AdjustSaturation01(sw);
     int ncells = fVolume.size();
+    REAL maxVariation = 0.0;
+    int imax=0;
     for (int icell = 0; icell<ncells; icell++) {
         int eq_number = fEqNumber[icell];
-        fSaturation[icell] = sw(eq_number);
+        REAL sw1 =fSaturation[icell];
+//        REAL slast = fSaturationLastState[icell];
+        REAL sw2 = sw(eq_number);
+        
+        if(sw1>1.0 || sw2>1.0){
+            DebugStop();
+        }
+//        REAL swcorrect = VerifyConvergence(sw1, sw2); //¿sure?
+        REAL swcorrect = sw2;
+        if(maxVariation <= std::abs(sw1-swcorrect) ){
+            maxVariation=std::abs(sw1-swcorrect);
+            imax = icell;
+        }
+        fSaturation[icell] = swcorrect;
     }
+    std::cout<<" maax: "<<imax<<std::endl;
+    return maxVariation;
 }
 
 void TPZAlgebraicTransport::TCellData::UpdateSaturationsTo(TPZFMatrix<STATE> &sw){
@@ -1113,4 +1132,38 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
     *freport_data<<fdt*itime<<" "<<WaterIntegralInlet<<" "<<waterProd1<<" "<<oilProd1<<" "<<waterProd2<<" "<<oilProd2<<" "<<" "<< intMass << " " <<massOut<<std::endl;
     
     return 0.0;
+}
+void TPZAlgebraicTransport::AdjustSaturation01(TPZFMatrix<STATE> &sw){
+    int ncells = sw.Rows();
+    for (int icell = 0; icell<ncells; icell++) {
+        REAL val  =sw(icell);
+        if (val>1.0){
+            sw(icell,0)=1.0;
+        }else if(val<0.00){
+            sw(icell,0)=0.0;
+        }
+    }
+}
+REAL TPZAlgebraicTransport::TCellData::VerifyConvergence(REAL &sw1, REAL &sw2){
+   
+      bool isLinear = fsim_data->mTNumerics.m_ISLinearKrModelQ;
+        if(isLinear){
+            fsim_data->mTPetroPhysics.CreateLinearKrModel();
+        }
+        else{
+            fsim_data->mTPetroPhysics.CreateQuadraticKrModel();
+        }
+        auto fwf = fsim_data->mTPetroPhysics.mFw;
+    auto fwfvalderivSw1 =fwf(sw1);
+    auto fwfvalderivSw2 =fwf(sw2);
+    REAL val1 = std::get<2>(fwfvalderivSw1);
+    REAL val2 = std::get<2>(fwfvalderivSw2);
+    REAL sreturn = 0.0;
+    if(val1*val2 < 0.0){
+        sreturn= (sw1+sw2)/2.0;
+    }
+    else{
+        sreturn= sw2;
+    }
+    return sreturn ;
 }

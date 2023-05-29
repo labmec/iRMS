@@ -756,6 +756,11 @@ void TPZAnalysisAuxEigen::Solve(){
     std::cout << "#iterations:     " << m_analysis2.iterations() << std::endl;
 //    std::cout << "estimated error: " << m_analysis2.error()      << std::endl;
 //    std::cout << "sol: " << ds.head(6).transpose() << std::endl;
+    
+//    int nsol = ds.size();
+//    for (int isol=0; isol<nsol; isol++) {
+//        REAL valanal = ds(0);
+//    }
     m_ds=ds;
     
 }

@@ -241,8 +241,8 @@ int main(int argc, char* argv[]){
 //                filenameBase = basemeshpath + "/TesisResults/case_4/fl_case4A/";
 //                filenameBase = basemeshpath + "/TesisResults/case_4/fl_case4C/";
                 
-//                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
-                  filenameBase = basemeshpath + "/TesisResults/UNISIM/";
+                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
+//                  filenameBase = basemeshpath + "/TesisResults/UNISIM/";
 
                 break;
             case 25:
@@ -650,7 +650,7 @@ void RunProblem(string& filenameBase, const int simcase)
          std::string props_data = "/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_props.dat";
          TRMSpatialPropertiesMap properties_map;
          std::vector<size_t> SAMe_blocks = {5,5,5};
-         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
+//         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
 
          TMRSPropertiesFunctions reservoir_properties;
 //         reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
@@ -732,10 +732,15 @@ void RunProblem(string& filenameBase, const int simcase)
 //            if(it == 1){
                 //sfi_analysis->m_transport_module->fAlgebraicTransport.ColorMeshByCoords();
             
-                if(it==1 || it%50==0){
+//                if(it==1 || it%50==0){
                     sfi_analysis->PostProcessTimeStep(typeToPPinit);
                     sfi_analysis->PostProcessTimeStep(typeToPPsteps);
-                }
+//                }
+            sfi_analysis->isLinearTracer = true;
+            
+//            if(it==1 || it%50==200){
+//                sfi_analysis->isLinearTracer = true;
+//            }
 //                if(isPostProcessFracDiagnostics){
 //                    std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
 //                    ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
@@ -1097,7 +1102,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
-    grav[2] = -9.8*1.0e-6; //
+    grav[2] = -9.8*1.0e-9; //
     sim_data.mTFluidProperties.mOilDensityRef = 865.00;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.00;
     sim_data.mTPetroPhysics.mOilViscosity=1.0;

@@ -139,7 +139,7 @@ public:
             fDerivativeOfractionalflow.resize(ncells);
             fCenterCoordinate.resize(ncells);
         }
-        void UpdateSaturations(TPZFMatrix<STATE> &dsx);
+        REAL UpdateSaturations(TPZFMatrix<STATE> &dsx);
         void UpdateSaturationsLastState(TPZFMatrix<STATE> &sw);
         void UpdateSaturationsTo(TPZFMatrix<STATE> &sw);
         void UpdateFractionalFlowsAndLambda(bool isLinearQ=false);
@@ -148,6 +148,7 @@ public:
         void UpdateDensitiesLastState();
         void UpdateMixedDensity();
         void SetDataTransfer(TMRSDataTransfer *simdata);
+        REAL VerifyConvergence(REAL &sw1, REAL &sw2);
         void Print(std::ostream &out);
     };
     std::ofstream *freport_data=nullptr;
@@ -224,6 +225,8 @@ public:
     void PrintFluxes();
     void ColorMeshByCoords();
     REAL ExportPProductionData(int itime);
+    static void AdjustSaturation01(TPZFMatrix<STATE> &sw);
+   
 };
 
 #endif /* AlgebraicTransport_h */
