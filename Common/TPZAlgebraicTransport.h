@@ -66,6 +66,7 @@ public:
         std::vector<REAL> fGeoIndex;
         std::vector<REAL> fPressure;
         std::vector<REAL> fSaturation;
+        std::vector<REAL> fSaturationWait;
         std::vector<REAL> fSaturationLastState;
         std::vector<REAL> fDensityOil;
         std::vector<REAL> fdDensityOildp;
@@ -99,7 +100,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fsim_data(0), fEqNumber(0),fVolume(0), fVolumefactor(0),fMatId(0),fGeoIndex(0),fSaturation(0), fPressure(0), fSaturationLastState(0),  fDensityOil(0),fdDensityOildp(0), fDensityOilLastState(0),fDensityWater(0), fdDensityWaterdp(0),fDensityWaterLastState(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCoordinate(0),
+        TCellData() : fsim_data(0), fEqNumber(0),fVolume(0), fVolumefactor(0),fMatId(0),fGeoIndex(0),fSaturation(0),fSaturationWait(0), fPressure(0), fSaturationLastState(0),  fDensityOil(0),fdDensityOildp(0), fDensityOilLastState(0),fDensityWater(0), fdDensityWaterdp(0),fDensityWaterLastState(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCoordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -116,6 +117,7 @@ public:
             fGeoIndex.resize(ncells);
             fEqNumber.resize(ncells);
             fSaturation.resize(ncells);
+            fSaturationWait.resize(ncells);
             fPressure.resize(ncells);
             fSaturationLastState.resize(ncells);
             fporosity.resize(ncells);

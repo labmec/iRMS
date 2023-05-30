@@ -47,7 +47,7 @@
     "useMHM":true,
     "needsMerge":true,
     "RunWithTransport": true,
-    "DeltaT": 20.0,
+    "DeltaT": 2.5,
     "NSteps": 10000,
     "SimulationDim": 3,
     "Fractures": [

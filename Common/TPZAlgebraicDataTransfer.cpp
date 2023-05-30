@@ -1462,7 +1462,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //        coord[2]=z;
         REAL s0_v = 0.00;
         
-        REAL kx_v=1.0,ky_v=1.0,kz_v=1.0,phi_v=0.3;
+        REAL kx_v=1.0e-4,ky_v=1.0e-4,kz_v=1.0e-4,phi_v=0.3;
         std::vector<REAL> kappa_phi(4,0.0);
         kappa_phi[0]=kx_v;
         kappa_phi[1]=ky_v;
@@ -1500,6 +1500,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //                   s0_v   = fs0(coord);
 //               }
         transport.fCellsData.fSaturation[i]=s0_v;
+        transport.fCellsData.fSaturationWait[i]=s0_v;
         transport.fCellsData.fporosity[i]=phi_v;
         transport.fCellsData.fKx[i]=kx_v;
         transport.fCellsData.fKy[i]=ky_v;
@@ -1621,6 +1622,10 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
             transport.fCellsData.fKx[i]=kx;
             transport.fCellsData.fKy[i]=ky;
             transport.fCellsData.fKz[i]=kz;
+            
+//            if (transport.fCellsData.fMatId[i]==2 && por>0.0 && por<0.2) {
+//                por =0.5;
+//            }
             transport.fCellsData.fporosity[i]=por;
         }
         else{

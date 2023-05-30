@@ -219,12 +219,13 @@ void TMRSTransportAnalysis::RunTimeStep(){
         return;
     }
     
-//    bool QN_converge_Q = QuasiNewtonSteps(x,10); // assuming linear operator (tangent)
-//    if(QN_converge_Q){
-//        std::cout << "Transport operator: Converged - (QuasiNewtonSteps)" << std::endl;
-//        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
-//        return;
-//    }
+    bool QN_converge_Q = QuasiNewtonSteps(x,250); // assuming linear operator (tangent)
+    if(QN_converge_Q){
+        std::cout << "Transport operator: Converged - (QuasiNewtonSteps)" << std::endl;
+        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
+        return;
+    }
+    
 
     REAL maxdif =0.0;
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
@@ -275,11 +276,13 @@ void TMRSTransportAnalysis::RunTimeStep(){
         stop_criterion_Q = (res_norm < res_tol);
         stop_criterion_corr_Q = (corr_norm < corr_tol);
         
-        bool StopQ3 = std::abs(maxvar - maxdif)<0.01;
+//        bool StopQ3 = std::abs(maxvar - maxdif)<0.01;
+        std::cout<<"maxvar: "<<maxvar<<std::endl;
+        bool StopQ3 = std::abs(maxvar - maxdif)<0.0001;
         maxdif=maxvar;
 //        if (stop_criterion_Q) {
-//        if (stop_criterion_Q || stop_criterion_corr_Q) {
-        if(StopQ3){
+        if (stop_criterion_Q || stop_criterion_corr_Q) {
+//        if(StopQ3){
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;

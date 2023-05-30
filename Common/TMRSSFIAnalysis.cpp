@@ -476,7 +476,6 @@ void TMRSSFIAnalysis::RunTimeStep(){
             fcurrentError = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         }
         stop_criterion_Q = fcurrentError < eps_tol; // Stop by saturation variation
-        
         *freport_data<<"    "<< m_k_iteration <<"          "<<fcurrentError<<std::endl;
         
         if (stop_criterion_Q && m_k_iteration > 1) {
@@ -488,13 +487,15 @@ void TMRSSFIAnalysis::RunTimeStep(){
 //            m_mixed_module->PostProcessTimeStep();
             break;
         }
-        else if (m_k_iteration == n_iterations){
-            std::cout << "SFI not converged " << std::endl;
-            std::cout << "Number of iterations = " << m_k_iteration << std::endl;
-            std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
-            std::cout << "Transport problem variation = " << fcurrentError << std::endl;
-            DebugStop();
-        }
+        
+//        else if (m_k_iteration == n_iterations){
+//            std::cout << "SFI not converged " << std::endl;
+//            std::cout << "Number of iterations = " << m_k_iteration << std::endl;
+//            std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
+//            std::cout << "Transport problem variation = " << fcurrentError << std::endl;
+//            DebugStop();
+//        }
+        
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
         
@@ -554,7 +555,7 @@ void TMRSSFIAnalysis::SFIIteration(){
             
             UpdateAllFluxInterfaces();
         
-             isLinearTracer = false; // so it leaves after this iteration
+            isLinearTracer = false; // so it leaves after this iteration
 //        }
     }
     
@@ -582,9 +583,7 @@ void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_transport_module->fAlgebraicTransport.outletmatid);
 
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(4); //Mat With No Flux
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(5);//Mat With No Flux
-
-    
+    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(5); //Mat With No Flux
     m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
 }
 

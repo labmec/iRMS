@@ -120,7 +120,7 @@ void TMRSDataTransfer::TPetroPhysics::CreateQuadraticKrModel(){
     mKrw = [](REAL &sw){
         REAL krw = sw*sw;
         REAL dkrw = 2*sw;
-        REAL d2krw= 2;
+        REAL d2krw= 2.0;
         std::tuple<REAL, REAL,REAL> valderiv(krw, dkrw,d2krw);
         return valderiv;
     };
