@@ -659,7 +659,7 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
             auto fwfvalderiv_wait = fwf(sw_v);
             REAL DfracFlow_v = std::get<1>(fwfvalderiv_wait);
             REAL fracFlow_ant = std::get<0>(fwfvalderiv_wait);//this->fFractionalFlowWait[ivol];
-            fWaterfractionalflow[ivol] = (fracFlow_ant) + (DfracFlow_v)*(sw - sw_v);
+            fWaterfractionalflow[ivol] = (fracFlow_ant ) + (DfracFlow_v + 1)*(sw - sw_v);
             fDerivativeWfractionalflow[ivol] = std::get<1>(fwfvalderiv);
             fOilfractionalflow[ivol] = std::get<0>(fovalderiv);
             fDerivativeOfractionalflow[ivol] = std::get<1>(fovalderiv);
@@ -678,8 +678,9 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
             // REAL dfwv_ant = fCellsData.fdFracionalFlowSaturationWait[lr_index.first];
             //    REAL dfwv_R  = fCellsData.fdFracionalFlowSaturationWait[lr_index.second];
             
-            fTermMultByFluxUpwindInterface[ivol] = ((fracFlow_ant) + DfracFlow_v * (sw - sw_v) );
-            fDerivTermMultByFluxUpwindInterface[ivol] = DfracFlow_v;
+            //fTermMultByFluxUpwindInterface[ivol] = ((fracFlow_ant  ) + (DfracFlow_v +1)* (sw - sw_v) );
+            fTermMultByFluxUpwindInterface[ivol] = ((fracFlow_ant)+ (DfracFlow_v)* (sw - sw_v) );
+            fDerivTermMultByFluxUpwindInterface[ivol] = (DfracFlow_v + 1.0);
             //    fw_L = ((dfwv_L * swv1_L) + fwv_L - (dfwv_L * swv_L) );
             //    fw_R = ((dfwv_R * swv1_R) + fwv_R - (dfwv_R * swv_R) );
         }
@@ -743,25 +744,39 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton
 
 REAL TPZAlgebraicTransport::TCellData::UpdateSaturations(TPZFMatrix<STATE> &sw, bool updateWait){
     
-
+   // AdjustSaturation01(sw);
     
     int ncells = fVolume.size();
     REAL maxVariation = 0.0;
     int imax=0;
-    //auto waitSat = fSaturation;
+    auto waitSat = fSaturation;
     if(updateWait){
         for (int icell = 0; icell<ncells; icell++) {
             int eq_number = fEqNumber[icell];
             REAL volume = fVolume[icell];
             REAL sw1 =fSaturation[icell];
             REAL sw2 = sw(eq_number);
+            if(sw2<0){
+                sw2=0;
+                sw(eq_number)=0.0;
+            }
+            if(sw2>1){
+                sw2=1.0;
+                sw(eq_number)=1.0;
+            }
             
             if(sw1>1.0 || sw2>1.0){
                 std::cout<<"Error sw1: "<< sw1<< " sw2: "<< sw2 <<std::endl;
     //            DebugStop();
             }
-    //        REAL swcorrect = VerifyConvergence(sw1, sw2); //¿sure?
-            REAL swcorrect = sw2;
+//            if(sw1<0){
+//                sw1=0;
+//            }
+//            if(sw1>1){
+//                sw1=1.0;
+//
+            REAL swcorrect = VerifyConvergence(sw1, sw2); //¿sure?
+//            REAL swcorrect = sw2;
             if(maxVariation <= std::abs(sw1-swcorrect)){
                 maxVariation=std::abs(sw1-swcorrect);
                 imax = icell;
@@ -769,32 +784,9 @@ REAL TPZAlgebraicTransport::TCellData::UpdateSaturations(TPZFMatrix<STATE> &sw, 
             fSaturation[icell] = swcorrect;
         }
     }
-    else{
-        AdjustSaturation01(fSaturation);
-        
-        //
-//        for (int icell = 0; icell<ncells; icell++) {
-//            int eq_number = fEqNumber[icell];
-//            REAL volume = fVolume[icell];
-//            REAL sw1 =fSaturation[icell];
-//            REAL sw2 = fSaturationWait[icell];
-//
-//            if(sw1>1.0 || sw2>1.0){
-//                std::cout<<"Error sw1: "<< sw1<< " sw2: "<< sw2 <<std::endl;
-//    //            DebugStop();
-//            }
-//    //        REAL swcorrect = VerifyConvergence(sw1, sw2); //¿sure?
-////            REAL swcorrect = sw2;
-//            if(maxVariation <= std::abs(sw1-swcorrect)){
-//                maxVariation=std::abs(sw1-swcorrect);
-//                imax = icell;
-//            }
-//            fSaturation[icell] = swcorrect;
-//        }
-    }
+    fSaturationWait =waitSat;
     
-    
-    std::cout<<" maax: "<<imax<<" valor_fake:"<< maxVariation <<std::endl;
+    std::cout<<" maax: "<<imax<<" max_var:"<< maxVariation <<std::endl;
     return maxVariation;
 }
 
@@ -1298,16 +1290,16 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
     
     return 0.0;
 }
-void TPZAlgebraicTransport::AdjustSaturation01( std::vector<REAL> &sw){
-    int ncells = sw.size();
+void TPZAlgebraicTransport::AdjustSaturation01( TPZFMatrix<STATE>  &sw){
+    int ncells = sw.Rows();
     for (int icell = 0; icell<ncells; icell++) {
-        REAL val  =sw[icell];
+        REAL val  =sw(icell);
         if (val>1.0){
             std::cout<<"Saturacion anterior: "<<val <<" saturacion modificada: "<< 1.0 <<std::endl;
-            sw[icell]=1.0;
+            sw(icell,0)=1.0;
         }else if(val<0.00){
             std::cout<<"Saturacion anterior: "<<val <<" saturacion modificada: "<< 0.0 <<std::endl;
-            sw[icell]=0.0;
+            sw(icell,0)=0.0;
         }
     }
 }

@@ -1093,8 +1093,8 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTGeometry.mSkeletonDiv = 0;
 	sim_data.mTNumerics.m_sfi_tol = 1.0e-3;
     
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-4;
-    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-4;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-3;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-3;
     
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
     sim_data.mTNumerics.m_res_tol_mixed = 1.0e-5;
@@ -1114,7 +1114,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
 	sim_data.mTNumerics.m_max_iter_sfi=1;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
-	sim_data.mTNumerics.m_max_iter_transport=30;
+	sim_data.mTNumerics.m_max_iter_transport=3000;
 	
 	// PostProcess controls
 //	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
@@ -1292,6 +1292,27 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 
 //        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
         gmeshcoarse = GenerateUnisimMesh(3);
+        int nels = gmeshcoarse->NElements();
+        REAL volumeinlet =0.0;
+        REAL volumeoutlet =0.0;
+        for(int iel =0; iel<nels; iel++){
+            TPZGeoEl * gel = gmeshcoarse->Element(iel);
+            if (!gel) {
+                continue;
+            }
+            int matid = gel->MaterialId();
+            REAL volume = gel->Volume();
+            if (matid == 3) {
+                volumeinlet +=volume;
+            }
+            if (matid==4) {
+                volumeoutlet +=volume;
+            }
+        }
+        
+        std::cout<<"Area injetores: "<<volumeinlet<<std::endl;
+        std::cout<<"Area productores: "<<volumeoutlet   <<std::endl;
+        
         std::ofstream file("test13.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, file);
 //        gmeshcoarse = GenerateUnisimMesh(3);

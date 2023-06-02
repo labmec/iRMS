@@ -217,7 +217,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
     
     if(isInitialGuess){
        
-       ComputeInitialGuess(x);
+       //ComputeInitialGuess(x);
     }
     
 //    bool QN_converge_Q = QuasiNewtonSteps(x,250); // assuming linear operator (tangent)
@@ -242,9 +242,9 @@ void TMRSTransportAnalysis::RunTimeStep(){
        
         LoadSolution(x);
         
-        auto sat_Ant = fAlgebraicTransport.fCellsData.fSaturation;
+//        auto sat_Ant = fAlgebraicTransport.fCellsData.fSaturation;
         REAL maxvar = fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-        fAlgebraicTransport.fCellsData.fSaturationWait = sat_Ant;
+//        fAlgebraicTransport.fCellsData.fSaturationWait = sat_Ant;
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
         
         
@@ -273,7 +273,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
 #endif
         
         //
-        (*ftransport_report_data) <<"   M         0           "<<"0          "<<m_k_iteration<<"       "<<res_norm<<"       "<<corr_norm<<std::endl;
+        (*ftransport_report_data) <<"   M         0           "<<"0          "<<m_k_iteration<<"       "<<res_norm<<"       "<<corr_norm<< " max_var: "<< maxvar<<std::endl;
         //
         std::cout << "res_norm " << res_norm << " corr_norm " << corr_norm << std::endl;
         stop_criterion_Q = (res_norm < res_tol);
@@ -284,9 +284,9 @@ void TMRSTransportAnalysis::RunTimeStep(){
 //        std::cout<<"maxvar: "<<maxvar<<std::endl;
         bool StopQ3 = std::abs(maxvar)<0.0000001;
 //        maxdif=maxvar;
-        if (StopQ3 && m_k_iteration>3 && stop_criterion_fake_Q && stop_criterion_Q) {
+//        if (stop_criterion_Q && stop_criterion_corr_Q) {
 //        if (stop_criterion_Q || stop_criterion_corr_Q) {
-//        if(StopQ3){
+        if(StopQ3){
            // fAlgebraicTransport.fCellsData.fSaturationWait = fAlgebraicTransport.fCellsData.fSaturation;
 //            fAlgebraicTransport.fCellsData.fSaturationWait =sat_v;
 //            fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
@@ -297,7 +297,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;
            // fAlgebraicTransport.fCellsData.AdjustSaturation01(fSaturation);
-            fAlgebraicTransport.fCellsData.UpdateSaturations(x, false);
+           // fAlgebraicTransport.fCellsData.UpdateSaturations(x, false);
             
             
 //            AdjustSaturation01(fAlgebraicTransport.fCellsData.fSaturation);

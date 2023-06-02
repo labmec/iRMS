@@ -535,7 +535,7 @@ void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
     }
     if (type == 1) {
         m_mixed_module->PostProcessTimeStep(dim);
-        m_mixed_module->PostProcessTimeStep(dim-1);
+       // m_mixed_module->PostProcessTimeStep(dim-1);
     }
     if (type == 2) {
         m_transport_module->PostProcessTimeStep();

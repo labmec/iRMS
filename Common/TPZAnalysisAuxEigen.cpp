@@ -442,6 +442,8 @@ void TPZAnalysisAuxEigen::Assemble(){
 //        ef.Print(std::cout);
 
     }
+    
+    REAL areaInlet =0;
 
     for (int iface = 0; iface < n_inlet_faces; iface++) {
         
@@ -740,7 +742,7 @@ void TPZAnalysisAuxEigen::AnalyzePattern(){
 }
 
 void TPZAnalysisAuxEigen::Solve(){
-   // AssembleMass();
+ //   AssembleMass();
     m_transmissibility += m_mass;
     m_rhs *= -1.0;
 //    m_analysis.factorize(m_transmissibility);

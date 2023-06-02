@@ -236,7 +236,7 @@ public:
     void PrintFluxes();
     void ColorMeshByCoords();
     REAL ExportPProductionData(int itime);
-    static void AdjustSaturation01(std::vector<REAL> &sw);
+    static void AdjustSaturation01(TPZFMatrix<STATE>  &sw);
    
 };
 
