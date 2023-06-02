@@ -67,6 +67,11 @@ public:
         std::vector<REAL> fPressure;
         std::vector<REAL> fSaturation;
         std::vector<REAL> fSaturationWait;
+        std::vector<REAL> fFractionalFlowWait;
+        std::vector<REAL> fdFracionalFlowSaturationWait;
+        std::vector<REAL> fTermMultByFluxUpwindInterface;
+        std::vector<REAL> fDerivTermMultByFluxUpwindInterface;
+        
         std::vector<REAL> fSaturationLastState;
         std::vector<REAL> fDensityOil;
         std::vector<REAL> fdDensityOildp;
@@ -100,7 +105,7 @@ public:
         std::vector<REAL> fReferencePressures;
         std::vector<REAL> fReferenceDensity;
         
-        TCellData() : fsim_data(0), fEqNumber(0),fVolume(0), fVolumefactor(0),fMatId(0),fGeoIndex(0),fSaturation(0),fSaturationWait(0), fPressure(0), fSaturationLastState(0),  fDensityOil(0),fdDensityOildp(0), fDensityOilLastState(0),fDensityWater(0), fdDensityWaterdp(0),fDensityWaterLastState(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCoordinate(0),
+        TCellData() : fsim_data(0), fEqNumber(0),fVolume(0), fVolumefactor(0),fMatId(0),fGeoIndex(0),fSaturation(0),fSaturationWait(0), fdFracionalFlowSaturationWait(0),fFractionalFlowWait(0),fTermMultByFluxUpwindInterface(0), fDerivTermMultByFluxUpwindInterface(0),fPressure(0), fSaturationLastState(0),  fDensityOil(0),fdDensityOildp(0), fDensityOilLastState(0),fDensityWater(0), fdDensityWaterdp(0),fDensityWaterLastState(0),fMixedDensity(0), flambda(0), fdlambdawdsw(0),fdlambdaodsw(0),fporosity(0),fKx(0),fKy(0),fKz(0), fWaterfractionalflow(0),fDerivativeWfractionalflow(0),fOilfractionalflow(0), fDerivativeOfractionalflow(0),fCenterCoordinate(0),
         fCompressibility(0),fViscosity(0),fReferencePressures(0),
         fReferenceDensity(0)
         {
@@ -118,6 +123,10 @@ public:
             fEqNumber.resize(ncells);
             fSaturation.resize(ncells);
             fSaturationWait.resize(ncells);
+            fFractionalFlowWait.resize(ncells);
+            fdFracionalFlowSaturationWait.resize(ncells);
+            fTermMultByFluxUpwindInterface.resize(ncells);
+            fDerivTermMultByFluxUpwindInterface.resize(ncells);
             fPressure.resize(ncells);
             fSaturationLastState.resize(ncells);
             fporosity.resize(ncells);
@@ -141,7 +150,7 @@ public:
             fDerivativeOfractionalflow.resize(ncells);
             fCenterCoordinate.resize(ncells);
         }
-        REAL UpdateSaturations(TPZFMatrix<STATE> &dsx);
+        REAL UpdateSaturations(TPZFMatrix<STATE> &dsx, bool updateWait = true);
         void UpdateSaturationsLastState(TPZFMatrix<STATE> &sw);
         void UpdateSaturationsTo(TPZFMatrix<STATE> &sw);
         void UpdateFractionalFlowsAndLambda(bool isLinearQ=false);
@@ -227,7 +236,7 @@ public:
     void PrintFluxes();
     void ColorMeshByCoords();
     REAL ExportPProductionData(int itime);
-    static void AdjustSaturation01(TPZFMatrix<STATE> &sw);
+    static void AdjustSaturation01(std::vector<REAL> &sw);
    
 };
 

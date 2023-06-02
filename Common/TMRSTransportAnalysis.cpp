@@ -201,6 +201,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
     int n = m_sim_data->mTNumerics.m_max_iter_transport;
     bool stop_criterion_Q = false;
     bool stop_criterion_corr_Q = false;
+    bool  stop_criterion_fake_Q =false;
     REAL res_norm = 1.0;
     REAL corr_norm = 1.0;
     REAL res_tol = m_sim_data->mTNumerics.m_res_tol_transport;
@@ -209,57 +210,59 @@ void TMRSTransportAnalysis::RunTimeStep(){
     TPZFMatrix<STATE> correction(Solution());
     correction.Zero();
     
+//    fAlgebraicTransport.fCellsData.fSaturationWait = fAlgebraicTransport.fCellsData.fSaturation;
+//    fAlgebraicTransport.fCellsData.fFractionalFlowWait = fAlgebraicTransport.fCellsData.fWaterfractionalflow;
+//    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
-    ComputeInitialGuess(x); // from the linear problem (tangent and residue)
     
-    if(Norm(Rhs()) < res_tol){
-        std::cout << "Transport operator: Converged - (InitialGuess)" << std::endl;
-        std::cout << "Number of iterations = " << 1 << std::endl;
-        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
-        return;
+    if(isInitialGuess){
+       
+       ComputeInitialGuess(x);
     }
     
-    bool QN_converge_Q = QuasiNewtonSteps(x,250); // assuming linear operator (tangent)
-    if(QN_converge_Q){
-        std::cout << "Transport operator: Converged - (QuasiNewtonSteps)" << std::endl;
-        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
-        return;
-    }
+//    bool QN_converge_Q = QuasiNewtonSteps(x,250); // assuming linear operator (tangent)
+//    if(QN_converge_Q){
+//        std::cout << "Transport operator: Converged - (QuasiNewtonSteps)" << std::endl;
+//        std::cout << "residue norm = " << Norm(Rhs()) << std::endl;
+//        return;
+//    }
     
 
     REAL maxdif =0.0;
+    REAL resAnt =1000;
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
        
+        
         NewtonIteration();
+       
+         
         dx = Solution();
         x += dx;
-//        std::cout<<"Sol Correct: "<<std::endl;
-//        std::cout<<x<<std::endl;
-
-   
-//        cmesh->LoadSolutionFromMultiPhysics();
-//        PostProcessTimeStep();
-        REAL maxvar = fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+        
+       
         LoadSolution(x);
         
-        REAL maxDiff=0;
-        int ncells = fAlgebraicTransport.fCellsData.fVolume.size();
-        for (int i=0; i< ncells; i++) {
-            REAL sw1 = fAlgebraicTransport.fCellsData.fSaturationLastState[i];
-            REAL sw2 = fAlgebraicTransport.fCellsData.fSaturation[i];
-            REAL diff = std::abs(sw1-sw2);
-            if (diff>maxDiff) {
-                maxDiff=diff;
-            }
-        }
-        
+        auto sat_Ant = fAlgebraicTransport.fCellsData.fSaturation;
+        REAL maxvar = fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+        fAlgebraicTransport.fCellsData.fSaturationWait = sat_Ant;
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
-    
-//        this->PostProcessTimeStep();
+        
+        
         AssembleResidual();
+        
+        
+       
+        
+//        this->PostProcessTimeStep();
+       
+       
+       
+      
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
         REAL normsol =Norm(Solution());
+        
+        
 #ifdef PZDEBUG
         {
             if(std::isnan(corr_norm) || std::isnan(res_norm))
@@ -275,21 +278,42 @@ void TMRSTransportAnalysis::RunTimeStep(){
         std::cout << "res_norm " << res_norm << " corr_norm " << corr_norm << std::endl;
         stop_criterion_Q = (res_norm < res_tol);
         stop_criterion_corr_Q = (corr_norm < corr_tol);
+        stop_criterion_fake_Q = (resAnt < corr_tol);
         
 //        bool StopQ3 = std::abs(maxvar - maxdif)<0.01;
-        std::cout<<"maxvar: "<<maxvar<<std::endl;
-        bool StopQ3 = std::abs(maxvar - maxdif)<0.0001;
-        maxdif=maxvar;
-//        if (stop_criterion_Q) {
-        if (stop_criterion_Q || stop_criterion_corr_Q) {
+//        std::cout<<"maxvar: "<<maxvar<<std::endl;
+        bool StopQ3 = std::abs(maxvar)<0.0000001;
+//        maxdif=maxvar;
+        if (StopQ3 && m_k_iteration>3 && stop_criterion_fake_Q && stop_criterion_Q) {
+//        if (stop_criterion_Q || stop_criterion_corr_Q) {
 //        if(StopQ3){
+           // fAlgebraicTransport.fCellsData.fSaturationWait = fAlgebraicTransport.fCellsData.fSaturation;
+//            fAlgebraicTransport.fCellsData.fSaturationWait =sat_v;
+//            fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
+//            fAlgebraicTransport.fCellsData.fSaturationWait = fAlgebraicTransport.fCellsData.fSaturation;
+//            fAlgebraicTransport.fCellsData.fFractionalFlowWait = fAlgebraicTransport.fCellsData.fWaterfractionalflow;
+//            fAlgebraicTransport.fCellsData.fdFracionalFlowSaturationWait = fAlgebraicTransport.fCellsData.fDerivativeWfractionalflow;
             std::cout << "Transport operator: Converged" << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
             std::cout << "residue norm = " << res_norm << std::endl;
+           // fAlgebraicTransport.fCellsData.AdjustSaturation01(fSaturation);
+            fAlgebraicTransport.fCellsData.UpdateSaturations(x, false);
+            
+            
+//            AdjustSaturation01(fAlgebraicTransport.fCellsData.fSaturation);
             break;
         }
+//        fAlgebraicTransport.fCellsData.fSaturationWait =sat_v;
+//        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
+//        fAlgebraicTransport.fCellsData.fSaturationWait = fAlgebraicTransport.fCellsData.fSaturation;
+//        fAlgebraicTransport.fCellsData.fFractionalFlowWait = fAlgebraicTransport.fCellsData.fWaterfractionalflow;
+//        fAlgebraicTransport.fCellsData.fdFracionalFlowSaturationWait = fAlgebraicTransport.fCellsData.fDerivativeWfractionalflow;
         std::cout<<"transport it: "<<m_k_iteration<<std::endl;
+        resAnt = res_norm;
+        //isInitialGuess = false;
+        
     }
+    int ok=0;
 }
 
 void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
@@ -300,7 +324,9 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
         DebugStop();
     }
     
-    fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+//    fAlgebraicTransport.fCellsData.UpdateSaturations(x); //cerar
+    
+//    fAlgebraicTransport.fCellsData.fSaturationWait = fAlgebraicTransport.fCellsData.fSaturationLastState;
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     
     LoadSolution(x);
@@ -324,15 +350,28 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     else{
         cmesh2->LoadSolution(x);
     }
+    auto sat_aant = fAlgebraicTransport.fCellsData.fSaturation;
+    
     fAlgebraicTransport.fCellsData.UpdateSaturations(x);
+  //  fAlgebraicTransport.fCellsData.fSaturationWait =faal;
     fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+//    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(false);
+//    if ( ) {
+        for(int icell = 0; icell< fAlgebraicTransport.fCellsData.fVolume.size(); icell++){
+            fAlgebraicTransport.fCellsData.fSaturationWait[icell]=fAlgebraicTransport.fCellsData.fSaturation[icell];
+//            fAlgebraicTransport.fCellsData.fSaturation[icell]=0.0;
+        }
+//    }
+   
+   
     AssembleResidual();
     REAL res_norm = Norm(Rhs());
     REAL normsol = Norm(Solution());
    
     (*ftransport_report_data) <<"      "<< "1 "<<"       "<< "   0   "<<"       0       "<<res_norm<<"        "<<normsol<<std::endl;
     
-    
+    fAlgebraicTransport.fCellsData.fSaturationWait = fAlgebraicTransport.fCellsData.fSaturation;
+    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(false);
     std::cout << "Initial guess residue norm : " <<  res_norm << std::endl;
     
 }

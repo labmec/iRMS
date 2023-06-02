@@ -4,17 +4,17 @@
 h = 0;
 
 Point(1) = {0,0,0, h};
-Point(2) = {2,0,0, h};
-Point(3) = {0,2,0, h};
-Point(4) = {2,2,0, h};
-Point(5) = {0,0,2, h};
-Point(6) = {2,0,2, h};
-Point(7) = {0,2,2, h};
-Point(8) = {2,2,2, h};
-Point(9) = {2,0,1, h};
-Point(10) = {0,0,1, h};
-Point(11) = {0,2,1, h};
-Point(12) = {2,2,1, h};
+Point(2) = {10,0,0, h};
+Point(3) = {0,10,0, h};
+Point(4) = {10,10,0, h};
+Point(5) = {0,0,15, h};
+Point(6) = {10,0,15, h};
+Point(7) = {0,10,15, h};
+Point(8) = {10,10,15, h};
+Point(9) = {10,0,7.5, h};
+Point(10) = {0,0,7.5, h};
+Point(11) = {0,10,7.5, h};
+Point(12) = {10,10,7.5, h};
 
 
 // LINES DEFINITION 
@@ -97,9 +97,7 @@ Physical Surface("noflux",14) = {1,2,4,5,6,7,9,10};
 
 Coherence Mesh;
 Transfinite Curve {:} = 2;
-Transfinite Curve {13,15,17,19,23,25,28,30} = 3;
-// Transfinite Curve {17,25,30,19} = 10;
-// Transfinite Curve {13,23,28,15} = 10;
+Transfinite Curve {30,25,23,28,17,19,13,15} = 3;
 Transfinite Surface{:};
 Transfinite Volume{:};
 Recombine Surface{:};

@@ -708,7 +708,7 @@ void RunProblem(string& filenameBase, const int simcase)
             sim_time = it*dt;
             sfi_analysis->m_transport_module->SetCurrentTime(dt);
            
-//            FilterZeroNeumann(outputFolder,sim_data,sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
+           // FilterZeroNeumann(outputFolder,sim_data,sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
 //            sfi_analysis->m_mixed_module->AllZero(mixed_operator);
 //            sfi_analysis->m_mixed_module->Rhs().Zero();
 //            sfi_analysis->m_mixed_module->Solution().Zero();
@@ -736,6 +736,7 @@ void RunProblem(string& filenameBase, const int simcase)
                     sfi_analysis->PostProcessTimeStep(typeToPPinit);
                     sfi_analysis->PostProcessTimeStep(typeToPPsteps);
 //                }
+            
             sfi_analysis->isLinearTracer = true;
             
 //            if(it==1 || it%50==200){
@@ -1090,13 +1091,13 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTGeometry.mInterface_material_idFracBound = 104;
     
 	sim_data.mTGeometry.mSkeletonDiv = 0;
-	sim_data.mTNumerics.m_sfi_tol = 1.0e-4;
+	sim_data.mTNumerics.m_sfi_tol = 1.0e-3;
     
     sim_data.mTNumerics.m_res_tol_transport = 1.0e-4;
     sim_data.mTNumerics.m_corr_tol_transport = 1.0e-4;
     
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
-    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-6;
+    sim_data.mTNumerics.m_res_tol_mixed = 1.0e-5;
     
 	sim_data.mTNumerics.m_four_approx_spaces_Q = true;
     
@@ -1109,10 +1110,11 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     sim_data.mTPetroPhysics.mWaterViscosity=1.0;
 	sim_data.mTNumerics.m_gravity = grav;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_ISLinearizedQuadraticModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
-	sim_data.mTNumerics.m_max_iter_sfi=40;
+	sim_data.mTNumerics.m_max_iter_sfi=1;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
-	sim_data.mTNumerics.m_max_iter_transport=250;
+	sim_data.mTNumerics.m_max_iter_transport=30;
 	
 	// PostProcess controls
 //	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);

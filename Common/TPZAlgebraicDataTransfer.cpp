@@ -1462,12 +1462,12 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //        coord[2]=z;
         REAL s0_v = 0.00;
         
-        REAL kx_v=1.0e-4,ky_v=1.0e-4,kz_v=1.0e-4,phi_v=0.3;
+        REAL kx_v=1.0,ky_v=1.0,kz_v=1.0,phi_v=1.0;
         std::vector<REAL> kappa_phi(4,0.0);
         kappa_phi[0]=kx_v;
         kappa_phi[1]=ky_v;
         kappa_phi[2]=kz_v;
-        kappa_phi[3]=0.3;
+        kappa_phi[3]=0.99;
         //
         if(fkappa_phi){
 //                   std::vector<REAL> kappa_phi = fkappa_phi(coord);

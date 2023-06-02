@@ -22,13 +22,13 @@
             "name": "inlet",
             "matid": 3,
             "type": 0, // imposed pressure
-            "value": 40.0
+            "value": 400.0
         },
         {
             "name": "outlet",
             "matid": 4,
             "type": 0, // imposed pressure
-            "value": 10.0
+            "value": 200.0
         },
         {
             "name": "noflux",
@@ -47,8 +47,8 @@
     "useMHM":true,
     "needsMerge":true,
     "RunWithTransport": true,
-    "DeltaT": 2.5,
-    "NSteps": 10000,
+    "DeltaT": 7.5,
+    "NSteps": 5000,
     "SimulationDim": 3,
     "Fractures": [
      

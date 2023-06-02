@@ -527,6 +527,7 @@ public:
         std::vector<REAL> m_gravity;
         
         bool m_ISLinearKrModelQ;
+        bool m_ISLinearizedQuadraticModelQ;
         
         int m_nThreadsMixedProblem = 0;
         
@@ -552,6 +553,7 @@ public:
             m_gravity.resize(3,0.0);
             m_gravity[2] = -10.0;
             m_ISLinearKrModelQ = true;
+            m_ISLinearizedQuadraticModelQ = false;
             m_nThreadsMixedProblem  =0;
             m_MortarBorderElementPresOrder = 0;
             m_MortarBorderElementFluxOrder = 0;
@@ -583,6 +585,7 @@ public:
             m_SpaceType             = other.m_SpaceType;
             m_gravity               = other.m_gravity;
             m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
+            m_ISLinearizedQuadraticModelQ =other.m_ISLinearizedQuadraticModelQ;
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
             m_MortarBorderElementPresOrder = other.m_MortarBorderElementPresOrder;
             m_MortarBorderElementFluxOrder = other.m_MortarBorderElementFluxOrder;
@@ -614,6 +617,7 @@ public:
             m_SpaceType             = other.m_SpaceType;
             m_gravity               = other.m_gravity;
             m_ISLinearKrModelQ      = other.m_ISLinearKrModelQ;
+            m_ISLinearizedQuadraticModelQ = other.m_ISLinearizedQuadraticModelQ;
             m_nThreadsMixedProblem  = other.m_nThreadsMixedProblem;
             m_MortarBorderElementPresOrder = other.m_MortarBorderElementPresOrder;
             m_MortarBorderElementFluxOrder = other.m_MortarBorderElementFluxOrder;
@@ -646,6 +650,7 @@ public:
             m_SpaceType             == other.m_SpaceType&&
             m_gravity               == other.m_gravity&&
             m_ISLinearKrModelQ      == other.m_ISLinearKrModelQ&&
+            m_ISLinearizedQuadraticModelQ ==other.m_ISLinearizedQuadraticModelQ&&
             m_nThreadsMixedProblem  == other.m_nThreadsMixedProblem&&
             m_MortarBorderElementPresOrder == other.m_MortarBorderElementPresOrder&&
             m_MortarBorderElementFluxOrder == other.m_MortarBorderElementFluxOrder&&
@@ -660,6 +665,7 @@ public:
             buf.Write(&m_corr_tol_mixed);
             buf.Write(&m_max_iter_mixed);
             buf.Write(&m_max_iter_transport);
+            buf.Write(&m_ISLinearizedQuadraticModelQ);
             buf.Write(&m_max_iter_sfi);
             buf.Write(&m_sfi_tol);
             buf.Write(&m_n_steps);
@@ -686,6 +692,7 @@ public:
             buf.Read(&m_corr_tol_transport);
             buf.Read(&m_max_iter_mixed);
             buf.Read(&m_max_iter_transport);
+            //buf.Read(&m_ISLinearizedQuadraticModelQ);
             buf.Read(&m_max_iter_sfi);
             buf.Read(&m_sfi_tol);
             buf.Read(&m_n_steps);

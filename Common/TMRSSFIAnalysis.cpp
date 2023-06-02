@@ -484,6 +484,11 @@ void TMRSSFIAnalysis::RunTimeStep(){
             std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
             std::cout << "Transport problem variation = " << fcurrentError << std::endl;
             m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
+//            m_transport_module->fAlgebraicTransport.fCellsData.fSaturationWait = m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState;
+//            m_transport_module->fAlgebraicTransport.fCellsData.fFractionalFlowWait = m_transport_module->fAlgebraicTransport.fCellsData.fWaterfractionalflow;
+//            m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
+           // m_transport_module->fAlgebraicTransport.fCellsData.fSaturationWait = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
+         //   m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
 //            m_mixed_module->PostProcessTimeStep();
             break;
         }
@@ -513,6 +518,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
         std::cout << "Mixed problem variation = " << error_rel_mixed << std::endl;
         std::cout << "Transport problem variation = " << fcurrentError << std::endl;
         m_transport_module->fAlgebraicTransport.fCellsData.fSaturationLastState = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
+        m_transport_module->fAlgebraicTransport.fCellsData.fSaturationWait = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
         return;
     }
     std::cout<<"SFI it: " <<m_k_iteration<<std::endl;
@@ -529,7 +535,7 @@ void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
     }
     if (type == 1) {
         m_mixed_module->PostProcessTimeStep(dim);
-//        m_mixed_module->PostProcessTimeStep(dim-1);
+        m_mixed_module->PostProcessTimeStep(dim-1);
     }
     if (type == 2) {
         m_transport_module->PostProcessTimeStep();
@@ -542,8 +548,7 @@ void TMRSSFIAnalysis::SFIIteration(){
     
 
     TPZSimpleTimer timer_sfi("Timer SFI Iteration");
-    m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
-    
+    //m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
     fAlgebraicDataTransfer.TransferLambdaCoefficients();
     
@@ -564,7 +569,13 @@ void TMRSSFIAnalysis::SFIIteration(){
     
     std::cout << "Running transport problem now..." << std::endl;
     // Solves the transport problem
+    auto solAnt = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation;
+    
     m_transport_module->RunTimeStep();
+    
+//    m_transport_module->fAlgebraicTransport.fCellsData.fSaturationWait = solAnt;
+//    m_transport_module->fAlgebraicTransport.fCellsData.fFractionalFlowWait = m_transport_module->fAlgebraicTransport.fCellsData.fWaterfractionalflow;
+//    m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
     std::cout << "\n ==> Total SFIIteration time: " << timer_sfi.ReturnTimeDouble()/1000 << " seconds" << std::endl;
     

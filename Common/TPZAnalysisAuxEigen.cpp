@@ -740,16 +740,17 @@ void TPZAnalysisAuxEigen::AnalyzePattern(){
 }
 
 void TPZAnalysisAuxEigen::Solve(){
+   // AssembleMass();
     m_transmissibility += m_mass;
     m_rhs *= -1.0;
 //    m_analysis.factorize(m_transmissibility);
 //    Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
 //    m_ds=ds;
     if (!isFirst) {
-        m_analysis2.setTolerance(1e-14);
-        m_analysis2.setMaxIterations(1000);
+        m_analysis2.setTolerance(1e-8);
+        m_analysis2.setMaxIterations(10000);
         m_analysis2.compute(m_transmissibility);
-        isFirst=true;
+        isFirst=false;
     }
     
     Eigen::VectorXd ds = m_analysis2.solve(m_rhs);
