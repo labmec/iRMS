@@ -14,6 +14,7 @@ template <class TMEM>
 TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TBase(), mSimData() {
     m_dimension = 0;
     m_is_four_spaces_Q = false;
+    m_is_GravityEffects=false;
     m_scale_pressure = 1;
     m_scale_flux = 1;
     m_kappa_inv.Zero();
@@ -24,6 +25,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension) : TB
 //    DebugStop();
     m_dimension = dimension;
     m_is_four_spaces_Q = false;
+    m_is_GravityEffects = false;
     m_scale_pressure = 1;
     m_scale_flux = 1;
     m_kappa_inv.Zero();
@@ -37,6 +39,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(const TMRSDarcyFlowWithMem & ot
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
     mSimData  = other.mSimData;
     m_kappa_inv =other.m_kappa_inv;
+    m_is_GravityEffects = other.m_is_GravityEffects;
 }
 
 template <class TMEM>
@@ -50,6 +53,7 @@ TMRSDarcyFlowWithMem<TMEM> & TMRSDarcyFlowWithMem<TMEM>::operator=(const TMRSDar
     m_scale_flux        = other.m_scale_flux;
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
     mSimData  = other.mSimData;
+    m_is_GravityEffects = other.m_is_GravityEffects;
     m_kappa_inv =other.m_kappa_inv;
     return *this;
 }
@@ -314,7 +318,10 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
 //    }
     REAL vl =m_kappa_inv(0,0);
         std::vector<REAL> m_gravity(3,0.0);
-        m_gravity[2] =  9.8*1.0e-6;
+    m_gravity = mSimData.mTNumerics.m_gravity;
+    m_gravity[2] *= -1.0;
+    
+    //     m_gravity[2] =  9.8*1.0e-6;
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 kappa_inv_q(i,0) += m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
@@ -325,15 +332,17 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
         REAL g_dot_phi_q_i=0.0;
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         
+  
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
-            g_dot_phi_q_i           += m_gravity[i]*phi_qs(i,iq);
+                kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
+                g_dot_phi_q_i           += m_gravity[i]*phi_qs(i,iq);
         }
-        
-        
-//        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
         ef(iq + first_q) += weight * ( - kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms a and b in docs/Formulation.lyx
-       
+        
+        
+        if(mSimData.mTNumerics.m_IsGravityEffectsQ){
+            ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
+        }
         
         for (int jq = 0; jq < nphi_q; jq++) {
             kappa_inv_phi_q_j.Zero();
@@ -450,7 +459,7 @@ template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     
 
-    REAL gBigNumber = 1.0e16; //TPZMaterial::gBigNumber;
+    REAL gBigNumber = 1.0e12; //TPZMaterial::gBigNumber;
 
     int qb = 0, pb = 1;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;

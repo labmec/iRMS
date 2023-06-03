@@ -171,6 +171,7 @@ public:
     int inletmatid;
     int outletmatid;
     int interfaceid;
+    bool isGravityEffects = false;
     bool fHasPropQ=false;
     REAL massOut = 0.0;
     REAL initialMass = 0.;

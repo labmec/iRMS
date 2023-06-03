@@ -19,7 +19,7 @@ void TPZAnalysisAuxEigen::AssembleMass(){
     m_mass_triplets.resize(n_cells);
     //Volumetric Elements
     
-#ifdef USING_TBB2
+#ifdef USING_TBB
     tbb::parallel_for(size_t(0), size_t(n_cells), size_t(1),
                       [this] (size_t & ivol){
                           int eqindex = fAlgebraicTransport->fCellsData.fEqNumber[ivol];
@@ -86,6 +86,12 @@ void TPZAnalysisAuxEigen::Assemble(){
 
 #ifdef USING_TBB
     
+    
+    
+    
+    //FromHere
+    
+    //endhere
     tbb::parallel_for(size_t(0), size_t(n_cells), size_t(1),
                       [this] (size_t & ivol){
                           int eqindex = fAlgebraicTransport->fCellsData.fEqNumber[ivol];
@@ -135,9 +141,9 @@ void TPZAnalysisAuxEigen::Assemble(){
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                           m_rhs_triplets[i_rhs_begin+1] = Eigen::Triplet<REAL>(indexes[1],0, ef(1,0));
                       }
-                      );
-    // Frac-Vol1 Interfaces
+    );
     
+    // Frac-Vol1 Interfaces
     tbb::parallel_for(size_t(0), size_t(n_internal_faces1), size_t(1),
                       [this,&internal_faces_id1,&n_internal_faces ,&n_cells] (size_t & iface){
                           std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport->fInterfaceData[internal_faces_id1].fLeftRightVolIndex[iface];
@@ -270,7 +276,7 @@ void TPZAnalysisAuxEigen::Assemble(){
                           indexes[0]=lefteq;
                           TPZFMatrix<double> ef;
                           ef.Resize(1, 1);
-                          fAlgebraicTransport->ContributeBCInletInterface(iface,ef);
+                          fAlgebraicTransport->ContributeBCInletInterface(iface,ef, inlet_faces_id);
                           size_t i_rhs_begin = (iface) + n_cells + 2*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3);
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                       }
@@ -287,7 +293,7 @@ void TPZAnalysisAuxEigen::Assemble(){
                           TPZFMatrix<double> elmat, ef;
                           elmat.Resize(1, 1);
                           ef.Resize(1, 1);
-                          fAlgebraicTransport->ContributeBCOutletInterface(iface,elmat, ef);
+                          fAlgebraicTransport->ContributeBCOutletInterface(iface,elmat, ef, outlet_faces_id);
                           size_t i_begin = iface +   + 4*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3) ;
                           m_trans_triplets[i_begin] = (Eigen::Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
                           
@@ -491,7 +497,6 @@ void TPZAnalysisAuxEigen::Assemble(){
     m_transmissibility.setFromTriplets( m_trans_triplets.begin(), m_trans_triplets.end() );
     m_trans_triplets.clear();
     
-    std::cout << "\n ==> Total Transport assemble time: " << timer_ass.ReturnTimeDouble()/1000 << " seconds" << std::endl;
     
 }
 void TPZAnalysisAuxEigen::AssembleResidual(){
@@ -519,7 +524,7 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
     m_rhs.setZero();
     //
     
-#ifdef USING_TBB2
+#ifdef USING_TBB
     
     tbb::parallel_for(size_t(0), size_t(n_cells), size_t(1),
                       [this] (size_t & ivol){
@@ -553,8 +558,108 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                       }
                       );
     
+    //FromHere
+    // Frac-Vol1 Interfaces
+    tbb::parallel_for(size_t(0), size_t(n_internal_faces1), size_t(1),
+                      [this,&internal_faces_id1,&n_internal_faces ,&n_cells] (size_t & iface){
+                          std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport->fInterfaceData[internal_faces_id1].fLeftRightVolIndex[iface];
+                          int left = lrindex.first;
+                          int right = lrindex.second;
+                          int lefteq = fAlgebraicTransport->fCellsData.fEqNumber[left];
+                          int righteq = fAlgebraicTransport->fCellsData.fEqNumber[right];
+                          
+                          TPZVec<int64_t> indexes(2);
+                          indexes[0]=lefteq;
+                          indexes[1]=righteq;
+                          TPZFMatrix<double>  ef;
+                          ef.Resize(2, 1);
+                          fAlgebraicTransport->ContributeInterfaceResidual(iface,ef);
+#ifdef PZDEBUG
+                          {
+                          
+                              STATE normef = Norm(ef);
+                              if( std::isnan(normef))
+                              {
+                                  std::cout << "matriz ou residuo nan";
+                                  ef.Print("ef");
+                                  DebugStop();
+                              }
+                          }
+#endif
+                          
+                          size_t i_rhs_begin = 2*(iface) + n_cells;
+                          m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
+                          m_rhs_triplets[i_rhs_begin+1] = Eigen::Triplet<REAL>(indexes[1],0, ef(1,0));
+                      }
+                      );
+    
+     // Frac-Vol2 Interfaces
+    tbb::parallel_for(size_t(0), size_t(n_internal_faces2), size_t(1),
+                      [this,&internal_faces_id2,&n_cells, &n_internal_faces , &n_internal_faces1] (size_t & iface){
+                          std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport->fInterfaceData[internal_faces_id2].fLeftRightVolIndex[iface];
+                          int left = lrindex.first;
+                          int right = lrindex.second;
+                          int lefteq = fAlgebraicTransport->fCellsData.fEqNumber[left];
+                          int righteq = fAlgebraicTransport->fCellsData.fEqNumber[right];
+                          
+                          TPZVec<int64_t> indexes(2);
+                          indexes[0]=lefteq;
+                          indexes[1]=righteq;
+                          TPZFMatrix<double> ef;
+                          ef.Resize(2, 1);
+                          fAlgebraicTransport->ContributeInterfaceResidual(iface, ef);
+#ifdef PZDEBUG
+                          {
+                              STATE normef = Norm(ef);
+                              if( std::isnan(normef))
+                              {
+                                  std::cout << "matriz ou residuo nan";
+                                  ef.Print("ef");
+                                  DebugStop();
+                              }
+                          }
+#endif
+                          size_t i_rhs_begin = 2*(iface) + n_cells + 2*(n_internal_faces);
+                          m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
+                          m_rhs_triplets[i_rhs_begin+1] = Eigen::Triplet<REAL>(indexes[1],0, ef(1,0));
+                      }
+                      );
+    //Frac-Frac
+    
+    tbb::parallel_for(size_t(0), size_t(n_internal_faces3), size_t(1),
+                      [this,&internal_faces_id3,&n_cells,&n_internal_faces ,&n_internal_faces1, &n_internal_faces2] (size_t & iface){
+                          std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport->fInterfaceData[internal_faces_id3].fLeftRightVolIndex[iface];
+                          int left = lrindex.first;
+                          int right = lrindex.second;
+                          int lefteq = fAlgebraicTransport->fCellsData.fEqNumber[left];
+                          int righteq = fAlgebraicTransport->fCellsData.fEqNumber[right];
+                          
+                          TPZVec<int64_t> indexes(2);
+                          indexes[0]=lefteq;
+                          indexes[1]=righteq;
+                          TPZFMatrix<double>  ef;
+                          ef.Resize(2, 1);
+                          fAlgebraicTransport->ContributeInterfaceResidual(iface, ef);
+#ifdef PZDEBUG
+                          {
+                              STATE normef = Norm(ef);
+                              if(std::isnan(normef))
+                              {
+                                  std::cout << "matriz ou residuo nan";
+                                  ef.Print("ef");
+                                  DebugStop();
+                              }
+                          }
+#endif
+                          
+                          size_t i_rhs_begin = 2*(iface) + n_cells + 2*(n_internal_faces + n_internal_faces1 + n_internal_faces2);
+                          m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
+                          m_rhs_triplets[i_rhs_begin+1] = Eigen::Triplet<REAL>(indexes[1],0, ef(1,0));
+                      }
+                      );
+    
     tbb::parallel_for(size_t(0), size_t(n_inlet_faces), size_t(1),
-                      [this,&inlet_faces_id,&n_internal_faces,&n_cells] (size_t & iface){
+                      [this,&inlet_faces_id,&n_internal_faces,&n_internal_faces1 , &n_internal_faces2, &n_internal_faces3,&n_cells] (size_t & iface){
                           std::pair<int64_t, int64_t> lrindex= fAlgebraicTransport->fInterfaceData[inlet_faces_id].fLeftRightVolIndex[iface];
                           int left = lrindex.first;
                           int lefteq = fAlgebraicTransport->fCellsData.fEqNumber[left];
@@ -563,25 +668,28 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                           indexes[0]=lefteq;
                           TPZFMatrix<double> ef;
                           ef.Resize(1, 1);
-                          fAlgebraicTransport->ContributeBCInletInterface(iface,ef);
-                          size_t i_rhs_begin = (iface) + n_cells + 2*n_internal_faces;
+                          fAlgebraicTransport->ContributeBCInletInterface(iface,ef, inlet_faces_id);
+                          size_t i_rhs_begin = (iface) + n_cells + 2*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3);
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                       }
                       );
     
     tbb::parallel_for(size_t(0), size_t(n_outlet_faces), size_t(1),
-                      [this,&outlet_faces_id,&n_internal_faces,&n_inlet_faces,&n_cells] (size_t & iface){
+                      [this,&outlet_faces_id,&n_internal_faces,&n_inlet_faces,&n_cells, &n_internal_faces1, &n_internal_faces2, &n_internal_faces3] (size_t & iface){
                           std::pair<int64_t, int64_t> lrindex = fAlgebraicTransport->fInterfaceData[outlet_faces_id].fLeftRightVolIndex[iface];
                           int left = lrindex.first;
                           int lefteq = fAlgebraicTransport->fCellsData.fEqNumber[left];
                           
                           TPZVec<int64_t> indexes(1);
                           indexes[0]=lefteq;
-                          TPZFMatrix<double>  ef;
+                          TPZFMatrix<double> elmat, ef;
+                          elmat.Resize(1, 1);
                           ef.Resize(1, 1);
-                          fAlgebraicTransport->ContributeBCOutletInterfaceResidual(iface, ef);
+                          fAlgebraicTransport->ContributeBCOutletInterface(iface,elmat, ef, outlet_faces_id);
+                          size_t i_begin = iface +   + 4*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3) ;
+                          m_trans_triplets[i_begin] = (Eigen::Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
                           
-                          size_t i_rhs_begin = (iface) + n_cells + 2*n_internal_faces + n_inlet_faces;
+                          size_t i_rhs_begin = (iface) + n_cells + 2*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3) + n_inlet_faces;
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                       }
                       );

@@ -147,6 +147,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     std::vector<REAL> m_gravity(3,0.0);
     m_gravity[2] =  9.8*1.0e-6;
     
+    
     for (int iq = 0; iq < first_transverse_q; iq++)
     {
         

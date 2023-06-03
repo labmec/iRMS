@@ -211,8 +211,8 @@ int main(int argc, char* argv[]){
                 break;
             case 20:
 //                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
-                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
-//                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
+//                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
+                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
 //                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
                 break;
             case 21:
@@ -717,7 +717,7 @@ void RunProblem(string& filenameBase, const int simcase)
             *(sfi_analysis->m_mixed_module->fmixed_report_data)<<"N_IT_SFI   N_IT_MIXED   NORMRES    NORMCORR"<<std::endl;
             
             *(sfi_analysis->m_transport_module->ftransport_report_data)<<"*******************************TIME_STEP_"<<it<<"*******************************"<<std::endl;
-            *(sfi_analysis->m_transport_module->ftransport_report_data)<<"N_IT_SFI   N_IT_IG    N_IT_QN   N_IT_NEW      NORMRES         NORMCORR"<<std::endl;
+            *(sfi_analysis->m_transport_module->ftransport_report_data)<<"N_IT_SFI   N_IT_IG    N_IT_QN   N_IT_NEW      NORMRES         NORMCORR    MAX_VAR    ASSMTIME    SOLVTIME"<<std::endl;
             
             *(sfi_analysis->freport_data)<<"*******************************TIME_STEP_"<<it<<"*******************************"<<std::endl;
             *(sfi_analysis->freport_data)<<"N_IT_SFI        N_ERROR         "<<std::endl;
@@ -1093,8 +1093,8 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTGeometry.mSkeletonDiv = 0;
 	sim_data.mTNumerics.m_sfi_tol = 1.0e-3;
     
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-3;
-    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-3;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-8;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-8;
     
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
     sim_data.mTNumerics.m_res_tol_mixed = 1.0e-5;
@@ -1103,16 +1103,18 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
-    grav[2] = -9.8*1.0e-9; //
+   // grav[2] = -9.8;//
+    grav[2] = -0.0098;//
     sim_data.mTFluidProperties.mOilDensityRef = 865.00;
     sim_data.mTFluidProperties.mWaterDensityRef = 1000.00;
-    sim_data.mTPetroPhysics.mOilViscosity=1.0;
-    sim_data.mTPetroPhysics.mWaterViscosity=1.0;
+    sim_data.mTPetroPhysics.mOilViscosity=0.002;
+    sim_data.mTPetroPhysics.mWaterViscosity=0.001;
 	sim_data.mTNumerics.m_gravity = grav;
+    sim_data.mTNumerics.m_IsGravityEffectsQ = true;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_ISLinearizedQuadraticModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
-	sim_data.mTNumerics.m_max_iter_sfi=1;
+	sim_data.mTNumerics.m_max_iter_sfi=500;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
 	sim_data.mTNumerics.m_max_iter_transport=3000;
 	
@@ -1290,8 +1292,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     int ncoarse_vol = 0;
     if(needsMergeMeshes){
 
-//        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
-        gmeshcoarse = GenerateUnisimMesh(3);
+        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+//        gmeshcoarse = GenerateUnisimMesh(3);
         int nels = gmeshcoarse->NElements();
         REAL volumeinlet =0.0;
         REAL volumeoutlet =0.0;

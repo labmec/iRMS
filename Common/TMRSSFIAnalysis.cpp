@@ -431,6 +431,7 @@ void TMRSSFIAnalysis::SetDataTransferAndBuildAlgDatStruct(TMRSDataTransfer * sim
     m_mixed_module->SetDataTransfer(sim_data);
     m_transport_module->SetDataTransfer(sim_data);
     m_transport_module->fAlgebraicTransport.fCellsData.SetDataTransfer(sim_data);
+    m_transport_module->fAlgebraicTransport.isGravityEffects = m_sim_data->mTNumerics.m_IsGravityEffectsQ;
     
     // Creates the interface data structure which holds data such as integrated fluxes at
     // interfaces and information of neighborhood

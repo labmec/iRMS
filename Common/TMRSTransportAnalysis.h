@@ -59,6 +59,8 @@ private:
     REAL flastAssembleTime=0.0;
     REAL flastSolveTime = 0.0;
     bool isInitialGuess = true;
+    
+    
     /// Number of iterations
     int m_k_iteration = 0;
     

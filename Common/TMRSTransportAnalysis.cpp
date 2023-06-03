@@ -80,6 +80,7 @@ void TMRSTransportAnalysis::Configure(int n_threads, bool UsePardiso_Q){
 
 void TMRSTransportAnalysis::Assemble(){
     if (m_parallel_execution_Q) {
+        fAlgebraicTransport.isGravityEffects = m_sim_data->mTNumerics.m_IsGravityEffectsQ;
         fTransportSpMatrix->Assemble();
 //        Assemble_parallel();
     }else{
@@ -273,7 +274,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
 #endif
         
         //
-        (*ftransport_report_data) <<"   M         0           "<<"0          "<<m_k_iteration<<"       "<<res_norm<<"       "<<corr_norm<< " max_var: "<< maxvar<<std::endl;
+        (*ftransport_report_data) <<"   M         0           "<<"0          "<<m_k_iteration<<"       "<<res_norm<<"       "<<corr_norm<< "       "<< maxvar<<"       "<<flastAssembleTime<<"       "<<flastSolveTime <<std::endl;
         //
         std::cout << "res_norm " << res_norm << " corr_norm " << corr_norm << std::endl;
         stop_criterion_Q = (res_norm < res_tol);
@@ -282,7 +283,7 @@ void TMRSTransportAnalysis::RunTimeStep(){
         
 //        bool StopQ3 = std::abs(maxvar - maxdif)<0.01;
 //        std::cout<<"maxvar: "<<maxvar<<std::endl;
-        bool StopQ3 = std::abs(maxvar)<0.0000001;
+        bool StopQ3 = std::abs(maxvar) < res_tol;
 //        maxdif=maxvar;
 //        if (stop_criterion_Q && stop_criterion_corr_Q) {
 //        if (stop_criterion_Q || stop_criterion_corr_Q) {
@@ -472,7 +473,15 @@ void TMRSTransportAnalysis::AnalyzePattern(){
 void TMRSTransportAnalysis::NewtonIteration_Eigen(){
     
 //    Assemble_parallel();
+    
+    auto start_time_ass = std::chrono::steady_clock::now();
     fTransportSpMatrix->Assemble();
+
+    auto total_time_ass = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_ass).count()/1000.;
+    std::cout << "\ ==> Total Transport assemble time: " << total_time_ass << " seconds" << std::endl;
+    flastAssembleTime=total_time_ass;
+    
+   
     
 #ifdef PZDEBUG
 //    {
@@ -484,7 +493,13 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
 //    }
 #endif
     std::cout<<"\n ---------------------- Solve Transport----------------------"<<std::endl;
+    
+    auto start_time_solv = std::chrono::steady_clock::now();
     fTransportSpMatrix->Solve();
+
+    auto total_time_solv = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_ass).count()/1000.;
+    std::cout << "\ Total Solve time: " << total_time_solv << " seconds" << std::endl;
+    flastSolveTime=total_time_solv;
     
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = fTransportSpMatrix->Solution();
     assert(Solution().Rows() == ds.rows());

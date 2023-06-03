@@ -29,6 +29,7 @@ TPZAlgebraicTransport::TPZAlgebraicTransport(const TPZAlgebraicTransport & other
     fHasPropQ = other.fHasPropQ;
     fboundaryCMatVal =other.fboundaryCMatVal;
     freport_data=other.freport_data;
+    isGravityEffects = other.isGravityEffects;
 }
 
 /// Assignement constructor
@@ -44,6 +45,7 @@ const TPZAlgebraicTransport & TPZAlgebraicTransport::operator=(const TPZAlgebrai
     fHasPropQ = other.fHasPropQ;
     fboundaryCMatVal =other.fboundaryCMatVal;
     freport_data=other.freport_data;
+    isGravityEffects = other.isGravityEffects;
     return *this;
 }
 TPZAlgebraicTransport::~TPZAlgebraicTransport(){
@@ -78,6 +80,7 @@ void TPZAlgebraicTransport::ContributeResidual(int index, TPZFMatrix<double> &ef
 }
 
 void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &ek,TPZFMatrix<double> &ef, int interfaceId){
+    
     
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceId].fLeftRightVolIndex[index];
 #ifdef PZDEBUG
@@ -141,7 +144,7 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
    
 //    Gravity fluxes contribution
     //@TODO: Modificar entrada
-    if(0){
+    if(isGravityEffects){
         ContributeInterfaceIHU(index, ek, ef,interfaceId);
     }
     
@@ -185,8 +188,8 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
     ef(1) = -1.0*(beta*fw_L  + (1-beta)*fw_R)*fluxint* fdt;
     
 // Gravity fluxes contribution
-    if(0){
-    ContributeInterfaceIHUResidual(index, ef, interfaceID);
+    if(isGravityEffects){
+        ContributeInterfaceIHUResidual(index, ef, interfaceID);
     }
     
 #ifdef PZDEBUG
@@ -490,14 +493,14 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
 
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef, int inId){
    
-    REAL s_inlet = 1.0;// fboundaryCMatVal[inId].second;
+    REAL s_inlet = 0.0;// fboundaryCMatVal[inId].second;
     REAL fluxint  = 1.0*fInterfaceData[inId].fIntegralFlux[index];
     ef(0,0) = 1.0*s_inlet*fluxint* fdt;
 }
 void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int outID){
   
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outID].fLeftRightVolIndex[index];
-    REAL fluxint  = 1.0*fInterfaceData[outID].fIntegralFlux[index];
+    REAL fluxint  = 0.0*1.0*fInterfaceData[outID].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
     
@@ -521,7 +524,7 @@ void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<dou
 void TPZAlgebraicTransport::ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef, int outId){
   
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outId].fLeftRightVolIndex[index];
-    REAL fluxint  = 1.0*fInterfaceData[outId].fIntegralFlux[index];
+    REAL fluxint  = 0.0*fInterfaceData[outId].fIntegralFlux[index];
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
 
     //
@@ -657,12 +660,21 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
         if (!isLinearQ && fsim_data->mTNumerics.m_ISLinearizedQuadraticModelQ) {
             REAL sw_v = this->fSaturationWait[ivol];
             auto fwfvalderiv_wait = fwf(sw_v);
+            auto fOfvalderiv_wait = fof(sw_v);
+            
             REAL DfracFlow_v = std::get<1>(fwfvalderiv_wait);
             REAL fracFlow_ant = std::get<0>(fwfvalderiv_wait);//this->fFractionalFlowWait[ivol];
-            fWaterfractionalflow[ivol] = (fracFlow_ant ) + (DfracFlow_v + 1)*(sw - sw_v);
-            fDerivativeWfractionalflow[ivol] = std::get<1>(fwfvalderiv);
-            fOilfractionalflow[ivol] = std::get<0>(fovalderiv);
-            fDerivativeOfractionalflow[ivol] = std::get<1>(fovalderiv);
+            fWaterfractionalflow[ivol] = (fracFlow_ant ) + (DfracFlow_v)*(sw - sw_v);
+            fDerivativeWfractionalflow[ivol] = DfracFlow_v + 1;
+            
+            
+            
+            REAL fracFlowOil_ant = std::get<0>(fOfvalderiv_wait);
+            REAL DfracFlowoOil_v = std::get<1>(fOfvalderiv_wait);
+            
+            fOilfractionalflow[ivol] = (fracFlowOil_ant ) + ( DfracFlowoOil_v)*(sw - sw_v); //ojo aqui.
+            fDerivativeOfractionalflow[ivol] =  DfracFlowoOil_v + 1;
+            
             flambda[ivol] = std::get<0>(lambdaTotalvalderiv);
             fdlambdawdsw[ivol] =std::get<1>(lambdaWvalderiv);
             fdlambdaodsw[ivol] = std::get<1>(lambdaOvalderiv);
@@ -686,11 +698,7 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambda(bool isLin
         }
         else{
            
-//            REAL antFwflow =fWaterfractionalflow[ivol];
             fWaterfractionalflow[ivol] = std::get<0>(fwfvalderiv);
-//            if(fsim_data->mTNumerics.m_ISLinearizedQuadraticModelQ){
-//                fWaterfractionalflow[ivol] = antFwflow;
-//            }
             fDerivativeWfractionalflow[ivol] = std::get<1>(fwfvalderiv);
             fOilfractionalflow[ivol] = std::get<0>(fovalderiv);
             fDerivativeOfractionalflow[ivol] = std::get<1>(fovalderiv);

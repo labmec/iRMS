@@ -7,11 +7,11 @@ Point(2) = {10.0, 0.0, 0, h};
 Point(3) = {0.0, 10.0, 0, h};
 Point(4) = {10.0, 10.0, 0, h};
 
-Point(5) = {0.0, 0.0, 15, h};
-Point(6) = {10.0, 0.0, 15, h};
+Point(5) = {0.0, 0.0, 10, h};
+Point(6) = {10.0, 0.0, 10, h};
 
-Point(7) = {0.0, 10.0, 15, h};
-Point(8) = {10.0, 10.0, 15, h};
+Point(7) = {0.0, 10.0, 10, h};
+Point(8) = {10.0, 10.0, 10, h};
 
 Line(1) = {1, 2};
 //+
@@ -62,8 +62,6 @@ Curve Loop(6) = {11, -3, -12, 9};
 //+
 Plane Surface(6) = {6};
 //+
-
-
 Surface Loop(1) = {3, 1, 2, 4, 6, 5};
 //+
 Volume(1) = {1};
@@ -89,10 +87,9 @@ Physical Surface("noflux", 14) = {1, 3, 4, 6};
 
 
 Coherence Mesh;
-Transfinite Curve {:} = 2;
-Transfinite Curve {12,11,6,5} = 3;
+Transfinite Curve {:} = 6;
+// Transfinite Curve {12,11,6,5} = 3;
 Transfinite Surface{:};
 Transfinite Volume{:};
-Coherence Mesh;
 Recombine Surface{:};
 Recombine Volume{:};//+

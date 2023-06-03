@@ -1457,10 +1457,14 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //        REAL x =4080.39; //coord[0];
 //        REAL y =2965.33; //coord[1];
 //        REAL z =3032.63; //coord[2];
-//        coord[0]=x;
-//        coord[1]=y;
-//        coord[2]=z;
+        REAL x=coord[0];
+        REAL y=coord[1];
+        REAL z=coord[2];
         REAL s0_v = 0.00;
+        
+        if(coord[2]>7.5){
+            s0_v=1.0;
+        }
         
         REAL kx_v=1.0,ky_v=1.0,kz_v=1.0,phi_v=1.0;
         std::vector<REAL> kappa_phi(4,0.0);
@@ -1533,21 +1537,21 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //            s0_v = 1.0;
 //        }
         
-        //esfera
-//        double centro_x = 5;
-//        double centro_y = 5;
-//        double centro_z = 11.0;
-//        double radio = 3.5;
-//
-//        // Calcula la distancia entre el punto y el centro de la esfera
-//        double distancia = sqrt(pow(x - centro_x, 2) + pow(y - centro_y, 2) + pow(z - centro_z, 2));
-//
-//        // Comprueba si el punto está dentro de la esfera
-//        if (distancia <= radio) {
-//            s0_v=1.0;
-//        } else {
-//            s0_v=0.0;
-//        }
+       // esfera
+        double centro_x = 5;
+        double centro_y = 5;
+        double centro_z = 11.0;
+        double radio = 3.5;
+
+        // Calcula la distancia entre el punto y el centro de la esfera
+        double distancia = sqrt(pow(x - centro_x, 2) + pow(y - centro_y, 2) + pow(z - centro_z, 2));
+
+        // Comprueba si el punto está dentro de la esfera
+        if (distancia <= radio) {
+            s0_v=1.0;
+        } else {
+            s0_v=0.0;
+        }
         
         //cilindro
 //        double centerX = 6.0; // coordenada x del centro del cilindro
@@ -1576,7 +1580,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     std::cout<<"ReadingProps"<<std::endl;
-    FillPropsFromFile(transport);
+    //FillPropsFromFile(transport);
     this->InitializeVectorPointersTranportToMixed(transport);
     
 }

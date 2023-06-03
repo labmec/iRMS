@@ -38,6 +38,8 @@ protected:
     /// Directive that stands for the use of four approximations spaces (iterative method)
     bool m_is_four_spaces_Q;
     
+    bool m_is_GravityEffects = false;
+    
     TPZFNMatrix<9,REAL> m_kappa_inv;
     
     TMRSDataTransfer mSimData;

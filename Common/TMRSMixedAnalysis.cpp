@@ -298,6 +298,7 @@ void TMRSMixedAnalysis::Assemble(){
     cout << "\n---------------------- Assemble Flux Problem ----------------------" << endl;
     cout << "Number of equations: " << fCompMesh->NEquations() << endl;
     cout << "Number of elements: " << fCompMesh->NElements() << endl;
+    
     TPZLinearAnalysis::Assemble();
 
 

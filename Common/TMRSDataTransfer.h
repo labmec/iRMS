@@ -528,6 +528,7 @@ public:
         
         bool m_ISLinearKrModelQ;
         bool m_ISLinearizedQuadraticModelQ;
+        bool m_IsGravityEffectsQ = false;
         
         int m_nThreadsMixedProblem = 0;
         
@@ -549,6 +550,7 @@ public:
             m_four_approx_spaces_Q  = false;
             m_mhm_mixed_Q           = false;
             m_need_merge_meshes_Q   = true;
+            m_IsGravityEffectsQ     =false;
             m_SpaceType = ENone;
             m_gravity.resize(3,0.0);
             m_gravity[2] = -10.0;
@@ -590,6 +592,7 @@ public:
             m_MortarBorderElementPresOrder = other.m_MortarBorderElementPresOrder;
             m_MortarBorderElementFluxOrder = other.m_MortarBorderElementFluxOrder;
             m_UseSubstructures_Q       = other.m_UseSubstructures_Q;
+            m_IsGravityEffectsQ         =other.m_IsGravityEffectsQ;
         }
         
         /** @brief Copy assignment operator*/
@@ -622,6 +625,7 @@ public:
             m_MortarBorderElementPresOrder = other.m_MortarBorderElementPresOrder;
             m_MortarBorderElementFluxOrder = other.m_MortarBorderElementFluxOrder;
             m_UseSubstructures_Q       = other.m_UseSubstructures_Q;
+            m_IsGravityEffectsQ         =other.m_IsGravityEffectsQ;
             return *this;
         }
         
@@ -654,6 +658,7 @@ public:
             m_nThreadsMixedProblem  == other.m_nThreadsMixedProblem&&
             m_MortarBorderElementPresOrder == other.m_MortarBorderElementPresOrder&&
             m_MortarBorderElementFluxOrder == other.m_MortarBorderElementFluxOrder&&
+            m_IsGravityEffectsQ         ==other.m_IsGravityEffectsQ&&
             m_UseSubstructures_Q       == other.m_UseSubstructures_Q;
         }
         
