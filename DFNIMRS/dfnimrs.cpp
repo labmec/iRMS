@@ -210,9 +210,9 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
                 break;
             case 20:
-//                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
+                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
 //                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
-                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
+//                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
 //                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
                 break;
             case 21:
@@ -1065,7 +1065,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     }
     
     // Transport properties
-    REAL day = 86400.00;
+    REAL day = 1.0;//86400.00;
     if(input.find("RunWithTransport") != input.end()){
         sim_data.mTNumerics.m_run_with_transport = input["RunWithTransport"];
         if(sim_data.mTNumerics.m_run_with_transport){
@@ -1093,8 +1093,8 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTGeometry.mSkeletonDiv = 0;
 	sim_data.mTNumerics.m_sfi_tol = 1.0e-3;
     
-    sim_data.mTNumerics.m_res_tol_transport = 1.0e-8;
-    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-8;
+    sim_data.mTNumerics.m_res_tol_transport = 1.0e-5;
+    sim_data.mTNumerics.m_corr_tol_transport = 1.0e-5;
     
     sim_data.mTNumerics.m_corr_tol_mixed = 1.0e-7;
     sim_data.mTNumerics.m_res_tol_mixed = 1.0e-5;
@@ -1104,17 +1104,18 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
    // grav[2] = -9.8;//
-    grav[2] = -0.0098;//
-    sim_data.mTFluidProperties.mOilDensityRef = 865.00;
-    sim_data.mTFluidProperties.mWaterDensityRef = 1000.00;
-    sim_data.mTPetroPhysics.mOilViscosity=0.002;
-    sim_data.mTPetroPhysics.mWaterViscosity=0.001;
+    grav[2] = 0.0;//0.010;//
+    std::cout<<"ojo valor de gravedad"<<std::endl;
+    sim_data.mTFluidProperties.mOilDensityRef = 1.00;
+    sim_data.mTFluidProperties.mWaterDensityRef = 1.00;
+    sim_data.mTPetroPhysics.mOilViscosity= 2.0;
+    sim_data.mTPetroPhysics.mWaterViscosity= 1.0;
 	sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_IsGravityEffectsQ = true;
+    sim_data.mTNumerics.m_IsGravityEffectsQ = false;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_ISLinearizedQuadraticModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
-	sim_data.mTNumerics.m_max_iter_sfi=500;
+	sim_data.mTNumerics.m_max_iter_sfi=1;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
 	sim_data.mTNumerics.m_max_iter_transport=3000;
 	
@@ -1133,6 +1134,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
 	vecnames.Push("Flux");
 	scalnames.Push("Pressure");
+    scalnames.Push("p");
     scalnames.Push("div_q");
 	if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
 		scalnames.Push("g_average");

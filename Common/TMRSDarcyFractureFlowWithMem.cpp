@@ -138,14 +138,17 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     REAL val = 1.0/memory.m_kappa_inv(0,0);
     
     for (int i = 0; i < 3; i++) {
-        if(memory.m_kappa_inv(i,i) != memory.m_kappa_inv((i+1)%3,(i+1)%3)) DebugStop();
+//        if(memory.m_kappa_inv(i,i) != memory.m_kappa_inv((i+1)%3,(i+1)%3)) DebugStop();
         for (int j = 0; j < 3; j++) {
             if(i!=j && memory.m_kappa_inv(i,j) != 0.) DebugStop();
             kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*q[j];
         }
     }
     std::vector<REAL> m_gravity(3,0.0);
-    m_gravity[2] =  9.8*1.0e-6;
+    if (1) {
+        m_gravity[2] =  0.0;
+    }
+    
     
     
     for (int iq = 0; iq < first_transverse_q; iq++)

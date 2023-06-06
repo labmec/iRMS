@@ -346,9 +346,9 @@ void TRMSpatialPropertiesMap::SampleKappaAndPhiCornerGrid(TPZManVector<REAL,3> &
                             std::vector<REAL> chunk = m_properties[i];
                             kappa_and_phi = chunk;
                             REAL mDTom2 = 0.986923e-15;
-                            kappa_and_phi[0] *= mDTom2*1.0e6;
-                            kappa_and_phi[1] *= mDTom2*1.0e6;
-                            kappa_and_phi[2] *= mDTom2*1.0e6;
+//                            kappa_and_phi[0] *= mDTom2*1.0e6;
+//                            kappa_and_phi[1] *= mDTom2*1.0e6;
+//                            kappa_and_phi[2] *= mDTom2*1.0e6;
                             kappa_and_phi[3] += 1.0e-1; // Because some porosities are null
                             return;
                         }

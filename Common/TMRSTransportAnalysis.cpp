@@ -216,10 +216,12 @@ void TMRSTransportAnalysis::RunTimeStep(){
 //    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     
     
-    if(isInitialGuess){
-       
-       //ComputeInitialGuess(x);
-    }
+//    if(isInitialGuess){
+//
+//       ComputeInitialGuess(x);
+//        ComputeInitialGuess(x);
+//        return;
+//    }
     
 //    bool QN_converge_Q = QuasiNewtonSteps(x,250); // assuming linear operator (tangent)
 //    if(QN_converge_Q){
@@ -232,11 +234,8 @@ void TMRSTransportAnalysis::RunTimeStep(){
     REAL maxdif =0.0;
     REAL resAnt =1000;
     for(m_k_iteration = 1; m_k_iteration <= n; m_k_iteration++){
-       
         
         NewtonIteration();
-       
-         
         dx = Solution();
         x += dx;
         
@@ -245,20 +244,14 @@ void TMRSTransportAnalysis::RunTimeStep(){
         
 //        auto sat_Ant = fAlgebraicTransport.fCellsData.fSaturation;
         REAL maxvar = fAlgebraicTransport.fCellsData.UpdateSaturations(x);
-//        fAlgebraicTransport.fCellsData.fSaturationWait = sat_Ant;
         fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
-        
-        
+//        fAlgebraicTransport.fCellsData.fSaturationWait = sat_Ant;
         AssembleResidual();
         
         
        
-        
-//        this->PostProcessTimeStep();
+
        
-       
-       
-      
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
         REAL normsol =Norm(Solution());
@@ -328,7 +321,7 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
 //    fAlgebraicTransport.fCellsData.UpdateSaturations(x); //cerar
     
 //    fAlgebraicTransport.fCellsData.fSaturationWait = fAlgebraicTransport.fCellsData.fSaturationLastState;
-    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+//    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     
     LoadSolution(x);
     if(cmesh){
@@ -340,8 +333,8 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
  
     
     NewtonIteration();
-    x += Solution();
     
+    x += Solution();
 //    std::cout<<"SOLUTION_Initial Guess: "<<std::endl;
 //    std::cout<<x<<std::endl;
     LoadSolution(x);
@@ -372,7 +365,14 @@ void TMRSTransportAnalysis::ComputeInitialGuess(TPZFMatrix<STATE> &x){
     (*ftransport_report_data) <<"      "<< "1 "<<"       "<< "   0   "<<"       0       "<<res_norm<<"        "<<normsol<<std::endl;
     
     fAlgebraicTransport.fCellsData.fSaturationWait = fAlgebraicTransport.fCellsData.fSaturation;
-    fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(false);
+    
+    if (m_sim_data->mTNumerics.m_ISLinearKrModelQ) {
+        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(true);
+    }
+    else{
+        fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(false);
+    }
+    
     std::cout << "Initial guess residue norm : " <<  res_norm << std::endl;
     
 }
@@ -498,7 +498,7 @@ void TMRSTransportAnalysis::NewtonIteration_Eigen(){
     fTransportSpMatrix->Solve();
 
     auto total_time_solv = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time_ass).count()/1000.;
-    std::cout << "\ Total Solve time: " << total_time_solv << " seconds" << std::endl;
+    std::cout << "\Total Solve time: " << total_time_solv << " seconds" << std::endl;
     flastSolveTime=total_time_solv;
     
     Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = fTransportSpMatrix->Solution();

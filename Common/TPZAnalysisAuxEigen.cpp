@@ -84,10 +84,7 @@ void TPZAnalysisAuxEigen::Assemble(){
     m_rhs_triplets.resize(n_nzeros_res);
 
 
-#ifdef USING_TBB
-    
-    
-    
+#ifdef USING_TBB2
     
     //FromHere
     
@@ -524,7 +521,7 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
     m_rhs.setZero();
     //
     
-#ifdef USING_TBB
+#ifdef USING_TBB2
     
     tbb::parallel_for(size_t(0), size_t(n_cells), size_t(1),
                       [this] (size_t & ivol){

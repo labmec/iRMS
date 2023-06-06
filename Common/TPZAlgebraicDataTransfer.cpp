@@ -1441,10 +1441,10 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int eq_number = fTransportMesh->Block().Position(block_num);
 
         transport.fCellsData.fEqNumber[i]=eq_number;
-        transport.fCellsData.fDensityOil[i]=865.00;
-        transport.fCellsData.fDensityWater[i]=1000.00;
-        transport.fCellsData.fViscosity[0]=0.001;
-        transport.fCellsData.fViscosity[1]=0.001;
+        transport.fCellsData.fDensityOil[i]=1.0;
+        transport.fCellsData.fDensityWater[i]=1.00;
+        transport.fCellsData.fViscosity[0] = 1.0;
+        transport.fCellsData.fViscosity[1] = 1.0;
         
         
         int dim= gel->Dimension();
@@ -1457,14 +1457,14 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //        REAL x =4080.39; //coord[0];
 //        REAL y =2965.33; //coord[1];
 //        REAL z =3032.63; //coord[2];
-        REAL x=coord[0];
-        REAL y=coord[1];
-        REAL z=coord[2];
+//        REAL x=coord[0];
+//        REAL y=coord[1];
+//        REAL z=coord[2];
         REAL s0_v = 0.00;
-        
-        if(coord[2]>7.5){
-            s0_v=1.0;
-        }
+//
+//        if(coord[2]>7.5){
+//            s0_v=1.0;
+//        }
         
         REAL kx_v=1.0,ky_v=1.0,kz_v=1.0,phi_v=1.0;
         std::vector<REAL> kappa_phi(4,0.0);
@@ -1474,11 +1474,19 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         kappa_phi[3]=0.99;
         //
         if(fkappa_phi){
-//                   std::vector<REAL> kappa_phi = fkappa_phi(coord);
-                   kx_v = kappa_phi[0];
-                   ky_v = kappa_phi[1];
-                   kz_v = kappa_phi[2];
-                   phi_v= kappa_phi[3] +0.01;
+//            std::vector<REAL> kappa_phi = fkappa_phi(coord);
+            if(kappa_phi[0]<0.001){
+                kappa_phi[0] +=0.001;
+                kappa_phi[1] +=0.001;
+                kappa_phi[2] +=0.001;
+            }
+            kx_v = kappa_phi[0];//*0.008335681;
+            ky_v = kappa_phi[1];//*0.008335681;
+            kz_v = kappa_phi[2];//*0.008335681;
+            if(kappa_phi[3]<0.2){
+                kappa_phi[3] +=0.1;
+            }
+            phi_v= kappa_phi[3] +0.01;
         }else{
                    if(fkx)
                    {
@@ -1512,16 +1520,16 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         if (geldim==2) {
             transport.fCellsData.fVolumefactor[i]=0.01;
             transport.fCellsData.fVolume[i] *=transport.fCellsData.fVolumefactor[i];
-            transport.fCellsData.fKx[i]=1.0e-2;
-            transport.fCellsData.fKy[i]=1.0e-2;
-            transport.fCellsData.fKz[i]=1.0e-2;
+            transport.fCellsData.fKx[i]=500;
+            transport.fCellsData.fKy[i]=500;
+            transport.fCellsData.fKz[i]=500;
         }
         else if(matId==299){
             transport.fCellsData.fVolumefactor[i]=0.01;
             transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.01*0.01;
-            transport.fCellsData.fKx[i]=1.0e-2;
-            transport.fCellsData.fKy[i]=1.0e-2;
-            transport.fCellsData.fKz[i]=1.0e-2;
+            transport.fCellsData.fKx[i]=500;
+            transport.fCellsData.fKy[i]=500;
+            transport.fCellsData.fKz[i]=500;
         }
         else{
             transport.fCellsData.fVolumefactor[i]=1.0;
@@ -1537,21 +1545,21 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //            s0_v = 1.0;
 //        }
         
-       // esfera
-        double centro_x = 5;
-        double centro_y = 5;
-        double centro_z = 11.0;
-        double radio = 3.5;
-
-        // Calcula la distancia entre el punto y el centro de la esfera
-        double distancia = sqrt(pow(x - centro_x, 2) + pow(y - centro_y, 2) + pow(z - centro_z, 2));
-
-        // Comprueba si el punto está dentro de la esfera
-        if (distancia <= radio) {
-            s0_v=1.0;
-        } else {
-            s0_v=0.0;
-        }
+//       // esfera
+//        double centro_x = 5;
+//        double centro_y = 5;
+//        double centro_z = 11.0;
+//        double radio = 3.5;
+//
+//        // Calcula la distancia entre el punto y el centro de la esfera
+//        double distancia = sqrt(pow(x - centro_x, 2) + pow(y - centro_y, 2) + pow(z - centro_z, 2));
+//
+//        // Comprueba si el punto está dentro de la esfera
+//        if (distancia <= radio) {
+//            s0_v=1.0;
+//        } else {
+//            s0_v=0.0;
+//        }
         
         //cilindro
 //        double centerX = 6.0; // coordenada x del centro del cilindro
@@ -1580,7 +1588,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     std::cout<<"ReadingProps"<<std::endl;
-    //FillPropsFromFile(transport);
+//    FillPropsFromFile(transport);
     this->InitializeVectorPointersTranportToMixed(transport);
     
 }
@@ -1618,14 +1626,28 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
         if(iss >> kx >> ky >> kz >> por)
         {
 //            por=0.3;
-//            if(kx<1.0e-8){
-//                kx=1.0e-8;
-//                ky=1.0e-8;
-//                kz=1.0e-8;
+            if(kx<5.0){
+                kx +=5;
+                ky +=5;
+                kz +=5;
+            }
+            
+            int matid = transport.fCellsData.fMatId[i];
+//            if(matid==2 && kx<100){
+//                kx+=100;
+//                ky+=100;
+//                kz+=100;
 //            }
-            transport.fCellsData.fKx[i]=kx;
-            transport.fCellsData.fKy[i]=ky;
-            transport.fCellsData.fKz[i]=kz;
+            if(matid>300 && matid < 1500){
+                por =0.4;
+                kx*=10;
+                ky*=10;
+                kz*=10;
+            }
+            transport.fCellsData.fKx[i]=kx*0.008335681;
+            transport.fCellsData.fKy[i]=ky*0.008335681;
+            transport.fCellsData.fKz[i]=kz*0.0008335681;
+            
             
 //            if (transport.fCellsData.fMatId[i]==2 && por>0.0 && por<0.2) {
 //                por =0.5;

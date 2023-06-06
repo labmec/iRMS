@@ -66,7 +66,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
 //    ef.fMat.Print("EF",std::cout, EMathematicaInput);
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
-    REAL Glambda = 1.0*fMixedDensity;
+    REAL Glambda = 1.0;//*fMixedDensity;
 //    std::cout<<"fLambda: "<<fLambda<<" "<<std::endl;
 //    fLambda = 1.0;
     if(Glambda!=1 || fLambda!=1){
@@ -79,9 +79,11 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
 //        DebugStop();
     }
     
+    //ek.fMat.Print("ek=", std::cout,EMathematicaInput);
 //    ek.fMat *= (1.0/fLambda);
-    int borderFlux =nrows - fNinternalFlux;
-    int shift =3;
+    
+    
+    int shift = 3;
     for (int i=0; i< nrows - shift; i++) {
         for (int j=0; j< nrows - shift; j++) {
             ek.fMat(i,j) *= (1.0/fLambda);
@@ -91,28 +93,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
     ef.fMat *= -1.0*Glambda;
 //    ef.fMat.Print(std::cout);
   
-    
-    for (int i=nrows - shift; i< nrows; i++) {
-        for (int j=nrows - shift; j< nrows; j++) {
-            ek.fMat(i,j) *= fLambda;
-        }
-//        ef.fMat(i) =  0;
-    }
-    
-//    ek.fMat(nrows-1,nrows-1) *= (1.0/fLambda);
-    
-//    for (int i=borderFlux; i< borderFlux + fNinternalFlux-1; i++) {
-//        for (int j= borderFlux; j< + fNinternalFlux-1 ; j++) {
-//            ek.fMat(i,j) *= (fLambda);
-//        }
-//    }
-//    for (int icol=0; icol<ncols; icol++) {
-//        ek.fMat(nrows-1,icol) *= fLambda;
-//    }
-//    for (int irow=0; irow<nrows; irow++) {
-//        ek.fMat(irow,ncols-1) *= fLambda;
-//    }
-//    
+  
 //    //why?
 //    ek.fMat(nrows-1,ncols-1) *= fLambda;
     
@@ -345,13 +326,13 @@ void TPZFastCondensedElement::BoundaryFluxEquations(TPZVec<int64_t> &eqs)
         TPZConnect &c = Connect(ic);
         int neq = c.NShape()*c.NState();
         numflux_equations += neq;
-//        if(c.HasDependency())
-//        {
-//            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
-//            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
-//            neq = cdep.NShape()*cdep.NState();
-//            numflux_equations += neq;
-//        }
+        if(c.HasDependency())
+        {
+            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
+            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
+            neq = cdep.NShape()*cdep.NState();
+            numflux_equations += neq;
+        }
     }
     TPZBlock &block = cmesh->Block();
     eqs.Resize(numflux_equations, 0);
@@ -372,18 +353,18 @@ void TPZFastCondensedElement::BoundaryFluxEquations(TPZVec<int64_t> &eqs)
             eqs[count] = firsteq+i;
             count++;
         }
-//        if(c.HasDependency())
-//        {
-//            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
-//            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
-//            seqnum = cdep.SequenceNumber();
-//            firsteq = block.Position(seqnum);
-//            for(int i = 0; i<neq; i++)
-//            {
-//                eqs[count] = firsteq+i;
-//                count++;
-//            }
-//        }
+        if(c.HasDependency())
+        {
+            int64_t cindex = c.FirstDepend()->fDepConnectIndex;
+            TPZConnect &cdep = cmesh->ConnectVec()[cindex];
+            seqnum = cdep.SequenceNumber();
+            firsteq = block.Position(seqnum);
+            for(int i = 0; i<neq; i++)
+            {
+                eqs[count] = firsteq+i;
+                count++;
+            }
+        }
     }
 }
 

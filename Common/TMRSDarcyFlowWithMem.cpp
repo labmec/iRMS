@@ -459,7 +459,7 @@ template <class TMEM>
 void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STATE>> &datavec, REAL weight, TPZFMatrix<STATE> &ek, TPZFMatrix<STATE> &ef, TPZBndCondT<STATE> &bc){
     
 
-    REAL gBigNumber = 1.0e12; //TPZMaterial::gBigNumber;
+    REAL gBigNumber = 1.0e16; //TPZMaterial::gBigNumber;
 
     int qb = 0, pb = 1;
     TPZFNMatrix<100,REAL> phi_qs       = datavec[qb].phi;
