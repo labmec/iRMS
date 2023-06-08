@@ -319,7 +319,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     REAL vl =m_kappa_inv(0,0);
         std::vector<REAL> m_gravity(3,0.0);
     m_gravity = mSimData.mTNumerics.m_gravity;
-    m_gravity[2] *= -1.0;
+  //  m_gravity[2] *= -1.0;
     
     //     m_gravity[2] =  9.8*1.0e-6;
         for (int i = 0; i < 3; i++) {

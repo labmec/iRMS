@@ -16,7 +16,7 @@
             "name": "inlet",
             "matid": 3,
             "type": 0, // imposed pressure
-            "value": 40.0
+            "value": 400.0
         },
         {
             "name": "outlet",
@@ -33,7 +33,7 @@
         
     ],
 
-    "NCoarseGroups": 2,
+    "NCoarseGroups": 64,
     "FractureHybridPressureMatId": 299,
     "FractureInitMatId": 300,
     "FractureGlueMatId": 1000000,
@@ -41,7 +41,7 @@
     "useMHM":true,
     "needsMerge":true,
     "RunWithTransport": true,
-    "DeltaT": 0.0000005,
+    "DeltaT": 1.1,
     "NSteps": 100,
     "SimulationDim": 3,
     "Fractures": [

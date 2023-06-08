@@ -1441,7 +1441,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int eq_number = fTransportMesh->Block().Position(block_num);
 
         transport.fCellsData.fEqNumber[i]=eq_number;
-        transport.fCellsData.fDensityOil[i]=1.0;
+        transport.fCellsData.fDensityOil[i]=0.46;
         transport.fCellsData.fDensityWater[i]=1.00;
         transport.fCellsData.fViscosity[0] = 1.0;
         transport.fCellsData.fViscosity[1] = 1.0;
@@ -1457,21 +1457,21 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //        REAL x =4080.39; //coord[0];
 //        REAL y =2965.33; //coord[1];
 //        REAL z =3032.63; //coord[2];
-//        REAL x=coord[0];
-//        REAL y=coord[1];
-//        REAL z=coord[2];
+        REAL x=coord[0];
+        REAL y=coord[1];
+        REAL z=coord[2];
         REAL s0_v = 0.00;
 //
-//        if(coord[2]>7.5){
+//        if(coord[2]>7.5 && coord[2]<12.00){
 //            s0_v=1.0;
 //        }
         
-        REAL kx_v=1.0,ky_v=1.0,kz_v=1.0,phi_v=1.0;
+        REAL kx_v=0.001,ky_v=0.001,kz_v=1.0,phi_v=1.0;
         std::vector<REAL> kappa_phi(4,0.0);
         kappa_phi[0]=kx_v;
         kappa_phi[1]=ky_v;
         kappa_phi[2]=kz_v;
-        kappa_phi[3]=0.99;
+        kappa_phi[3]=0.19;
         //
         if(fkappa_phi){
 //            std::vector<REAL> kappa_phi = fkappa_phi(coord);
@@ -1537,30 +1537,30 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         
         dataaExport<<transport.fCellsData.fKx[i]<<" "<<transport.fCellsData.fKy[i]<<" "<<transport.fCellsData.fKz[i]<<" "<<phi_v<<std::endl;
         
-        //
+        
 //        if(zcord>5.0 && zcord<8.75  && xcord>2.0 && xcord<8.6 && ycord>2.0 && ycord<8.0){
 //            s0_v = 1.0;
 //        }
-//        if(zcord>5.0){
+//        if(z>7.0){
 //            s0_v = 1.0;
 //        }
         
-//       // esfera
-//        double centro_x = 5;
-//        double centro_y = 5;
-//        double centro_z = 11.0;
-//        double radio = 3.5;
+       // esfera
+        double centro_x = 5;
+        double centro_y = 5;
+        double centro_z = 11.0;
+        double radio = 3.5;
+
+        // Calcula la distancia entre el punto y el centro de la esfera
+        double distancia = sqrt(pow(x - centro_x, 2) + pow(y - centro_y, 2) + pow(z - centro_z, 2));
+
+        // Comprueba si el punto está dentro de la esfera
+        if (distancia <= radio) {
+            s0_v=1.0;
+        } else {
+            s0_v=0.0;
+        }
 //
-//        // Calcula la distancia entre el punto y el centro de la esfera
-//        double distancia = sqrt(pow(x - centro_x, 2) + pow(y - centro_y, 2) + pow(z - centro_z, 2));
-//
-//        // Comprueba si el punto está dentro de la esfera
-//        if (distancia <= radio) {
-//            s0_v=1.0;
-//        } else {
-//            s0_v=0.0;
-//        }
-        
         //cilindro
 //        double centerX = 6.0; // coordenada x del centro del cilindro
 //        double centerZ = 11.0; // coordenada z del centro del cilindro

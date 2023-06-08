@@ -60,6 +60,7 @@ void TPZFastestCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZEleme
     
 //    ef.fMat *=0.0;
     ef.fMat *= -1.0*Glambda;
+  
 //    ef.fMat(nrows-1) = fCompressibiilityRhsTerm;
     
     

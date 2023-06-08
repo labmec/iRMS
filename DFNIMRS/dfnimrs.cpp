@@ -29,7 +29,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // ----- Global vars -----
-const int glob_n_threads = 16;
+const int glob_n_threads = 0;
 
 // ----- End of namespaces -----
 
@@ -210,9 +210,9 @@ int main(int argc, char* argv[]){
                 filenameBase = basemeshpath + "/dfnimrs/fl_case4_meshes/fl_case4_2018/";
                 break;
             case 20:
-                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
+//                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
 //                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
-//                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
+                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
 //                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
                 break;
             case 21:
@@ -790,7 +790,7 @@ void RunProblem(string& filenameBase, const int simcase)
 //            }
             REAL outFlux = sfi_analysis->m_transport_module->fAlgebraicTransport.VerifyConservation(it);
             sfi_analysis->m_transport_module->fAlgebraicTransport.ExportPProductionData(it);
-            
+            sfi_analysis->m_mixed_module->AllZero(mixed_operator);
             fileFracSatVolCase2<< outFlux <<std::endl;
         }
     }
@@ -1104,14 +1104,14 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
    // grav[2] = -9.8;//
-    grav[2] = 0.0;//0.010;//
+    grav[2] = -1.1;//0.010;//
     std::cout<<"ojo valor de gravedad"<<std::endl;
-    sim_data.mTFluidProperties.mOilDensityRef = 1.00;
+    sim_data.mTFluidProperties.mOilDensityRef = 0.50;
     sim_data.mTFluidProperties.mWaterDensityRef = 1.00;
-    sim_data.mTPetroPhysics.mOilViscosity= 2.0;
+    sim_data.mTPetroPhysics.mOilViscosity= 1.0;
     sim_data.mTPetroPhysics.mWaterViscosity= 1.0;
 	sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_IsGravityEffectsQ = false;
+    sim_data.mTNumerics.m_IsGravityEffectsQ = true;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_ISLinearizedQuadraticModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
@@ -1119,7 +1119,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTNumerics.m_max_iter_mixed=1;
 	sim_data.mTNumerics.m_max_iter_transport=3000;
 	
-	// PostProcess controls
+//  PostProcess controls
 //	std::string vtkfilename = filenameBase.substr(filenameBase.find("dfnimrs/") + 8);
 //	std::replace( vtkfilename.begin(), vtkfilename.end(), '/', '_');
     std::string vtkfilename = filenameBase.substr(filenameBase.find_last_of("/") + 1);
@@ -1134,7 +1134,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	TPZStack<std::string,10> scalnames, vecnames, scalnamesTransport;
 	vecnames.Push("Flux");
 	scalnames.Push("Pressure");
-    scalnames.Push("p");
+//    scalnames.Push("p");
     scalnames.Push("div_q");
 	if (sim_data.mTNumerics.m_four_approx_spaces_Q) {
 		scalnames.Push("g_average");
