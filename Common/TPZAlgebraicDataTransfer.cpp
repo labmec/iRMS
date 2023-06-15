@@ -1420,8 +1420,11 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     std::cout << __PRETTY_FUNCTION__ << "Filling in property map\n";
 
     for (int64_t i=0 ; i<nvols; i++) {
+        
+        if(i==1 || i%50==0){
+            std::cout<<"porcentagem: "<<100*i/nvols<<std::endl;
+        }
         int64_t celindex = volData[i];
-       
         TPZCompEl *cel = fTransportMesh->Element(celindex);
         TPZGeoEl *gel = cel->Reference();
         int indexgeo=gel->Index();
