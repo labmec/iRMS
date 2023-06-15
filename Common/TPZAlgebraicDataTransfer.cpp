@@ -1441,7 +1441,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         int eq_number = fTransportMesh->Block().Position(block_num);
 
         transport.fCellsData.fEqNumber[i]=eq_number;
-        transport.fCellsData.fDensityOil[i]=0.46;
+        transport.fCellsData.fDensityOil[i]=0.86;
         transport.fCellsData.fDensityWater[i]=1.00;
         transport.fCellsData.fViscosity[0] = 1.0;
         transport.fCellsData.fViscosity[1] = 1.0;
@@ -1466,7 +1466,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //            s0_v=1.0;
 //        }
         
-        REAL kx_v=0.001,ky_v=0.001,kz_v=1.0,phi_v=1.0;
+        REAL kx_v=200,ky_v=200,kz_v=200.1,phi_v=1.0;
         std::vector<REAL> kappa_phi(4,0.0);
         kappa_phi[0]=kx_v;
         kappa_phi[1]=ky_v;
@@ -1474,19 +1474,25 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         kappa_phi[3]=0.19;
         //
         if(fkappa_phi){
-//            std::vector<REAL> kappa_phi = fkappa_phi(coord);
+            std::vector<REAL> kappa_phi = fkappa_phi(coord);
+            
             if(kappa_phi[0]<0.001){
-                kappa_phi[0] +=0.001;
-                kappa_phi[1] +=0.001;
-                kappa_phi[2] +=0.001;
+                kappa_phi[0] +=1.01;
+                kappa_phi[1] +=1.01;
+                kappa_phi[2] +=1.01;
             }
-            kx_v = kappa_phi[0];//*0.008335681;
-            ky_v = kappa_phi[1];//*0.008335681;
-            kz_v = kappa_phi[2];//*0.008335681;
+            
+            kx_v = kappa_phi[0]*0.008335681;
+            ky_v = kappa_phi[1]*0.008335681;
+            kz_v = kappa_phi[2]*0.008335681;
             if(kappa_phi[3]<0.2){
                 kappa_phi[3] +=0.1;
             }
             phi_v= kappa_phi[3] +0.01;
+            if(geldim!=2 && matId!=299){
+                dataaExport<< kappa_phi[0]<<" "<< kappa_phi[1]<<" "<< kappa_phi[2]<<" "<<phi_v<<std::endl;
+            }
+            
         }else{
                    if(fkx)
                    {
@@ -1518,24 +1524,30 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         transport.fCellsData.fKy[i]=ky_v;
         transport.fCellsData.fKz[i]=kz_v;
         if (geldim==2) {
-            transport.fCellsData.fVolumefactor[i]=0.01;
+            transport.fCellsData.fVolumefactor[i]=0.001;
             transport.fCellsData.fVolume[i] *=transport.fCellsData.fVolumefactor[i];
-            transport.fCellsData.fKx[i]=500;
-            transport.fCellsData.fKy[i]=500;
-            transport.fCellsData.fKz[i]=500;
+            transport.fCellsData.fKx[i]=5000*0.008335681;
+            transport.fCellsData.fKy[i]=5000*0.008335681;
+            transport.fCellsData.fKz[i]=5000*0.008335681;
+            phi_v=0.5;
+            REAL kPermFrac=5000*0.008335681;
+            dataaExport<< kPermFrac<<" "<< kPermFrac<<" "<< kPermFrac<<" "<<phi_v<<std::endl;
         }
         else if(matId==299){
             transport.fCellsData.fVolumefactor[i]=0.01;
-            transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.01*0.01;
-            transport.fCellsData.fKx[i]=500;
-            transport.fCellsData.fKy[i]=500;
-            transport.fCellsData.fKz[i]=500;
+            transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.001*0.001;
+            transport.fCellsData.fKx[i]=5000*0.008335681;
+            transport.fCellsData.fKy[i]=5000*0.008335681;
+            transport.fCellsData.fKz[i]=5000*0.008335681;
+            phi_v=0.5;
+            REAL kPermFrac=5000*0.008335681;
+            dataaExport<< kPermFrac<<" "<< kPermFrac<<" "<< kPermFrac<<" "<<phi_v<<std::endl;
         }
         else{
             transport.fCellsData.fVolumefactor[i]=1.0;
         }
         
-        dataaExport<<transport.fCellsData.fKx[i]<<" "<<transport.fCellsData.fKy[i]<<" "<<transport.fCellsData.fKz[i]<<" "<<phi_v<<std::endl;
+       
         
         
 //        if(zcord>5.0 && zcord<8.75  && xcord>2.0 && xcord<8.6 && ycord>2.0 && ycord<8.0){
@@ -1546,20 +1558,20 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //        }
         
        // esfera
-        double centro_x = 5;
-        double centro_y = 5;
-        double centro_z = 11.0;
-        double radio = 3.5;
-
-        // Calcula la distancia entre el punto y el centro de la esfera
-        double distancia = sqrt(pow(x - centro_x, 2) + pow(y - centro_y, 2) + pow(z - centro_z, 2));
-
-        // Comprueba si el punto está dentro de la esfera
-        if (distancia <= radio) {
-            s0_v=1.0;
-        } else {
-            s0_v=0.0;
-        }
+//        double centro_x = 5;
+//        double centro_y = 5;
+//        double centro_z = 11.0;
+//        double radio = 3.5;
+//
+//        // Calcula la distancia entre el punto y el centro de la esfera
+//        double distancia = sqrt(pow(x - centro_x, 2) + pow(y - centro_y, 2) + pow(z - centro_z, 2));
+//
+//        // Comprueba si el punto está dentro de la esfera
+//        if (distancia <= radio) {
+//            s0_v=1.0;
+//        } else {
+//            s0_v=0.0;
+//        }
 //
         //cilindro
 //        double centerX = 6.0; // coordenada x del centro del cilindro
@@ -1588,7 +1600,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     std::cout<<"ReadingProps"<<std::endl;
-//    FillPropsFromFile(transport);
+   // FillPropsFromFile(transport);
     this->InitializeVectorPointersTranportToMixed(transport);
     
 }
@@ -1603,7 +1615,7 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
     int64_t nvols = volData.size();
     transport.fCellsData.SetNumCells(nvols);
     transport.fCellsData.fViscosity.resize(2);
-    transport.fCellsData.fViscosity[0] = 1.0;
+    transport.fCellsData.fViscosity[0] = 2.0;
     transport.fCellsData.fViscosity[1] = 1.0;
     std::cout << __PRETTY_FUNCTION__ << "Filling in property map\n";
     
@@ -1626,10 +1638,10 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
         if(iss >> kx >> ky >> kz >> por)
         {
 //            por=0.3;
-            if(kx<5.0){
-                kx +=5;
-                ky +=5;
-                kz +=5;
+            if(kx<4.0){
+                kx +=0.1;
+                ky +=0.1;
+                kz +=0.1;
             }
             
             int matid = transport.fCellsData.fMatId[i];
@@ -1638,11 +1650,11 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
 //                ky+=100;
 //                kz+=100;
 //            }
-            if(matid>300 && matid < 1500){
-                por =0.4;
-                kx*=10;
-                ky*=10;
-                kz*=10;
+            if(matid>300 && matid < 1700){
+                por =0.8;
+                kx*=100;
+                ky*=100;
+                kz*=100;
             }
             transport.fCellsData.fKx[i]=kx*0.008335681;
             transport.fCellsData.fKy[i]=ky*0.008335681;

@@ -466,6 +466,7 @@ void TMRSSFIAnalysis::RunTimeStep(){
         
         *(m_mixed_module->fmixed_report_data)<<"   "<<m_k_iteration<<"   ";
         *(m_transport_module->ftransport_report_data)<<"   "<<m_k_iteration<<"   ";
+        
         SFIIteration();
         m_mixed_module->VerifyElementFluxes();
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
@@ -536,7 +537,7 @@ void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
     }
     if (type == 1) {
         m_mixed_module->PostProcessTimeStep(dim);
-       // m_mixed_module->PostProcessTimeStep(dim-1);
+        m_mixed_module->PostProcessTimeStep(dim-1);
     }
     if (type == 2) {
         m_transport_module->PostProcessTimeStep();
@@ -549,7 +550,7 @@ void TMRSSFIAnalysis::SFIIteration(){
     
 
     TPZSimpleTimer timer_sfi("Timer SFI Iteration");
-    //m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
+        m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
     fAlgebraicDataTransfer.TransferLambdaCoefficients();
     

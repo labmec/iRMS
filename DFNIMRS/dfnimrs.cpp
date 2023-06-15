@@ -29,7 +29,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // ----- Global vars -----
-const int glob_n_threads = 0;
+const int glob_n_threads = 16;
 
 // ----- End of namespaces -----
 
@@ -211,8 +211,8 @@ int main(int argc, char* argv[]){
                 break;
             case 20:
 //                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
-//                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
-                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
+                filenameBase = basemeshpath + "/TesisResults/UNISIM/";
+//                filenameBase = basemeshpath + "/TesisResults/TestTransfer/";
 //                filenameBase = basemeshpath + "/dfnimrs/unisim_meshes/";
                 break;
             case 21:
@@ -451,7 +451,7 @@ void RunProblem(string& filenameBase, const int simcase)
     //ColorMeshCase2(gmeshfine);
     
     // ----- Printing gmesh -----
-#ifdef PZDEBUG
+//#ifdef PZDEBUG
     if (1) {
         if(gmeshfine){
             
@@ -466,7 +466,7 @@ void RunProblem(string& filenameBase, const int simcase)
             TPZVTKGeoMesh::PrintGMeshVTK(gmeshcoarse, name);
         }
     }
-#endif
+//#endif
 	
 	// ----- Approximation space -----
     TMRSDataTransfer sim_data;
@@ -650,7 +650,7 @@ void RunProblem(string& filenameBase, const int simcase)
          std::string props_data = "/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_props.dat";
          TRMSpatialPropertiesMap properties_map;
          std::vector<size_t> SAMe_blocks = {5,5,5};
-//         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
+         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
 
          TMRSPropertiesFunctions reservoir_properties;
 //         reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
@@ -722,6 +722,11 @@ void RunProblem(string& filenameBase, const int simcase)
             *(sfi_analysis->freport_data)<<"*******************************TIME_STEP_"<<it<<"*******************************"<<std::endl;
             *(sfi_analysis->freport_data)<<"N_IT_SFI        N_ERROR         "<<std::endl;
            
+            
+            if(it%4==0){
+                sfi_analysis->isLinearTracer = true;
+            }
+            
             sfi_analysis->RunTimeStep();
            
             
@@ -732,12 +737,11 @@ void RunProblem(string& filenameBase, const int simcase)
 //            if(it == 1){
                 //sfi_analysis->m_transport_module->fAlgebraicTransport.ColorMeshByCoords();
             
-//                if(it==1 || it%50==0){
-                    sfi_analysis->PostProcessTimeStep(typeToPPinit);
-                    sfi_analysis->PostProcessTimeStep(typeToPPsteps);
-//                }
-            
-            sfi_analysis->isLinearTracer = true;
+        
+            if(it==1 || it%4==0){
+                sfi_analysis->PostProcessTimeStep(typeToPPinit);
+                sfi_analysis->PostProcessTimeStep(typeToPPsteps);
+            }
             
 //            if(it==1 || it%50==200){
 //                sfi_analysis->isLinearTracer = true;
@@ -1104,11 +1108,11 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
    // grav[2] = -9.8;//
-    grav[2] = -1.1;//0.010;//
+    grav[2] = -0.00010;//0.010;//
     std::cout<<"ojo valor de gravedad"<<std::endl;
-    sim_data.mTFluidProperties.mOilDensityRef = 0.50;
+    sim_data.mTFluidProperties.mOilDensityRef = 0.86;
     sim_data.mTFluidProperties.mWaterDensityRef = 1.00;
-    sim_data.mTPetroPhysics.mOilViscosity= 1.0;
+    sim_data.mTPetroPhysics.mOilViscosity= 2.0;
     sim_data.mTPetroPhysics.mWaterViscosity= 1.0;
 	sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_IsGravityEffectsQ = true;
@@ -1294,8 +1298,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     int ncoarse_vol = 0;
     if(needsMergeMeshes){
 
-        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
-//        gmeshcoarse = GenerateUnisimMesh(3);
+//        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+        gmeshcoarse = GenerateUnisimMesh(2);
         int nels = gmeshcoarse->NElements();
         REAL volumeinlet =0.0;
         REAL volumeoutlet =0.0;
@@ -1372,6 +1376,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
 	const int nCoarseGroups = input["NCoarseGroups"];
     
     std::string volbase = "c";
+    
+    std::cout<<ncoarse_vol<<std::endl;
     if(needsMergeMeshes){
         if(nCoarseGroups != ncoarse_vol) DebugStop();
         for (int ivol = 0; ivol < nCoarseGroups; ivol++) {
@@ -1409,10 +1415,9 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
         CreateIntersectionElementForEachFrac(gmeshfine,matidtoFractures,fracInitMatId,fracinc,FractureHybridPressureMatId);
     }
     
-    
 //    VerifyGeoMesh(gmeshcoarse);
 //    VerifyGeoMesh(gmeshfine);
-    int ok1=1;
+    int ok1 = 1;
 	
 }
 
@@ -2459,7 +2464,7 @@ void Restart(TMRSSFIAnalysis * sfianalisis){
     
     bool modpoints = true;
     std::ifstream file;
-    std::string basemeshpath("/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/TestTransfer/dataToRestart.txt");
+    std::string basemeshpath("/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/dataToRestart.txt");
     file.open(basemeshpath);
     int i=1;
     
@@ -2494,6 +2499,7 @@ void Restart(TMRSSFIAnalysis * sfianalisis){
                     DebugStop();
                 }
                     aalgtransport.fCellsData.fSaturation[indexcel]=satVal;
+                    aalgtransport.fCellsData.fSaturationWait[indexcel]=satVal;
                     aalgtransport.fCellsData.fSaturationLastState[indexcel]=satVal;
             };
                 
@@ -2507,20 +2513,21 @@ void Restart(TMRSSFIAnalysis * sfianalisis){
 //    }
     //
     
-    int indexn=100;
-    REAL satVal =0.0;
-    REAL satAntVal = 0.0;
-    int indR =-1;
-
-    for(int index = 0; index < nvols; index++){
-        indR=aalgtransport.fCellsData.fGeoIndex[index];
-        if (indR==indexn) {
-            break;
-        }
-    }
-    aalgtransport.fCellsData.fSaturation[satVal];
-    aalgtransport.fCellsData.fSaturationLastState[satAntVal];
-    
+//    int indexn=100;
+//    REAL satVal =0.0;
+//    REAL satAntVal = 0.0;
+//    int indR =-1;
+//
+//    for(int index = 0; index < nvols; index++){
+//        indR=aalgtransport.fCellsData.fGeoIndex[index];
+//        if (indR==indexn) {
+//            break;
+//        }
+//    }
+//    aalgtransport.fCellsData.fSaturation[satVal];
+//    aalgtransport.fCellsData.fSaturationLastState[satAntVal];
+//
+    int ok=0;
 }
 
 // ---------------------------------------------------------------------

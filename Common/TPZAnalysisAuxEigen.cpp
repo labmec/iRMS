@@ -84,7 +84,7 @@ void TPZAnalysisAuxEigen::Assemble(){
     m_rhs_triplets.resize(n_nzeros_res);
 
 
-#ifdef USING_TBB2
+#ifdef USING_TBB
     
     //FromHere
     
@@ -155,7 +155,7 @@ void TPZAnalysisAuxEigen::Assemble(){
                           TPZFMatrix<double> elmat, ef;
                           elmat.Resize(2, 2);
                           ef.Resize(2, 1);
-                          fAlgebraicTransport->ContributeInterface(iface,elmat, ef);
+                          fAlgebraicTransport->ContributeInterface(iface,elmat, ef, internal_faces_id1);
 #ifdef PZDEBUG
                           {
                               STATE normek = Norm(elmat);
@@ -175,7 +175,8 @@ void TPZAnalysisAuxEigen::Assemble(){
                           m_trans_triplets[i_begin+2] = (Eigen::Triplet<REAL>(indexes[1],indexes[0], elmat(1,0)));
                           m_trans_triplets[i_begin+3] = (Eigen::Triplet<REAL>(indexes[1],indexes[1], elmat(1,1)));
                           
-                          size_t i_rhs_begin = 2*(iface) + n_cells;
+                          size_t i_rhs_begin = 2*(iface) + n_cells + 2*(n_internal_faces);
+
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                           m_rhs_triplets[i_rhs_begin+1] = Eigen::Triplet<REAL>(indexes[1],0, ef(1,0));
                       }
@@ -196,7 +197,7 @@ void TPZAnalysisAuxEigen::Assemble(){
                           TPZFMatrix<double> elmat, ef;
                           elmat.Resize(2, 2);
                           ef.Resize(2, 1);
-                          fAlgebraicTransport->ContributeInterface(iface,elmat, ef);
+                          fAlgebraicTransport->ContributeInterface(iface,elmat, ef, internal_faces_id2);
 #ifdef PZDEBUG
                           {
                               STATE normek = Norm(elmat);
@@ -216,7 +217,7 @@ void TPZAnalysisAuxEigen::Assemble(){
                           m_trans_triplets[i_begin+2] = (Eigen::Triplet<REAL>(indexes[1],indexes[0], elmat(1,0)));
                           m_trans_triplets[i_begin+3] = (Eigen::Triplet<REAL>(indexes[1],indexes[1], elmat(1,1)));
                           
-                          size_t i_rhs_begin = 2*(iface) + n_cells + 2*(n_internal_faces);
+                        size_t i_rhs_begin = 2*(iface) + n_cells + 2*n_internal_faces + 2*n_internal_faces1;
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                           m_rhs_triplets[i_rhs_begin+1] = Eigen::Triplet<REAL>(indexes[1],0, ef(1,0));
                       }
@@ -237,7 +238,7 @@ void TPZAnalysisAuxEigen::Assemble(){
                           TPZFMatrix<double> elmat, ef;
                           elmat.Resize(2, 2);
                           ef.Resize(2, 1);
-                          fAlgebraicTransport->ContributeInterface(iface,elmat, ef);
+                          fAlgebraicTransport->ContributeInterface(iface,elmat, ef, internal_faces_id3);
 #ifdef PZDEBUG
                           {
                               STATE normek = Norm(elmat);
@@ -521,7 +522,7 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
     m_rhs.setZero();
     //
     
-#ifdef USING_TBB2
+#ifdef USING_TBB
     
     tbb::parallel_for(size_t(0), size_t(n_cells), size_t(1),
                       [this] (size_t & ivol){
@@ -547,7 +548,7 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                           indexes[1]=righteq;
                           TPZFMatrix<double> ef;
                           ef.Resize(2, 1);
-                          fAlgebraicTransport->ContributeInterfaceResidual(iface, ef);
+                          fAlgebraicTransport->ContributeInterfaceResidual(iface, ef,internal_faces_id);
                           
                           size_t i_rhs_begin = 2*(iface) + n_cells;
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
@@ -570,7 +571,7 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                           indexes[1]=righteq;
                           TPZFMatrix<double>  ef;
                           ef.Resize(2, 1);
-                          fAlgebraicTransport->ContributeInterfaceResidual(iface,ef);
+                          fAlgebraicTransport->ContributeInterfaceResidual(iface,ef,internal_faces_id1);
 #ifdef PZDEBUG
                           {
                           
@@ -584,7 +585,7 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                           }
 #endif
                           
-                          size_t i_rhs_begin = 2*(iface) + n_cells;
+                        size_t i_rhs_begin = 2*(iface) + 2*(n_internal_faces) + n_cells;
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                           m_rhs_triplets[i_rhs_begin+1] = Eigen::Triplet<REAL>(indexes[1],0, ef(1,0));
                       }
@@ -604,7 +605,7 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                           indexes[1]=righteq;
                           TPZFMatrix<double> ef;
                           ef.Resize(2, 1);
-                          fAlgebraicTransport->ContributeInterfaceResidual(iface, ef);
+                          fAlgebraicTransport->ContributeInterfaceResidual(iface, ef, internal_faces_id2);
 #ifdef PZDEBUG
                           {
                               STATE normef = Norm(ef);
@@ -616,7 +617,8 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                               }
                           }
 #endif
-                          size_t i_rhs_begin = 2*(iface) + n_cells + 2*(n_internal_faces);
+                        size_t i_rhs_begin = 2*(iface) + 2*(n_internal_faces+ n_internal_faces1) +  n_cells;
+        
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                           m_rhs_triplets[i_rhs_begin+1] = Eigen::Triplet<REAL>(indexes[1],0, ef(1,0));
                       }
@@ -636,7 +638,7 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                           indexes[1]=righteq;
                           TPZFMatrix<double>  ef;
                           ef.Resize(2, 1);
-                          fAlgebraicTransport->ContributeInterfaceResidual(iface, ef);
+                          fAlgebraicTransport->ContributeInterfaceResidual(iface, ef, internal_faces_id3);
 #ifdef PZDEBUG
                           {
                               STATE normef = Norm(ef);
@@ -649,7 +651,8 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                           }
 #endif
                           
-                          size_t i_rhs_begin = 2*(iface) + n_cells + 2*(n_internal_faces + n_internal_faces1 + n_internal_faces2);
+                        size_t i_rhs_begin = 2*(iface) + 2*(n_internal_faces+ n_internal_faces1 + n_internal_faces2) +  n_cells;
+        
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                           m_rhs_triplets[i_rhs_begin+1] = Eigen::Triplet<REAL>(indexes[1],0, ef(1,0));
                       }
@@ -666,7 +669,9 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                           TPZFMatrix<double> ef;
                           ef.Resize(1, 1);
                           fAlgebraicTransport->ContributeBCInletInterface(iface,ef, inlet_faces_id);
-                          size_t i_rhs_begin = (iface) + n_cells + 2*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3);
+        
+                    size_t i_rhs_begin = (iface) + n_cells + 2*(n_internal_faces + n_internal_faces1+n_internal_faces2+n_internal_faces3);
+        
                           m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                       }
                       );
@@ -682,12 +687,12 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
                           TPZFMatrix<double> elmat, ef;
                           elmat.Resize(1, 1);
                           ef.Resize(1, 1);
-                          fAlgebraicTransport->ContributeBCOutletInterface(iface,elmat, ef, outlet_faces_id);
-                          size_t i_begin = iface +   + 4*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3) ;
-                          m_trans_triplets[i_begin] = (Eigen::Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
+                          fAlgebraicTransport->ContributeBCOutletInterfaceResidual(iface, ef, outlet_faces_id);
+        
                           
-                          size_t i_rhs_begin = (iface) + n_cells + 2*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3) + n_inlet_faces;
-                          m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
+                        size_t i_rhs_begin = (iface) + n_cells + 2*(n_internal_faces+n_internal_faces1+n_internal_faces2+n_internal_faces3) + n_inlet_faces;
+                          
+                        m_rhs_triplets[i_rhs_begin] = Eigen::Triplet<REAL>(indexes[0],0, ef(0,0));
                       }
                       );
     

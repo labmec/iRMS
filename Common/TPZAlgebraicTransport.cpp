@@ -96,9 +96,9 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
 #endif
     
     REAL fluxint  = fInterfaceData[interfaceId].fIntegralFlux[index];
-    if(std::abs(fluxint)<0.000000001){
-        fluxint=0.0;
-    }
+//    if(std::abs(fluxint)<0.000000001){
+//        fluxint=0.0;
+//    }
     REAL fw_L = fCellsData.fWaterfractionalflow[lr_index.first];
     REAL fw_R = fCellsData.fWaterfractionalflow[lr_index.second];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
@@ -155,9 +155,9 @@ void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<do
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceID].fLeftRightVolIndex[index];
     REAL fluxint  = fInterfaceData[interfaceID].fIntegralFlux[index];
     
-    if(std::abs(fluxint)<0.00001){
-        fluxint=0.0;
-    }
+//    if(std::abs(fluxint)<0.00000001){
+//        fluxint=0.0;
+//    }
     
     REAL fw_L = fCellsData.fWaterfractionalflow[lr_index.first];
     REAL fw_R = fCellsData.fWaterfractionalflow[lr_index.second];
@@ -497,21 +497,21 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
 
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef, int inId){
    
-    REAL s_inlet = 0.0;// fboundaryCMatVal[inId].second;
-    REAL fluxint  = 0.0*fInterfaceData[inId].fIntegralFlux[index];
-    if(std::abs(fluxint)<0.000000001){
-        fluxint=0.0;
-    }
+    REAL s_inlet = 1.0;// fboundaryCMatVal[inId].second;
+    REAL fluxint  = fInterfaceData[inId].fIntegralFlux[index];
+//    if(std::abs(fluxint)<0.000000001){
+//        fluxint=0.0;
+//    }
     
     ef(0,0) = 1.0*s_inlet*fluxint* fdt;
 }
 void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int outID){
   
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outID].fLeftRightVolIndex[index];
-    REAL fluxint  = 0.0*fInterfaceData[outID].fIntegralFlux[index];
-    if(std::abs(fluxint)<0.000000001){
-        fluxint=0.0;
-    }
+    REAL fluxint  = 1.0*fInterfaceData[outID].fIntegralFlux[index];
+//    if(std::abs(fluxint)<0.000000001){
+//        fluxint=0.0;
+//    }
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
     REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
     
@@ -535,10 +535,10 @@ void TPZAlgebraicTransport::ContributeBCOutletInterface(int index,TPZFMatrix<dou
 void TPZAlgebraicTransport::ContributeBCOutletInterfaceResidual(int index, TPZFMatrix<double> &ef, int outId){
   
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[outId].fLeftRightVolIndex[index];
-    REAL fluxint  = 0.0*fInterfaceData[outId].fIntegralFlux[index];
-    if(std::abs(fluxint)<0.000000001){
-        fluxint=0.0;
-    }
+    REAL fluxint  = 1.0*fInterfaceData[outId].fIntegralFlux[index];
+//    if(std::abs(fluxint)<0.000000001){
+//        fluxint=0.0;
+//    }
     REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
 
     //
@@ -713,16 +713,38 @@ void TPZAlgebraicTransport::TCellData::UpdateFractionalFlowsAndLambdaQuasiNewton
             auto lambdaWvalderiv = labdaWf(sw);
             auto lambdaOvalderiv = labdaOf(sw);
             auto lambdaTotalvalderiv = lambdaTotalf(sw);
-            this->fWaterfractionalflow[ivol] = std::get<0>(fwfvalderiv);
-            this->fOilfractionalflow[ivol] = std::get<0>(fovalderiv);
+            
+            if (fsim_data->mTNumerics.m_ISLinearizedQuadraticModelQ) {
+                REAL sw_v = this->fSaturationWait[ivol];
+                auto fwfvalderiv_wait = fwf(sw_v);
+                auto fOfvalderiv_wait = fof(sw_v);
+                
+                REAL DfracFlow_v = std::get<1>(fwfvalderiv_wait);
+                REAL fracFlow_ant = std::get<0>(fwfvalderiv_wait);//this->fFractionalFlowWait[ivol];
+                fWaterfractionalflow[ivol] = (fracFlow_ant ) + (DfracFlow_v)*(sw - sw_v);
+                
+                REAL fracFlowOil_ant = std::get<0>(fOfvalderiv_wait);
+                REAL DfracFlowoOil_v = std::get<1>(fOfvalderiv_wait);
+                fOilfractionalflow[ivol] = (fracFlowOil_ant ) + ( DfracFlowoOil_v)*(sw - sw_v); //ojo aqui.
+              
+            }
+            else{
+                
+                this->fWaterfractionalflow[ivol] = std::get<0>(fwfvalderiv);
+                this->fOilfractionalflow[ivol] = std::get<0>(fovalderiv);
+              
+            }
+            
             this->fDerivativeOfractionalflow[ivol] = std::get<1>(fovalderiv);
             this->flambda[ivol] = std::get<0>(lambdaTotalvalderiv);
             this->fdlambdawdsw[ivol] =std::get<1>(lambdaWvalderiv);
             this->fdlambdaodsw[ivol] = std::get<1>(lambdaOvalderiv);
-            
+        
             fsim_data->mTPetroPhysics.CreateLinearKrModel();
+            fDerivativeWfractionalflow[ivol] =std::get<1>(fwflinearvalderiv);
             
-            this->fDerivativeWfractionalflow[ivol] =std::get<1>(fwflinearvalderiv);
+            fTermMultByFluxUpwindInterface[ivol] =  fWaterfractionalflow[ivol] ; //Linear
+            fDerivTermMultByFluxUpwindInterface[ivol] = fDerivativeWfractionalflow[ivol]; //Cuadratica
         }
 }
 
@@ -1223,6 +1245,13 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
     REAL oilProd1=0.0;
     REAL oilProd2=0.0;
     
+    REAL oilProd1Fake=0.0;
+    REAL oilProd2Fake=0.0;
+    
+    REAL waterInjFake=0.0;
+    REAL waterProd1Fake=0.0;
+    REAL waterProd2Fake=0.0;
+    
     int ninterInlet = fInterfaceData[inletmatid].fIntegralFlux.size();
     
     //Flujo en la entrada
@@ -1232,6 +1261,7 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
         REAL fracFluxOil = fCellsData.fOilfractionalflow[LeftElIndex];
         REAL FluxInttegral = fInterfaceData[inletmatid].fIntegralFlux[iface];
         WaterIntegralInlet += FluxInttegral*1.0;
+        waterInjFake += FluxInttegral*fracFluxWater;
     }
     
     //
@@ -1241,6 +1271,8 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
         int LeftElIndex = fInterfaceData[outletmatid].fLeftRightVolIndex[iface].first;
         REAL fracFluxWater = fCellsData.fWaterfractionalflow[LeftElIndex];
         REAL fracFluxOil = fCellsData.fOilfractionalflow[LeftElIndex];
+        REAL satWater = fCellsData.fSaturation[LeftElIndex];
+        REAL satOil = fCellsData.fSaturation[LeftElIndex];
         REAL FluxInttegral = fInterfaceData[outletmatid].fIntegralFlux[iface];
         WaterIntegralOutlet += FluxInttegral*fracFluxWater;
         OilIntegralOutlet += FluxInttegral*fracFluxOil;
@@ -1251,11 +1283,17 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
         if (cords[0]> 2302.00 && cords[0]<2524) {
             waterProd1 += FluxInttegral*fracFluxWater;
             oilProd1 += FluxInttegral*fracFluxOil;
+            
+            waterProd1Fake +=FluxInttegral*satWater;
+            oilProd1Fake +=FluxInttegral*satOil;
         }
         //prod2
         else if(cords[0]> 3992.0 && cords[0]<4214.00){
             waterProd2 += FluxInttegral*fracFluxWater;
             oilProd2 += FluxInttegral*fracFluxOil;
+            
+            waterProd2Fake +=FluxInttegral*satWater;
+            oilProd2Fake +=FluxInttegral*satOil;
         }
     }
 
@@ -1273,7 +1311,7 @@ REAL TPZAlgebraicTransport::ExportPProductionData(int itime){
     
     massOut += WaterIntegralOutlet;
     
-    *freport_data<<fdt*itime<<" "<<WaterIntegralInlet<<" "<<WaterIntegralOutlet<<" "<<OilIntegralOutlet<<" "<<waterProd1<<" "<<oilProd1<<" "<<waterProd2<<" "<<oilProd2<<" "<<" "<< intMass << " " <<massOut<<std::endl;
+    *freport_data<<fdt*itime<<" "<<WaterIntegralInlet<<" "<<WaterIntegralOutlet<<" "<<OilIntegralOutlet<<" "<<waterProd1<<" "<<oilProd1<<" "<<waterProd2<<" "<<oilProd2<<" "<<" "<< intMass << " " <<massOut<< "  "<< waterInjFake<< "  "<< waterProd1Fake<<"  "<<waterProd2Fake<< "  "<<oilProd1Fake<<" "<<oilProd1Fake <<std::endl;
     
     return 0.0;
 }

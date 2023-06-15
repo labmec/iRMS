@@ -119,7 +119,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
         fsoltransfer.TransferFromMultiphysics();
         
         
-        Assemble();
+//        Assemble(); //Por AhorrarTiempo
         
 //        TPZMatrixSolver<STATE> *matsol = dynamic_cast<TPZMatrixSolver<STATE> *>(fSolver);
 //        matsol->Matrix()->SetIsDecomposed(0);
@@ -258,8 +258,10 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
             scalnames.Push(nm);
         }
         auto vtk = TPZVTKGenerator(fCompMesh, matids, scalnames, plotfile, vtkRes);
+        vtk.SetStep(fpostprocessindex);
         vtk.SetNThreads(8);
         vtk.Do();
+        fpostprocessindex++;
 #else
         file = file.substr(0, file.find(".")) + "_frac.vtk";
         DefineGraphMesh(dimToPost, matids, scalnames, vecnames, file);

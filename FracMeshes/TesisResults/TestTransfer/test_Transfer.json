@@ -21,8 +21,8 @@
         {
             "name": "outlet",
             "matid": 4,
-            "type": 1, // imposed pressure
-            "value": 0.0
+            "type": 0, // imposed pressure
+            "value": 100.0
         },
         {
             "name": "noflux",
@@ -41,23 +41,23 @@
     "useMHM":true,
     "needsMerge":true,
     "RunWithTransport": true,
-    "DeltaT": 1.1,
+    "DeltaT": 0.01,
     "NSteps": 100,
     "SimulationDim": 3,
     "Fractures": [
-          // {
-   //           "Index": 1,
-   //           "K" : 1.0e-3,
-   //           "phi": 0.4,
-   //           "width": 0.1,
-   //           "Limit": "Etruncated",
-   //           "Nodes": [
-   //               [1.666666667, 0.0, 10.5],
-   //               [1.666666667, 10.0, 10.5],
-   //               [5.0, 10.0, 7.5],
-   //               [5.0, 0.0, 7.5]
-   //           ]
-   //    }
+          {
+             "Index": 1,
+             "K" : 1.0e-3,
+             "phi": 0.4,
+             "width": 0.1,
+             "Limit": "Etruncated",
+             "Nodes": [
+                 [1.666666667, 0.0, 10.5],
+                 [1.666666667, 10.0, 10.5],
+                 [5.0, 10.0, 7.5],
+                 [5.0, 0.0, 7.5]
+             ]
+      }
         // {
  //             "Index": 0,
  //             "K" : 1.0e2,
