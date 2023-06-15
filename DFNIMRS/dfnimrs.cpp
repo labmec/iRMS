@@ -646,8 +646,8 @@ void RunProblem(string& filenameBase, const int simcase)
         
        
          int64_t n_cells = 38466;
-         std::string grid_data = "/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_coordinates.dat";
-         std::string props_data = "/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_props.dat";
+         std::string grid_data = "/home/jose/GitHub/iMRS/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_coordinates.dat";
+         std::string props_data = "/Users/jose/GitHub/iMRS/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_props.dat";
          TRMSpatialPropertiesMap properties_map;
          std::vector<size_t> SAMe_blocks = {5,5,5};
          properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
