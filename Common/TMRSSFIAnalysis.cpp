@@ -562,7 +562,7 @@ void TMRSSFIAnalysis::SFIIteration(){
             
             UpdateAllFluxInterfaces();
         
-            isLinearTracer = false; // so it leaves after this iteration
+//            isLinearTracer = false; // so it leaves after this iteration
 //        }
     }
     

@@ -29,7 +29,7 @@ using namespace std;
 namespace fs = std::filesystem;
 
 // ----- Global vars -----
-const int glob_n_threads = 16;
+const int glob_n_threads = 32;
 
 // ----- End of namespaces -----
 
@@ -1108,7 +1108,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
    // grav[2] = -9.8;//
-    grav[2] = -0.00010;//0.010;//
+    grav[2] = -0.000010;//0.010;//
     std::cout<<"ojo valor de gravedad"<<std::endl;
     sim_data.mTFluidProperties.mOilDensityRef = 0.86;
     sim_data.mTFluidProperties.mWaterDensityRef = 1.00;
@@ -1119,7 +1119,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
     sim_data.mTNumerics.m_ISLinearizedQuadraticModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
-	sim_data.mTNumerics.m_max_iter_sfi=1;
+	sim_data.mTNumerics.m_max_iter_sfi=200;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
 	sim_data.mTNumerics.m_max_iter_transport=3000;
 	
