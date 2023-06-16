@@ -1477,8 +1477,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         kappa_phi[3]=0.19;
         //
         if(fkappa_phi){
-            std::vector<REAL> kappa_phi = fkappa_phi(coord);
-            
+//            std::vector<REAL> kappa_phi = fkappa_phi(coord);
             if(kappa_phi[0]<0.001){
                 kappa_phi[0] +=1.01;
                 kappa_phi[1] +=1.01;
@@ -1603,7 +1602,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     std::cout<<"ReadingProps"<<std::endl;
-   // FillPropsFromFile(transport);
+    FillPropsFromFile(transport);
     this->InitializeVectorPointersTranportToMixed(transport);
     
 }
@@ -1626,7 +1625,7 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
     bool modpoints = true;
     std::ifstream file;
 //    std::string basemeshpath("/Users/jose/Documents/GitHub/iMRS/FracMeshes/dfnimrs/unisim_meshes/Reservoir_props/InitialDataProps_FRACSNOREF.txt");
-    std::string basemeshpath("/Users/jose/Documents/GitHub/iMRS/FracMeshes/dfnimrs/unisim_meshes/Reservoir_props/InitialDataProps.txt");
+    std::string basemeshpath("/home/jose/GitHub/iMRS/iMRS   /FracMeshes/dfnimrs/unisim_meshes/Reservoir_props/InitialDataProps.txt");
 //    basemeshpath = basemeshpath  + name;
     file.open(basemeshpath);
     int i=0;
@@ -1641,11 +1640,11 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
         if(iss >> kx >> ky >> kz >> por)
         {
 //            por=0.3;
-            if(kx<4.0){
-                kx +=0.1;
-                ky +=0.1;
-                kz +=0.1;
-            }
+//            if(kx<4.0){
+//                kx +=0.1;
+//                ky +=0.1;
+//                kz +=0.1;
+//            }
             
             int matid = transport.fCellsData.fMatId[i];
 //            if(matid==2 && kx<100){
@@ -1653,12 +1652,12 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
 //                ky+=100;
 //                kz+=100;
 //            }
-            if(matid>300 && matid < 1700){
-                por =0.8;
-                kx*=100;
-                ky*=100;
-                kz*=100;
-            }
+//            if(matid>300 && matid < 1700){
+//                por =0.8;
+//                kx*=100;
+//                ky*=100;
+//                kz*=100;
+//            }
             transport.fCellsData.fKx[i]=kx*0.008335681;
             transport.fCellsData.fKy[i]=ky*0.008335681;
             transport.fCellsData.fKz[i]=kz*0.0008335681;

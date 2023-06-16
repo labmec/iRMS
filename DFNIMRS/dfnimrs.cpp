@@ -650,7 +650,7 @@ void RunProblem(string& filenameBase, const int simcase)
          std::string props_data = "/Users/jose/GitHub/iMRS/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_props.dat";
          TRMSpatialPropertiesMap properties_map;
          std::vector<size_t> SAMe_blocks = {5,5,5};
-         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
+//         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
 
          TMRSPropertiesFunctions reservoir_properties;
 //         reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
