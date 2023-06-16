@@ -1601,7 +1601,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
-    std::cout<<"ReadingProps"<<std::endl;
+    std::cout<<"ReadingPropsok"<<std::endl;
     FillPropsFromFile(transport);
     this->InitializeVectorPointersTranportToMixed(transport);
     
@@ -1609,7 +1609,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 
 void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transport){
     
-    std::ofstream dataaExport("InitialDataProps.txt");
+    std::ofstream dataaExport("InitialDataProps2.txt");
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
    
     auto &volData = fVolumeElements;
@@ -1633,6 +1633,9 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
     std::string line;
     while (std::getline(file, line))
     {
+        if(i==0 || i%100==0){
+            std::cout<<"Reading: "<<100*i/nvols<<"%"<<std::endl;
+        }
         std::istringstream iss(line);
         std::istringstream issText(line);
         char l = line[0];

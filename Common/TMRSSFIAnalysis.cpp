@@ -94,6 +94,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompM
     fAlgebraicDataTransfer.fkappa_phi = kappa_phi;
     fAlgebraicDataTransfer.fs0 = s0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+    std::cout<<"Print props"<<std::endl;
     m_transport_module->PostProcessProps(0);//Permeabilities
     m_transport_module->PostProcessProps(1);//Porosities
    // FillProperties();
