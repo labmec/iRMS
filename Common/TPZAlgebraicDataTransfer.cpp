@@ -1609,7 +1609,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 
 void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transport){
     
-    std::ofstream dataaExport("InitialDataProps2.txt");
+   // std::ofstream dataaExport("InitialDataProps2.txt");
     TPZGeoMesh *gmesh = fTransportMesh->Reference();
    
     auto &volData = fVolumeElements;
@@ -1625,7 +1625,7 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
     bool modpoints = true;
     std::ifstream file;
 //    std::string basemeshpath("/Users/jose/Documents/GitHub/iMRS/FracMeshes/dfnimrs/unisim_meshes/Reservoir_props/InitialDataProps_FRACSNOREF.txt");
-    std::string basemeshpath("/home/jose/GitHub/iMRS/iMRS   /FracMeshes/dfnimrs/unisim_meshes/Reservoir_props/InitialDataProps.txt");
+    std::string basemeshpath("/home/jose/GitHub/iMRS/iMRS/FracMeshes/dfnimrs/unisim_meshes/Reservoir_props/InitialDataProps.txt");
 //    basemeshpath = basemeshpath  + name;
     file.open(basemeshpath);
     int i=0;
