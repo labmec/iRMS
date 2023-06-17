@@ -1661,6 +1661,7 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
 //                ky*=100;
 //                kz*=100;
 //            }
+            std::cout<<"kx_"<<kx <<" phi: "<<por<<std::endl;
             transport.fCellsData.fKx[i]=kx*0.008335681;
             transport.fCellsData.fKy[i]=ky*0.008335681;
             transport.fCellsData.fKz[i]=kz*0.0008335681;
