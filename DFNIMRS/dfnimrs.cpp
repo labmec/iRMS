@@ -678,7 +678,7 @@ void RunProblem(string& filenameBase, const int simcase)
 		// Initializing tranport solution
         sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
         if(restart){
-//            Restart(sfi_analysis);
+            Restart(sfi_analysis);
         }
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         std::cout << "\nMass report at initial time : " << 0.0 << std::endl;
@@ -2464,8 +2464,18 @@ void Restart(TMRSSFIAnalysis * sfianalisis){
     
     bool modpoints = true;
     std::ifstream file;
-    std::string basemeshpath("/Users/jose/Documents/GitHub/iMRS/FracMeshes/TesisResults/UNISIM/dataToRestart.txt");
+    std::string basemeshpath("/home/jose/GitHub/iMRS/iMRS/FracMeshes/TesisResults/UNISIM/dataToRestart.txt");
     file.open(basemeshpath);
+    
+    if (!file) {
+        std::cerr << "Error al abrir el archivo: " << basemeshpath << '\n';
+        DebugStop();  // o maneja el error de la manera que prefieras
+    }
+    if (file.fail()) {
+        std::cerr << "Failed to open the file.\n";
+        return;  // or handle the error in a way that suits your needs
+    }
+    
     int i=1;
     
     std::string line;
