@@ -1631,6 +1631,14 @@ void TPZAlgebraicDataTransfer::FillPropsFromFile(TPZAlgebraicTransport &transpor
     int i=0;
     REAL kx, ky, kz, por;
     std::string line;
+    if (!file) {
+        std::cerr << "Error al abrir el archivo: " << basemeshpath << '\n';
+        DebugStop();  // o maneja el error de la manera que prefieras
+    }
+    if (file.fail()) {
+        std::cerr << "Failed to open the file.\n";
+        return;  // or handle the error in a way that suits your needs
+    }
     while (std::getline(file, line))
     {
         if(i==0 || i%100==0){
