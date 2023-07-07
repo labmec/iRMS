@@ -860,6 +860,7 @@ REAL TPZAlgebraicTransport::CalculateMass(){
     for (int icel = 0; icel < ncells; icel++) {
         REAL sat = fCellsData.fSaturation[icel];
         sat=1.0;
+        std::cout<<"pase =("<<std::endl;
         REAL phi = fCellsData.fporosity[icel];
         REAL vol = fCellsData.fVolume[icel];
         intMass += sat*phi*vol;
