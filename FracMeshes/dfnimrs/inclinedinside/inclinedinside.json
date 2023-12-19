@@ -1,0 +1,53 @@
+{
+    "$schema": "./dfn_schema.json",
+    "Mesh" : "inclinedinside_coarse.msh",    
+    "TolDist": 1e-4,
+    "TolAngle": 1e-4,
+    "Domains": [
+        {
+            "name": "k33",
+            "matid": 1,
+            "K": 1.0,
+            "phi": 0.2
+        }
+    ],
+    "NCoarseGroups": 8,
+    "Boundary": [
+        {
+            "name": "noflux",
+            "matid": 2,
+            "type": 0, // imposed pressure
+            "value": 1.0
+        },
+        {
+            "name": "inlet",
+            "matid": 3,
+            "type": 0, // imposed pressure
+            "value": 1.0
+        },
+        {
+            "name": "outlet",
+            "matid": 4,
+            "type": 0, // imposed pressure
+            "value": 1.0
+        }  
+    ],
+    "FractureHybridPressureMatId": 299,
+    "FractureInitMatId": 300,
+    "Fractures":[
+        {
+            "Index": 0,
+            "K" : 1.0,
+           "Limit": "Erecovered",
+            // "Limit": "Eextended",        
+            "phi": 0.2,
+            "width": 0.1,
+            "Nodes": [
+                [-0.8, -0.8, -0.7],
+                [ 0.8, -0.8, -0.7],
+                [ 0.8, 0.8, 0.7],
+                [-0.8, 0.8, 0.7]
+            ]
+        }
+    ]
+}
