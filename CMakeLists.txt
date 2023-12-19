@@ -59,6 +59,7 @@ add_subdirectory(2Elements2Spaces2D)
 add_subdirectory(SimpleCaseOneFracture)
 add_subdirectory(CubicDomainNoFractures)
 add_subdirectory(DFNIMRS)
+add_subdirectory(Filling)
 
 
 # ----- Enables testing -----
