@@ -176,24 +176,111 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
      * @{
      */
     
+    /** @brief decompose the system of equations acording to the decomposition
+      * scheme */
+    virtual int Decompose(const DecomposeType dt) override {
+        // Only allowing for LU
+        switch (dt) {
+            case ELU:
+                return Decompose_LU();
+                break;
+            default:
+                DebugStop();
+                break;
+        }
+        return -1;
+    }
     
+    /**
+     * @brief Solves the linear system using Direct methods
+     * @param F The right hand side of the system and where the solution is stored.
+     * @param dt Indicates type of decomposition
+     */
+    int SolveDirect( TPZFMatrix<TVar> &B , const DecomposeType dt) override {
+        
+        switch ( dt ) {
+            case ELU:
+                return( Solve_LU( &B)  );
+            case ECholesky:
+                return( Solve_Cholesky( &B )  );
+            case ELDLt:
+                return( Solve_LDLt( &B )  );
+            default:
+                DebugStop();
+                break;
+        }
+        return ( 0 );
+    }
+    int SolveDirect ( TPZFMatrix<TVar>& F , const DecomposeType dt) const override
+    {
+        if(this->fDecomposed != dt) DebugStop();
+        switch ( dt ) {
+            case ELU:
+                return( Substitution( &F)  );
+            case ECholesky:
+                return ( Subst_Forward(&F) && Subst_Backward(&F) );
+            case ELDLt:
+                return( Subst_LForward( &F ) && Subst_Diag( &F ) && Subst_LBackward( &F ) );
+            default:
+                DebugStop();
+                break;
+        }
+        return ( 0 );
+    }
+    
+    int Solve_LU( TPZFMatrix<TVar>*B ) {
+        return ( ( !Decompose_LU() )?  0 : Substitution( B )  );
+    }
+    
+    /**********************/
+    /*** Solve Cholesky ***/
+    //
+    //  Se nao conseguir resolver por Cholesky retorna 0 e a matriz
+    //   sera' modificada (seu valor perdera' o sentido).
+    //
+    int Solve_Cholesky( TPZFMatrix<TVar>* B )
+    {
+        return(
+               ( !Decompose_Cholesky() )?  0 :( Subst_Forward( B ) && Subst_Backward( B ) )
+               );
+    }
+
+    int Solve_Cholesky( TPZFMatrix<TVar>* B, std::list<int64_t> &singular ) {
+        return(
+               ( !Decompose_Cholesky(singular) )?  0 :( Subst_Forward( B ) && Subst_Backward( B ) )
+               );
+    }
+
+    /******************/
+    /*** Solve LDLt ***/
+
+    int Solve_LDLt( TPZFMatrix<TVar>* B ) {
+        
+        return(
+               ( !Decompose_LDLt() )? 0 :
+               ( Subst_LForward( B ) && Subst_Diag( B ) && Subst_LBackward( B ) )
+               );
+    }
+
     /**
      * @brief Decomposes the current matrix using LDLt. \n
      * The current matrix has to be symmetric.
      * "L" is lower triangular with 1.0 in its diagonal and "D" is a Diagonal matrix.
      */
-    virtual int Decompose_LDLt(std::list<int64_t> &singular) override;
+    virtual int Decompose_LDLt(std::list<int64_t> &singular);
     /** @brief Decomposes the current matrix using LDLt. */
-    virtual int Decompose_LDLt() override;
+    virtual int Decompose_LDLt();
     
     /** @brief Decomposes the current matrix using Cholesky method. The current matrix has to be symmetric. */
-    virtual int Decompose_Cholesky() override;
+    virtual int Decompose_Cholesky();
     /**
      * @brief Decomposes the current matrix using Cholesky method.
      * @param singular
      */
-    virtual int Decompose_Cholesky(std::list<int64_t> &singular)  override;
+    virtual int Decompose_Cholesky(std::list<int64_t> &singular);
     
+    virtual int Decompose_LU();
+    virtual int Substitution( TPZFMatrix<TVar> * B ) const;
     
     /** @} */
     
@@ -207,31 +294,31 @@ class TPZSYsmpMatrixEigen : public TPZMatrix<TVar>{
      * @brief Computes B = Y, where A*Y = B, A is lower triangular with A(i,i)=1.
      * @param b right hand side and result after all
      */
-    virtual int Subst_LForward( TPZFMatrix<TVar>* b ) const override;
+    virtual int Subst_LForward( TPZFMatrix<TVar>* b ) const;
     
     /**
      * @brief Computes B = Y, where A*Y = B, A is upper triangular with A(i,i)=1.
      * @param b right hand side and result after all
      */
-    virtual int Subst_LBackward( TPZFMatrix<TVar>* b ) const override;
+    virtual int Subst_LBackward( TPZFMatrix<TVar>* b ) const;
     
     /**
      * @brief Computes B = Y, where A*Y = B, A is diagonal matrix.
      * @param b right hand side and result after all
      */
-    virtual int Subst_Diag( TPZFMatrix<TVar>* b ) const override;
+    virtual int Subst_Diag( TPZFMatrix<TVar>* b ) const;
     
     /**
      * @brief Computes B = Y, where A*Y = B, A is lower triangular.
      * @param b right hand side and result after all
      */
-    virtual int Subst_Forward( TPZFMatrix<TVar>* b ) const override;
+    virtual int Subst_Forward( TPZFMatrix<TVar>* b ) const;
     
     /**
      * @brief Computes B = Y, where A*Y = B, A is upper triangular.
      * @param b right hand side and result after all
      */
-    virtual int Subst_Backward( TPZFMatrix<TVar>* b ) const override;
+    virtual int Subst_Backward( TPZFMatrix<TVar>* b ) const;
     
     
     /** @} */
@@ -269,8 +356,6 @@ public:
     void FromPZtoEigen(const TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat) const;
     
     void FromEigentoPZ( TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat)const;
-    virtual int Decompose_LU() override;
-    virtual int Substitution( TPZFMatrix<TVar> * B ) const override;
    
 public:
     

@@ -191,7 +191,7 @@ void TPZReservoirTools::CondenseElements(TPZCompMesh *cmesh, char LagrangeLevelN
                 cond->SetLambda(1.0);
             }
             else{
-                TPZCondensedCompEl *cond = new TPZCondensedCompEl(cel, keepmatrix);
+                TPZCondensedCompElT<REAL> *cond = new TPZCondensedCompElT<REAL>(cel, keepmatrix);
                 
             }
           }
@@ -484,7 +484,7 @@ void TPZReservoirTools::PushConnectBackward(TPZCompMesh *cmesh, char LagrangeSta
     
     // renumber the connects
     {
-        TPZLinearAnalysis an(cmesh,true);
+        TPZLinearAnalysis an(cmesh);
     }
     // look for the connect with lagrange level LagrangeStart and highest sequance number
     int64_t nc = cmesh->NConnects();

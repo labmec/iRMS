@@ -13,7 +13,7 @@
 #include "pzelmat.h"
 #include "TPZElementMatrixT.h"
 
-class TPZFastCondensedElement : public TPZCondensedCompEl
+class TPZFastCondensedElement : public TPZCondensedCompElT<REAL>
 {
     
 protected:
@@ -92,7 +92,7 @@ protected:
     void IdentifyConnectandEquations();
     
     // Identify the condensed elements in this structure
-    void FindCondensed(TPZStack<TPZCondensedCompEl *> &condensedelements);
+    void FindCondensed(TPZStack<TPZCondensedCompElT *> &condensedelements);
 
 public:
     
@@ -107,7 +107,7 @@ public:
     
     /** @brief create a copy of the condensed computational element in the other mesh */
     TPZFastCondensedElement(const TPZFastCondensedElement &copy, TPZCompMesh &mesh) :
-        TPZCondensedCompEl(copy, mesh)
+        TPZCondensedCompElT(copy, mesh)
     {
         fEK = copy.fEK;
         fEF = copy.fEF;

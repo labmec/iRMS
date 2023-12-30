@@ -9,7 +9,8 @@
 #define TPZSpStructMatrix_Eeigen_h
 
 #include <stdio.h>
-#include "pzysmp.h"
+//#include "pzysmp.h"
+#include "TPZYSMPPardiso.h"
 
 #include "pzcmesh.h"
 #include "pzsubcmesh.h"

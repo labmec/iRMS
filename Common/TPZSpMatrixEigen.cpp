@@ -7,7 +7,8 @@
 // #include "pz_config.h"
 #include "TPZSpMatrixEigen.h"
 #include "TPZSSpMatrixEigen.h"
-#include "pzysmp.h"
+//#include "pzysmp.h"
+#include "TPZYSMPPardiso.h"
 #include "pzfmatrix.h"
 #include "pzvec.h"
 

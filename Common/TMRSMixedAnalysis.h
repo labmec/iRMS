@@ -46,7 +46,8 @@ public:
     ~TMRSMixedAnalysis();
     
     /// Constructor based on a cmesh and optimization band directive
-    TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult, bool must_opt_band_width_Q);
+    TMRSMixedAnalysis(TPZMultiphysicsCompMesh * cmesh_mult,
+                      const RenumType& renumtype = RenumType::EDefault);
     
     /// Configurates iternal members
     void Configure(int n_threads, bool UsePardiso_Q, bool UsePZ=false);

@@ -25,7 +25,8 @@
 
 #include "pzelmat.h"
 
-#include "pzysmp.h"
+//#include "pzysmp.h"
+#include "TPZYSMPPardiso.h"
 #include "TPZBndCondT.h"
 #include "TPZAlgebraicTransport.h"
 #include <Eigen/Dense>

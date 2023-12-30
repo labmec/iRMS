@@ -23,7 +23,8 @@
 
 #include "pzelmat.h"
 
-#include "pzsysmp.h"
+#include "TPZSYSMPMatrix.h"
+//#include "pzsysmp.h"
 #include "TPZBndCondT.h"
 #include "TPZTimer.h"
 #ifdef USING_TBB

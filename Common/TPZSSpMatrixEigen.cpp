@@ -18,7 +18,8 @@
 
 #include <memory.h>
 
-#include "pzsysmp.h"
+#include "TPZSYSMPMatrix.h"
+//#include "pzsysmp.h"
 #include "pzfmatrix.h"
 #include "pzstack.h"
 #include "pzlog.h"
@@ -203,7 +204,9 @@ void TPZSYsmpMatrixEigen<TVar>::AutoFill(int64_t nrow, int64_t ncol, int symmetr
         DebugStop();
     }
     TPZFMatrix<TVar> orig;
-    orig.AutoFill(nrow,ncol,symmetric);
+    SymProp sprop = SymProp::NonSym;
+    if(symmetric) sprop = SymProp::Sym;
+    orig.AutoFill(nrow,ncol,sprop);
     
     TPZVec<int64_t> IA(nrow+1);
     TPZStack<int64_t> JA;

@@ -27,7 +27,7 @@ bool TPZFastCondensedElement::fSkipLoadSolution = true;
 
 
 TPZFastCondensedElement::TPZFastCondensedElement(TPZCompEl *ref, bool keepmatrix) :
-    TPZCondensedCompEl(ref,keepmatrix)
+    TPZCondensedCompElT(ref,keepmatrix)
 {
     IdentifyConnectandEquations();
     
@@ -44,7 +44,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
     if(this->fMatrixComputed == false)
     {
        // TPZMaterial *mat = Material();
-        TPZCondensedCompEl::CalcStiff(fEK, fEF);
+        TPZCondensedCompElT::CalcStiff(fEK, fEF);
         ComputeBodyforceRefValues();
         ComputeConstantPressureValues();
         this->fMatrixComputed = true;
@@ -175,7 +175,7 @@ void TPZFastCondensedElement::Solution(TPZVec<REAL> &qsi,int var,TPZVec<STATE> &
             sol[0] = fLambda;
             break;
         default:
-            TPZCondensedCompEl::Solution(qsi, var, sol);
+            TPZCondensedCompElT::Solution(qsi, var, sol);
             break;
     }
 }
@@ -357,21 +357,21 @@ void TPZFastCondensedElement::AdjustPressureCoefficients()
     solution(averagepressureq,0) = 0.;
     // zero de boundary fluxes
     for(int ifl=0; ifl < nflux; ifl++) solution(fluxeqs[ifl],0) = 0.;
-    TPZCondensedCompEl::LoadSolution();
+    TPZCondensedCompElT::LoadSolution();
     for(int ipr=0; ipr < npres; ipr++) gravity_pressure[ipr] = solution(pressureqs[ipr],0);
     
     // build the pressure for constant pressure
     // zero the boundary fluxes
     for(int ifl=0; ifl < nflux; ifl++) solution(fluxeqs[ifl],0) = 0.;
     solution(averagepressureq,0) = average;
-    TPZCondensedCompEl::LoadSolution();
+    TPZCondensedCompElT::LoadSolution();
     for(int ipr=0; ipr < npres; ipr++) average_pressure[ipr] = solution(pressureqs[ipr],0)-gravity_pressure[ipr];
 
     // build the pressure solution due to boundary fluxes
     // restore the boundary fluxes
     for(int ifl=0; ifl < nflux; ifl++) solution(fluxeqs[ifl],0) = boundary_fluxes[ifl];
     solution(averagepressureq,0) = 0.;
-    TPZCondensedCompEl::LoadSolution();
+    TPZCondensedCompElT::LoadSolution();
     for(int ipr=0; ipr < npres; ipr++) flux_pressure[ipr] = solution(pressureqs[ipr],0)-gravity_pressure[ipr];
     // compose the final pressure coeficients
     solution(averagepressureq,0) = average;
@@ -409,7 +409,7 @@ void TPZFastCondensedElement::ComputeInternalCoefficients()
 
     sol(avpreseq) = 0.;
     TPZManVector<STATE,100> FlowFluxValues(nfluxes), FlowPressureValues(npressure);
-    TPZCondensedCompEl::LoadSolution();
+    TPZCondensedCompElT::LoadSolution();
     for(int i=0; i< npressure; i++)
     {
         FlowPressureValues[i] = sol(pressureqs[i])/fLambda;
@@ -526,9 +526,9 @@ void TPZFastCondensedElement::IdentifyConnectandEquations()
     if(iflux_connect != fFluxConnects.size()) DebugStop();
 }
 
-static void FindCondensed(TPZCompEl *cel, TPZStack<TPZCondensedCompEl *> &condensedelements)
+static void FindCondensed(TPZCompEl *cel, TPZStack<TPZCondensedCompElT<REAL> *> &condensedelements)
 {
-    TPZCondensedCompEl *cond = dynamic_cast<TPZCondensedCompEl *>(cel);
+    TPZCondensedCompElT<REAL> *cond = dynamic_cast<TPZCondensedCompElT<REAL> *>(cel);
     TPZElementGroup *elgr = dynamic_cast<TPZElementGroup *>(cel);
     if(cond)
     {
@@ -548,7 +548,7 @@ static void FindCondensed(TPZCompEl *cel, TPZStack<TPZCondensedCompEl *> &conden
 }
 
 // Identify the condensed elements in this structure
-void TPZFastCondensedElement::FindCondensed(TPZStack<TPZCondensedCompEl *> &condensedelements)
+void TPZFastCondensedElement::FindCondensed(TPZStack<TPZCondensedCompElT *> &condensedelements)
 {
     ::FindCondensed(this,condensedelements);
     
@@ -571,7 +571,7 @@ void TPZFastCondensedElement::ComputeBodyforceRefValues()
         sol(bound_flux_eq[eq],0) = 0.;
     }
     // after this call the internal solution will be due to the body forces
-    TPZCondensedCompEl::LoadSolution();
+    TPZCondensedCompElT::LoadSolution();
     
     TPZVec<int64_t> pressure_eqs;
     TPZVec<int64_t> flux_eqs;
@@ -600,7 +600,7 @@ void TPZFastCondensedElement::ComputeBodyforceRefValues()
 /// this will zero the body forces of the condensed elements
 void TPZFastCondensedElement::ComputeConstantPressureValues()
 {
-    TPZStack<TPZCondensedCompEl *> condensed;
+    TPZStack<TPZCondensedCompElT *> condensed;
     FindCondensed(condensed);
     for (int el = 0; el<condensed.size(); el++) {
         condensed[el]->Matrix().F0().Zero();
@@ -621,7 +621,7 @@ void TPZFastCondensedElement::ComputeConstantPressureValues()
         sol(bound_flux_eq[eq],0) = 0.;
     }
     // after this call the internal solution will be constant
-    TPZCondensedCompEl::LoadSolution();
+    TPZCondensedCompElT::LoadSolution();
     
     TPZManVector<int64_t,40> pressure_eqs;
     TPZManVector<int64_t,40> flux_eqs;

@@ -513,7 +513,7 @@ void RunProblem(string& filenameBase, const int simcase)
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
             
     // ----- Analysis parameters -----
-    bool must_opt_band_width_Q = true; // This makes solving very fast!
+    RenumType renumtype = RenumType::EDefault;
     bool UsingPzSparse = true; // Necessary to use multithread for now...
     bool UsePardiso_Q = true; // lighting fast!
     
@@ -532,7 +532,7 @@ void RunProblem(string& filenameBase, const int simcase)
 #endif
 
 		// Creating coupled pressure/flow and transport analysis
-        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,renumtype);
         sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
         sfi_analysis->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
         if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
@@ -607,7 +607,7 @@ void RunProblem(string& filenameBase, const int simcase)
     }
     else{
         // -------------- Running problem --------------
-        TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
+        TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, renumtype);
         mixAnalisys->SetDataTransfer(&sim_data);
         UsePardiso_Q = true;
         mixAnalisys->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);

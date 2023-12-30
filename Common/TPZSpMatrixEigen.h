@@ -117,8 +117,62 @@ protected:
         /**
          * @brief Decomposes the current matrix using LU decomposition.
          */
-        virtual int Decompose_LU(std::list<int64_t> &singular) override;
-        virtual int Decompose_LU() override;
+        
+        virtual int Decompose_LU(std::list<int64_t> &singular);
+        virtual int Decompose_LU();
+
+        /** @brief decompose the system of equations acording to the decomposition
+          * scheme */
+        virtual int Decompose(const DecomposeType dt) override {
+            // Only allowing for LU
+            switch (dt) {
+                case ELU:
+                    return Decompose_LU();
+                    break;
+                default:
+                    DebugStop();
+                    break;
+            }
+            return -1;
+        }
+        
+        int Solve_LU( TPZFMatrix<TVar>*B, std::list<int64_t> &singular) {
+            return ( ( !Decompose_LU(singular) )?  0 : Substitution( B )  );
+        }
+
+        int Solve_LU( TPZFMatrix<TVar>*B ) {
+            return ( ( !Decompose_LU() )?  0 : Substitution( B )  );
+        }
+        
+        /**
+         * @brief Solves the linear system using Direct methods
+         * @param F The right hand side of the system and where the solution is stored.
+         * @param dt Indicates type of decomposition
+         */
+        int SolveDirect( TPZFMatrix<TVar> &B , const DecomposeType dt) override {
+            
+            switch ( dt ) {
+                case ELU:
+                    return( Solve_LU( &B)  );
+                default:
+                    DebugStop();
+                    break;
+            }
+            return 0;
+        }
+        int SolveDirect ( TPZFMatrix<TVar>& F , const DecomposeType dt) const override
+        {
+            if(this->fDecomposed != dt) DebugStop();
+            switch ( dt ) {
+                case ELU:
+                    return( Substitution( &F)  );
+                default:
+                    DebugStop();
+                    break;
+            }
+            return 0;
+        }
+
         
         //@}
         
@@ -131,7 +185,7 @@ protected:
          * @brief Computes Forward and Backward substitution for a "LU" decomposed matrix.
          * @param B right hand side and result after all
          */
-        virtual int Substitution( TPZFMatrix<TVar> * B ) const override;
+        virtual int Substitution( TPZFMatrix<TVar> * B ) const;
         
         void FromPZtoEigen(const TPZFMatrix<TVar> &pzmat, Eigen::Matrix<REAL, Eigen::Dynamic, Eigen::Dynamic> &eigenmat) const;
        
@@ -162,7 +216,7 @@ protected:
         virtual const TVar* Elem() const override{
             DebugStop();
         }
-        virtual void CopyFrom(const TPZMatrix<TVar> *mat){
+        virtual void CopyFrom(const TPZMatrix<TVar> *mat) override{
             DebugStop();
         }
     };

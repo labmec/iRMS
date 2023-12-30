@@ -30,7 +30,8 @@ TMRSTransportAnalysis::~TMRSTransportAnalysis(){
     
 }
 
-TMRSTransportAnalysis::TMRSTransportAnalysis(TPZCompMesh * cmesh_mult, bool must_opt_band_width_Q) : TPZLinearAnalysis(cmesh_mult, must_opt_band_width_Q){
+TMRSTransportAnalysis::TMRSTransportAnalysis(TPZCompMesh * cmesh_mult,
+                                             const RenumType& renumtype) : TPZLinearAnalysis(cmesh_mult, renumtype){
     
     TPZMultiphysicsCompMesh *cmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(cmesh_mult);
     if(cmesh){
