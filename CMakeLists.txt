@@ -41,7 +41,7 @@ if(BUILD_UNITTESTING)
   enable_catch2()
 endif()
 
-option(USING_DFN "Whether the DFN library will be linked in" OFF)
+option(USING_DFN "Whether the DFN library will be linked in" ON)
 if(USING_DFN)
     find_package(DFN REQUIRED HINTS "../../dfnResearch/dfnMesh_install/" ../dfnmesh_install/ ../../dfnmesh_install/ ${CMAKE_SOURCE_DIR}/dfnmesh_install/)
 endif()
