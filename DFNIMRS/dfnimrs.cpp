@@ -57,6 +57,13 @@ void ReadData(std::string name, bool print_table_Q, std::vector<double> &x, std:
 void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer& sim_data, TPZAutoPointer<TPZStructMatrix> strmat, TPZCompMesh* cmesh);
 void ComputeDiagnostics(std::string& outputFolder, TMRSDataTransfer& sim_data, std::set<int>& bcflux, TPZMultiphysicsCompMesh* mixed_operator);
 void VerifyIfNeumannIsExactlyZero(const int matidNeumann, TPZMultiphysicsCompMesh* mixed_operator);
+struct TGPts {
+    TPZGeoEl* gel = nullptr;
+    TPZManVector<REAL,2> qsi = {0.,0.};
+    REAL x = 0.;
+};
+void PostProcFileForArticle(TPZMultiphysicsCompMesh* mpmesh, std::vector<TGPts>& gptsvec, std::ofstream& out);
+void CreateListOfElements(TPZGeoMesh* gmesh, REAL z, int matid, int npts, REAL xmin, REAL xmax, std::vector<TGPts>& gptsvec);
 
 std::map<int,TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int> &bcMatId, TPZMultiphysicsCompMesh *cmesh);
 
@@ -380,8 +387,10 @@ void RunProblem(string& filenameBase, const int simcase)
     const bool isPostProc = true;
     const bool isPostProcessFracDiagnostics = true;
     const bool isFilterZeroNeumann = true;
-	bool isMHM = true; // may be set in json
+    const bool isPostProcForArticle = false;
+    bool isMHM = true; // may be set in json
     bool needsMergeMeshes = true; // may be set in json
+    
     
     // ----- output folder stuff -----
     if(filenameBase.back() != '/') filenameBase = filenameBase + "/";
@@ -505,8 +514,15 @@ void RunProblem(string& filenameBase, const int simcase)
         }
 	}
     
+    std::vector<TGPts> gptsvecztop,gptsveczbot;
+    if (isPostProcForArticle) {
+        CreateListOfElements(gmeshfine, 0.1, 300 /*matidfrac*/, 200, -0.8, 0.2, gptsvecztop);
+        CreateListOfElements(gmeshfine, -0.1, 305 /*matidfrac*/, 200, -0.2, 0.8, gptsveczbot);
 
-    
+//        CreateListOfElements(gmeshfine, 0.0, 300 /*matidfrac*/, 200, -0.8, 0.2, gptsvecztop);
+//        CreateListOfElements(gmeshfine, 0.0, 305 /*matidfrac*/, 200, -0.2, 0.8, gptsveczbot);
+    }
+
     // ----- Creates the multiphysics compmesh -----
 	const int order = 1;
     aspace.BuildMixedMultiPhysicsCompMesh(order);
@@ -617,8 +633,8 @@ void RunProblem(string& filenameBase, const int simcase)
             std::ofstream out(outputFolder + "mixedCMesh.txt");
             mixed_operator->Print(out);
         }
+        TPZFastCondensedElement::fSkipLoadSolution = false;
         mixAnalisys->Assemble();
-        
         
 		
 		// Testing if constant pressure leads to zero residual in cte pressure problem
@@ -659,7 +675,7 @@ void RunProblem(string& filenameBase, const int simcase)
 		
     
        
-        const bool checkRhsAndExit = true;
+        const bool checkRhsAndExit = false;
         if(checkRhsAndExit){
 //            std::cout << "\n------------------ Checking RHS norm ------------------" << std::endl;
 ////            mixed_operator->UpdatePreviousState(-1.);
@@ -712,7 +728,13 @@ void RunProblem(string& filenameBase, const int simcase)
             mixAnalisys->PostProcessTimeStep(dimToPost);
         }
     }
-    
+    if (isPostProcForArticle) {
+        std::ofstream fileout1(outputFolder + "vec1.txt");
+        std::ofstream fileout2(outputFolder + "vec2.txt");
+        PostProcFileForArticle(mixed_operator,gptsvecztop,fileout1);
+        PostProcFileForArticle(mixed_operator,gptsveczbot,fileout2);
+    }
+        
     auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count()/1000.;
     cout << "\n\n\t--------- Total time of simulation = " << total_time << " seconds -------\n" << endl;
 
@@ -1962,3 +1984,88 @@ void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer& sim_data, TP
 
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
+
+void PostProcFileForArticle(TPZMultiphysicsCompMesh* mpmesh, std::vector<TGPts>& gptsvec, std::ofstream& out) {
+    TPZGeoMesh* gmesh = mpmesh->Reference();
+    TPZCompMesh* fluxmesh = mpmesh->MeshVector()[0];
+    gmesh->ResetReference();
+    fluxmesh->LoadReferences();
+    
+    out.precision(8);
+    out << std::fixed;
+    
+//    std::cout << "\nvec = {";
+    for (auto gpt : gptsvec) {
+        TPZCompEl* cel = gpt.gel->Reference();
+        TPZInterpolatedElement* intel = dynamic_cast<TPZInterpolatedElement*>(cel);
+        if(!intel) DebugStop();
+        TPZManVector<REAL,3> qvec(3,0.);
+        TPZMaterial* mat = intel->Material();
+        if(mat->Id() != 300 && mat->Id() != 305) DebugStop();
+        int var = mat->VariableIndex("Flux");
+        intel->Solution(gpt.qsi, var, qvec);
+//        std::cout << "xpt = " << gpt.x << " | qsi = " << gpt.qsi << " | qvec = " << qvec << std::endl;
+//        std::cout << ",{" << gpt.x << "," << qvec[0] << "}";
+        out << gpt.x << "\t" << qvec[0] << std::endl;
+    }
+//    std::cout << "};";
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+#include "pzvec_extras.h"
+void CreateListOfElements(TPZGeoMesh* gmesh, REAL z, int matid, int npts, REAL xmin, REAL xmax, std::vector<TGPts>& gptsvec) {
+    gptsvec.resize(npts);
+    REAL dx = fabs((xmax-xmin))/(npts-1);
+    int64_t iniElInd = 0;
+    for (int ip = 0; ip < npts; ip++) {
+        REAL x = xmin + dx * ip;
+        TPZManVector<REAL,3> xco = {x,0.,z};
+        TPZManVector<REAL,3> qsi(3,0.);
+
+        TPZGeoEl* geoel = gmesh->FindElement(xco, qsi, iniElInd, 3);
+        if(!geoel) DebugStop();
+        TPZManVector<REAL,3> xtest(3,0.);
+        geoel->X(qsi, xtest);
+        xtest = xtest - xco;
+//        std::cout << "xdiff = " << xtest << std::endl;
+        REAL norm = Norm(xtest);
+        if (norm > 1.e-8) DebugStop();
+        int side = geoel->WhichSide(qsi);
+        TPZManVector<REAL,3> qsiside(geoel->SideDimension(side));
+        geoel->ProjectPoint(geoel->NSides()-1, qsi, side, qsiside);
+
+        TPZGeoElSide gelside(geoel,side);
+        TPZGeoElSide neigh = gelside.Neighbour();
+//        std::cout << "geoel mat id = " << geoel->MaterialId() << std::endl;
+        while (neigh != gelside) {
+//            std::cout << "neigmatid = " << neigh.Element()->MaterialId() << std::endl;
+            if(neigh.Element()->MaterialId() == matid){
+                break;
+            }
+            neigh = neigh.Neighbour();
+        }
+                
+        if(neigh.Element()->MaterialId() == matid){
+            TPZTransform<> t2(gelside.Dimension());
+            gelside.SideTransform3(neigh, t2);
+            TPZManVector<REAL,2> qsineigh(neigh.Dimension(),0.), qsi2d(2,0.);
+            t2.Apply(qsiside, qsineigh);
+            neigh.Element()->ProjectPoint(neigh.Side(), qsineigh, neigh.Element()->NSides()-1, qsi2d);
+            qsi = qsi2d;
+            geoel = neigh.Element();
+        }
+        else{
+            DebugStop();
+        }
+        
+                
+        gptsvec[ip].gel = geoel;
+        gptsvec[ip].qsi = qsi;
+        gptsvec[ip].x = x;
+    }
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
