@@ -1469,85 +1469,101 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //            s0_v=1.0;
 //        }
         
-        REAL kx_v=200,ky_v=200,kz_v=200.1,phi_v=1.0;
+        REAL kx_v=1,ky_v=1,kz_v=1,phi_v=0.4;
         std::vector<REAL> kappa_phi(4,0.0);
         kappa_phi[0]=kx_v;
         kappa_phi[1]=ky_v;
         kappa_phi[2]=kz_v;
         kappa_phi[3]=0.19;
         //
-        if(fkappa_phi){
-//            std::vector<REAL> kappa_phi = fkappa_phi(coord);
-            if(kappa_phi[0]<0.001){
-                kappa_phi[0] +=1.01;
-                kappa_phi[1] +=1.01;
-                kappa_phi[2] +=1.01;
-            }
-            
-            kx_v = kappa_phi[0]*0.008335681;
-            ky_v = kappa_phi[1]*0.008335681;
-            kz_v = kappa_phi[2]*0.008335681;
-            if(kappa_phi[3]<0.2){
-                kappa_phi[3] +=0.1;
-            }
-            phi_v= kappa_phi[3] +0.01;
-            if(geldim!=2 && matId!=299){
-                dataaExport<< kappa_phi[0]<<" "<< kappa_phi[1]<<" "<< kappa_phi[2]<<" "<<phi_v<<std::endl;
-            }
-            
-        }else{
-                   if(fkx)
-                   {
-                       kx_v   = fkx(coord);
-                   }
-                   if(fky)
-                   {
-                       ky_v   = fky(coord);
-                   }
-                   if(fkz)
-                   {
-                       kz_v   = fkz(coord);
-                   }
-                   if(fphi)
-                   {
-                       phi_v   = fphi(coord);
-                   }
-            }
+//        if(fkappa_phi){
+////            std::vector<REAL> kappa_phi = fkappa_phi(coord);
+//            if(kappa_phi[0]<0.001){
+//                kappa_phi[0] +=1.01;
+//                kappa_phi[1] +=1.01;
+//                kappa_phi[2] +=1.01;
+//            }
+//
+//            kx_v = kappa_phi[0];
+//            ky_v = kappa_phi[1];
+//            kz_v = kappa_phi[2];
+//            if(kappa_phi[3]<0.2){
+//                kappa_phi[3] +=0.1;
+//            }
+//            phi_v= kappa_phi[3] +0.01;
+//            if(geldim!=2 && matId!=299){
+//                dataaExport<< kappa_phi[0]<<" "<< kappa_phi[1]<<" "<< kappa_phi[2]<<" "<<phi_v<<std::endl;
+//            }
+//
+//        }else{
+//                   if(fkx)
+//                   {
+//                       kx_v   = fkx(coord);
+//                   }
+//                   if(fky)
+//                   {
+//                       ky_v   = fky(coord);
+//                   }
+//                   if(fkz)
+//                   {
+//                       kz_v   = fkz(coord);
+//                   }
+//                   if(fphi)
+//                   {
+//                       phi_v   = fphi(coord);
+//                   }
+//            }
                
                
 //               if(fs0)
 //               {
 //                   s0_v   = fs0(coord);
 //               }
+        
+//                if(dim==2 ){
+//                    kx_v=1000.0;
+//                    ky_v=1000.0;
+//                    kz_v=1000.0;
+//                }
+        if(dim==2 && matId==305){
+            kx_v=10000;
+            ky_v=10000;
+            kz_v=10000;
+        }
+        if(dim==2 && matId==300){
+            kx_v=10000;
+            ky_v=10000;
+            kz_v=10000;
+        }
         transport.fCellsData.fSaturation[i]=s0_v;
         transport.fCellsData.fSaturationWait[i]=s0_v;
         transport.fCellsData.fporosity[i]=phi_v;
         transport.fCellsData.fKx[i]=kx_v;
         transport.fCellsData.fKy[i]=ky_v;
         transport.fCellsData.fKz[i]=kz_v;
-        if (geldim==2) {
-            transport.fCellsData.fVolumefactor[i]=0.001;
-            transport.fCellsData.fVolume[i] *=transport.fCellsData.fVolumefactor[i];
-            transport.fCellsData.fKx[i]=5000*0.008335681;
-            transport.fCellsData.fKy[i]=5000*0.008335681;
-            transport.fCellsData.fKz[i]=5000*0.008335681;
-            phi_v=0.5;
-            REAL kPermFrac=5000*0.008335681;
-            dataaExport<< kPermFrac<<" "<< kPermFrac<<" "<< kPermFrac<<" "<<phi_v<<std::endl;
-        }
-        else if(matId==299){
-            transport.fCellsData.fVolumefactor[i]=0.01;
-            transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.001*0.001;
-            transport.fCellsData.fKx[i]=5000*0.008335681;
-            transport.fCellsData.fKy[i]=5000*0.008335681;
-            transport.fCellsData.fKz[i]=5000*0.008335681;
-            phi_v=0.5;
-            REAL kPermFrac=5000*0.008335681;
-            dataaExport<< kPermFrac<<" "<< kPermFrac<<" "<< kPermFrac<<" "<<phi_v<<std::endl;
-        }
-        else{
-            transport.fCellsData.fVolumefactor[i]=1.0;
-        }
+//        if (geldim==2) {
+//            transport.fCellsData.fVolumefactor[i]=0.001;
+//            transport.fCellsData.fVolume[i] *=transport.fCellsData.fVolumefactor[i];
+//            transport.fCellsData.fKx[i]=5000*0.008335681;
+//            transport.fCellsData.fKy[i]=5000*0.008335681;
+//            transport.fCellsData.fKz[i]=5000*0.008335681;
+//            phi_v=0.5;
+//            REAL kPermFrac=5000*0.008335681;
+//            dataaExport<< kPermFrac<<" "<< kPermFrac<<" "<< kPermFrac<<" "<<phi_v<<std::endl;
+//        }
+//        else if(matId==299){
+//            transport.fCellsData.fVolumefactor[i]=0.01;
+//            transport.fCellsData.fVolume[i] = transport.fCellsData.fVolume[i] *0.001*0.001;
+//            transport.fCellsData.fKx[i]=5000*0.008335681;
+//            transport.fCellsData.fKy[i]=5000*0.008335681;
+//            transport.fCellsData.fKz[i]=5000*0.008335681;
+//            phi_v=0.5;
+//            REAL kPermFrac=5000*0.008335681;
+//            dataaExport<< kPermFrac<<" "<< kPermFrac<<" "<< kPermFrac<<" "<<phi_v<<std::endl;
+//        }
+//        else{
+//            transport.fCellsData.fVolumefactor[i]=1.0;
+//        }
         
        
         
@@ -1602,7 +1618,7 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
     
    // transport.fCellsData.UpdateFractionalFlowsAndLambda(true);
     std::cout<<"ReadingPropsok"<<std::endl;
-    FillPropsFromFile(transport);
+//    FillPropsFromFile(transport);
     this->InitializeVectorPointersTranportToMixed(transport);
     
 }

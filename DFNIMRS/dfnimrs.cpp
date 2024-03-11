@@ -16,8 +16,13 @@
 #include "pzsmanal.h"
 // include dfn filereader
 #include "filereader.h"
+#include "TPZMatBase.h"
+
 
 #include "DFNMesh.h"
+#include "TPZDarcyFlow.h"
+
+#include "TPZBndCond.h"
 
 #include "TPZFileStream.h"
 #include "TPZBFileStream.h"
@@ -103,7 +108,7 @@ int main(int argc, char* argv[]){
 #endif
     
     string filenameBase;
-    int simcase = 20;
+    int simcase = 24;
     if (argc > 1) {
         std::cout << "\n===========> Running with provided argv path!" << std::endl;
         filenameBase = basemeshpath + argv[1];
@@ -246,16 +251,127 @@ int main(int argc, char* argv[]){
 
                 break;
             case 25:
-//                filenameBase = basemeshpath + "/TesisResults/2aparallel/2parallel_no_overlap";
-//                filenameBase = basemeshpath + "/TesisResults/2aparallel/2parallel_one_overlap";
-//                filenameBase = basemeshpath + "/TesisResults/2aparallel/2parallel_two_overlap";
-//                filenameBase = basemeshpath + "/TesisResults/2aparallel/2parallel_three_overlap";
+                filenameBase = basemeshpath + "/Paper_IMRS/CaseA_1/";
+//                filenameBase = basemeshpath + "/Paper_IMRS/CaseB_3/";
+//                filenameBase = basemeshpath + "/Paper_IMRS/CaseC_3/";
+//                filenameBase = basemeshpath + "/Paper_IMRS/CaseD_3/";
+//                filenameBase = basemeshpath + "/Paper_IMRS/CaseE_3/";
+                
+                
                 break;
             default:
                 break;
         }
     }
+    
+    
+    
+    filenameBase = basemeshpath + "/Paper_IMRS/"+ "Case5_Tol" + "/CaseC/";
     RunProblem(filenameBase,simcase);
+    
+    return;
+    for(int i=5; i<=5; i++){
+       
+        string Case= "Case"+std::to_string(i)+"_Tol";
+
+//
+//        if(i!=5){
+            try{
+                filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseA/";
+                RunProblem(filenameBase,simcase);
+                std::cout<<"Rodé el caso: "<<Case<< "/CaseA/"<<std::endl;
+            }catch(...){
+                std::cout<<"error no consegui rodar"<<std::endl;
+            }
+        try{
+                filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseB/";
+                RunProblem(filenameBase,simcase);
+                std::cout<<"Rodé el caso: "<<Case<< "/CaseB/"<<std::endl;
+        }catch(...){
+                std::cout<<"error no consegui rodar"<<std::endl;
+        }
+////
+////
+        try{
+            filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseC/";
+            RunProblem(filenameBase,simcase);
+            std::cout<<"Rodé el caso: "<<Case<< "/CaseC/"<<std::endl;
+        }catch(...){
+            std::cout<<"error no consegui rodar"<<std::endl;
+        }
+        
+        try{
+        filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseD/";
+        RunProblem(filenameBase,simcase);
+        std::cout<<"Rodé el caso: "<<Case<< "/CaseD/"<<std::endl;
+        }catch(...){
+            std::cout<<"error no consegui rodar"<<std::endl;
+        }
+
+        try{
+        filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseE/";
+        RunProblem(filenameBase,simcase);
+            std::cout<<"Rodé el caso: "<<Case<< "/CaseE/"<<std::endl;
+        }catch(...){
+            std::cout<<"error no consegui rodar"<<std::endl;
+        }
+
+        try{
+        filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseF/";
+        RunProblem(filenameBase,simcase);
+            std::cout<<"Rodé el caso: "<<Case<< "/CaseF/"<<std::endl;
+        }catch(...){
+            std::cout<<"error no consegui rodar"<<std::endl;
+        }
+
+        try{
+        filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseG/";
+        RunProblem(filenameBase,simcase);
+            std::cout<<"Rodé el caso: "<<Case<< "/CaseG/"<<std::endl;
+        }catch(...){
+            std::cout<<"error no consegui rodar"<<std::endl;
+        }
+
+        try{
+        filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseH/";
+        RunProblem(filenameBase,simcase);
+            std::cout<<"Rodé el caso: "<<Case<< "/CaseH/"<<std::endl;
+        }catch(...){
+            std::cout<<"error no consegui rodar"<<std::endl;
+        }
+//        } //end if
+        try{
+        filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseI/";
+        RunProblem(filenameBase,simcase);
+            std::cout<<"Rodé el caso: "<<Case<< "/CaseI/"<<std::endl;
+        }catch(...){
+            std::cout<<"error no consegui rodar"<<std::endl;
+        }
+
+        try{
+        filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseJ/";
+        RunProblem(filenameBase,simcase);
+            std::cout<<"Rodé el caso: "<<Case<< "/CaseJ/"<<std::endl;
+        }catch(...){
+            std::cout<<"error no consegui rodar"<<std::endl;
+        }
+
+        try{
+        filenameBase = basemeshpath + "/Paper_IMRS/"+ Case + "/CaseK/";
+        RunProblem(filenameBase,simcase);
+            std::cout<<"Rodé el caso: "<<Case<< "/CaseK/"<<std::endl;
+        }catch(...){
+            std::cout<<"error no consegui rodar"<<std::endl;
+        }
+
+    }
+//    string Case= "Case1_Tol";
+   
+//    filenameBase = basemeshpath + "/Paper_IMRS/Case2_1/";
+//    RunProblem(filenameBase,simcase);
+//    filenameBase = basemeshpath;
+//    RunProblem(filenameBase,simcase);
+    
     return 0;
 }
 // ----------------- End of Main -----------------
@@ -458,8 +574,8 @@ void RunProblem(string& filenameBase, const int simcase)
             gmeshfine->SetDimension(3);
             std::ofstream name(outputFolder + "GeoMesh_Fine_Initial.vtk");
             TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name);
-            std::ofstream name2(outputFolder + "GeoMesh_Fine_Initial.txt");
-            gmeshfine->Print(name2);
+//            std::ofstream name2(outputFolder + "GeoMesh_Fine_Initial.txt");
+//            gmeshfine->Print(name2);
         }
         if(gmeshcoarse){
             std::ofstream name(outputFolder + "GeoMesh_Coarse_Initial.vtk");
@@ -513,16 +629,16 @@ void RunProblem(string& filenameBase, const int simcase)
 		}
 	}
     // ----- Changing BCs for some testing cases -----
-    if(simcase == 6 || simcase == 7 || simcase == 25){
+    if(simcase == 6 || simcase == 7 || simcase == 24){
         //linear pressure...
-        ModifyBCsFor2ParallelFractures(gmeshfine);
-        std::ofstream name3(outputFolder + "ModBCs.vtk");
-        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
+//        ModifyBCsFor2ParallelFractures(gmeshfine);
+//        std::ofstream name3(outputFolder + "ModBCs.vtk");
+//        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
     // ----- Changing BCs for some testing cases -----
     if(simcase == 24){
         //linear pressure...
-//        ModifyBCsForCASE4(gmeshfine);
+        ModifyBCsForCase4(gmeshfine);
         std::ofstream name3(outputFolder + "ModBCs.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
@@ -569,7 +685,7 @@ void RunProblem(string& filenameBase, const int simcase)
 //    TPZVTKGeoMesh::PrintGMeshVTK(gmesh, file);
    
     
-//    DeleteBadRestrictions(gmeshfine);
+   // DeleteBadRestrictions(gmeshfine);
     
     gmeshfine->BuildConnectivity();
     
@@ -620,6 +736,8 @@ void RunProblem(string& filenameBase, const int simcase)
     
     // ----- Creates the multiphysics compmesh -----
 	const int order = 1;
+    
+    gmeshfine->BuildConnectivity();
     aspace.BuildMixedMultiPhysicsCompMesh(order);
     TPZMultiphysicsCompMesh * mixed_operator = aspace.GetMixedOperator();
             
@@ -659,7 +777,11 @@ void RunProblem(string& filenameBase, const int simcase)
          auto s0 = reservoir_properties.Create_s0();
 
 		// Creating coupled pressure/flow and transport analysis
-        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q, kappa_phi,s0);
+//        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q, kappa_phi,s0);
+        
+        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
+        
+        
         sfi_analysis->SetDataTransferAndBuildAlgDatStruct(&sim_data);
         sfi_analysis->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
 //        sfi_analysis->Configure(0, UsePardiso_Q, UsingPzSparse);
@@ -677,9 +799,9 @@ void RunProblem(string& filenameBase, const int simcase)
 
 		// Initializing tranport solution
         sfi_analysis->m_transport_module->UpdateInitialSolutionFromCellsData();
-        if(restart){
-            Restart(sfi_analysis);
-        }
+//        if(restart){
+//            Restart(sfi_analysis);
+//        }
         REAL initial_mass = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
         std::cout << "\nMass report at initial time : " << 0.0 << std::endl;
         std::cout << "Initial mass:  " << initial_mass << std::endl;
@@ -689,6 +811,11 @@ void RunProblem(string& filenameBase, const int simcase)
         std::ofstream fileFracSat(outputFolder + "FracturesIntegratedSat.txt");
         std::ofstream fileFracSatVolCase2(outputFolder + "RegionsIdIntegratedSat.txt");
         std::ofstream fileFracAreaSat(outputFolder + "FracturesAreaSat.txt");
+        
+        std::ofstream InformationSim(outputFolder + "InformationSim.txt");
+        int Neq = mixed_operator->NEquations();
+        int Nels = mixed_operator->NElements();
+        InformationSim<<"CompEls: "<< Nels <<" Neq: "<<Neq<<std::endl;
         
         std::ofstream fTimeStep_report("Report_TimeSteps.txt");
         fTimeStep_report<<"TimeStp     N_SFI        ERROR           MASSCONSERV      "<<std::endl;
@@ -723,12 +850,15 @@ void RunProblem(string& filenameBase, const int simcase)
             *(sfi_analysis->freport_data)<<"N_IT_SFI        N_ERROR         "<<std::endl;
            
             
-            if(it%4==0){
-                sfi_analysis->isLinearTracer = true;
-            }
+//            if(it%4==0){
+//                sfi_analysis->isLinearTracer = true;
+//            }
             
             sfi_analysis->RunTimeStep();
-           
+            if(isPostProcessFracDiagnostics){
+                std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
+                ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
+            }
             
             REAL massconserv = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateMass();
             
@@ -738,11 +868,11 @@ void RunProblem(string& filenameBase, const int simcase)
                 //sfi_analysis->m_transport_module->fAlgebraicTransport.ColorMeshByCoords();
             
         
-            if(it==1 || it%4==0){
+            if(it==1){
                 sfi_analysis->PostProcessTimeStep(typeToPPinit);
-                sfi_analysis->PostProcessTimeStep(typeToPPsteps);
             }
             
+            sfi_analysis->PostProcessTimeStep(typeToPPsteps);
 //            if(it==1 || it%50==200){
 //                sfi_analysis->isLinearTracer = true;
 //            }
@@ -750,12 +880,12 @@ void RunProblem(string& filenameBase, const int simcase)
 //                    std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
 //                    ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
 //                }
-//                for (auto& fprop : sim_data.mTFracProperties.m_fracprops) {
-//                    const int matid = fprop.first;
-//                    const REAL intMassThisFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateAreaById(matid);
-//                    fileFracAreaSat << matid << " "<<intMassThisFrac<< std::endl;
+                for (auto& fprop : sim_data.mTFracProperties.m_fracprops) {
+                    const int matid = fprop.first;
+                    const REAL intMassThisFrac = sfi_analysis->m_transport_module->fAlgebraicTransport.CalculateAreaById(matid);
+                    fileFracAreaSat << matid << " "<<intMassThisFrac<< std::endl;
 //
-//                }
+                }
 //
                 //if(isFilterZeroNeumann) VerifyIfNeumannIsExactlyZero(4,mixed_operator);
 //            }
@@ -794,8 +924,10 @@ void RunProblem(string& filenameBase, const int simcase)
 //            }
             REAL outFlux = sfi_analysis->m_transport_module->fAlgebraicTransport.VerifyConservation(it);
             sfi_analysis->m_transport_module->fAlgebraicTransport.ExportPProductionData(it);
-            sfi_analysis->m_mixed_module->AllZero(mixed_operator);
+            //sfi_analysis->m_mixed_module->AllZero(mixed_operator);
             fileFracSatVolCase2<< outFlux <<std::endl;
+            
+            return;
         }
     }
     else{
@@ -853,7 +985,7 @@ void RunProblem(string& filenameBase, const int simcase)
     
        
         const bool checkRhsAndExit = true;
-        bool isPostProcessFracDiagnostics=false;
+        bool isPostProcessFracDiagnostics=true;
         if(checkRhsAndExit){
 //            std::cout << "\n------------------ Checking RHS norm ------------------" << std::endl;
 ////            mixed_operator->UpdatePreviousState(-1.);
@@ -1115,8 +1247,8 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     sim_data.mTPetroPhysics.mOilViscosity= 2.0;
     sim_data.mTPetroPhysics.mWaterViscosity= 1.0;
 	sim_data.mTNumerics.m_gravity = grav;
-    sim_data.mTNumerics.m_IsGravityEffectsQ = true;
-	sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    sim_data.mTNumerics.m_IsGravityEffectsQ = false;
+	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
     sim_data.mTNumerics.m_ISLinearizedQuadraticModelQ = true;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
 	sim_data.mTNumerics.m_max_iter_sfi=1;
@@ -1298,8 +1430,8 @@ void ReadMeshesDFN(string& filenameBase, TPZGeoMesh*& gmeshfine, TPZGeoMesh*& gm
     int ncoarse_vol = 0;
     if(needsMergeMeshes){
 
-//        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
-        gmeshcoarse = GenerateUnisimMesh(2);
+        gmeshcoarse = generateGMeshWithPhysTagVec(meshfile,dim_name_and_physical_tagCoarse);
+//        gmeshcoarse = GenerateUnisimMesh(2);
         int nels = gmeshcoarse->NElements();
         REAL volumeinlet =0.0;
         REAL volumeoutlet =0.0;
@@ -1608,34 +1740,37 @@ void ModifyBCsForCase3(TPZGeoMesh* gmesh) {
 // ---------------------------------------------------------------------
 
 void ModifyBCsForCase4(TPZGeoMesh* gmesh) {
-	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
+//	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
     const REAL zerotol = ZeroTolerance();
     
     for (auto gel: gmesh->ElementVec()) {
         if (!gel) continue;
-        if (gel->MaterialId() != ENoflux) continue; // 2d faces on boundary only
-        
+        if (gel->MaterialId() == 2 || gel->MaterialId() == 3) {
+            gel->SetMaterialId(4);
+        }; // 2d faces on boundary only
+    };
+    
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != 4) continue;
         TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
         gel->CenterPoint(gel->NSides()-1, masscent);
         gel->X(masscent, xcenter);
         const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
         const bool isYend = fabs(y-1500.) < zerotol;
-        const bool isXinit = fabs(x+500.) < zerotol;
-        const bool isXend = fabs(x-350.) < zerotol;
+        const bool isXinit = fabs(x+0) < zerotol;
+        const bool isXend = fabs(x-1) < zerotol;
         
         // Default is no flux already set previously
         
         // Setting inlet BCs
-        if(isYend && (z > 300. && x < -200.))
-                gel->SetMaterialId(EInlet);
-        if(isXinit && (z > 300. && y > 1200.))
-                gel->SetMaterialId(EInlet);
-
-        // Setting outlet BCs
-        if(isXinit && (y < 400. && z < 100.))
-                gel->SetMaterialId(EOutlet);
-        if(isXend && (y < 400. && z < 100.))
-                gel->SetMaterialId(EOutlet);
+        if(isXinit && (z < 0.05)){
+                gel->SetMaterialId(3);
+            
+        }
+        if(isXend && (z > 0.2)){
+                gel->SetMaterialId(2);
+        }
     }
 }
 
@@ -1644,21 +1779,29 @@ void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh) {
     const REAL zerotol = ZeroTolerance();
     for (auto gel: gmesh->ElementVec()) {
         if (!gel) continue;
-        if (gel->MaterialId() != 2) continue; // 2d faces on boundary only
+        if (gel->Dimension() != 2) continue; // 2d faces on boundary only
+        if(gel->MaterialId()==2 || gel->MaterialId()==3 ){
+            gel->SetMaterialId(4);
+        }
+    }
+    
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != 4) continue; // 2d faces on boundary only
         
         TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
         gel->CenterPoint(gel->NSides()-1, masscent);
         gel->X(masscent, xcenter);
         const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-        const bool isXinit = fabs(x) < zerotol;
-        const bool isXend = fabs(x-2) < zerotol;
+        const bool isXinit = fabs(z) < zerotol;
+        const bool isXend = fabs(z-10) < zerotol;
         
         // Default is no flux already set previously
         // Setting inlet BCs
         if(isXinit)
                 gel->SetMaterialId(3);
         if(isXend )
-                gel->SetMaterialId(4);
+                gel->SetMaterialId(2);
     }
 }
 
@@ -2196,7 +2339,7 @@ void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer& sim_data, TP
 //                continue;
 //            }
             count++;
-#ifdef PZDEBUG
+#ifdef PZDEBUG2
             {
                 std::string filename = outputFolder + "submesh_" + to_string(count) + ".vtk";
                 std::ofstream out(filename);

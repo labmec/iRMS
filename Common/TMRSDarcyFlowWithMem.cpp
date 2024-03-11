@@ -341,7 +341,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
         
         
         if(mSimData.mTNumerics.m_IsGravityEffectsQ){
-            ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
+//            ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
         }
         
         for (int jq = 0; jq < nphi_q; jq++) {

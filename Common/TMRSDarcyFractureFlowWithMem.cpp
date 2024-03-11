@@ -196,7 +196,9 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
 //        ef(ip + first_p) = weight * phi_ps(ip,0) * div_q; // term p in docs/Formulation.lyx
     }
     
-//    
+//
+    REAL fac= 10e-10; //Cond0
+   // REAL fac= 10e0; //Cond1
     // compute the contribution of the hdivbound
     for (int iq = first_transverse_q; iq < second_transverse_q; iq++)
     {
@@ -204,7 +206,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
 
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q(i,0) += memory.m_kappa_inv(i,i)*q[i];
+            kappa_inv_q(i,0) += fac*memory.m_kappa_inv(i,i)*q[i];
         }
         
         for (int i = 0; i < 3; i++) {
@@ -215,7 +217,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         REAL g_dot_phi_q_i=0.0;
         for (int i = 0; i < 3; i++) {
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
-            g_dot_phi_q_i           += m_gravity[i]*phi_qs(i,iq);
+          //  g_dot_phi_q_i           += m_gravity[i]*phi_qs(i,iq);
         }
 //        ef(iq + first_q) += 1.0 * weight * (  g_dot_phi_q_i );
 
@@ -227,8 +229,8 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
             kappa_inv_phi_q_j.Zero();
 
             for (int j = 0; j < 3; j++) {
-                REAL KappaInvVal = memory.m_kappa_inv(j,j);
-                kappa_inv_phi_q_j(j,0) = 0.5 * ad * KappaInvVal * phi_qs(j,jq);
+                REAL KappaInvVal = fac * memory.m_kappa_inv(j,j);
+                kappa_inv_phi_q_j(j,0) = fac*0.5 * ad * KappaInvVal * phi_qs(j,jq);
             }
 
             // kappa_inv_phi_q_j_dot_phi_q_i is the dot product of both vectors
@@ -250,7 +252,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
 
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q(i,0) += memory.m_kappa_inv(i,i)*q[i];
+            kappa_inv_q(i,0) += fac*memory.m_kappa_inv(i,i)*q[i];
         }
         
         for (int i = 0; i < 3; i++) {

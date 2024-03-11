@@ -1,0 +1,75 @@
+{
+    "$schema": "../dfn_schema.json",
+    "Mesh": "MeshCube2Frac_coarse.msh",
+    "TolDist":  0.004,
+    "TolAngle": 0.004,
+    "Domains": [
+        {
+            "name": "k11",
+            "matid": 1,
+            "K": 1.0,
+            "phi": 0.25
+        }
+    ],
+    "NCoarseGroups": 4000,
+    "Boundary": [
+        {
+            "name": "bcInlet",
+            "matid": 2,
+            "type": 0, // imposed pressure
+            "value": 100.0
+        },
+        {
+            "name": "bcOutlet",
+            "matid": 3,
+            "type": 0, // imposed pressure
+            "value": 0.0
+        },
+        {
+            "name": "bcNoFlux",
+            "matid": 4,
+            "type": 1, // imposed flux
+            "value": 0.0
+        }
+        
+    ],
+
+    "FractureHybridPressureMatId": 299,
+    "FractureInitMatId": 300,
+    "FractureGlueMatId": 1000000,
+    "FractureGluePerm": 1.0,
+    "useMHM":true,
+    "needsMerge":true,
+    "RunWithTransport": true,
+    "DeltaT": 0.01,
+    "NSteps": 10,
+    "SimulationDim": 3,
+    "Fractures": [
+        {
+            "Index": 0,
+            "K" : 1.0e4,
+            "phi": 0.4,
+            "width": 0.1,
+            "Limit": "Erecovered",
+            "Nodes": [
+                [0.1, 0.0, 0.1],
+                [0.9, 0.0, 0.1],
+                [0.9, 1.0, 0.1],
+                [0.1, 1.0, 0.1]
+            ]
+        },
+        {
+            "Index": 1,
+            "K" : 1.0e4,
+            "phi": 0.4,
+            "width": 0.1,
+            "Limit": "Erecovered",
+            "Nodes": [
+                [0.1, 0.0, 0.1],
+                [0.894037, 0.0, 0.197495],
+                [0.894037, 1.0, 0.197495],
+                [0.1, 1.0, 0.1]
+            ]
+        }
+    ]
+}

@@ -45,6 +45,8 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompM
     freport_data = new std::ofstream("Report_SFI.txt");
     m_k_iteration=0;
     fcurrentError=1.0;
+    fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
+//    FillProperties();
 }
 
 void TMRSSFIAnalysis::BuildAlgebraicDataStructure(){
@@ -169,7 +171,7 @@ void TMRSSFIAnalysis::FillProperties(){
     m_transport_module->fAlgebraicTransport.fdt = m_sim_data->mTNumerics.m_dt;
     m_transport_module->fAlgebraicTransport.fgravity = m_sim_data->mTNumerics.m_gravity;
     
-    return;
+    
     bool propsfromPre = m_sim_data->mTReservoirProperties.fPropsFromPreProcess;
     if (propsfromPre==false) {
         if (m_sim_data->mTReservoirProperties.kappa_phi) {

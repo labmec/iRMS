@@ -474,7 +474,7 @@ void TMRSMixedAnalysis::FilterZeroNeumann(std::string& outputFolder, TMRSDataTra
 //                continue;
 //            }
             count++;
-#ifdef PZDEBUG
+#ifdef PZDEBUG2
             {
                 std::string filename = outputFolder + "submesh_" + to_string(count) + ".vtk";
                 std::ofstream out(filename);

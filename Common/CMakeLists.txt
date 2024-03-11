@@ -18,7 +18,7 @@ if(USING_SUPERLU)
 endif(USING_SUPERLU)
 
 # Create the iMRS library statically!
-add_library(iMRS_library STATIC ${common_headers} ${common_sources})
+add_library(iMRS_library STATIC ${common_headers} ${common_sources} )
 
 #enabling TBB library
 option(USING_TBB "Whether the TBB library will be linked in" OFF)
@@ -37,10 +37,15 @@ endif(USING_SUPERLU)
 
 # Links with dfn
 target_link_libraries(iMRS_library PUBLIC DFN::dfnlib)
-target_include_directories(iMRS_library PUBLIC ${DFN_INCLUDE_DIRS})
+target_include_directories(iMRS_library PUBLIC ${DFN_INCLUDE_DIRS} )
+
+
+target_link_libraries(iMRS_library PUBLIC NeoPZ::pz)
+target_include_directories(iMRS_library PUBLIC askass${PZ_INCLUDE_DIRS})
+
 
 # Includes the directories
-target_include_directories(iMRS_library PUBLIC ${PZ_INCLUDE_DIRS} 
+target_include_directories(iMRS_library PUBLIC ${PZ_INCLUDE_DIRS}  
     ${EIGEN3_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
 if(USING_SUPERLU)    
     target_include_directories(iMRS_library PUBLIC ${SUPERLU_INCLUDES})
