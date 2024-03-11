@@ -198,7 +198,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
 //
 //    REAL fac= 10e-10; //Cond0
-    REAL fac= 10e0; //Cond1
+    REAL fac= 10e5; //Cond1
     // compute the contribution of the hdivbound
     for (int iq = first_transverse_q; iq < second_transverse_q; iq++)
     {
