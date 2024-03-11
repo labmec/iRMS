@@ -266,14 +266,16 @@ int main(int argc, char* argv[]){
     
     
     
-    filenameBase = basemeshpath + "/Paper_IMRS/"+ "Case5_Tol" + "/CaseC/";
-    RunProblem(filenameBase,simcase);
+//    filenameBase = basemeshpath + "/Paper_IMRS/"+ "Case5_Tol" + "/CaseC/";
+//    RunProblem(filenameBase,simcase);
     
-    return;
-    for(int i=5; i<=5; i++){
+
+    for(int i=1; i<=5; i++){
        
         string Case= "Case"+std::to_string(i)+"_Tol";
-
+        if(i==2 || i==4){
+            continue;
+        }
 //
 //        if(i!=5){
             try{
