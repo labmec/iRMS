@@ -52,7 +52,7 @@ endif()
 add_subdirectory(Common)
 
 # ----- Subdirectories that are most used -----
-add_subdirectory(BenchmarkCase1)
+# add_subdirectory(BenchmarkCase1) Deprecated
 add_subdirectory(OnlyFractures)
 add_subdirectory(2Elements2Spaces2D)
 # add_subdirectory(SimpleCaseTwoFractures)
@@ -60,6 +60,7 @@ add_subdirectory(SimpleCaseOneFracture)
 add_subdirectory(CubicDomainNoFractures)
 add_subdirectory(DFNIMRS)
 add_subdirectory(Filling)
+add_subdirectory(WANN)
 
 
 # ----- Enables testing -----

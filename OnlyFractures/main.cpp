@@ -146,7 +146,8 @@ void VerificationCases(const int caseToSim)
     bool UsePardiso_Q = true;
     
     // Setting analysis
-    TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, must_opt_band_width_Q);
+    RenumType renumtype = RenumType::EDefault;
+    TMRSMixedAnalysis *mixAnalisys = new TMRSMixedAnalysis(mixed_operator, renumtype);
     mixAnalisys->SetDataTransfer(&sim_data);
     mixAnalisys->Configure(n_threads, UsePardiso_Q, UsingPzSparse);
     
