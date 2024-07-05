@@ -365,6 +365,9 @@ class TMRSDataTransfer : public TMRSSavable {
    */
   class TBoundaryConditions : public TMRSSavable {
    public:
+
+
+    std::map<std::string, int> mDomainNameAndMatId;
     /**
      * @brief Contains the boundary conditions for Flow problem in a map. Key = matidOfBC, value = pair<typeOfBC,valueOfBC>
      */
@@ -392,6 +395,7 @@ class TMRSDataTransfer : public TMRSSavable {
       mBCFlowMatIdToTypeValue = other.mBCFlowMatIdToTypeValue;
       mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
       mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
+      mDomainNameAndMatId = other.mDomainNameAndMatId;
     }
 
     /** @brief Copy assignment operator*/
@@ -401,6 +405,7 @@ class TMRSDataTransfer : public TMRSSavable {
         mBCFlowMatIdToTypeValue = other.mBCFlowMatIdToTypeValue;
         mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
         mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
+        mDomainNameAndMatId = other.mDomainNameAndMatId;
       }
       return *this;
     }

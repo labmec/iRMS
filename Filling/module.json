@@ -1,0 +1,47 @@
+{
+    // "$schema": "../dfn_schema.json",
+    "Mesh": "module.msh",
+    
+    "Domains": [
+    {
+        "name": "dom",
+        "matid":1,
+        "K": 1.0,
+        "phi": 0.2
+    }
+    ],
+    "Boundary": [
+        {
+            "name": "bcl",
+            "matid": 2,
+            "type": 0, // imposed pressure
+            "value": 1.0
+        },
+        {
+            "name": "bcr",
+            "matid": 3,
+            "type": 0,  // imposed pressure
+            "value": 0.0
+        },
+        {
+            "name": "bct",
+            "matid": 4,
+            "type": 1, // imposed flux
+            "value": 0.0
+        },
+        {
+            "name": "bcb",
+            "matid": 5,
+            "type": 1, // imposed flux
+            "value": 0.0
+        }
+        
+    ],
+
+    // "RunWithTransport": false,
+    "RunWithTransport": true,
+    "DeltaT": 2.5e-3,
+    "NSteps": 100,    
+    
+    "SimulationDim": 2
+}
