@@ -43,7 +43,7 @@ int main(int argc, char* argv[]){
     TPZLogger::InitializePZLOG(logpath);
     if (mainlogger.isDebugEnabled()) {
         std::stringstream sout;
-        sout << "\nLogger for DFNIMRS problem target\n" << endl;;
+        sout << "\nLogger for Filling problem target\n" << endl;;
         LOGPZ_DEBUG(mainlogger, sout.str())
     }
 #endif
