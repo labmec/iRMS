@@ -1831,7 +1831,7 @@ void  TMRSApproxSpaceGenerator::BuildAuxTransportCmesh(){
     int s_order = 0;
     mTransportOperator->SetDefaultOrder(s_order);
     mTransportOperator->ExpandSolution();
-    mTransportOperator->SetDimModel(3);
+    mTransportOperator->SetDimModel(dimension);
     {
         mTransportOperator->Reference()->ResetReference();
         mTransportOperator->LoadReferences();
@@ -3952,6 +3952,7 @@ void TMRSApproxSpaceGenerator::findNeighElementbyMatId(TPZGeoElSide &gelside, st
 
 void TMRSApproxSpaceGenerator::CreateElementInterfaces(TPZGeoEl *gel){
     
+    const int domaindim = mGeometry->Dimension();
     int dimension = gel->Dimension();
     int nsides = gel->NSides();
     int ncoord = gel->NCornerNodes();

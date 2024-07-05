@@ -21,6 +21,7 @@
 #include "pzelementgroup.h"
 #include "TPZInterfaceEl.h"
 #include "pzshapetetra.h"
+#include "pzshapequad.h"
 #include "pzshapepiram.h"
 #include "TPZLagrangeMultiplier.h"         // for TPZLagrangeMultiplier
 /// Default constructor
@@ -458,9 +459,11 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimVolDimFrac(TPZComp
 }
 void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimDim(TPZCompElSide &celSideL, TPZCompElSide &celSideR, int &orientationL, int &lowerIndexL, int &orientationR, int &lowerIndexR, int matID){
     
+    
     TPZCompEl *celL = celSideL.Element();
     if(celL->NConnects() > 1) DebugStop();
     TPZGeoEl *gelL = celL->Reference();
+    const int domaindim = gelL->Mesh()->Dimension();
     int SideL =celSideL.Side();
     int nsidesm = gelL->NSides();
     orientationL = 0;
@@ -472,22 +475,25 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimDim(TPZCompElSide 
     TPZCompElHDiv<pzshape::TPZShapeCube> *hdivCL = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(hdivL);
     TPZCompElHDiv<pzshape::TPZShapeTetra> *hdivTL = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTetra> *>(hdivL);
     TPZCompElHDiv<pzshape::TPZShapePrism> *hdivPL= dynamic_cast<TPZCompElHDiv<pzshape::TPZShapePrism> *>(hdivL);
+    TPZCompElHDiv<pzshape::TPZShapeQuad> *hdivQuadL= dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeQuad> *>(hdivL);
     lowerIndexL = SideLowerIndex(gelL, SideL);
-    int firstsideL = gelL->NSides() - gelL->NSides(2)-1;
+    int firstsideL = gelL->NSides() - gelL->NSides(domaindim-1)-1;
     int connect_indexL =-1;
     if(hdivCL){
         orientationL = hdivCL->SideOrient(SideL - firstsideL);
         connect_indexL = hdivCL->ConnectIndex(SideL - firstsideL);
     }
     else if(hdivTL){
-        int node = gelL->NSides() - gelL->NSides(2);
         orientationL = hdivTL->SideOrient(SideL - firstsideL);
         connect_indexL = hdivTL->ConnectIndex(SideL - firstsideL);
     }
     else if (hdivPL) {
-        int node = gelL->NSides() - gelL->NSides(2);
         orientationL = hdivPL->SideOrient(SideL - firstsideL);
         connect_indexL = hdivPL->ConnectIndex(SideL - firstsideL);
+    }
+    else if (hdivQuadL) {
+        orientationL = hdivQuadL->SideOrient(SideL - firstsideL);
+        connect_indexL = hdivQuadL->ConnectIndex(SideL - firstsideL);
     }
     else{
         DebugStop();
@@ -508,8 +514,8 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimDim(TPZCompElSide 
     TPZCompElHDiv<pzshape::TPZShapeCube> *hdivCR = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeCube> *>(hdivR);
     TPZCompElHDiv<pzshape::TPZShapeTetra> *hdivTR = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeTetra> *>(hdivR);
     TPZCompElHDiv<pzshape::TPZShapePrism> *hdivPR = dynamic_cast<TPZCompElHDiv<pzshape::TPZShapePrism> *>(hdivR);
-    
-    int firstsideR = gelR->NSides() - gelR->NSides(2)-1;
+    TPZCompElHDiv<pzshape::TPZShapeQuad> *hdivQuadR= dynamic_cast<TPZCompElHDiv<pzshape::TPZShapeQuad> *>(hdivR);
+    int firstsideR = gelR->NSides() - gelR->NSides(domaindim-1)-1;
     if(hdivCR){
         orientationR = hdivCR->SideOrient(SideR - firstsideR);
         connect_indexR = hdivCR->ConnectIndex(SideR - firstsideR);
@@ -521,6 +527,10 @@ void TPZAlgebraicDataTransfer::TakeOrientationAndLowerIndexDimDim(TPZCompElSide 
     else if (hdivPR) {
         orientationR = hdivPR->SideOrient(SideR - firstsideR);
         connect_indexR = hdivPR->ConnectIndex(SideR - firstsideR);
+    }
+    else if (hdivQuadR) {
+        orientationR = hdivQuadR->SideOrient(SideR - firstsideR);
+        connect_indexR = hdivQuadR->ConnectIndex(SideR - firstsideR);
     }
     else{
         DebugStop();

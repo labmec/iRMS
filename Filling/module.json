@@ -40,8 +40,8 @@
 
     // "RunWithTransport": false,
     "RunWithTransport": true,
-    "DeltaT": 2.5e-3,
+    "DeltaT": 20.0,
     "NSteps": 100,    
-    
+
     "SimulationDim": 2
 }

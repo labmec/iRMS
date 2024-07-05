@@ -21,7 +21,7 @@ namespace fs = std::filesystem;
 // ----- End of namespaces -----
 
 // ----- Global vars -----
-const int glob_n_threads = 0;
+const int glob_n_threads = 8;
 
 // ----- Functions -----
 TPZGeoMesh* ReadMeshFromGmsh(TMRSDataTransfer& sim_data);
