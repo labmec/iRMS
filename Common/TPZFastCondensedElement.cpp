@@ -51,7 +51,7 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
         TPZMaterial *mat = Material();
         
         TMRSDarcyFlowWithMem<TMRSMemory> *matwithmen = dynamic_cast<TMRSDarcyFlowWithMem<TMRSMemory> *>(mat);
-        matwithmen->SetInversePermeability(fInvPerm);
+       // matwithmen->SetInversePermeability(fInvPerm);
         
         TPZCondensedCompEl::CalcStiff(fEK, fEF);
         ComputeBodyforceRefValues();
@@ -81,12 +81,12 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
     
     
     
-    int shift = 3;
-    for (int i=0; i< nrows - shift; i++) {
-        for (int j=0; j< nrows - shift; j++) {
-            ek.fMat(i,j) *= (1.0/fLambda);
-        }
-    }
+//    int shift = 3;
+//    for (int i=0; i< nrows - shift; i++) {
+//        for (int j=0; j< nrows - shift; j++) {
+//            ek.fMat(i,j) *= (1.0/fLambda);
+//        }
+//    }
     
     ef.fMat *= 1.0*Glambda;
     

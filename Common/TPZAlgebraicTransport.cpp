@@ -152,8 +152,9 @@ void TPZAlgebraicTransport::ContributeInterface(int index, TPZFMatrix<double> &e
     
 }
 
+
 void TPZAlgebraicTransport::ContributeInterfaceResidual(int index, TPZFMatrix<double> &ef, int interfaceID){
-    
+        
     std::pair<int64_t, int64_t> lr_index = fInterfaceData[interfaceID].fLeftRightVolIndex[index];
     REAL fluxint  = fInterfaceData[interfaceID].fIntegralFlux[index];
     

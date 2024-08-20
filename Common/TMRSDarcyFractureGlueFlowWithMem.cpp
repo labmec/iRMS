@@ -68,6 +68,7 @@ void TMRSDarcyFractureGlueFlowWithMem::Contribute(const TPZVec<TPZMaterialDataT<
     if(gp_index < 0) DebugStop();
     auto & memory = this->GetMemory().get()->operator[](gp_index);
     REAL kappaNormal = m_permeability;
+  //  kappaNormal *=10e8;
     REAL dist = memory.m_dist;
     memory.m_flux = q[0];
 

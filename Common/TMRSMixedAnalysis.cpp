@@ -257,11 +257,23 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
         for (auto nm : vecnames) {
             scalnames.Push(nm);
         }
-        auto vtk = TPZVTKGenerator(fCompMesh, matids, scalnames, plotfile, vtkRes);
+        
+        std::set<int> matids2;
+        matids2.insert(305);
+        auto vtk2 = TPZVTKGenerator(fCompMesh, matids2, scalnames, plotfile, vtkRes);
+        vtk2.SetStep(fpostprocessindex);
+        vtk2.SetNThreads(1);
+        vtk2.Do();
+        fpostprocessindex++;
+        std::set<int> matids1;
+        matids1.insert(300);
+        auto vtk = TPZVTKGenerator(fCompMesh, matids1, scalnames, plotfile, vtkRes);
         vtk.SetStep(fpostprocessindex);
-        vtk.SetNThreads(8);
+        vtk.SetNThreads(1);
         vtk.Do();
         fpostprocessindex++;
+        
+        
 #else
         file = file.substr(0, file.find(".")) + "_frac.vtk";
         DefineGraphMesh(dimToPost, matids, scalnames, vecnames, file);

@@ -46,7 +46,7 @@ TMRSSFIAnalysis::TMRSSFIAnalysis(TPZMultiphysicsCompMesh * cmesh_mixed, TPZCompM
     m_k_iteration=0;
     fcurrentError=1.0;
     fAlgebraicDataTransfer.BuildTransportDataStructure(m_transport_module->fAlgebraicTransport);
-//    FillProperties();
+ //   FillProperties();
 }
 
 void TMRSSFIAnalysis::BuildAlgebraicDataStructure(){
@@ -226,7 +226,7 @@ void TMRSSFIAnalysis::FillProperties(){
                         m_transport_module->fAlgebraicTransport.fCellsData.fKy[icell] = valperm;
 //                        m_transport_module->fAlgebraicTransport.fCellsData.fKz[icell] = valperm;
                         std::cout<<"Warning: fkz"<<std::endl;
-                        m_transport_module->fAlgebraicTransport.fCellsData.fKz[icell] = 1.0e-6;
+                        m_transport_module->fAlgebraicTransport.fCellsData.fKz[icell] = valperm;
                     
                         fountmat =true;
                         break;
@@ -555,8 +555,8 @@ void TMRSSFIAnalysis::SFIIteration(){
     TPZSimpleTimer timer_sfi("Timer SFI Iteration");
         m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
     m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
-    fAlgebraicDataTransfer.TransferLambdaCoefficients();
-    
+    //fAlgebraicDataTransfer.TransferLambdaCoefficients();
+    //fAlgebraicDataTransfer.TransferPermeabiliyTensor();
     if(isLinearTracer){
         
 //        if(m_k_iteration<11){

@@ -1525,16 +1525,16 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
 //                    ky_v=1000.0;
 //                    kz_v=1000.0;
 //                }
-        if(dim==2 && matId==305){
-            kx_v=10000;
-            ky_v=10000;
-            kz_v=10000;
-        }
-        if(dim==2 && matId==300){
-            kx_v=10000;
-            ky_v=10000;
-            kz_v=10000;
-        }
+//        if(dim==2 && matId==305){
+//            kx_v=1;
+//            ky_v=1;
+//            kz_v=1;
+//        }
+//        if(dim==2 && matId==300){
+//            kx_v=1;
+//            ky_v=1;
+//            kz_v=1;
+//        }
         transport.fCellsData.fSaturation[i]=s0_v;
         transport.fCellsData.fSaturationWait[i]=s0_v;
         transport.fCellsData.fporosity[i]=phi_v;
@@ -1877,7 +1877,12 @@ void TPZAlgebraicDataTransfer::TransferPermeabiliyTensor(){
             InvPerm(0,0) = 1.0/(PermeabilityT(0,0));
             InvPerm(1,1) = 1.0/(PermeabilityT(1,1));
             InvPerm(2,2) = 1.0/(PermeabilityT(2,2));
+            REAL val =PermeabilityT(0,0);
             TPZGeoEl *gel = cel->Reference();
+            if(gel->MaterialId() == 5){
+                int ok=0;
+            }
+            
      //       meshit.fMixedCell[icell]->SetPermTensorAndInv(PermeabilityT,InvPerm) ;
             condensed->SetPermTensorAndInv(PermeabilityT,InvPerm);
           //  condensed->SetMixedDensity((celldata.fMixedDensity)[transportcell]);

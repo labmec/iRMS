@@ -133,7 +133,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     TPZFNMatrix<3,STATE> phi_q_i(3,1,0.0), kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
     
     REAL ad = memory.m_ad;
-    memory.m_kappa_inv = this->m_kappa_inv;
+    memory.m_kappa_inv =memory.m_kappa_inv;
     
     REAL val = 1.0/memory.m_kappa_inv(0,0);
     
@@ -198,7 +198,11 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialData
     
 //
 //    REAL fac= 10e-10; //Cond0
-    REAL fac= 10e5; //Cond1
+    REAL fac= 1; //Cond1
+    REAL kappaval= memory.m_kappa_inv(0,0);
+//    if(memory.m_kappa_inv(0,0)!=1.0 || memory.m_kappa_inv(1,1)!=1.0||  memory.m_kappa_inv(2,2)!=1.0){
+//        DebugStop();
+//    }
     // compute the contribution of the hdivbound
     for (int iq = first_transverse_q; iq < second_transverse_q; iq++)
     {
@@ -392,6 +396,9 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDa
         case 0 :    // Dirichlet BC  PD
         {
             STATE p_D = bc_data[0];
+            if (p_D != 100 || p_D!=0) {
+                DebugStop();
+            }
             for (int iq = 0; iq < nphi_q; iq++)
             {
                 ef(iq + first_q) += weight * (-1.0)*p_D * phi_qs(iq,0); // term o in docs/Formulation.lyx
@@ -407,7 +414,9 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDa
                 REAL qn_N = bc_data[0];
                 REAL qn = 0.0;
                 qn = q[0];
-                
+                if (qn_N != 0) {
+                    DebugStop();
+                }
                 ef(iq + first_q) += weight * gBigNumber * (-1.0)*(qn - qn_N) * phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++)
                 {
@@ -421,6 +430,7 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDa
             
         case 2 :    // Mixed BC
         {
+            DebugStop();
             const REAL v1 = bc.Val1()(0,0);
             for (int iq = 0; iq < nphi_q; iq++){
                 const REAL qn_N = bc_data[0];

@@ -74,6 +74,13 @@ void ModifyBCsForCASE4(TPZGeoMesh* gmesh);
 void ColorMeshCase2(TPZGeoMesh* gmesh);
 void VerifyGeoMesh(TPZGeoMesh* gmesh);
 void Restart(TMRSSFIAnalysis * sfianal);
+struct TGPts {
+    TPZGeoEl* gel = nullptr;
+    TPZManVector<REAL,2> qsi = {0.,0.};
+    REAL x = 0.;
+};
+void CreateListOfElements(TPZGeoMesh* gmesh, REAL z, REAL y, int matid, int npts, REAL xmin, REAL xmax, std::vector<TGPts>& gptsvec);
+void PostProcFileForArticle(TPZMultiphysicsCompMesh* mpmesh, std::vector<TGPts>& gptsvec, std::ofstream& out);
 //TPZGeoMesh * GenerateUnisimMesh();
 // TODO: Delete this enum? (May 2022)
 enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
@@ -83,7 +90,7 @@ enum EMatid {/*0*/ENone, EVolume, EInlet, EOutlet, ENoflux,
 };
 
 // ----- Logger -----
-#ifdef PZ_LOG
+#ifdef PZ_LOG2
 static TPZLogger mainlogger("imrs");
 static TPZLogger fracIntersectLogger("imrs_fracIntersect");
 #endif
@@ -96,8 +103,9 @@ static TPZLogger fracIntersectLogger("imrs_fracIntersect");
 //  |_|  |_| /_/   \_\ |_| |_| \_|
 //-------------------------------------------------------------------------------------------------
 int main(int argc, char* argv[]){
+    
     string basemeshpath(FRACMESHES);
-#ifdef PZ_LOG
+#ifdef PZ_LOG2
     string logpath = basemeshpath + "/../DFNIMRS/log4cxx.cfg";
     TPZLogger::InitializePZLOG(logpath);
     if (mainlogger.isDebugEnabled()) {
@@ -246,7 +254,8 @@ int main(int argc, char* argv[]){
 //                filenameBase = basemeshpath + "/TesisResults/case_4/fl_case4A/";
 //                filenameBase = basemeshpath + "/TesisResults/case_4/fl_case4C/";
                 
-                filenameBase = basemeshpath + "/TesisResults/TestRandom/";
+                filenameBase = basemeshpath + "/Paper_IMRS/CaseNew/CaseNewOriginal/";
+//                filenameBase = basemeshpath + "/Paper_IMRS/CaseNew/CaseNewOverlap/";
 //                  filenameBase = basemeshpath + "/TesisResults/UNISIM/";
 
                 break;
@@ -267,9 +276,9 @@ int main(int argc, char* argv[]){
     
     
 //    filenameBase = basemeshpath + "/Paper_IMRS/"+ "Case5_Tol" + "/CaseC/";
-//    RunProblem(filenameBase,simcase);
+    RunProblem(filenameBase,simcase);
     
-
+    return;
     for(int i=1; i<=5; i++){
        
         string Case= "Case"+std::to_string(i)+"_Tol";
@@ -549,7 +558,7 @@ void RunProblem(string& filenameBase, const int simcase)
     const bool isRefineMesh = false;
     const bool isPostProc = true;
     const bool isPostProcessFracDiagnostics = true;
-    const bool isFilterZeroNeumann = true;
+    const bool isFilterZeroNeumann = false;
 	bool isMHM = true; // may be set in json
     bool needsMergeMeshes = true; // may be set in json
     
@@ -638,17 +647,18 @@ void RunProblem(string& filenameBase, const int simcase)
 //        TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
     // ----- Changing BCs for some testing cases -----
+  
+    
+	// ----- Setting gmesh -----
+	// Code takes a fine and a coarse mesh to generate MHM data structure
+	aspace.SetGeometry(gmeshfine,gmeshcoarse);
+    
     if(simcase == 24){
         //linear pressure...
         ModifyBCsForCase4(gmeshfine);
         std::ofstream name3(outputFolder + "ModBCs.vtk");
         TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
     }
-    
-	// ----- Setting gmesh -----
-	// Code takes a fine and a coarse mesh to generate MHM data structure
-	aspace.SetGeometry(gmeshfine,gmeshcoarse);
-    
     {
 //        TPZPersistenceManager::OpenWrite("test.txt");
 //        TPZPersistenceManager::WriteToFile(gmeshfine);
@@ -734,6 +744,15 @@ void RunProblem(string& filenameBase, const int simcase)
         }
 	}
     
+    std::vector<TGPts> gptsvecztop,gptsveczbot;
+     if (0) {
+         gmeshfine->BuildConnectivity();
+         CreateListOfElements(gmeshfine, 0.1, 0.5 ,305 /*matidfrac*/, 200, 0.2, 0.9, gptsvecztop);
+         CreateListOfElements(gmeshfine, 0.1, 0.5 ,300 /*matidfrac*/, 200, 0.1, 0.9, gptsveczbot);
+      //   CreateListOfElements(<#TPZGeoMesh *gmesh#>, <#REAL z#>, <#int matid#>, <#int npts#>, <#REAL xmin#>, <#REAL xmax#>, <#std::vector<TGPts> &gptsvec#>);
+ //        CreateListOfElements(gmeshfine, 0.0, 300 /*matidfrac*/, 200, -0.8, 0.2, gptsvecztop);
+ //        CreateListOfElements(gmeshfine, 0.0, 305 /*matidfrac*/, 200, -0.2, 0.8, gptsveczbot);
+     }
 
     
     // ----- Creates the multiphysics compmesh -----
@@ -765,21 +784,9 @@ void RunProblem(string& filenameBase, const int simcase)
         // spatial properties
         
        
-         int64_t n_cells = 38466;
-         std::string grid_data = "/home/jose/GitHub/iMRS/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_coordinates.dat";
-         std::string props_data = "/Users/jose/GitHub/iMRS/iMRS/FracMeshes/TesisResults/UNISIM/maps/corner_grid_props.dat";
-         TRMSpatialPropertiesMap properties_map;
-         std::vector<size_t> SAMe_blocks = {5,5,5};
-//         properties_map.SetCornerGridMeshData(n_cells, grid_data, props_data, SAMe_blocks);
-
-         TMRSPropertiesFunctions reservoir_properties;
-//         reservoir_properties.set_function_type_s0(TMRSPropertiesFunctions::EConstantFunction);
-
-         auto kappa_phi = reservoir_properties.Create_Kappa_Phi(properties_map);
-         auto s0 = reservoir_properties.Create_s0();
-
-		// Creating coupled pressure/flow and transport analysis
-//        TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q, kappa_phi,s0);
+        
+        const int n_steps = sim_data.mTNumerics.m_n_steps;
+        const REAL dt = sim_data.mTNumerics.m_dt;
         
         TMRSSFIAnalysis * sfi_analysis = new TMRSSFIAnalysis(mixed_operator,transport_operator,must_opt_band_width_Q);
         
@@ -788,8 +795,7 @@ void RunProblem(string& filenameBase, const int simcase)
         sfi_analysis->Configure(glob_n_threads, UsePardiso_Q, UsingPzSparse);
 //        sfi_analysis->Configure(0, UsePardiso_Q, UsingPzSparse);
         if(isFilterZeroNeumann) FilterZeroNeumann(outputFolder,sim_data,sfi_analysis->m_mixed_module->StructMatrix(),mixed_operator);
-        const int n_steps = sim_data.mTNumerics.m_n_steps;
-        const REAL dt = sim_data.mTNumerics.m_dt;
+        
 
 		// Times to report solution
         TPZStack<REAL,100> reporting_times;
@@ -857,7 +863,16 @@ void RunProblem(string& filenameBase, const int simcase)
 //            }
             
             sfi_analysis->RunTimeStep();
-            if(isPostProcessFracDiagnostics){
+          //  mixed_operator->LoadSolutionFromMultiPhysics();
+            if (0) {
+                  std::ofstream fileout1(outputFolder + "vec1.txt");
+                  std::ofstream fileout2(outputFolder + "vec2.txt");
+                  PostProcFileForArticle(mixed_operator,gptsvecztop,fileout1);
+                  PostProcFileForArticle(mixed_operator,gptsveczbot,fileout2);
+              }
+            
+            
+            if(isPostProcessFracDiagnostics && it==1){
                 std::set<int> bcflux = {3,4,5}; // computes integral of quantity over these matids
                 ComputeDiagnostics(outputFolder, sim_data, bcflux, mixed_operator);
             }
@@ -929,7 +944,7 @@ void RunProblem(string& filenameBase, const int simcase)
             //sfi_analysis->m_mixed_module->AllZero(mixed_operator);
             fileFracSatVolCase2<< outFlux <<std::endl;
             
-            return;
+            
         }
     }
     else{
@@ -1016,6 +1031,12 @@ void RunProblem(string& filenameBase, const int simcase)
             }
             return;
         }
+        if (1) {
+              std::ofstream fileout1(outputFolder + "vec1.txt");
+              std::ofstream fileout2(outputFolder + "vec2.txt");
+              PostProcFileForArticle(mixed_operator,gptsvecztop,fileout1);
+            //  PostProcFileForArticle(mixed_operator,gptsveczbot,fileout2);
+          }
         
         mixAnalisys->fsoltransfer.TransferFromMultiphysics();
 //        if(isFilterZeroNeumann) VerifyIfNeumannIsExactlyZero(4,mixed_operator);
@@ -1050,6 +1071,9 @@ void RunProblem(string& filenameBase, const int simcase)
     cout << "\n\n\t--------- Total time of simulation = " << total_time << " seconds -------\n" << endl;
 
     // ----- Cleaning up -----
+    
+  
+    
     delete gmeshfine;
     delete gmeshcoarse;
 }
@@ -1242,7 +1266,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
     //@TODO: INGRESAR EN .JSON
 	std::vector<REAL> grav(3,0.0);
    // grav[2] = -9.8;//
-    grav[2] = -0.000010;//0.010;//
+    grav[2] = -0.00000;//0.010;//
     std::cout<<"ojo valor de gravedad"<<std::endl;
     sim_data.mTFluidProperties.mOilDensityRef = 0.86;
     sim_data.mTFluidProperties.mWaterDensityRef = 1.00;
@@ -1251,7 +1275,7 @@ void FillDataTransferDFN(string& filenameBase, string& outputFolder, TMRSDataTra
 	sim_data.mTNumerics.m_gravity = grav;
     sim_data.mTNumerics.m_IsGravityEffectsQ = false;
 	sim_data.mTNumerics.m_ISLinearKrModelQ = true;
-    sim_data.mTNumerics.m_ISLinearizedQuadraticModelQ = true;
+    sim_data.mTNumerics.m_ISLinearizedQuadraticModelQ = false;
     sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
 	sim_data.mTNumerics.m_max_iter_sfi=1;
 	sim_data.mTNumerics.m_max_iter_mixed=1;
@@ -1581,7 +1605,7 @@ void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
             if(!frac1el) DebugStop(); // Element has to have a fracture boundary
 			if(frac1bc)
 			{
-#ifdef PZ_LOG
+#ifdef PZ_LOG2
                 if(fracIntersectLogger.isDebugEnabled()){
                     std::stringstream sout;
                     sout << "Changing matid of el with matid " << frac1bc.Element()->MaterialId() << " to matid " << matid1 << std::endl;
@@ -1592,7 +1616,7 @@ void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 			}
 			else
 			{
-#ifdef PZ_LOG
+#ifdef PZ_LOG2
                 if(fracIntersectLogger.isDebugEnabled()){
                     std::stringstream sout;
                     sout << "Creating boundary condition with matid " << matid1 << std::endl;
@@ -1610,7 +1634,7 @@ void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
             if(!frac2el) DebugStop();
 			if(frac2bc)
 			{
-#ifdef PZ_LOG
+#ifdef PZ_LOG2
                 if(fracIntersectLogger.isDebugEnabled()){
                     std::stringstream sout;
                     sout << "Changing matid of el with matid " << frac2bc.Element()->MaterialId() << " to matid " << matid2 << std::endl;
@@ -1622,7 +1646,7 @@ void CreateIntersectionElementForEachFrac(TPZGeoMesh* gmeshfine,
 			}
 			else
 			{
-#ifdef PZ_LOG
+#ifdef PZ_LOG2
                 if(fracIntersectLogger.isDebugEnabled()){
                     std::stringstream sout;
                     sout << "Creating boundary condition with matid " << matid2 << std::endl;
@@ -1742,7 +1766,6 @@ void ModifyBCsForCase3(TPZGeoMesh* gmesh) {
 // ---------------------------------------------------------------------
 
 void ModifyBCsForCase4(TPZGeoMesh* gmesh) {
-//	DebugStop(); // fix me or generate the gmsh mesh correcty from the start and erase me
     const REAL zerotol = ZeroTolerance();
     
     for (auto gel: gmesh->ElementVec()) {
@@ -1751,7 +1774,7 @@ void ModifyBCsForCase4(TPZGeoMesh* gmesh) {
             gel->SetMaterialId(4);
         }; // 2d faces on boundary only
     };
-    
+
     for (auto gel: gmesh->ElementVec()) {
         if (!gel) continue;
         if (gel->MaterialId() != 4) continue;
@@ -1759,21 +1782,39 @@ void ModifyBCsForCase4(TPZGeoMesh* gmesh) {
         gel->CenterPoint(gel->NSides()-1, masscent);
         gel->X(masscent, xcenter);
         const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
-        const bool isYend = fabs(y-1500.) < zerotol;
         const bool isXinit = fabs(x+0) < zerotol;
         const bool isXend = fabs(x-1) < zerotol;
-        
-        // Default is no flux already set previously
-        
+
+
         // Setting inlet BCs
-        if(isXinit && (z < 0.05)){
+        if(isXend && (z < 0.05)){
                 gel->SetMaterialId(3);
-            
+
         }
         if(isXend && (z > 0.2)){
                 gel->SetMaterialId(2);
         }
     }
+    
+    for (auto gel: gmesh->ElementVec()) {
+        if (!gel) continue;
+        if (gel->MaterialId() != 1) continue;
+        TPZVec<REAL> masscent(3,0.0), xcenter(3,0.0);
+        gel->CenterPoint(gel->NSides()-1, masscent);
+        gel->X(masscent, xcenter);
+        const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+
+
+        // Default is no flux already set previously
+
+        // Setting inlet BCs
+        if(x>= 0.9 && (z >= 0.05) && (z <= 0.2)){
+                gel->SetMaterialId(5);
+
+        }
+//
+    }
+    
 }
 
 void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh) {
@@ -2740,3 +2781,109 @@ void Restart(TMRSSFIAnalysis * sfianalisis){
 //    return returnedMesh;
 //
 //}
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void PostProcFileForArticle(TPZMultiphysicsCompMesh* mpmesh, std::vector<TGPts>& gptsvec, std::ofstream& out) {
+    TPZGeoMesh* gmesh = mpmesh->Reference();
+    TPZCompMesh* fluxmesh = mpmesh->MeshVector()[0];
+    gmesh->ResetReference();
+    fluxmesh->LoadReferences();
+    
+    out.precision(8);
+    out << std::fixed;
+    
+//    std::cout << "\nvec = {";
+    for (auto gpt : gptsvec) {
+        TPZCompEl* cel = gpt.gel->Reference();
+        cel->LoadSolution();
+        TPZInterpolatedElement* intel = dynamic_cast<TPZInterpolatedElement*>(cel);
+        if(!intel) DebugStop();
+        TPZManVector<REAL,3> qvec(3,0.);
+        TPZMaterial* mat = intel->Material();
+        if(mat->Id() != 300 && mat->Id() != 305) DebugStop();
+        int var = mat->VariableIndex("Flux");
+        intel->Solution(gpt.qsi, var, qvec);
+        
+        
+//        std::cout << "xpt = " << gpt.x << " | qsi = " << gpt.qsi << " | qvec = " << qvec << std::endl;
+//        std::cout << ",{" << gpt.x << "," << qvec[0] << "}";
+        out << gpt.x << "\t" << qvec[0] <<std::endl;
+        
+    }
+//    std::cout << "};";
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+#include "pzvec_extras.h"
+void CreateListOfElements(TPZGeoMesh* gmesh, REAL z, REAL y,int matid, int npts, REAL xmin, REAL xmax, std::vector<TGPts>& gptsvec) {
+    gptsvec.resize(npts);
+    REAL dx = fabs((xmax-xmin))/(npts-1);
+    int64_t iniElInd = 0;
+    for (int ip = 0; ip < npts; ip++) {
+        REAL x = xmin + dx * ip;
+        TPZManVector<REAL,3> xco = {x, 0.5, z};
+        TPZManVector<REAL,3> qsi(3,0.);
+        
+        if(matid == 300){
+//            if (x < 0.45) {
+//                xco = {x, y, z};
+//            }
+//            if (x >=0.45 && x<= 0.5) {
+//                z = x - 0.35;
+//                xco = {x, y, z};
+//            }
+//            if (x >0.5 ) {
+//                z = 0.15;
+//                xco = {x, y, z};
+//            }
+//
+            z = 0.0625*x + 0.09375;
+            xco = {x, y, z};
+        }
+
+       
+        TPZGeoEl* geoel = gmesh->FindElement(xco, qsi, iniElInd, 3);
+        
+        if(!geoel) DebugStop();
+        TPZManVector<REAL,3> xtest(3,0.);
+        geoel->X(qsi, xtest);
+        xtest = xtest - xco;
+//        std::cout << "xdiff = " << xtest << std::endl;
+        REAL norm = Norm(xtest);
+        if (norm > 1.e-8) DebugStop();
+        int side = geoel->WhichSide(qsi);
+        TPZManVector<REAL,3> qsiside(geoel->SideDimension(side));
+        geoel->ProjectPoint(geoel->NSides()-1, qsi, side, qsiside);
+
+        TPZGeoElSide gelside(geoel,side);
+        TPZGeoElSide neigh = gelside.Neighbour();
+//        std::cout << "geoel mat id = " << geoel->MaterialId() << std::endl;
+        while (neigh != gelside) {
+//            std::cout << "neigmatid = " << neigh.Element()->MaterialId() << std::endl;
+            if(neigh.Element()->MaterialId() == matid){
+                break;
+            }
+            neigh = neigh.Neighbour();
+        }
+                
+        if(neigh.Element()->MaterialId() == matid){
+            TPZTransform<> t2(gelside.Dimension());
+            gelside.SideTransform3(neigh, t2);
+            TPZManVector<REAL,2> qsineigh(neigh.Dimension(),0.), qsi2d(2,0.);
+            t2.Apply(qsiside, qsineigh);
+            neigh.Element()->ProjectPoint(neigh.Side(), qsineigh, neigh.Element()->NSides()-1, qsi2d);
+            qsi = qsi2d;
+            geoel = neigh.Element();
+        }
+        else{
+            DebugStop();
+        }
+        
+                
+        gptsvec[ip].gel = geoel;
+        gptsvec[ip].qsi = qsi;
+        gptsvec[ip].x = x;
+    }
+}
