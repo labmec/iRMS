@@ -82,8 +82,23 @@ void TMRSDarcyFractureFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<
 #ifdef PZDEBUG
         if(datavec[0].divsol[0].size() != 2) DebugStop();
 #endif
-        // overwrite the total divergence for the inplane divergence
+        // swap the zero divergence that was in the 0 position with the total divergence to plot it
+        const STATE temp = datavec[0].divsol[0][0];
         datavec[0].divsol[0][0] = datavec[0].divsol[0][1];
+        datavec[0].divsol[0][1] = temp;
+    }
+    if (var == 1) {
+        TPZManVector<REAL,3> normal(3,0.);
+        TPZAxesTools<REAL>::GetNormal(datavec[0].axes, normal);
+        const REAL dot = Dot(datavec[0].sol[0], normal);
+        for (int i = 0; i < 3; i++) {
+            datavec[0].sol[0][i] -= dot * normal[i];
+        }
+//        TPZManVector<REAL,3> vec = {-0.9984256421484636, 0., -0.05609132821058783};
+//        const REAL qv = Dot(vec, datavec[0].sol[0]);
+//        for (int i = 0; i < 3; i++) {
+//            datavec[0].sol[0][i] = qv * vec[i];
+//        }
     }
     TMRSDarcyFlowWithMem<TMEM>::Solution(datavec,var,Solout);
 }

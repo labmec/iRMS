@@ -60,6 +60,7 @@ add_subdirectory(SimpleCaseOneFracture)
 add_subdirectory(CubicDomainNoFractures)
 add_subdirectory(DFNIMRS)
 add_subdirectory(Filling)
+add_subdirectory(check-example2-article)
 add_subdirectory(WANN)
 
 

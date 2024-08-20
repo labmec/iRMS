@@ -19,6 +19,8 @@
 // include dfn filereader
 #include "DFNMesh.h"
 #include "filereader.h"
+#include "TPZGeoMeshTools.h"
+#include <fstream>
 
 // ----- Namespaces -----
 using namespace std;
@@ -47,6 +49,7 @@ void ModifyPermeabilityForCase2(TPZGeoMesh* gmesh);
 void ModifyBCsForCase2(TPZGeoMesh* gmesh);
 void ModifyBCsForCase3(TPZGeoMesh* gmesh);
 void ModifyBCsForCase4(TPZGeoMesh* gmesh);
+void ModifyBCsForPaperIMRS(TPZGeoMesh* gmesh);
 void ModifyBCsFor2ParallelFractures(TPZGeoMesh* gmesh);
 bool fileExists(const fs::path& p, fs::file_status s = fs::file_status{});
 void CreateOutputFolders(std::string& outputFolder);
@@ -61,10 +64,21 @@ void VerifyIfNeumannIsExactlyZero(const int matidNeumann, TPZMultiphysicsCompMes
 struct TGPts {
   TPZGeoEl* gel = nullptr;
   TPZManVector<REAL, 2> qsi = {0., 0.};
-  REAL x = 0.;
+  REAL x = 0., y = 0., z = 0.;
+  int side = -1;
+  TPZManVector<REAL, 3> qvec = {0.,0.,0.};
+  
+  void Print(std::ostream& out = std::cout) {
+    out << "==> x = " << x << " | ";
+    out << "gind " << gel->Index() << " | ";
+    out << "side" << side << " | ";
+    out << "qsi = " << qsi << " | ";
+    out << "qvec = " << qvec << " | ";
+    out << "xyz = " << x << " " << y << " " << z << std::endl;
+  }
 };
-void PostProcFileForArticle(TPZMultiphysicsCompMesh* mpmesh, std::vector<TGPts>& gptsvec, std::ofstream& out);
-void CreateListOfElements(TPZGeoMesh* gmesh, REAL z, int matid, int npts, REAL xmin, REAL xmax, std::vector<TGPts>& gptsvec);
+void PostProcFileForArticle(TPZMultiphysicsCompMesh* mpmesh, std::vector<TGPts>& gptsvec, std::ofstream& out, const bool istopfrac);
+void CreateListOfElements(TPZGeoMesh* gmesh, REAL z, int matid, int npts, REAL xmin, REAL xmax, std::vector<TGPts>& gptsvec, const bool istopfunc);
 
 std::map<int, TPZVec<STATE>> computeIntegralOfNormalFlux(const std::set<int>& bcMatId, TPZMultiphysicsCompMesh* cmesh);
 
@@ -385,6 +399,158 @@ struct FractureQuantities {
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
+struct ElInfo {
+  TPZGeoElSide geoside;
+  REAL dot = -10000;
+  int64_t connectindex = -1;
+  int sideorient = 0;
+  TPZManVector<REAL,3> normal = {0.,0.,0.};
+  int64_t bot_c_ind = -1, top_c_ind = -1;
+  int bot_sideorient = 0, top_sideorient = 0;
+  
+  void Print() {
+    std::cout << "---------> Element index " << geoside.Element()->Index() << std::endl;
+    std::cout << "Connect index = " << connectindex << std::endl;
+    std::cout << "Dot = " << dot << std::endl;
+    std::cout << "Side orient = " << sideorient << std::endl;
+    std::cout << "Dimension = " << geoside.Element()->Dimension() << std::endl;
+    if (bot_c_ind > 0) {
+      std::cout << "bot_c_ind = " << bot_c_ind << std::endl;
+      std::cout << "top_c_ind = " << top_c_ind << std::endl;
+      std::cout << "bot_sideorient = " << bot_sideorient << std::endl;
+      std::cout << "top_sideorient = " << top_sideorient << std::endl;
+      std::cout << "normal = " << normal << std::endl;
+    }
+  }
+};
+
+#include "pzvec_extras.h"
+#include "TPZCompElHDivCollapsed.h"
+#include "pzshapetriang.h"
+void CheckFractureSideOrient(TPZCompMesh* fluxmesh) {
+  fluxmesh->Reference()->ResetReference();
+  fluxmesh->LoadReferences();
+  for (int iel = 0; iel < fluxmesh->NElements(); iel++) {
+    TPZCompEl* cel = fluxmesh->Element(iel);
+    if(!cel) continue;
+    TPZGeoEl* gel = cel->Reference();
+    if(gel->MaterialId() != 300 && gel->MaterialId() != 305) continue;
+    std::list<ElInfo> vecelinfo;
+    ElInfo fracel;
+    TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>* hdivcollapsedtri = dynamic_cast<TPZCompElHDivCollapsed<pzshape::TPZShapeTriang>*>(cel);
+    if(!hdivcollapsedtri) DebugStop();
+    auto botsideorient = hdivcollapsedtri->GetSideOrient(pzshape::TPZShapeTriang::NSides-1);
+    auto topsideorient = hdivcollapsedtri->GetSideOrient(pzshape::TPZShapeTriang::NSides);
+    fracel.bot_sideorient = botsideorient;
+    fracel.top_sideorient = topsideorient;
+    fracel.bot_c_ind = hdivcollapsedtri->ConnectIndex(pzshape::TPZShapeTriang::NFacets+1);
+    fracel.top_c_ind = hdivcollapsedtri->ConnectIndex(pzshape::TPZShapeTriang::NFacets+2);
+    if(botsideorient != -1) DebugStop();
+    if(topsideorient != 1) DebugStop();
+    TPZGeoElSide gelside(gel);
+    fracel.geoside = gelside;
+    TPZManVector<REAL,3> mynormal(3,0.), centpt(2,0.), neighnormal(3,0.);
+    gelside.CenterPoint(centpt);
+    gelside.Normal(centpt, mynormal);
+    int connectlocidfrac = hdivcollapsedtri->SideConnectLocId(0, gelside.Side());
+    fracel.connectindex = hdivcollapsedtri->ConnectIndex(connectlocidfrac);
+    fracel.dot = 1; // my normal dot with my own normal
+    fracel.sideorient = 1;
+    fracel.normal = mynormal;
+    vecelinfo.push_back(fracel);
+    TPZGeoElSide neighside = gelside.Neighbour();
+    int neigh3dcount = 0;
+    TPZGeoEl* firstneigh3d = nullptr;
+    TPZManVector<REAL, 3> firstneigh3dnormal(3,0.);
+    for (; neighside != gelside; neighside++) {
+      neighside.Normal(centpt, neighnormal);
+      auto dot = Dot(mynormal, neighnormal);
+      ElInfo neighinfo;
+      neighinfo.geoside = neighside;
+      neighinfo.dot = dot;
+      TPZCompEl* neighcel = neighside.Element()->Reference();
+      TPZInterpolationSpace* intel = dynamic_cast<TPZInterpolationSpace*>(neighcel);
+      if(!intel) continue;
+      int connectlocid = intel->SideConnectLocId(0, neighside.Side());
+      neighinfo.connectindex = intel->ConnectIndex(connectlocid);
+      neighinfo.sideorient = intel->GetSideOrient(neighside.Side());
+      
+      if(neighinfo.connectindex == fracel.top_c_ind) {
+        if (neighinfo.sideorient != -1) {
+          DebugStop();
+        }
+      }
+      if(neighinfo.connectindex == fracel.bot_c_ind) {
+        if (neighinfo.sideorient != 1) {
+          DebugStop();
+        }
+      }
+      
+      
+      vecelinfo.push_back(neighinfo);
+      if(neighside.Element()->Dimension() == 3){
+        auto neighsideorient = intel->GetSideOrient(neighside.Side());
+        if(neighsideorient == 1) dot *= -1;
+        if(fabs(dot-1.) > 1.e-6){
+//          DebugStop();
+        }
+        neigh3dcount++;
+        if(neigh3dcount == 2){
+          const REAL dot3d = Dot(firstneigh3dnormal, neighnormal);
+          if (dot3d > 0) {
+            DebugStop(); // Can 2 3d neighbors through the fracture have their normals aligned?
+          }
+        }
+        else if (neigh3dcount == 1){
+          firstneigh3d = neighside.Element();
+          firstneigh3dnormal = neighnormal;
+        }
+        else{
+          DebugStop();
+        }
+      }
+    }
+    // Print neighborhood information
+    for (auto it : vecelinfo) {
+      it.Print();
+    }
+  }
+}
+
+void AdjustFracNeighboursSideOrient(TPZCompMesh* fluxmesh) {
+  fluxmesh->Reference()->ResetReference();
+  fluxmesh->LoadReferences();
+  for (int iel = 0; iel < fluxmesh->NElements(); iel++) {
+    TPZCompEl* cel = fluxmesh->Element(iel);
+    if(!cel) continue;
+    TPZGeoEl* gel = cel->Reference();
+    if(gel->MaterialId() != 300 && gel->MaterialId() != 305) continue;
+    TPZGeoElSide gelside(gel);
+    TPZManVector<REAL,3> mynormal(3,0.), centpt(2,0.), neighnormal(3,0.);
+    gelside.CenterPoint(centpt);
+    gelside.Normal(centpt, mynormal);
+    TPZGeoElSide neighside = gelside.Neighbour();
+    for (; neighside != gelside; neighside++) {
+      neighside.Normal(centpt, neighnormal);
+      auto dot = Dot(mynormal, neighnormal);
+      if(neighside.Element()->Dimension() == 3){
+        TPZCompEl* neighcel = neighside.Element()->Reference();
+        TPZInterpolationSpace* intel = dynamic_cast<TPZInterpolationSpace*>(neighcel);
+        auto neighsideorient = intel->GetSideOrient(neighside.Side());
+        if(dot > 0){
+          intel->SetSideOrient(neighside.Side(), -1);
+        }
+        else{
+          intel->SetSideOrient(neighside.Side(), -1);
+        }
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
 void RunProblem(string& filenameBase, const int simcase) {
   auto start_time = std::chrono::steady_clock::now();
 
@@ -470,11 +636,46 @@ void RunProblem(string& filenameBase, const int simcase) {
     std::ofstream name3(outputFolder + "ModBCs.vtk");
     TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name3);
   }
-
+  
   // ----- Setting gmesh -----
   // Code takes a fine and a coarse mesh to generate MHM data structure
   aspace.SetGeometry(gmeshfine, gmeshcoarse);
 
+  if(isPostProcForArticle){
+    ModifyBCsForPaperIMRS(gmeshfine);
+  }
+
+#ifdef PZDEBUG
+//  for (int iel = 0; iel< gmeshfine->NElements(); iel++) {
+//    TPZGeoEl* gel = gmeshfine->Element(iel);
+//    if(!gel) DebugStop();
+//    if(gel->MaterialId() != 300 && gel->MaterialId() != 305) continue;
+//    int first = gel->FirstSide(1);
+//    int last = gel->FirstSide(2);
+//    for(int side = first ; side < last ; side++){
+//      TPZGeoElSide gelside(gel, side);
+//      TPZGeoElSide neigh = gelside.Neighbour();
+//      for (; neigh != gelside; neigh++) {
+//        int neighmatid = neigh.Element()->MaterialId();
+//        if(neighmatid != 300 && neighmatid != 305) continue;
+//        int neighside = neigh.Side();
+//        int myside = gelside.Side();
+//        for (int locnode = 0 ; locnode < 2 ; locnode++) {
+//          auto mylocnode = (myside-3 + locnode) % 3;
+//          auto neighlocnode = (neighside-3 + 1 - locnode) % 3;
+//          auto myglobnode = gel->NodeIndex(mylocnode);
+//          auto neighglobnode = neigh.Element()->NodeIndex(neighlocnode);
+//          if(myglobnode != neighglobnode){
+//            std::cout << "Elements with indices " << gelside.Element()->Index() << " and " << neigh.Element()->Index() << " are flipped" << std::endl;
+////            DebugStop();
+//          }
+//        }
+//      }
+//    }
+//  }
+  
+#endif
+  
   std::ofstream name4(outputFolder + "gmeshfine.vtk");
   TPZVTKGeoMesh::PrintGMeshVTK(gmeshfine, name4);
   {
@@ -518,17 +719,40 @@ void RunProblem(string& filenameBase, const int simcase) {
 
   std::vector<TGPts> gptsvecztop, gptsveczbot;
   if (isPostProcForArticle) {
-    CreateListOfElements(gmeshfine, 0.1, 300 /*matidfrac*/, 200, -0.8, 0.2, gptsvecztop);
-    CreateListOfElements(gmeshfine, -0.1, 305 /*matidfrac*/, 200, -0.2, 0.8, gptsveczbot);
+    // Example 2 - no snap
+//    CreateListOfElements(gmeshfine, 0.1, 300 /*matidfrac*/, 300, 0.01, 0.901, gptsvecztop, true);
+//    CreateListOfElements(gmeshfine, 0.1, 305 /*matidfrac*/, 200, 0.2, 0.9, gptsveczbot, false);
 
-    //        CreateListOfElements(gmeshfine, 0.0, 300 /*matidfrac*/, 200, -0.8, 0.2, gptsvecztop);
-    //        CreateListOfElements(gmeshfine, 0.0, 305 /*matidfrac*/, 200, -0.2, 0.8, gptsveczbot);
+    // Example 2 - with snap
+    CreateListOfElements(gmeshfine, 0.1, 305 /*matidfrac*/, 300, 0.1, 0.901, gptsvecztop, true);
+    CreateListOfElements(gmeshfine, 0.1, 300 /*matidfrac*/, 300, 0.2, 0.9, gptsveczbot, false);
+
+    // Example 1 - no snap
+//    CreateListOfElements(gmeshfine, 0.1, 300 /*matidfrac*/, 200, -0.8, 0.2, gptsvecztop, false);
+//    CreateListOfElements(gmeshfine, -0.1, 305 /*matidfrac*/, 200, -0.2, 0.8, gptsveczbot, false);
+
+    // Example 1 - with snap
+    //        CreateListOfElements(gmeshfine, 0.0, 300 /*matidfrac*/, 200, -0.8, 0.2, gptsvecztop, false);
+    //        CreateListOfElements(gmeshfine, 0.0, 305 /*matidfrac*/, 200, -0.2, 0.8, gptsveczbot, false);
   }
-
+  
   // ----- Creates the multiphysics compmesh -----
   const int order = 1;
   aspace.BuildMixedMultiPhysicsCompMesh(order);
   TPZMultiphysicsCompMesh* mixed_operator = aspace.GetMixedOperator();
+  
+  TPZCompMesh* fluxmesh = mixed_operator->MeshVector()[0];
+#ifdef PZDEBUG2
+  CheckFractureSideOrient(fluxmesh);
+  for (int64_t iel = 0; iel < fluxmesh->Reference()->NElements(); iel++) {
+    TPZGeoEl* gel = fluxmesh->Reference()->Element(iel);
+    if(gel->Dimension() != 3) continue;
+    const REAL area = gel->SideArea(gel->NSides()-1);
+    if (area < 1.e-10){
+//      DebugStop();
+    }
+  }
+#endif
 
   // ----- Analysis parameters -----
   RenumType renumtype = RenumType::EDefault;
@@ -727,10 +951,43 @@ void RunProblem(string& filenameBase, const int simcase) {
   if (isPostProcForArticle) {
     std::ofstream fileout1(outputFolder + "vec1.txt");
     std::ofstream fileout2(outputFolder + "vec2.txt");
-    PostProcFileForArticle(mixed_operator, gptsvecztop, fileout1);
-    PostProcFileForArticle(mixed_operator, gptsveczbot, fileout2);
+    PostProcFileForArticle(mixed_operator, gptsvecztop, fileout1, true);
+    PostProcFileForArticle(mixed_operator, gptsveczbot, fileout2, false);
+    for (int i = 0; i < gptsvecztop.size(); i++) {
+      gptsvecztop[i].Print();
+    }
   }
-
+  
+  gmeshfine->ResetReference();
+  fluxmesh->LoadReferences();
+//  TPZGeoEl* gel1 = gmeshfine->Element(1832);
+//  TPZGeoEl* gel2 = gmeshfine->Element(2229);
+//  gel1->Print();
+//  gel2->Print();
+//  
+//  TPZCompEl* cel1 = gel1->Reference();
+//  TPZCompEl* cel2 = gel2->Reference();
+//  
+//  const int ncon = cel1->NConnects();
+//  if(ncon != cel2->NConnects()) DebugStop();
+//  for (int ic = 0; ic < ncon; ic++) {
+//    TPZConnect& con1 = cel1->Connect(ic);
+//    con1.Print(*fluxmesh);
+//  }
+//  std::cout << "---------" << std::endl;
+//  for (int ic = 0; ic < ncon; ic++) {
+//    TPZConnect& con2 = cel2->Connect(ic);
+//    con2.Print(*fluxmesh);
+//  }
+  
+//  gmeshfine->ResetReference();
+//  mixed_operator->LoadReferences();
+//  TPZCompEl* cel2229 = gel2->Reference();
+//  TPZManVector<REAL,3> cent(2,0.), sol(3,0.);
+//  gel2->CenterPoint(gel2->NSides()-1, cent);
+//  cel2229->Solution(cent, 1, sol);
+//  std::cout << "sol of el = " << sol << std::endl;
+  
   auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start_time).count() / 1000.;
   cout << "\n\n\t--------- Total time of simulation = " << total_time << " seconds -------\n"
        << endl;
@@ -1930,28 +2187,55 @@ void FilterZeroNeumann(std::string& outputFolder, TMRSDataTransfer& sim_data, TP
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 
-void PostProcFileForArticle(TPZMultiphysicsCompMesh* mpmesh, std::vector<TGPts>& gptsvec, std::ofstream& out) {
+void PostProcFileForArticle(TPZMultiphysicsCompMesh* mpmesh, std::vector<TGPts>& gptsvec, std::ofstream& out, const bool istopfrac) {
   TPZGeoMesh* gmesh = mpmesh->Reference();
   TPZCompMesh* fluxmesh = mpmesh->MeshVector()[0];
   gmesh->ResetReference();
-  fluxmesh->LoadReferences();
+//  fluxmesh->LoadReferences();
+  mpmesh->LoadReferences();
 
   out.precision(8);
   out << std::fixed;
 
   //    std::cout << "\nvec = {";
-  for (auto gpt : gptsvec) {
+  for (auto& gpt : gptsvec) {
     TPZCompEl* cel = gpt.gel->Reference();
-    TPZInterpolatedElement* intel = dynamic_cast<TPZInterpolatedElement*>(cel);
-    if (!intel) DebugStop();
+//    TPZInterpolatedElement* intel = dynamic_cast<TPZInterpolatedElement*>(cel);
+//    if (!intel) DebugStop();
     TPZManVector<REAL, 3> qvec(3, 0.);
-    TPZMaterial* mat = intel->Material();
+//    TPZMaterial* mat = intel->Material();
+    TPZMaterial* mat = cel->Material();
     if (mat->Id() != 300 && mat->Id() != 305) DebugStop();
     int var = mat->VariableIndex("Flux");
-    intel->Solution(gpt.qsi, var, qvec);
+//    intel->Solution(gpt.qsi, var, qvec);
+    cel->Solution(gpt.qsi, var, qvec);
+    qvec[1] = 0.;
+      
+    TPZManVector<REAL,3> vec = {-1.,0.,0.};
+    if (istopfrac){
+        vec = {-0.9984256421484636, 0., -0.05609132821058783};
+        if (gpt.x < 0.45) {
+            vec = {-1.,0.,0.};
+        }
+        if (gpt.x >=0.45 && gpt.x<= 0.5) {
+            vec = {-0.70710678, 0., -0.70710678};
+        }
+        if (gpt.x >0.5 ) {
+            vec = {-1.,0.,0.};
+        }
+    }
+    const REAL normq = Norm(qvec);
+    const REAL qv = Dot(vec, qvec);
+    if(normq - fabs(qv) > 1.e-3){
+      std::cout << "im here";
+    }
+    for (int i = 0; i < 3; i++) {
+      qvec[i] = qv * vec[i];
+    }
+    gpt.qvec = qvec;
     //        std::cout << "xpt = " << gpt.x << " | qsi = " << gpt.qsi << " | qvec = " << qvec << std::endl;
     //        std::cout << ",{" << gpt.x << "," << qvec[0] << "}";
-    out << gpt.x << "\t" << qvec[0] << std::endl;
+    out << gpt.x << "\t" << normq*qvec[0]/std::fabs(qvec[0]) << std::endl;
   }
   //    std::cout << "};";
 }
@@ -1959,54 +2243,113 @@ void PostProcFileForArticle(TPZMultiphysicsCompMesh* mpmesh, std::vector<TGPts>&
 // ---------------------------------------------------------------------
 // ---------------------------------------------------------------------
 #include "pzvec_extras.h"
-void CreateListOfElements(TPZGeoMesh* gmesh, REAL z, int matid, int npts, REAL xmin, REAL xmax, std::vector<TGPts>& gptsvec) {
-  gptsvec.resize(npts);
-  REAL dx = fabs((xmax - xmin)) / (npts - 1);
-  int64_t iniElInd = 0;
-  for (int ip = 0; ip < npts; ip++) {
-    REAL x = xmin + dx * ip;
-    TPZManVector<REAL, 3> xco = {x, 0., z};
-    TPZManVector<REAL, 3> qsi(3, 0.);
+void CreateListOfElements(TPZGeoMesh* gmesh, REAL z, int matid, int npts, REAL xmin, REAL xmax, std::vector<TGPts>& gptsvec, bool istopfunc) {
+    gptsvec.resize(npts);
+    REAL dx = fabs((xmax - xmin)) / (npts - 1);
+    
+    for (int ip = 0; ip < npts; ip++) {
+        REAL x = xmin + dx * ip;
+        REAL zused = z;
+        REAL y = 0.5;
+        if (istopfunc) {
+            //      z = 0.0625*x + 0.09375;
+            zused = 0.09943820224719102 + 0.05617977528089887 * x;
+            //      zused = 0.09943820224719101 + 0.05617977528089887 * x;
+            if (x < 0.45) {
+                zused = 0.1;
+            }
+            if (x >=0.45 && x<= 0.5) {
+                zused = x - 0.35;
+            }
+            if (x >0.5 ) {
+                zused = 0.15;
+            }
+        }
+        TPZManVector<REAL, 3> xco = {x, y, zused};
+        TPZManVector<REAL, 3> qsi(3, 0.);
+        REAL mindist = 100;
+        
+        int64_t iniElInd = -1;
 
-    TPZGeoEl* geoel = gmesh->FindElement(xco, qsi, iniElInd, 3);
-    if (!geoel) DebugStop();
-    TPZManVector<REAL, 3> xtest(3, 0.);
-    geoel->X(qsi, xtest);
-    xtest = xtest - xco;
-    //        std::cout << "xdiff = " << xtest << std::endl;
-    REAL norm = Norm(xtest);
-    if (norm > 1.e-8) DebugStop();
-    int side = geoel->WhichSide(qsi);
-    TPZManVector<REAL, 3> qsiside(geoel->SideDimension(side));
-    geoel->ProjectPoint(geoel->NSides() - 1, qsi, side, qsiside);
+        for (int iel = 0; iel < gmesh->NElements(); iel++) {
+            TPZGeoEl* gel = gmesh->Element(iel);
+            if (gel->MaterialId() != matid) {
+                continue;
+            }
 
-    TPZGeoElSide gelside(geoel, side);
-    TPZGeoElSide neigh = gelside.Neighbour();
-    //        std::cout << "geoel mat id = " << geoel->MaterialId() << std::endl;
-    while (neigh != gelside) {
-      //            std::cout << "neigmatid = " << neigh.Element()->MaterialId() << std::endl;
-      if (neigh.Element()->MaterialId() == matid) {
-        break;
-      }
-      neigh = neigh.Neighbour();
+            TPZGeoElSide gelside(gel);
+            TPZManVector<REAL,3> cent(3,0.);
+            gelside.CenterX(cent);
+            REAL dista = dist(cent,xco);
+            if(dista < mindist){
+                mindist = dista;
+                iniElInd = iel;
+            }
+        }
+        if(iniElInd == -1) DebugStop();
+        
+//        TPZGeoEl* geoel = gmesh->FindElement(xco, qsi, iniElInd, 2);
+        TPZGeoEl* geoel = TPZGeoMeshTools::FindElementByMatId(gmesh, xco, qsi, iniElInd, {matid});
+        if (!geoel) DebugStop();
+        TPZManVector<REAL, 3> xtest(3, 0.), diff(3,0.);
+        geoel->X(qsi, xtest);
+        diff = xtest - xco;
+        //    //        std::cout << "xdiff = " << xtest << std::endl;
+        REAL norm = Norm(diff);
+        if(geoel->MaterialId() != matid) DebugStop();
+        if (norm > 1.e-2) DebugStop();
+                    
+        gptsvec[ip].gel = geoel;
+        gptsvec[ip].qsi = qsi;
+        gptsvec[ip].x = xtest[0];
+        gptsvec[ip].y = xtest[1];
+        gptsvec[ip].z = xtest[2];
+        gptsvec[ip].side = geoel->WhichSide(qsi);
     }
+}
 
-    if (neigh.Element()->MaterialId() == matid) {
-      TPZTransform<> t2(gelside.Dimension());
-      gelside.SideTransform3(neigh, t2);
-      TPZManVector<REAL, 2> qsineigh(neigh.Dimension(), 0.), qsi2d(2, 0.);
-      t2.Apply(qsiside, qsineigh);
-      neigh.Element()->ProjectPoint(neigh.Side(), qsineigh, neigh.Element()->NSides() - 1, qsi2d);
-      qsi = qsi2d;
-      geoel = neigh.Element();
-    } else {
-      DebugStop();
+// ---------------------------------------------------------------------
+// ---------------------------------------------------------------------
+
+void ModifyBCsForPaperIMRS(TPZGeoMesh* gmesh) {
+  const REAL zerotol = ZeroTolerance();
+  for (auto gel: gmesh->ElementVec()) {
+    if (!gel) continue;
+    if (gel->MaterialId() == 2 || gel->MaterialId() == 3) {
+      gel->SetMaterialId(4);
+    }; // 2d faces on boundary only
+  };
+  for (auto gel: gmesh->ElementVec()) {
+    if (!gel) continue;
+    if (gel->MaterialId() != 4) continue;
+    TPZVec<REAL> masscent(2,0.0), xcenter(3,0.0);
+    gel->CenterPoint(gel->NSides()-1, masscent);
+    gel->X(masscent, xcenter);
+    const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+    const bool isXinit = fabs(x+0) < zerotol;
+    const bool isXend = fabs(x-1) < zerotol;
+    // Setting inlet BCs
+    if(isXend && (z < 0.05)){
+        gel->SetMaterialId(3);
     }
-
-    gptsvec[ip].gel = geoel;
-    gptsvec[ip].qsi = qsi;
-    gptsvec[ip].x = x;
+    if(isXend && (z > 0.2)){
+        gel->SetMaterialId(2);
+    }
   }
+//  for (auto gel: gmesh->ElementVec()) {
+//    if (!gel) continue;
+//    if (gel->MaterialId() != 1) continue;
+//    TPZVec<REAL> masscent(3,0.0), xcenter(3,0.0);
+//    gel->CenterPoint(gel->NSides()-1, masscent);
+//    gel->X(masscent, xcenter);
+//    const REAL x = xcenter[0], y = xcenter[1], z = xcenter[2];
+//    // Default is no flux already set previously
+//    // Setting inlet BCs
+//    if(x>= 0.9 && (z >= 0.05) && (z <= 0.2)){
+//        gel->SetMaterialId(5);
+//    }
+////
+//  }
 }
 
 // ---------------------------------------------------------------------
