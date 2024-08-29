@@ -19,6 +19,7 @@
 #include "TMRSSavable.h"
 #include "TRSLinearInterpolator.h"
 #include "pzmanvector.h"
+#include "Material/TPZMatTypes.h"
 
 /// Object that stores all data required to set up a reservoir problem
 class TMRSDataTransfer : public TMRSSavable {
@@ -383,6 +384,11 @@ class TMRSDataTransfer : public TMRSSavable {
      */
     std::map<int, std::pair<int, REAL>> mBCTransportMatIdToTypeValue;
 
+    /**
+     * @brief Contains the functions to be applied on the boundaries in a map. Key = matidOfBC, value = functionID (0 if no function is prescribed)
+     */
+    std::map<int, std::pair<int,ForcingFunctionBCType<REAL>>> mBCMatIdToFunctionId;
+
     /** @brief Default constructor */
     TBoundaryConditions() {}
 
@@ -396,6 +402,7 @@ class TMRSDataTransfer : public TMRSSavable {
       mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
       mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
       mDomainNameAndMatId = other.mDomainNameAndMatId;
+      mBCMatIdToFunctionId = other.mBCMatIdToFunctionId;
     }
 
     /** @brief Copy assignment operator*/
@@ -406,6 +413,7 @@ class TMRSDataTransfer : public TMRSSavable {
         mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
         mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
         mDomainNameAndMatId = other.mDomainNameAndMatId;
+        mBCMatIdToFunctionId = other.mBCMatIdToFunctionId;
       }
       return *this;
     }

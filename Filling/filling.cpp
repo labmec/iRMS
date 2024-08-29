@@ -21,11 +21,46 @@ namespace fs = std::filesystem;
 // ----- End of namespaces -----
 
 // ----- Global vars -----
-const int glob_n_threads = 8;
+const int glob_n_threads = 0;
 
 // ----- Functions -----
 TPZGeoMesh* ReadMeshFromGmsh(TMRSDataTransfer& sim_data);
 void FillDataTransfer(std::string filenameBase, TMRSDataTransfer& sim_data);
+
+// Definition of the left and right boundary conditions
+auto left_pressure = [](const TPZVec<REAL> &coord, TPZVec<STATE> &rhsVal, TPZFMatrix<STATE> &matVal)
+{
+  REAL y = coord[1]; // y is in mm
+  REAL water_height = 500.0;
+  if (y <= water_height)
+  {
+    rhsVal[0] = 0.001 * (water_height - y);
+  }
+  else
+  {
+    rhsVal[0] = 0.0;
+  }
+};
+
+auto right_pressure = [](const TPZVec<REAL> &coord, TPZVec<STATE> &rhsVal, TPZFMatrix<STATE> &matVal)
+{
+  REAL y = coord[1]; // y is in mm
+  REAL water_height = 0.0;
+  if (y <= water_height)
+  {
+    rhsVal[0] = 0.001 * (water_height - y);
+  }
+  else
+  {
+    rhsVal[0] = 0.0;
+  }
+};
+
+std::map<int,ForcingFunctionBCType<REAL>> forcingfunctionBC = {
+    {0, nullptr},
+    {1, left_pressure},
+    {2, right_pressure}
+};
 
 // ----- Logger -----
 #ifdef PZ_LOG
@@ -113,7 +148,7 @@ int main(int argc, char* argv[]) {
 
     TPZFastCondensedElement::fSkipLoadSolution = false;
     const int typeToPPinit = 1;   // 0: both, 1: p/flux, 2: saturation
-    const int typeToPPsteps = 2;  // 0: both, 1: p/flux, 2: saturation
+    const int typeToPPsteps = 0;  // 0: both, 1: p/flux, 2: saturation
 
     // Looping over time steps
     for (int it = 1; it <= n_steps; it++) {
@@ -130,7 +165,7 @@ int main(int argc, char* argv[]) {
         cout << "\n---------------------- SFI Step " << it << " ----------------------" << endl;
         std::cout << "Simulation time:  " << sim_time << std::endl;
         mp_cmesh->UpdatePreviousState(-1.);
-        sfi_analysis->PostProcessTimeStep(typeToPPsteps);
+        sfi_analysis->PostProcessTimeStep(typeToPPsteps, mp_cmesh->Dimension());
         pos++;
         current_report_time = reporting_times[pos];
 
@@ -222,6 +257,7 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
   if (input.find("Boundary") == input.end()) DebugStop();
   std::map<int, std::pair<int, REAL>>& BCFlowMatIdToTypeValue = sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue;
   std::map<int, std::pair<int, REAL>>& BCTransportMatIdToTypeValue = sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue;
+  std::map<int, std::pair<int, ForcingFunctionBCType<REAL>>>& BCMatIdToFunctionId = sim_data.mTBoundaryConditions.mBCMatIdToFunctionId;
   for (auto& bc : input["Boundary"]) {
     if (bc.find("matid") == bc.end()) DebugStop();
     if (bc.find("type") == bc.end()) DebugStop();
@@ -231,10 +267,15 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
     const int type = bc["type"];
     const REAL value = bc["value"];
     const std::string name = bc["name"];
+    int functionID = 0;
+    if (bc.find("functionID") != bc.end()) {
+      functionID = bc["functionID"];
+    }
     sim_data.mTBoundaryConditions.mDomainNameAndMatId[name] = matid;
     if (BCFlowMatIdToTypeValue.find(matid) != BCFlowMatIdToTypeValue.end()) DebugStop();
     BCFlowMatIdToTypeValue[matid] = std::make_pair(type, value);
     BCTransportMatIdToTypeValue[matid] = std::make_pair(type, value);
+    BCMatIdToFunctionId[matid] = std::make_pair(functionID, forcingfunctionBC[functionID]);
   }
 
   // Transport properties

@@ -1,5 +1,4 @@
 {
-    // "$schema": "../dfn_schema.json",
     "Mesh": "module.msh",
     
     "Domains": [
@@ -15,13 +14,15 @@
             "name": "bcl",
             "matid": 2,
             "type": 0, // imposed pressure
-            "value": 1.0
+            "value": 1.0,
+            "functionID": 1
         },
         {
             "name": "bcr",
             "matid": 3,
             "type": 0,  // imposed pressure
-            "value": 0.0
+            "value": 0.0,
+            "functionID": 2
         },
         {
             "name": "bct",
@@ -38,10 +39,9 @@
         
     ],
 
-    // "RunWithTransport": false,
     "RunWithTransport": true,
-    "DeltaT": 20.0,
-    "NSteps": 100,    
+    "DeltaT": 50.0,
+    "NSteps": 500,    
 
     "SimulationDim": 2
 }
