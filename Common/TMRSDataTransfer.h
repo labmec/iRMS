@@ -387,7 +387,12 @@ class TMRSDataTransfer : public TMRSSavable {
     /**
      * @brief Contains the functions to be applied on the boundaries in a map. Key = matidOfBC, value = functionID (0 if no function is prescribed)
      */
-    std::map<int, std::pair<int,ForcingFunctionBCType<REAL>>> mBCMatIdToFunctionId;
+    std::map<int, std::pair<int,ForcingFunctionBCType<REAL>>> mBCFlowMatIdToFunctionId;
+
+    /**
+     * @brief Contains the saturation functions to be applied on the boundaries in a map. Key = matidOfBC, value = functionID (0 if no function is prescribed)
+     */
+    std::map<int, std::pair<int,ForcingFunctionBCType<REAL>>> mBCTransportMatIdToFunctionId;
 
     /** @brief Default constructor */
     TBoundaryConditions() {}
@@ -402,7 +407,8 @@ class TMRSDataTransfer : public TMRSSavable {
       mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
       mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
       mDomainNameAndMatId = other.mDomainNameAndMatId;
-      mBCMatIdToFunctionId = other.mBCMatIdToFunctionId;
+      mBCFlowMatIdToFunctionId = other.mBCFlowMatIdToFunctionId;
+      mBCTransportMatIdToFunctionId = other.mBCTransportMatIdToFunctionId;
     }
 
     /** @brief Copy assignment operator*/
@@ -413,7 +419,8 @@ class TMRSDataTransfer : public TMRSSavable {
         mBCFlowFracMatIdToTypeValue = other.mBCFlowFracMatIdToTypeValue;
         mBCTransportMatIdToTypeValue = other.mBCTransportMatIdToTypeValue;
         mDomainNameAndMatId = other.mDomainNameAndMatId;
-        mBCMatIdToFunctionId = other.mBCMatIdToFunctionId;
+        mBCFlowMatIdToFunctionId = other.mBCFlowMatIdToFunctionId;
+        mBCTransportMatIdToFunctionId = other.mBCTransportMatIdToFunctionId;
       }
       return *this;
     }
@@ -539,7 +546,6 @@ class TMRSDataTransfer : public TMRSSavable {
       m_need_merge_meshes_Q = true;
       m_SpaceType = ENone;
       m_gravity.resize(3, 0.0);
-      m_gravity[2] = -10.0;
       m_ISLinearKrModelQ = true;
       m_nThreadsMixedProblem = 0;
       m_MortarBorderElementPresOrder = 0;

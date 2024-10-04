@@ -4,6 +4,7 @@
     "Domains": [
     {
         "name": "dom",
+        "dimension": 2,
         "matid":1,
         "K": 1.0,
         "phi": 0.2
@@ -15,33 +16,45 @@
             "matid": 2,
             "type": 0, // imposed pressure
             "value": 1.0,
-            "functionID": 1
+            "functionID": 1,
+            "ExternalSaturation": 0.0,
+            "SaturationFunctionID": 0
         },
         {
             "name": "bcr",
             "matid": 3,
             "type": 0,  // imposed pressure
             "value": 0.0,
-            "functionID": 2
+            "functionID": 2,
+            "ExternalSaturation": 0.0,
+            "SaturationFunctionID": 0
         },
         {
             "name": "bct",
             "matid": 4,
             "type": 1, // imposed flux
-            "value": 0.0
+            "value": 0.0,
+            "functionID": 0,
+            "ExternalSaturation": 0.0,
+            "SaturationFunctionID": 0
         },
         {
             "name": "bcb",
             "matid": 5,
             "type": 1, // imposed flux
-            "value": 0.0
+            "value": 0.0,
+            "functionID": 0,
+            "ExternalSaturation": 0.0,
+            "SaturationFunctionID": 0
         }
         
     ],
 
     "RunWithTransport": true,
-    "DeltaT": 50.0,
-    "NSteps": 500,    
-
-    "SimulationDim": 2
+    "TransportParameters":
+        {
+            "DeltaT": 50.0,
+            "NSteps": 500
+        },
+    "Gravity": [0.0, 0.0, 0.0]
 }

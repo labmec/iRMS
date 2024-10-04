@@ -256,8 +256,9 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
   // ------------------------ Reading 3D Domain BC matids ------------------------
   if (input.find("Boundary") == input.end()) DebugStop();
   std::map<int, std::pair<int, REAL>>& BCFlowMatIdToTypeValue = sim_data.mTBoundaryConditions.mBCFlowMatIdToTypeValue;
+  std::map<int, std::pair<int, ForcingFunctionBCType<REAL>>>& BCFlowMatIdToFunctionId = sim_data.mTBoundaryConditions.mBCFlowMatIdToFunctionId;
   std::map<int, std::pair<int, REAL>>& BCTransportMatIdToTypeValue = sim_data.mTBoundaryConditions.mBCTransportMatIdToTypeValue;
-  std::map<int, std::pair<int, ForcingFunctionBCType<REAL>>>& BCMatIdToFunctionId = sim_data.mTBoundaryConditions.mBCMatIdToFunctionId;
+  std::map<int, std::pair<int, ForcingFunctionBCType<REAL>>>& BCTransportMatIdToFunctionId = sim_data.mTBoundaryConditions.mBCTransportMatIdToFunctionId;
   for (auto& bc : input["Boundary"]) {
     if (bc.find("matid") == bc.end()) DebugStop();
     if (bc.find("type") == bc.end()) DebugStop();
@@ -271,27 +272,43 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
     if (bc.find("functionID") != bc.end()) {
       functionID = bc["functionID"];
     }
+    REAL external_saturation = 0.0;
+    int saturation_functionID = 0;
+    if (input["RunWithTransport"])
+    {
+      if (bc.find("ExternalSaturation") == bc.end()) DebugStop();
+      external_saturation = bc["ExternalSaturation"];
+      if (bc.find("SaturationFunctionID") != bc.end()) {
+        saturation_functionID = bc["SaturationFunctionID"];
+      }
+    }
     sim_data.mTBoundaryConditions.mDomainNameAndMatId[name] = matid;
     if (BCFlowMatIdToTypeValue.find(matid) != BCFlowMatIdToTypeValue.end()) DebugStop();
     BCFlowMatIdToTypeValue[matid] = std::make_pair(type, value);
-    BCTransportMatIdToTypeValue[matid] = std::make_pair(type, value);
-    BCMatIdToFunctionId[matid] = std::make_pair(functionID, forcingfunctionBC[functionID]);
+    BCFlowMatIdToFunctionId[matid] = std::make_pair(functionID, forcingfunctionBC[functionID]);
+    BCTransportMatIdToTypeValue[matid] = std::make_pair(type, external_saturation);
+    BCTransportMatIdToFunctionId[matid] = std::make_pair(functionID, forcingfunctionBC[functionID]);
   }
 
-  // Transport properties
+  // ------------------------ Transport Parameters ------------------------
   if (input.find("RunWithTransport") != input.end()) {
     sim_data.mTNumerics.m_run_with_transport = input["RunWithTransport"];
     if (sim_data.mTNumerics.m_run_with_transport) {
-      if (input.find("DeltaT") == input.end()) DebugStop();
-      sim_data.mTNumerics.m_dt = input["DeltaT"];
-      if (input.find("NSteps") == input.end()) DebugStop();
-      sim_data.mTNumerics.m_n_steps = input["NSteps"];
+      if (input.find("TransportParameters") == input.end()) DebugStop();
+      auto transport_params = input["TransportParameters"];
+      if (transport_params.find("DeltaT") == transport_params.end()) DebugStop();
+      sim_data.mTNumerics.m_dt = transport_params["DeltaT"];
+      if (transport_params.find("NSteps") == transport_params.end()) DebugStop();
+      sim_data.mTNumerics.m_n_steps = transport_params["NSteps"];
     }
-  } else {
-    DebugStop();  // Please set run with tranport in json
-                  //        sim_data.mTNumerics.m_n_steps = 100;
-                  //        sim_data.mTNumerics.m_dt      = 1.e7;//*day;
   }
+
+  if (input.find("Gravity") == input.end()) DebugStop();
+  std::vector<REAL> grav(3, 0.0);
+  for (int i = 0; i < 3; i++) {
+    grav[i] = input["Gravity"][i];
+  }
+  sim_data.mTNumerics.m_gravity = grav;
 
   // ------------------------ Setting extra stuff that is still not in JSON ------------------------
   const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
@@ -306,9 +323,6 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
   sim_data.mTNumerics.m_res_tol_transport = 0.0001;
   sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
   sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-  std::vector<REAL> grav(3, 0.0);
-  grav[1] = 0.0;  //-9.8*(1.0e-6); // hor
-  sim_data.mTNumerics.m_gravity = grav;
   sim_data.mTNumerics.m_ISLinearKrModelQ = true;
   sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
   sim_data.mTNumerics.m_max_iter_sfi = 1;

@@ -59,6 +59,7 @@ void TMRSDataTransfer::Read(TPZStream &buf, void *context){
 
 int TMRSDataTransfer::ClassId() const{
     DebugStop();
+    return 1;
 }
 void TMRSDataTransfer::TFluidProperties::CreateLinearDensityFunction(){
     mWaterDensityF = [this](REAL &p){

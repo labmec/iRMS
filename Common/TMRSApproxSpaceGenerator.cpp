@@ -2821,7 +2821,7 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
     if(!volume) DebugStop();
         
     // ---------------> Adding volume boundary condition materials
-    auto& functionBCmap = mSimData.mTBoundaryConditions.mBCMatIdToFunctionId;
+    auto& functionBCmap = mSimData.mTBoundaryConditions.mBCFMatIdToFunctionId;
 	for(auto &chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
 		TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
 		int bc_id   = chunk.first;
