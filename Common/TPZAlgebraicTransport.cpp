@@ -339,6 +339,24 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
     return std::make_pair(lambda_star, std::make_pair(dlambda_starL, dlambda_starR));
 }
 
+void TPZAlgebraicTransport::ContributeBCInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int matid){
+
+    REAL fluxint = fInterfaceData[matid].fIntegralFlux[index];
+    const bool noflux = fabs(fluxint) < 1.e-6 ? true : false;
+    if (fluxint < 0.0 && !noflux){ //inlet
+        REAL s_inlet = fboundaryCMatVal[matid].second; //external saturation
+        ef(0,0) = s_inlet*fluxint*fdt;
+    }
+    else if (!noflux){ //outlet
+
+        std::pair<int64_t, int64_t> lr_index = fInterfaceData[matid].fLeftRightVolIndex[index];
+        REAL fw_L= fCellsData.fWaterfractionalflow[lr_index.first];
+        REAL dfwSw_L = fCellsData.fDerivativeWfractionalflow[lr_index.first];
+        ef(0,0) = fw_L*fluxint* fdt;
+        ek(0,0) = dfwSw_L*fluxint* fdt;
+    }
+}
+
 void TPZAlgebraicTransport::ContributeBCInletInterface(int index, TPZFMatrix<double> &ef, int inId){
    
     REAL s_inlet = 1.0;// fboundaryCMatVal[inId].second;;
