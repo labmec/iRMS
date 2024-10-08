@@ -147,7 +147,7 @@ int main(int argc, char* argv[]) {
     //        std::ofstream fileCilamce530(outputFolder + "IntegratedSatFrac530.txt");
 
     TPZFastCondensedElement::fSkipLoadSolution = false;
-    const int typeToPPinit = 1;   // 0: both, 1: p/flux, 2: saturation
+    const int typeToPPinit = 0;   // 0: both, 1: p/flux, 2: saturation
     const int typeToPPsteps = 0;  // 0: both, 1: p/flux, 2: saturation
 
     // Looping over time steps
@@ -156,7 +156,7 @@ int main(int argc, char* argv[]) {
       sfi_analysis->m_transport_module->SetCurrentTime(dt);
       sfi_analysis->RunTimeStep();
       if (it == 1) {
-        sfi_analysis->PostProcessTimeStep(typeToPPinit);
+        sfi_analysis->PostProcessTimeStep(typeToPPinit, mp_cmesh->Dimension());
       }
       mp_cmesh->LoadSolution(mp_cmesh->Solution());
 
