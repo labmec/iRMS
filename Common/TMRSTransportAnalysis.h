@@ -66,7 +66,7 @@ private:
     
     TPZFMatrix<STATE>  M_diag;
     
-    bool m_parallel_execution_Q = true;
+    bool m_parallel_execution_Q = false;
     
     Eigen::SparseMatrix<REAL> m_mass;
     Eigen::SparseMatrix<REAL> m_transmissibility;

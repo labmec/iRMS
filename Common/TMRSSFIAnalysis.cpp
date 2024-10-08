@@ -260,7 +260,7 @@ void TMRSSFIAnalysis::FillProperties(){
 					
 				}
 			}
-            
+            m_transport_module->fAlgebraicTransport.outletmatid =3;
 //            kappa_phi[3]=1.0;
 //                FillProperties(&m_transport_module->fAlgebraicTransport, kappa_phi);
         }
