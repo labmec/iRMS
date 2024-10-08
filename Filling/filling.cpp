@@ -287,7 +287,7 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
     BCFlowMatIdToTypeValue[matid] = std::make_pair(type, value);
     BCFlowMatIdToFunctionId[matid] = std::make_pair(functionID, forcingfunctionBC[functionID]);
     BCTransportMatIdToTypeValue[matid] = std::make_pair(type, external_saturation);
-    BCTransportMatIdToFunctionId[matid] = std::make_pair(functionID, forcingfunctionBC[functionID]);
+    BCTransportMatIdToFunctionId[matid] = std::make_pair(saturation_functionID, forcingfunctionBC[saturation_functionID]);
   }
 
   // ------------------------ Transport Parameters ------------------------
