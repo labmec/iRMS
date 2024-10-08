@@ -2821,7 +2821,7 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
     if(!volume) DebugStop();
         
     // ---------------> Adding volume boundary condition materials
-    auto& functionBCmap = mSimData.mTBoundaryConditions.mBCFMatIdToFunctionId;
+    auto& FlowFunctionBCmap = mSimData.mTBoundaryConditions.mBCFlowMatIdToFunctionId;
 	for(auto &chunk : mSimData.mTBoundaryConditions.mBCFlowMatIdToTypeValue) {
 		TPZFMatrix<STATE> val1(1,1,0.0); TPZVec<STATE> val2(1,0.0);
 		int bc_id   = chunk.first;
@@ -2829,9 +2829,9 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
 		int bc_type = typeAndVal.first;
 		val2[0]  = typeAndVal.second;
 		TPZBndCondT<REAL> * face = volume->CreateBC(volume,bc_id,bc_type,val1,val2);
-        int functionBCId = functionBCmap[bc_id].first;
+        int functionBCId = FlowFunctionBCmap[bc_id].first;
         if (functionBCId != 0) {
-            auto functionBC = functionBCmap[bc_id].second;
+            auto functionBC = FlowFunctionBCmap[bc_id].second;
             face->SetForcingFunctionBC(functionBC,1);
         }
 		mMixedOperator->InsertMaterialObject(face);
