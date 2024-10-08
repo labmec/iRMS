@@ -342,7 +342,7 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
 void TPZAlgebraicTransport::ContributeBCInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int matid){
 
     REAL fluxint = fInterfaceData[matid].fIntegralFlux[index];
-    const bool noflux = fabs(fluxint) < 1.e-6 ? true : false;
+    const bool noflux = fabs(fluxint) < 1.e-5 ? true : false;
     if (fluxint < 0.0 && !noflux){ //inlet
         REAL s_inlet = fboundaryCMatVal[matid].second; //external saturation
         ef(0,0) = s_inlet*fluxint*fdt;
