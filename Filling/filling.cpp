@@ -45,7 +45,7 @@ auto left_pressure = [](const TPZVec<REAL> &coord, TPZVec<STATE> &rhsVal, TPZFMa
 auto right_pressure = [](const TPZVec<REAL> &coord, TPZVec<STATE> &rhsVal, TPZFMatrix<STATE> &matVal)
 {
   REAL y = coord[1]; // y is in mm
-  REAL water_height = 0.0;
+  REAL water_height = 500.0;
   if (y <= water_height)
   {
     rhsVal[0] = 0.001 * (water_height - y);

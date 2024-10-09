@@ -307,12 +307,15 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     for (int iq = 0; iq < nphi_q; iq++) {
         
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
+        STATE g_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
+            g_dot_phi_q_i += mSimData.mTNumerics.m_gravity[i]*phi_qs(i,iq);
         }
         
         ef(iq + first_q) += weight * ( - kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms a and b in docs/Formulation.lyx
-        
+        ef(iq + first_q) += weight * (  g_dot_phi_q_i );
+
         for (int jq = 0; jq < nphi_q; jq++) {
             kappa_inv_phi_q_j.Zero();
             for (int i = 0; i < 3; i++) {
