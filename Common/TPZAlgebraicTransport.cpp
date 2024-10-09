@@ -633,32 +633,65 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
         intMass += sat*phi*vol;
         volfrac += vol*phi;
     }
+
+    //Separating the boundary conditions in outlet and inlet here instead of using the inlet and outlet matid defined in TMRSSFIAnalysis::FillProperties()
+    std::set<int> bc_matids;
+    for (auto it = fboundaryCMatVal.begin(); it != fboundaryCMatVal.end(); it++) {
+        bc_matids.insert(it->first);
+    }
     
-    int ninletInterfaces = fInterfaceData[inletmatid].fIntegralFlux.size();
-    REAL fluxIntegratedInlet=0.0;
-    int nOutletInterfaces = fInterfaceData[outletmatid].fIntegralFlux.size();
     REAL fluxIntegratedOutlet=0.0;
-    int nNoFluxFaces = fInterfaceData[4].fIntegralFlux.size();
+    REAL fluxIntegratedInlet=0.0;
     REAL fluxIntegratedNoFlux=0.0;
-    for (int iInlet=0; iInlet<ninletInterfaces; iInlet++) {
-         fluxIntegratedInlet += fInterfaceData[inletmatid].fIntegralFlux[iInlet]*fdt*itime;
-    }
-    for (int iOutlet=0; iOutlet<nOutletInterfaces; iOutlet++) {
-        std::pair<int64_t, int64_t> left_right = fInterfaceData[outletmatid].fLeftRightVolIndex[iOutlet];
-        REAL satOutlet = fCellsData.fSaturation[left_right.first];
-        fluxIntegratedOutlet += (satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
-    }
-    for (int iNF=0; iNF<nNoFluxFaces; iNF++) {
-        std::pair<int64_t, int64_t> left_right = fInterfaceData[4].fLeftRightVolIndex[iNF];
-        const int indexCell = left_right.first;
-        REAL satNF = fCellsData.fSaturation[indexCell];
-        const REAL noFluxIntegral = fInterfaceData[4].fIntegralFlux[iNF];
-        if(fabs(noFluxIntegral) > 1.e-8){
-            const int indexgeoel = fCellsData.fGeoIndex[indexCell];
-            std::cout << "In cell " << indexCell << ", and geoel index " << indexgeoel << ", noFluxIntegral = " << noFluxIntegral << std::endl;
+    REAL zerotol = 1.e-5;
+    for (auto it = bc_matids.begin(); it != bc_matids.end(); it++) {
+        
+        int matid = *it;
+        int nInterfaces = fInterfaceData[matid].fIntegralFlux.size();
+        for (int i = 0; i < nInterfaces; i++) {
+            REAL fluxint = fInterfaceData[matid].fIntegralFlux[i];
+            if (fabs(fluxint) < zerotol) { //noflux
+                std::pair<int64_t, int64_t> left_right = fInterfaceData[matid].fLeftRightVolIndex[i];
+                int64_t cell_id = left_right.first;
+                REAL int_saturation = fCellsData.fSaturation[cell_id];
+                fluxIntegratedNoFlux += int_saturation*fluxint*fdt;
+            }
+            else if (fluxint < 0.0) { //inlet
+                REAL ext_saturation = fboundaryCMatVal[matid].second;
+                fluxIntegratedInlet += ext_saturation*fluxint*fdt*itime;
+            }
+            else { //outlet
+                std::pair<int64_t, int64_t> left_right = fInterfaceData[matid].fLeftRightVolIndex[i];
+                int64_t cell_id = left_right.first;
+                REAL int_saturation = fCellsData.fSaturation[cell_id];
+                fluxIntegratedOutlet += int_saturation*fluxint*fdt;
+            }
         }
-        fluxIntegratedNoFlux += (satNF)*noFluxIntegral*fdt;
     }
+    
+    // int ninletInterfaces = fInterfaceData[inletmatid].fIntegralFlux.size();
+    // int nOutletInterfaces = fInterfaceData[outletmatid].fIntegralFlux.size();
+    // int nNoFluxFaces = fInterfaceData[4].fIntegralFlux.size();
+
+    // for (int iInlet=0; iInlet<ninletInterfaces; iInlet++) {
+    //      fluxIntegratedInlet += fInterfaceData[inletmatid].fIntegralFlux[iInlet]*fdt*itime;
+    // }
+    // for (int iOutlet=0; iOutlet<nOutletInterfaces; iOutlet++) {
+    //     std::pair<int64_t, int64_t> left_right = fInterfaceData[outletmatid].fLeftRightVolIndex[iOutlet];
+    //     REAL satOutlet = fCellsData.fSaturation[left_right.first];
+    //     fluxIntegratedOutlet += (satOutlet)*fInterfaceData[outletmatid].fIntegralFlux[iOutlet]*fdt;
+    // }
+    // for (int iNF=0; iNF<nNoFluxFaces; iNF++) {
+    //     std::pair<int64_t, int64_t> left_right = fInterfaceData[4].fLeftRightVolIndex[iNF];
+    //     const int indexCell = left_right.first;
+    //     REAL satNF = fCellsData.fSaturation[indexCell];
+    //     const REAL noFluxIntegral = fInterfaceData[4].fIntegralFlux[iNF];
+    //     if(fabs(noFluxIntegral) > 1.e-8){
+    //         const int indexgeoel = fCellsData.fGeoIndex[indexCell];
+    //         std::cout << "In cell " << indexCell << ", and geoel index " << indexgeoel << ", noFluxIntegral = " << noFluxIntegral << std::endl;
+    //     }
+    //     fluxIntegratedNoFlux += (satNF)*noFluxIntegral*fdt;
+    // }
 
     REAL massConservation = fluxIntegratedInlet + intMass + fluxIntegratedOutlet + massOut - initialMass;
     std::cout << "\n ------------------ Global Conservation Diagnostics ------------------" << std::endl;
