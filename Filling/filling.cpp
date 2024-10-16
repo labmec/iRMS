@@ -34,7 +34,7 @@ auto left_pressure = [](const TPZVec<REAL> &coord, TPZVec<STATE> &rhsVal, TPZFMa
   REAL water_height = 500.0;
   if (y <= water_height)
   {
-    rhsVal[0] = 0.001 * (water_height - y);
+    rhsVal[0] = 0.00981 * (water_height - y);
   }
   else
   {
@@ -274,7 +274,7 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
     }
     REAL external_saturation = 0.0;
     int saturation_functionID = 0;
-    if (input["RunWithTransport"])
+    if (input["Numerics"]["RunWithTransport"])
     {
       if (bc.find("ExternalSaturation") == bc.end()) DebugStop();
       external_saturation = bc["ExternalSaturation"];
@@ -290,25 +290,58 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
     BCTransportMatIdToFunctionId[matid] = std::make_pair(saturation_functionID, forcingfunctionBC[saturation_functionID]);
   }
 
-  // ------------------------ Transport Parameters ------------------------
-  if (input.find("RunWithTransport") != input.end()) {
-    sim_data.mTNumerics.m_run_with_transport = input["RunWithTransport"];
+  // ------------------------ Numerics Parameters ------------------------
+  if (input.find("Numerics") != input.end()) {
+    auto numerics = input["Numerics"];
+    sim_data.mTNumerics.m_run_with_transport = numerics["RunWithTransport"];
     if (sim_data.mTNumerics.m_run_with_transport) {
-      if (input.find("TransportParameters") == input.end()) DebugStop();
-      auto transport_params = input["TransportParameters"];
-      if (transport_params.find("DeltaT") == transport_params.end()) DebugStop();
-      sim_data.mTNumerics.m_dt = transport_params["DeltaT"];
-      if (transport_params.find("NSteps") == transport_params.end()) DebugStop();
-      sim_data.mTNumerics.m_n_steps = transport_params["NSteps"];
+      if (numerics.find("DeltaT") == numerics.end()) DebugStop();
+      sim_data.mTNumerics.m_dt = numerics["DeltaT"];
+      if (numerics.find("NSteps") == numerics.end()) DebugStop();
+      sim_data.mTNumerics.m_n_steps = numerics["NSteps"];
+    }
+    if (numerics.find("Gravity") == numerics.end()) DebugStop();
+    std::vector<REAL> grav(3, 0.0);
+    for (int i = 0; i < 3; i++) {
+      grav[i] = numerics["Gravity"][i];
+    }
+    sim_data.mTNumerics.m_gravity = grav;
+  }
+
+  // ------------------------ Fluids Properties ------------------------
+  if (input.find("FluidProperties") != input.end()) {
+    auto properties = input["FluidProperties"];
+    if (properties.find("WaterDensity") == properties.end()) DebugStop();
+    sim_data.mTFluidProperties.mWaterDensityRef = properties["WaterDensity"];
+    if (properties.find("WaterViscosity") == properties.end()) DebugStop();
+    sim_data.mTFluidProperties.mWaterViscosity = properties["WaterViscosity"];
+    if (properties.find("WaterCompressibility") == properties.end()) DebugStop();
+    sim_data.mTFluidProperties.mWaterCompressibility = properties["WaterCompressibility"];
+    if (properties.find("OilDensity") == properties.end()) DebugStop();
+    sim_data.mTFluidProperties.mOilDensityRef = properties["OilDensity"];
+    if (properties.find("OilViscosity") == properties.end()) DebugStop();
+    sim_data.mTFluidProperties.mOilViscosity = properties["OilViscosity"];
+    if (properties.find("OilCompressibility") == properties.end()) DebugStop();
+    sim_data.mTFluidProperties.mOilCompressibility = properties["OilCompressibility"];
+    if (properties.find("DensityModel") == properties.end()) DebugStop();
+    if (properties["DensityModel"] == 0) {
+      sim_data.mTFluidProperties.CreateLinearDensityFunction();
+    } else {
+      sim_data.mTFluidProperties.CreateExponentialDensityFunction();
     }
   }
 
-  if (input.find("Gravity") == input.end()) DebugStop();
-  std::vector<REAL> grav(3, 0.0);
-  for (int i = 0; i < 3; i++) {
-    grav[i] = input["Gravity"][i];
+  if (input.find("PetroPhysics") != input.end()) {
+    auto petro = input["PetroPhysics"];
+    if (petro.find("KrModel") == petro.end()) DebugStop();
+    if (petro["KrModel"] == 0) {
+      sim_data.mTNumerics.m_ISLinearKrModelQ = true;
+    } else {
+      sim_data.mTNumerics.m_ISLinearKrModelQ = false;
+    }
+    sim_data.mTPetroPhysics.mWaterViscosity = sim_data.mTFluidProperties.mWaterViscosity;
+    sim_data.mTPetroPhysics.mOilViscosity = sim_data.mTFluidProperties.mOilViscosity;
   }
-  sim_data.mTNumerics.m_gravity = grav;
 
   // ------------------------ Setting extra stuff that is still not in JSON ------------------------
   const int D_Type = 0, N_Type = 1, Mixed_Type = 2;
