@@ -54,9 +54,9 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
     int nrows = ek.fMat.Rows();
     int ncols = ek.fMat.Rows();
     REAL Glambda = fMixedDensity;
-    if(Glambda!=1 || fLambda!=1){
-        DebugStop();
-    }
+    // if(Glambda!=1 || fLambda!=1){
+    //     DebugStop();
+    // }
     ek.fMat *= (1./fLambda);
     for (int icol=0; icol<ncols; icol++) {
         ek.fMat(nrows-1,icol) *= fLambda;
@@ -65,14 +65,14 @@ void TPZFastCondensedElement::CalcStiff(TPZElementMatrixT<STATE> &ek,TPZElementM
         ek.fMat(irow,ncols-1) *= fLambda;
     }
     ek.fMat(nrows-1,ncols-1) *=fLambda;
-//    ek.fMat(nrows-1,ncols-1) *=fCompressibilityMatrixTerm;
+    // ek.fMat(nrows-1,ncols-1) *=fCompressibilityMatrixTerm;
     
     TPZFNMatrix<30,STATE> solvec(fEK.fMat.Rows(),1,0.);
     GetSolutionVector(solvec);
     
 
-//    ef.fMat *= -1.0*Glambda;
-//    ef.fMat(nrows-1) = fCompressibiilityRhsTerm;
+   ef.fMat *= 1.0*Glambda;
+   ef.fMat(nrows-1) = fCompressibiilityRhsTerm;
     
 //    std::cout << "Lambda " << fLambda << std::endl;
 //    ek.fMat.Print(std::cout);
