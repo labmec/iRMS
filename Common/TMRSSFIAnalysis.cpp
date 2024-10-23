@@ -506,17 +506,20 @@ void TMRSSFIAnalysis::SFIIteration(){
 void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
     // to compute the transport of saturations in an algebraic way
     fAlgebraicDataTransfer.TransferMixedMeshMultiplyingCoefficients();
+    auto& idata = m_transport_module->fAlgebraicTransport.fInterfaceData;
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_id);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracInf);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracSup);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracFrac);
     m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_sim_data->mTGeometry.mInterface_material_idFracBound);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_transport_module->fAlgebraicTransport.inletmatid);
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(m_transport_module->fAlgebraicTransport.outletmatid);
 
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(4); //Mat With No Flux
-    m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(5);//Mat With No Flux
-
+    std::set<int> bc_matids;
+    for (auto it = m_transport_module->fAlgebraicTransport.fboundaryCMatVal.begin(); it != m_transport_module->fAlgebraicTransport.fboundaryCMatVal.end(); it++) {
+        bc_matids.insert(it->first);
+    }
+    for (auto& bc : bc_matids) {
+        m_transport_module->fAlgebraicTransport.UpdateIntegralFlux(bc);
+    }
     
     m_transport_module->fAlgebraicTransport.VerifyElementFLuxes();
 }
