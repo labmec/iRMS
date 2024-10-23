@@ -21,17 +21,23 @@ namespace fs = std::filesystem;
 // ----- End of namespaces -----
 
 // ----- Global vars -----
-const int glob_n_threads = 0;
+const int glob_n_threads = 8;
+
+//This parameters will be later included in the jason file
+REAL influx = 57870.37037037; //mm^3/s
+REAL tube_radius = 22.0; //mm
+REAL water_height = 500.0; //mm
 
 // ----- Functions -----
 TPZGeoMesh* ReadMeshFromGmsh(TMRSDataTransfer& sim_data);
 void FillDataTransfer(std::string filenameBase, TMRSDataTransfer& sim_data);
+void SetCompressibilityAndGravity(TMRSDataTransfer& sim_data, TMRSMixedAnalysis* mixAnalisys);
+void computeWaterHeight(TMRSSFIAnalysis* sfi_analysis, TMRSDataTransfer& sim_data, REAL time);
 
 // Definition of the left and right boundary conditions
 auto left_pressure = [](const TPZVec<REAL> &coord, TPZVec<STATE> &rhsVal, TPZFMatrix<STATE> &matVal)
 {
   REAL y = coord[1]; // y is in mm
-  REAL water_height = 500.0;
   if (y <= water_height)
   {
     rhsVal[0] = 0.00981 * (water_height - y);
@@ -45,7 +51,6 @@ auto left_pressure = [](const TPZVec<REAL> &coord, TPZVec<STATE> &rhsVal, TPZFMa
 auto right_pressure = [](const TPZVec<REAL> &coord, TPZVec<STATE> &rhsVal, TPZFMatrix<STATE> &matVal)
 {
   REAL y = coord[1]; // y is in mm
-  REAL water_height = 500.0;
   if (y <= water_height)
   {
     rhsVal[0] = 0.001 * (water_height - y);
@@ -88,7 +93,7 @@ int main(int argc, char* argv[]) {
     LOGPZ_DEBUG(mainlogger, sout.str())
   }
 #endif
-
+  water_height = 100.0;
   // =========> Read the json file and fill the data transfer object
   TMRSDataTransfer sim_data;
   sim_data.mTNumerics.m_four_approx_spaces_Q = true;
@@ -154,9 +159,10 @@ int main(int argc, char* argv[]) {
     for (int it = 1; it <= n_steps; it++) {
       sim_time = it * dt;
       sfi_analysis->m_transport_module->SetCurrentTime(dt);
+      computeWaterHeight(sfi_analysis, sim_data, sim_time);
       sfi_analysis->RunTimeStep();
       if (it == 1) {
-        sfi_analysis->PostProcessTimeStep(typeToPPinit, mp_cmesh->Dimension());
+        sfi_analysis->PostProcessTimeStep(typeToPPinit, mp_cmesh->Dimension(), it);
       }
       mp_cmesh->LoadSolution(mp_cmesh->Solution());
 
@@ -164,8 +170,12 @@ int main(int argc, char* argv[]) {
       if (sim_time >= current_report_time) {
         cout << "\n---------------------- SFI Step " << it << " ----------------------" << endl;
         std::cout << "Simulation time:  " << sim_time << std::endl;
-        mp_cmesh->UpdatePreviousState(-1.);
-        sfi_analysis->PostProcessTimeStep(typeToPPsteps, mp_cmesh->Dimension());
+        // mp_cmesh->UpdatePreviousState(-1.);
+        // mp_cmesh->TransferMultiphysicsSolution();
+        if (it != 1)
+        {
+          sfi_analysis->PostProcessTimeStep(typeToPPsteps, mp_cmesh->Dimension(), it);
+        }
         pos++;
         current_report_time = reporting_times[pos];
 
@@ -178,11 +188,11 @@ int main(int argc, char* argv[]) {
 
   }
   else {
+    SetCompressibilityAndGravity(sim_data, mixAnalisys);
     mixAnalisys->Assemble();
     mixAnalisys->Solve();
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
-    int dimToPost = 2;
-    mixAnalisys->PostProcessTimeStep(dimToPost);
+    mixAnalisys->PostProcessTimeStep(mp_cmesh->Dimension());
   }
 
 
@@ -352,15 +362,14 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
   // sim_data.mTGeometry.mInterface_material_idFracBound = 104;
 
   // sim_data.mTGeometry.mSkeletonDiv = 0;
-  sim_data.mTNumerics.m_sfi_tol = 0.0001;
-  sim_data.mTNumerics.m_res_tol_transport = 0.0001;
-  sim_data.mTNumerics.m_corr_tol_transport = 0.0001;
+  sim_data.mTNumerics.m_sfi_tol = 0.00000001;
+  sim_data.mTNumerics.m_res_tol_transport = 0.00000001;
+  sim_data.mTNumerics.m_corr_tol_transport = 0.00000001;
   sim_data.mTNumerics.m_four_approx_spaces_Q = true;
-  sim_data.mTNumerics.m_ISLinearKrModelQ = true;
   sim_data.mTNumerics.m_nThreadsMixedProblem = glob_n_threads;
-  sim_data.mTNumerics.m_max_iter_sfi = 1;
-  sim_data.mTNumerics.m_max_iter_mixed = 1;
-  sim_data.mTNumerics.m_max_iter_transport = 1;
+  sim_data.mTNumerics.m_max_iter_sfi = 20;
+  sim_data.mTNumerics.m_max_iter_mixed = 20;
+  sim_data.mTNumerics.m_max_iter_transport = 20;
 
   sim_data.mTPostProcess.m_file_name_mixed = "postdarcy.vtk";
   sim_data.mTPostProcess.m_file_name_transport = "posttransport.vtk";
@@ -384,13 +393,51 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
   REAL dt = sim_data.mTNumerics.m_dt;
   TPZStack<REAL, 100> reporting_times;
   REAL time = sim_data.mTPostProcess.m_file_time_step;
-  int n_reporting_times = (n_steps) / (time / dt) + 1;
+  int n_reporting_times = (n_steps) / (time * 100 / dt) + 1;
   REAL r_time = 0.0;
+  int j=1;
   for (int i = 1; i <= n_reporting_times; i++) {
-    r_time += dt * (time / dt);
+    
+    r_time = j * dt * (time / dt);
     reporting_times.push_back(r_time);
+    j+=100;
   }
   sim_data.mTPostProcess.m_vec_reporting_times = reporting_times;
+}
+
+void SetCompressibilityAndGravity(TMRSDataTransfer& sim_data, TMRSMixedAnalysis* mixAnalisys)
+{
+  TPZCompMesh *cmesh = mixAnalisys->Mesh();
+  int nel = cmesh->NElements();
+  for (int i = 0; i < nel; i++)
+  {
+    TPZCompEl *cel = cmesh->ElementVec()[i];
+    TPZFastCondensedElement *condensed = dynamic_cast<TPZFastCondensedElement *>(cel);
+    if (!condensed) continue;
+
+    condensed->SetLambda(1.0);
+    condensed->SetMixedDensity(sim_data.mTFluidProperties.mWaterDensityRef);
+    condensed->SetCompressibiilityTerm(0, 0);
+  }
+}
+
+void computeWaterHeight(TMRSSFIAnalysis* sfi_analysis, TMRSDataTransfer& sim_data, REAL time)
+{
+  auto bcs = sfi_analysis->m_transport_module->fAlgebraicTransport.fboundaryCMatVal;
+  REAL total_inlet_flux = 0.0; //sum of the integrated fluxes over inlet boundaries
+  for (auto& bc : bcs)
+  {
+    int matid = bc.first;
+    auto& integralFlux = sfi_analysis->m_transport_module->fAlgebraicTransport.fInterfaceData[matid].fIntegralFlux; //integrated flux over the boundary elements
+    for (auto& flux : integralFlux)
+    {
+      if (flux < 0.0) //inlet
+      {
+        total_inlet_flux += flux;
+      }
+    }
+  }
+  water_height = (influx - total_inlet_flux) * time / (M_PI * tube_radius * tube_radius); //water_height, influx and tube_radius are global variables (HORRIBLE!)
 }
 
 // ---------------------------------------------------------------------
