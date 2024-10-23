@@ -165,7 +165,7 @@ void TMRSMixedAnalysis::NewtonIteration(){
 
 }
 
-void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
+void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost, int step){
     
     const int dim = Mesh()->Dimension();
     auto start_time_pp = std::chrono::steady_clock::now();
@@ -220,6 +220,7 @@ void TMRSMixedAnalysis::PostProcessTimeStep(int dimToPost){
         }
         
         auto vtk = TPZVTKGenerator(fCompMesh, scalnames, plotfile, vtkRes, dimToPost);
+        vtk.SetStep(step);
         vtk.SetNThreads(8);
         vtk.Do();
 #else

@@ -460,16 +460,16 @@ void TMRSSFIAnalysis::RunTimeStep(){
     
 }
 
-void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim){
+void TMRSSFIAnalysis::PostProcessTimeStep(const int type, const int dim, int step){
 
     std::cout << "\n---------------------- TMRSSFIAnalysis Post Process ----------------------" << std::endl;
     TPZSimpleTimer timer_pp("Timer SFIAnalysis Post Process");
     if (type == 0) {
-        m_mixed_module->PostProcessTimeStep(dim);
+        m_mixed_module->PostProcessTimeStep(dim, step);
         m_transport_module->PostProcessTimeStep();
     }
     if (type == 1) {
-        m_mixed_module->PostProcessTimeStep(dim);
+        m_mixed_module->PostProcessTimeStep(dim, step);
     }
     if (type == 2) {
         m_transport_module->PostProcessTimeStep();

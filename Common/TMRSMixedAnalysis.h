@@ -65,7 +65,7 @@ public:
     void RunTimeStep();
     
     /// Render a vtk file with requested variables for a time step
-    void PostProcessTimeStep(int dimToPost = -1);
+    void PostProcessTimeStep(int dimToPost = -1, int step = -1);
     
     /// Perform a Newton iteration
     void NewtonIteration();
