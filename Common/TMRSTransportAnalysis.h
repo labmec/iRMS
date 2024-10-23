@@ -55,7 +55,7 @@ private:
     /// Data transfer object
     TMRSDataTransfer * m_sim_data;
     
-    int fpostprocessindex=0;
+    int fpostprocessindex=1;
     
     /// Number of iterations
     int m_k_iteration = 0;
