@@ -469,6 +469,7 @@ void TPZAnalysisAuxEigen::Assemble(){
             elmat.Resize(1, 1);
             elmat(0,0) = 0;
             ef.Resize(1, 1);
+            ef(0,0) = 0;
             fAlgebraicTransport->ContributeBCInterface(iface, elmat, ef, *it); //here
             size_t i_begin = cont + 4*(n_internal_faces + n_internal_faces1 + n_internal_faces2 + n_internal_faces3) ;
             m_trans_triplets[i_begin] = (Eigen::Triplet<REAL>(indexes[0],indexes[0], elmat(0,0)));
@@ -800,6 +801,17 @@ void TPZAnalysisAuxEigen::AssembleResidual(){
     
     m_rhs.setFromTriplets( m_rhs_triplets.begin(), m_rhs_triplets.end() );
     m_rhs_triplets.clear();
+
+    // Eigen::IOFormat HeavyFmt(Eigen::FullPrecision, 0, ", ", ",\n", "{", "}", "{", "}");
+    
+    // std::ofstream rhsfile("residual.txt");
+    // rhsfile << m_rhs.toDense().format(HeavyFmt) << std::endl;
+    // auto& vec = fAlgebraicTransport->fCellsData.fCenterCoordinate;
+    // std::ofstream coordfile("coord.txt");
+    // for (int i = 0; i < vec.size(); i++) {
+    //     coordfile << vec[i][0] << " " << vec[i][1] << " " << vec[i][2] << std::endl;
+    // }
+
 }
 
 void TPZAnalysisAuxEigen::AnalyzePattern(){
@@ -807,7 +819,7 @@ void TPZAnalysisAuxEigen::AnalyzePattern(){
     Assemble();
     m_transmissibility += m_mass;
 //    std::cout<<m_transmissibility.toDense()<<std::endl;
-    m_analysis2.analyzePattern(m_transmissibility);
+    m_analysis.analyzePattern(m_transmissibility); //using LU
     
 }
 
@@ -818,18 +830,17 @@ void TPZAnalysisAuxEigen::Solve(){
 //    Eigen::Matrix<REAL, Eigen::Dynamic, 1> ds = m_analysis.solve(m_rhs);
 //    m_ds=ds;
     if (!isFirst) {
-        m_analysis2.setTolerance(1e-14);
-        m_analysis2.setMaxIterations(1000);
-        m_analysis2.compute(m_transmissibility);
+        // m_analysis.setTolerance(1e-14);
+        // m_analysis.setMaxIterations(1000);
+        m_analysis.compute(m_transmissibility); //Using LU
         isFirst=true;
     }
     
-    Eigen::VectorXd ds = m_analysis2.solve(m_rhs);
-    std::cout << "#iterations:     " << m_analysis2.iterations() << std::endl;
+    Eigen::VectorXd ds = m_analysis.solve(m_rhs);
+    // std::cout << "#iterations:     " << m_analysis2.iterations() << std::endl;
 //    std::cout << "estimated error: " << m_analysis2.error()      << std::endl;
 //    std::cout << "sol: " << ds.head(6).transpose() << std::endl;
     m_ds=ds;
-    
 }
 Eigen::SparseMatrix<REAL> TPZAnalysisAuxEigen::Rhs(){
     return m_rhs;
