@@ -342,7 +342,9 @@ std::pair<REAL, std::pair<REAL, REAL>> TPZAlgebraicTransport::lambda_w_star(std:
 void TPZAlgebraicTransport::ContributeBCInterface(int index,TPZFMatrix<double> &ek, TPZFMatrix<double> &ef, int matid){
 
     REAL fluxint = fInterfaceData[matid].fIntegralFlux[index];
-    const bool noflux = fabs(fluxint) < 1.e-5 ? true : false;
+    REAL zerotol = 1.e-10;
+    int type = fboundaryCMatVal[matid].first;
+    const bool noflux = (fabs(fluxint) < zerotol && type == 1) ? true : false;
     if (fluxint < 0.0 && !noflux){ //inlet
         REAL s_inlet = fboundaryCMatVal[matid].second; //external saturation
         ef(0,0) = s_inlet*fluxint*fdt;
@@ -643,14 +645,15 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
     REAL fluxIntegratedOutlet=0.0;
     REAL fluxIntegratedInlet=0.0;
     REAL fluxIntegratedNoFlux=0.0;
-    REAL zerotol = 1.e-5;
+    REAL zerotol = 1.e-10;
     for (auto it = bc_matids.begin(); it != bc_matids.end(); it++) {
         
         int matid = *it;
+        int type = fboundaryCMatVal[matid].first;
         int nInterfaces = fInterfaceData[matid].fIntegralFlux.size();
         for (int i = 0; i < nInterfaces; i++) {
             REAL fluxint = fInterfaceData[matid].fIntegralFlux[i];
-            if (fabs(fluxint) < zerotol) { //noflux
+            if (fabs(fluxint) < zerotol && type == 1) { //noflux
                 std::pair<int64_t, int64_t> left_right = fInterfaceData[matid].fLeftRightVolIndex[i];
                 int64_t cell_id = left_right.first;
                 REAL int_saturation = fCellsData.fSaturation[cell_id];
@@ -658,7 +661,7 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
             }
             else if (fluxint < 0.0) { //inlet
                 REAL ext_saturation = fboundaryCMatVal[matid].second;
-                fluxIntegratedInlet += ext_saturation*fluxint*fdt*itime;
+                fluxIntegratedInlet += ext_saturation*fluxint*fdt; //before, this was multiplied by itime, which makes no sense
             }
             else { //outlet
                 std::pair<int64_t, int64_t> left_right = fInterfaceData[matid].fLeftRightVolIndex[i];
@@ -693,7 +696,7 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
     //     fluxIntegratedNoFlux += (satNF)*noFluxIntegral*fdt;
     // }
 
-    REAL massConservation = fluxIntegratedInlet + intMass + fluxIntegratedOutlet + massOut - initialMass;
+    REAL massConservation = fluxIntegratedInlet + intMass + fluxIntegratedOutlet - initialMass;
     std::cout << "\n ------------------ Global Conservation Diagnostics ------------------" << std::endl;
     std::cout << "Inlet mass: " << std::setprecision(14) << fluxIntegratedInlet << std::endl;
     std::cout << "Outlet mass: " << fluxIntegratedOutlet << std::endl;
@@ -718,6 +721,7 @@ void TPZAlgebraicTransport::VerifyConservation(int itime){
         DebugStop();
     }
     massOut += fluxIntegratedOutlet;
+    initialMass = intMass; //initialMass now stands for the mass at the end of the previous time step
 }
 
 
@@ -833,7 +837,7 @@ void TPZAlgebraicTransport::VerifyElementFLuxes(){
         }
     }
     for(int iel = 0; iel<nInterfacesByElement.size(); iel++){
-        if(abs(SumFluxByElement[iel])>1.0e-6){
+        if(abs(SumFluxByElement[iel])>1.0e-8){
             std::cout << "The sum of the flows on each element must be zero. Element: " << iel << " has a value of " << SumFluxByElement[iel] << std::endl;
             std::cout << "The problematic element in the flux mesh is " << fCellsData.fGeoIndex[iel] << std::endl;
             DebugStop();
