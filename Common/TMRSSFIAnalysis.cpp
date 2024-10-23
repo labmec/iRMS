@@ -422,14 +422,15 @@ void TMRSSFIAnalysis::RunTimeStep(){
     
     for (m_k_iteration = 1; m_k_iteration <= n_iterations; m_k_iteration++) {
         
-        SFIIteration();
+        SFIIteration();        
         error_rel_mixed = Norm(m_x_mixed - m_mixed_module->Solution())/Norm(m_mixed_module->Solution());
-        m_x_transport = m_transport_module->Solution();
-        if(Norm(m_transport_module->Solution())==0){
-            error_rel_transport =Norm(m_x_transport - m_transport_module->Solution());
+        
+        if(iszero(Norm(m_transport_module->Solution()))){
+            error_rel_transport = Norm(m_x_transport - m_transport_module->Solution());
         }else{
-        error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
+            error_rel_transport = Norm(m_x_transport - m_transport_module->Solution())/Norm(m_transport_module->Solution());
         }
+
         stop_criterion_Q = error_rel_transport < eps_tol; // Stop by saturation variation
         if (stop_criterion_Q && m_k_iteration >= 1) {
             std::cout << "SFI converged " << std::endl;
@@ -440,11 +441,8 @@ void TMRSSFIAnalysis::RunTimeStep(){
             break;
         }
      
-       
-        
         m_x_mixed = m_mixed_module->Solution();
         m_x_transport = m_transport_module->Solution();
-        break;
     }
     
     if (!stop_criterion_Q) {
@@ -483,17 +481,17 @@ void TMRSSFIAnalysis::SFIIteration(){
 
     TPZSimpleTimer timer_sfi("Timer SFI Iteration");
     m_transport_module->fAlgebraicTransport.fCellsData.UpdateFractionalFlowsAndLambda(m_sim_data->mTNumerics.m_ISLinearKrModelQ);
-    
-//    m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
-//    fAlgebraicDataTransfer.TransferLambdaCoefficients();
-        
+
+    m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
+    fAlgebraicDataTransfer.TransferLambdaCoefficients();
+
     if(isLinearTracer){
         m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
         VerifyElementFluxes();
         UpdateAllFluxInterfaces();
-        isLinearTracer = false; // so it leaves after this iteration
+        // isLinearTracer = false; // so it leaves after this iteration
     }
-//    fAlgebraicDataTransfer.TransferPressures();
+   fAlgebraicDataTransfer.TransferPressures();
 //    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
     
     std::cout << "Running transport problem now..." << std::endl;
