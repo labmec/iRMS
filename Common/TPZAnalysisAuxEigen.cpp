@@ -522,13 +522,13 @@ void TPZAnalysisAuxEigen::Assemble(){
     
     m_rhs.setFromTriplets( m_rhs_triplets.begin(), m_rhs_triplets.end() );
     m_rhs_triplets.clear();
-    std::ofstream rhsfile("rhs.txt");
-    rhsfile << m_rhs.toDense().format(HeavyFmt) << std::endl;
+    // std::ofstream rhsfile("rhs.txt");
+    // rhsfile << m_rhs.toDense().format(HeavyFmt) << std::endl;
     
     m_transmissibility.setFromTriplets( m_trans_triplets.begin(), m_trans_triplets.end() );
     m_trans_triplets.clear();
-    std::ofstream matfile("transmissibility.txt");
-    matfile << m_transmissibility.toDense().format(HeavyFmt) << std::endl;
+    // std::ofstream matfile("transmissibility.txt");
+    // matfile << m_transmissibility.toDense().format(HeavyFmt) << std::endl;
     
     std::cout << "\n ==> Total Transport assemble time: " << timer_ass.ReturnTimeDouble()/1000 << " seconds" << std::endl;
     
