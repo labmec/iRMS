@@ -107,8 +107,8 @@ void TMRSMixedAnalysis::RunTimeStep(){
         dx = Solution();
         corr_norm = Norm(dx);
         res_norm = Norm(Rhs());
-        x +=dx;
-//        cmesh->UpdatePreviousState(-1.);
+        x += dx;
+        cmesh->LoadSolution(x);
         fsoltransfer.TransferFromMultiphysics();
 
         Assemble();
@@ -131,6 +131,7 @@ void TMRSMixedAnalysis::RunTimeStep(){
             std::cout << "Mixed operator: " << std::endl;
             std::cout << "Iterative method converged with res_norm = " << res_norm << std::endl;
             std::cout << "Number of iterations = " << m_k_iteration << std::endl;
+            fSolution = x;
             break;
         }
     }
