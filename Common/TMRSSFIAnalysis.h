@@ -103,7 +103,7 @@ public:
     void RunTimeStep();
     
     /// Render a vtk file with requested variables for a time step
-    void PostProcessTimeStep(const int type, const int dim = 3);
+    void PostProcessTimeStep(const int type, const int dim = 3, int step = -1);
     
     /// Perform a SFI iteration
     void SFIIteration();
