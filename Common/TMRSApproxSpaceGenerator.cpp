@@ -1995,6 +1995,7 @@ void TMRSApproxSpaceGenerator::BuildMixed2SpacesMultiPhysicsCompMesh(int order){
 		//            volume = new TPZMixedDarcyFlow(materia_id, d);
 		//            volume->SetPermeability(1.0);
 		volume->SetDataTransfer(mSimData);
+        volume->SetAxisymmetry(mSimData.mTNumerics.m_is_axisymmetric);
 		mMixedOperator->InsertMaterialObject(volume);
 	}
 	
@@ -2129,6 +2130,7 @@ void TMRSApproxSpaceGenerator::BuildMixed4SpacesMortarMesh(){
 		//            volume = new TPZMixedDarcyFlow(materia_id, d);
 		//             volume->SetPermeability(1.0);
 		volume->SetDataTransfer(mSimData);
+        volume->SetAxisymmetry(mSimData.mTNumerics.m_is_axisymmetric);
 		mMixedOperator->InsertMaterialObject(volume);
 	}
 	
@@ -2812,6 +2814,7 @@ void TMRSApproxSpaceGenerator::AddMultiphysicsMaterialsToCompMesh(const int orde
 		int material_id = chunk.second;
 		volume = new TMRSDarcyFlowWithMem<TMRSMemory>(material_id,dimension);
 		volume->SetDataTransfer(mSimData);
+        volume->SetAxisymmetry(mSimData.mTNumerics.m_is_axisymmetric);
 		mMixedOperator->InsertMaterialObject(volume);
 		std::cout << "Added volume material w/ physical name = " << material_name << " and id = " << material_id << std::endl;
 		MatsWithmem.insert(material_id);

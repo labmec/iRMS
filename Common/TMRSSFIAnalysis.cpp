@@ -525,7 +525,7 @@ void TMRSSFIAnalysis::UpdateAllFluxInterfaces(){
 }
 
 void TMRSSFIAnalysis::VerifyElementFluxes(){
-    const REAL tol = 1.e-10;
+    const REAL tol = 1.e-12;
     TPZMultiphysicsCompMesh *mixedmesh = dynamic_cast<TPZMultiphysicsCompMesh *>(m_mixed_module->Mesh()) ;
     TPZCompMesh *cmesh =mixedmesh->MeshVector()[0];
 //    std::ofstream file("fuxmesh.txt");

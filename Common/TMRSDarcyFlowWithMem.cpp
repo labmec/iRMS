@@ -16,6 +16,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem() : TBase(), mSimData() {
     m_is_four_spaces_Q = false;
     m_scale_pressure = 1;
     m_scale_flux = 1;
+    m_is_axisymmetric = false;
 }
 
 template <class TMEM>
@@ -25,6 +26,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(int mat_id, int dimension) : TB
     m_is_four_spaces_Q = false;
     m_scale_pressure = 1;
     m_scale_flux = 1;
+    m_is_axisymmetric = false;
 }
 
 template <class TMEM>
@@ -33,6 +35,7 @@ TMRSDarcyFlowWithMem<TMEM>::TMRSDarcyFlowWithMem(const TMRSDarcyFlowWithMem & ot
     m_scale_pressure    = other.m_scale_pressure;
     m_scale_flux        = other.m_scale_flux;
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
+    m_is_axisymmetric   = other.m_is_axisymmetric;
     mSimData  = other.mSimData;
 }
 
@@ -46,6 +49,7 @@ TMRSDarcyFlowWithMem<TMEM> & TMRSDarcyFlowWithMem<TMEM>::operator=(const TMRSDar
     m_scale_pressure    = other.m_scale_pressure;
     m_scale_flux        = other.m_scale_flux;
     m_is_four_spaces_Q  = other.m_is_four_spaces_Q;
+    m_is_axisymmetric   = other.m_is_axisymmetric;
     mSimData  = other.mSimData;
     return *this;
 }
@@ -87,6 +91,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Print(std::ostream &out) const{
     out << m_scale_pressure << std::endl;
     out << m_scale_flux << std::endl;
     out << m_is_four_spaces_Q << std::endl;
+    out << m_is_axisymmetric << std::endl;
 }
 
 template <class TMEM>
@@ -136,16 +141,15 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> 
     
     q = datavec[qb].sol[0];
     p = datavec[pb].sol[0];
-    
-//    STATE p_alt = 0.;
-//    TPZManVector<STATE> flux_alt;
-//    if(datavec[0].intGlobPtIndex >= 0)
-//    {
-//        auto gp_index = datavec[0].intGlobPtIndex;
-//        TMRSMemory &mem = this->GetMemory().get()->operator[](gp_index);
-//        p_alt = mem.p();
-//        mem.Flux(flux_alt);
-//    }
+
+    //Assuming radius is aligned with the x axis
+    if (m_is_axisymmetric)
+    {
+        REAL r = datavec[qb].x[0];
+        REAL s = 2.0*M_PI*r;
+        q[0] *= (1.0/s);
+
+    }
     
     if(var == 8){ // normal flux. Only works for bc materials
         Solout[0] = q[0];
@@ -285,6 +289,15 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     // Flux and pressure solution (for non linear analyzes)
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
     STATE p                  = datavec[pb].sol[0][0];
+
+    //Assuming radius is aligned with the x axis
+    if (m_is_axisymmetric)
+    {
+        REAL r = datavec[qb].x[0];
+        REAL s = 2.0*M_PI*r;
+        q[0] *= (1.0/s);
+        
+    }
     
     // Get the memory at the integrations point
     long gp_index = datavec[qb].intGlobPtIndex;
@@ -304,13 +317,14 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
         }
     }
     
+    std::vector<REAL>& gravity = mSimData.mTNumerics.m_gravity;
     for (int iq = 0; iq < nphi_q; iq++) {
         
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         STATE g_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
             kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
-            g_dot_phi_q_i += mSimData.mTNumerics.m_gravity[i]*phi_qs(i,iq);
+            g_dot_phi_q_i += gravity[i]*phi_qs(i,iq);
         }
         
         ef(iq + first_q) += weight * ( - kappa_inv_q_dot_phi_q_i + p * div_phi(iq,0)); // terms a and b in docs/Formulation.lyx
@@ -447,6 +461,15 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
     int first_p      = nphi_q + first_q;
     
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
+
+    //Assuming radius is aligned with the x axis
+    if (m_is_axisymmetric)
+    {
+        REAL r = datavec[qb].x[0];
+        REAL s = 2.0*M_PI*r;
+        q[0] *= (1.0/s);
+        
+    }
     
     TPZManVector<STATE,1> bc_data(1,0.0);
     bc_data[0] = bc.Val2()[0];

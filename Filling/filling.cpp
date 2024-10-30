@@ -21,7 +21,7 @@ namespace fs = std::filesystem;
 // ----- End of namespaces -----
 
 // ----- Global vars -----
-const int glob_n_threads = 8;
+const int glob_n_threads = 0;
 
 //This parameters will be later included in the jason file
 REAL influx = 57870.37037037; //mm^3/s
@@ -193,6 +193,10 @@ int main(int argc, char* argv[]) {
     mixAnalisys->Solve();
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
     mixAnalisys->PostProcessTimeStep(mp_cmesh->Dimension());
+    {
+      std::ofstream out("cmesh.txt");
+      mp_cmesh->Print(out);
+    }
   }
 
 
@@ -316,6 +320,11 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
       grav[i] = numerics["Gravity"][i];
     }
     sim_data.mTNumerics.m_gravity = grav;
+
+    if (numerics.find("IsAxisymmetric") != numerics.end())
+    {
+      sim_data.mTNumerics.m_is_axisymmetric = numerics["IsAxisymmetric"];
+    }
   }
 
   // ------------------------ Fluids Properties ------------------------

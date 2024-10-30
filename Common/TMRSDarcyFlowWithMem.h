@@ -39,6 +39,8 @@ protected:
     bool m_is_four_spaces_Q;
     
     TMRSDataTransfer mSimData;
+
+    bool m_is_axisymmetric;
     
 public:
     
@@ -111,8 +113,12 @@ public:
     /// returns the number of variables associated with the variable indexed by var.
     int NSolutionVariables(int var) const override;
     
-   
-    
+    /// Set the axisymmetry flag
+    void SetAxisymmetry(bool IsAxisymmetric) {m_is_axisymmetric = IsAxisymmetric;}
+
+    /// Returns the axisymmetry flag
+    bool IsAxisymmetric() const {return m_is_axisymmetric;}
+
     /// Returns the solution associated with the var index based on a finite element approximation
     void Solution(const TPZVec<TPZMaterialDataT<STATE>> &datavec, int var, TPZVec<REAL> &Solout)  override;
     
