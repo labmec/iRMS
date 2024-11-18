@@ -325,6 +325,10 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
     {
       sim_data.mTNumerics.m_is_axisymmetric = numerics["IsAxisymmetric"];
     }
+    if (numerics.find("IsLinearTrace") != numerics.end())
+    {
+      sim_data.mTNumerics.m_is_linearTrace = numerics["IsLinearTrace"];
+    }
   }
 
   // ------------------------ Fluids Properties ------------------------

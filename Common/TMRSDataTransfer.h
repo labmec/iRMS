@@ -514,6 +514,11 @@ class TMRSDataTransfer : public TMRSSavable {
     bool m_is_axisymmetric;
 
     /**
+     * @brief Linear trace flag
+     */
+    bool m_is_linearTrace;
+
+    /**
      * @brief Approximation space "type"
      */
     enum MSpaceType { ENone,
@@ -549,6 +554,7 @@ class TMRSDataTransfer : public TMRSSavable {
       m_four_approx_spaces_Q = false;
       m_mhm_mixed_Q = false;
       m_is_axisymmetric = false;
+      m_is_linearTrace = true;
       m_need_merge_meshes_Q = true;
       m_SpaceType = ENone;
       m_gravity.resize(3, 0.0);
@@ -577,6 +583,7 @@ class TMRSDataTransfer : public TMRSSavable {
       m_n_steps = other.m_n_steps;
       m_four_approx_spaces_Q = other.m_four_approx_spaces_Q;
       m_is_axisymmetric = other.m_is_axisymmetric;
+      m_is_linearTrace = other.m_is_linearTrace;
       m_mhm_mixed_Q = other.m_mhm_mixed_Q;
       m_need_merge_meshes_Q = other.m_need_merge_meshes_Q;
       m_SpaceType = other.m_SpaceType;
@@ -608,6 +615,7 @@ class TMRSDataTransfer : public TMRSSavable {
       m_n_steps = other.m_n_steps;
       m_four_approx_spaces_Q = other.m_four_approx_spaces_Q;
       m_is_axisymmetric = other.m_is_axisymmetric;
+      m_is_linearTrace = other.m_is_linearTrace;
       m_mhm_mixed_Q = other.m_mhm_mixed_Q;
       m_need_merge_meshes_Q = other.m_need_merge_meshes_Q;
       m_SpaceType = other.m_SpaceType;
@@ -639,6 +647,7 @@ class TMRSDataTransfer : public TMRSSavable {
              m_n_steps == other.m_n_steps &&
              m_four_approx_spaces_Q == other.m_four_approx_spaces_Q &&
              m_is_axisymmetric == other.m_is_axisymmetric &&
+             m_is_linearTrace == other.m_is_linearTrace &&
              m_mhm_mixed_Q == other.m_mhm_mixed_Q &&
              m_need_merge_meshes_Q == other.m_need_merge_meshes_Q &&
              m_SpaceType == other.m_SpaceType &&
@@ -664,6 +673,8 @@ class TMRSDataTransfer : public TMRSSavable {
       int temp = m_four_approx_spaces_Q;
       buf.Write(&temp);
       temp = m_is_axisymmetric;
+      buf.Write(&temp);
+      temp = m_is_linearTrace;
       buf.Write(&temp);
       temp = m_mhm_mixed_Q;
       buf.Write(&temp);
@@ -695,6 +706,8 @@ class TMRSDataTransfer : public TMRSSavable {
       buf.Read(&temp);
       m_is_axisymmetric = temp;
       buf.Read(&temp);
+      m_is_linearTrace = temp;
+      buf.Read(&temp);
       m_mhm_mixed_Q = temp;
       buf.Read(&temp);
       m_need_merge_meshes_Q = temp;
@@ -722,6 +735,7 @@ class TMRSDataTransfer : public TMRSSavable {
       std::cout << m_n_steps << std::endl;
       std::cout << m_four_approx_spaces_Q << std::endl;
       std::cout << m_is_axisymmetric << std::endl;
+      std::cout << m_is_linearTrace << std::endl;
       std::cout << m_mhm_mixed_Q << std::endl;
       std::cout << m_need_merge_meshes_Q << std::endl;
       std::cout << m_SpaceType << std::endl;

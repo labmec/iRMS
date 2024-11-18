@@ -35,7 +35,7 @@ private:
     TPZFMatrix<STATE> m_x_transport;
     
     /// Boolean that indicates if the problem is linear. If so, does not need to run newton iterations to converge
-    bool isLinearTracer = true;
+    bool shouldSolveDarcy = true;
     
 public:
     

@@ -485,13 +485,15 @@ void TMRSSFIAnalysis::SFIIteration(){
     m_transport_module->fAlgebraicTransport.fCellsData.UpdateMixedDensity();
     fAlgebraicDataTransfer.TransferLambdaCoefficients();
 
-    if(isLinearTracer){
+    if(shouldSolveDarcy){
         m_mixed_module->RunTimeStep(); // Newton iterations for mixed problem are done here till convergence
         VerifyElementFluxes();
         UpdateAllFluxInterfaces();
-        // isLinearTracer = false; // so it leaves after this iteration
+        if (m_sim_data->mTNumerics.m_is_linearTrace) {
+            shouldSolveDarcy = false;
+        }
     }
-   fAlgebraicDataTransfer.TransferPressures();
+    fAlgebraicDataTransfer.TransferPressures();
 //    m_transport_module->fAlgebraicTransport.fCellsData.UpdateDensities();
     
     std::cout << "Running transport problem now..." << std::endl;
