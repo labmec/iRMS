@@ -142,15 +142,16 @@ void TMRSDarcyFlowWithMem<TMEM>::Solution(const TPZVec<TPZMaterialDataT<STATE>> 
     q = datavec[qb].sol[0];
     p = datavec[pb].sol[0];
 
-    //Assuming radius is aligned with the x axis
+    // Assuming radius is aligned with the x axis
+    REAL axi_weight = 1.0;
     if (m_is_axisymmetric)
     {
         REAL r = datavec[qb].x[0];
-        REAL s = 2.0*M_PI*r;
-        q[0] *= (1.0/s);
-
+        axi_weight = 1.0 / (2.0 * M_PI * r);
+        q[0] *= axi_weight;
+        q[1] *= axi_weight;
     }
-    
+
     if(var == 8){ // normal flux. Only works for bc materials
         Solout[0] = q[0];
         return;
@@ -291,12 +292,11 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     STATE p                  = datavec[pb].sol[0][0];
 
     //Assuming radius is aligned with the x axis
+    REAL axi_weight = 1.0;
     if (m_is_axisymmetric)
     {
         REAL r = datavec[qb].x[0];
-        REAL s = 2.0*M_PI*r;
-        q[0] *= (1.0/s);
-        
+        axi_weight = 1.0 / (2.0*M_PI*r);
     }
     
     // Get the memory at the integrations point
@@ -305,15 +305,12 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
     
     // Helper variables
     TPZFNMatrix<3,STATE> kappa_inv_phi_q_j(3,1,0.0), kappa_inv_q(3,1,0.0);
-        
-    // Term related to fluid mobility
-    REAL lambda_v = 1.0;
             
     // kappa_inv_q = K^-1 * q
     // Used for non linear problems
     for (int i = 0; i < 3; i++) {
         for (int j = 0; j < 3; j++) {
-            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*(1.0/lambda_v)*q[j];
+            kappa_inv_q(i,0) += memory.m_kappa_inv(i,j)*q[j];
         }
     }
     
@@ -323,7 +320,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
         STATE kappa_inv_q_dot_phi_q_i = 0.0;
         STATE g_dot_phi_q_i = 0.0;
         for (int i = 0; i < 3; i++) {
-            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq);
+            kappa_inv_q_dot_phi_q_i += kappa_inv_q(i,0)*phi_qs(i,iq)*axi_weight;
             g_dot_phi_q_i += gravity[i]*phi_qs(i,iq);
         }
         
@@ -340,7 +337,7 @@ void TMRSDarcyFlowWithMem<TMEM>::Contribute(const TPZVec<TPZMaterialDataT<STATE>
             
             STATE kappa_inv_phi_q_j_dot_phi_q_i = 0.0;
             for (int j = 0; j < 3; j++) {
-                kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_qs(j,iq);
+                kappa_inv_phi_q_j_dot_phi_q_i += kappa_inv_phi_q_j(j,0)*phi_qs(j,iq) * axi_weight;
             }
             
             ek(iq + first_q,jq + first_q) += weight * kappa_inv_phi_q_j_dot_phi_q_i;  // term f in docs/Formulation.lyx
@@ -463,12 +460,12 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
     TPZManVector<STATE,3> q  = datavec[qb].sol[0];
 
     //Assuming radius is aligned with the x axis
+    REAL axi_weight = 1.0;
     if (m_is_axisymmetric)
     {
         REAL r = datavec[qb].x[0];
-        REAL s = 2.0*M_PI*r;
-        q[0] *= (1.0/s);
-        
+        axi_weight = 1.0 / (2.0*M_PI*r);
+        q[0] *= axi_weight;
     }
     
     TPZManVector<STATE,1> bc_data(1,0.0);
@@ -509,7 +506,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
                 ef(iq + first_q) += weight * gBigNumber *(-1.0)* (qn - qn_N) * phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++)
                 {
-                    ek(iq + first_q,jq + first_q) += weight *gBigNumber * phi_qs(jq,0) * phi_qs(iq,0);
+                    ek(iq + first_q,jq + first_q) += weight *gBigNumber * phi_qs(jq,0) * phi_qs(iq,0) * axi_weight;
                 }
                 
             }
@@ -524,7 +521,7 @@ void TMRSDarcyFlowWithMem<TMEM>::ContributeBC(const TPZVec<TPZMaterialDataT<STAT
                 qn = q[0];
                 ef(iq + first_q) += weight * (qn - qn_N) *(-1.0)* phi_qs(iq,0);
                 for (int jq = 0; jq < nphi_q; jq++){
-                    ek(iq + first_q,jq + first_q) += weight/v1 * phi_qs(jq,0) * phi_qs(iq,0);
+                    ek(iq + first_q,jq + first_q) += weight/v1 * phi_qs(jq,0) * phi_qs(iq,0) * axi_weight;
                 }
             }
         }
