@@ -1317,8 +1317,13 @@ void TPZAlgebraicDataTransfer::InitializeTransportDataStructure(TPZAlgebraicTran
         std::vector<REAL> center(3,0.0);
         TPZManVector<REAL,3> coord(3,0.0);
         gel->X(ximasscent, coord);
-   
+
         REAL s0_v = 0.0;
+        auto s0_func = transport.fCellsData.fsim_data->mTReservoirProperties.s0;
+        if (s0_func){
+            fs0 = s0_func;
+            s0_v = fs0(coord);
+        }
         
         transport.fCellsData.fSaturation[i]=s0_v;
         transport.fCellsData.fSaturationLastState[i]=s0_v;

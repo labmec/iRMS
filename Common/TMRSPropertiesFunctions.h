@@ -23,6 +23,7 @@ class TMRSPropertiesFunctions
         m_function_type_kappa = EConstantFunction;
         m_function_type_phi = EConstantFunction;
         m_function_type_s0 = EConstantFunction;
+        m_constant_val = 0.0;
     }
     TMRSPropertiesFunctions &operator=(TMRSPropertiesFunctions &other)
     {
@@ -49,8 +50,12 @@ class TMRSPropertiesFunctions
         m_function_type_phi     = function_type_phi;
     }
     
-    void set_function_type_s0(EFunctionType function_type_s0){
+    /// @brief 
+    /// @param function_type_s0 - function identifier
+    /// @param value - optional to set a constant value if EConstantFunction is selected
+    void set_function_type_s0(EFunctionType function_type_s0, REAL value = 0.0){
         m_function_type_s0      = function_type_s0;
+        m_constant_val = value;
     }
     
     std::function<std::vector<REAL>(const TPZVec<REAL> & )> Create_Kappa_Phi(TRMSpatialPropertiesMap & map){
@@ -328,11 +333,12 @@ class TMRSPropertiesFunctions
         switch (m_function_type_s0) {
             case EConstantFunction:
                 {
-                    return [] (const TPZVec<REAL> & pt) -> REAL {
+                    REAL s0 = m_constant_val;
+                    return [s0] (const TPZVec<REAL> & pt) -> REAL {
                             REAL x,y,s;
                             x = pt[0];
                             y = pt[1];
-                            s = 0.0;
+                            s = s0;
                             return s;
                         };
                 }
@@ -387,7 +393,7 @@ class TMRSPropertiesFunctions
     EFunctionType m_function_type_kappa;
     EFunctionType m_function_type_phi;
     EFunctionType m_function_type_s0;
-  
+    REAL m_constant_val;
 };
 
 #endif /* TMRSPropertiesFunctions_h */

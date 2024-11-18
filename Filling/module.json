@@ -61,7 +61,7 @@
 
     "Numerics":
         {
-            "RunWithTransport": false,
+            "RunWithTransport": true,
             "DeltaT": 0.025,
             "NSteps": 50000,
             "Gravity": [0.0, -9810.0, 0.0],
@@ -81,5 +81,13 @@
     "PetroPhysics":
     {
         "KrModel": 0 // 0: Linear, 1: Quadratic
+    },
+    "ReservoirProperties":
+    {
+        "s0":
+        {
+            "functionType": 0,
+            "value": 1.0 //This is used to apply a constant initial saturation different from 0.0
+        }
     }
 }

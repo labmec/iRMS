@@ -13,6 +13,7 @@
 #include "pzintel.h"
 #include "pzlog.h"
 #include "pzsmanal.h"
+#include "TMRSPropertiesFunctions.h"
 
 // ----- Namespaces -----
 using namespace std;
@@ -188,7 +189,7 @@ int main(int argc, char* argv[]) {
 
   }
   else {
-    SetCompressibilityAndGravity(sim_data, mixAnalisys);
+    SetCompressibilityAndGravity(sim_data, mixAnalisys); //is necessary to explicitly set the properties as no saturation is computed
     mixAnalisys->Assemble();
     mixAnalisys->Solve();
     mixAnalisys->fsoltransfer.TransferFromMultiphysics();
@@ -354,6 +355,7 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
     }
   }
 
+  // ------------------------ Petro Physics ------------------------
   if (input.find("PetroPhysics") != input.end()) {
     auto petro = input["PetroPhysics"];
     if (petro.find("KrModel") == petro.end()) DebugStop();
@@ -364,6 +366,20 @@ void FillDataTransfer(string filenameBase, TMRSDataTransfer& sim_data) {
     }
     sim_data.mTPetroPhysics.mWaterViscosity = sim_data.mTFluidProperties.mWaterViscosity;
     sim_data.mTPetroPhysics.mOilViscosity = sim_data.mTFluidProperties.mOilViscosity;
+  }
+
+  // ------------------------ Reservoir Properties ------------------------
+  if (input.find("ReservoirProperties") != input.end()) {
+    auto reservoir = input["ReservoirProperties"];
+    if (reservoir.find("s0") != reservoir.end()) {
+      auto s0 = reservoir["s0"];
+      TMRSPropertiesFunctions::EFunctionType s0_functionType = s0["functionType"];
+      REAL constant_val = s0["value"];
+      TMRSPropertiesFunctions reservoir_properties;
+      reservoir_properties.set_function_type_s0(s0_functionType, constant_val);
+      auto s0_function = reservoir_properties.Create_s0();
+      sim_data.mTReservoirProperties.s0 = s0_function;
+    }
   }
 
   // ------------------------ Setting extra stuff that is still not in JSON ------------------------

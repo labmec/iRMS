@@ -166,6 +166,13 @@ void TMRSSFIAnalysis::FillProperties(){
         }
         else{
             std::vector<REAL> kappa_phi(4,1.0);
+
+            if (m_sim_data->mTReservoirProperties.kappa_phi){
+                fAlgebraicDataTransfer.fkappa_phi = m_sim_data->mTReservoirProperties.kappa_phi;
+            }
+            if (m_sim_data->mTReservoirProperties.s0){
+                fAlgebraicDataTransfer.fs0 = m_sim_data->mTReservoirProperties.s0;
+            }
             
             m_transport_module->fAlgebraicTransport.interfaceid = m_sim_data->mTGeometry.mInterface_material_id;
             m_transport_module->fAlgebraicTransport.fgravity = m_sim_data->mTNumerics.m_gravity;
@@ -201,10 +208,6 @@ void TMRSSFIAnalysis::FillProperties(){
             }
             
             m_transport_module->fAlgebraicTransport.fdt = m_sim_data->mTNumerics.m_dt;
-            //Type 0.- InletCondition
-            //Type 1.- OutletCondition
-            // This part of the code tries to set the inlet and outlet matids automatically based on where the flux is
-            // entering and leaving.
             bool foundinlet = false;
 			for (auto& chunk : m_sim_data->mTBoundaryConditions.mBCTransportMatIdToTypeValue) {
 				const int idVal   = chunk.first;
@@ -213,58 +216,8 @@ void TMRSSFIAnalysis::FillProperties(){
 				const REAL idValue   = typeAndVal.second;
 				std::pair<int, REAL> bccond = std::make_pair(idType, idValue);
 				m_transport_module->fAlgebraicTransport.fboundaryCMatVal[idVal] =bccond;
-                //PressureImposed
-				if(idType==0){
-//                    if(idValue!=0){
-                        if (!foundinlet) {
-                            m_transport_module->fAlgebraicTransport.inletmatid =idVal;
-                            foundinlet = true;
-                        }
-                        else{
-                            int inletant = m_transport_module->fAlgebraicTransport.inletmatid;
-                            REAL val = m_transport_module->fAlgebraicTransport.fboundaryCMatVal[inletant].second;
-                            int type = m_sim_data->mTBoundaryConditions.mBCTransportMatIdToTypeValue[inletant].first;
-                            if(type==1){
-                                m_transport_module->fAlgebraicTransport.outletmatid = idVal;
-                            }
-                            if((idType==0) && (val>idValue) && (type!=1)){
-                                m_transport_module->fAlgebraicTransport.inletmatid = inletant;
-                                m_transport_module->fAlgebraicTransport.outletmatid = idVal;
-                            }
-//                            else{
-//                                m_transport_module->fAlgebraicTransport.inletmatid = idVal;
-//                                m_transport_module->fAlgebraicTransport.outletmatid = inletant;
-//                            }
-//                        }
-                    }
-					
-				}
-				if(idType==1 && idValue!=0){
-                    if(idValue<0){
-                        if(!foundinlet){
-                            m_transport_module->fAlgebraicTransport.inletmatid=idVal;
-                            foundinlet = true;
-                        }
-                        else{
-                            int antval =m_transport_module->fAlgebraicTransport.inletmatid;
-                            m_transport_module->fAlgebraicTransport.inletmatid=idVal;
-                            m_transport_module->fAlgebraicTransport.outletmatid=antval;
-                        }
-                        
-                    }
-                    else{
-                        
-                        m_transport_module->fAlgebraicTransport.outletmatid =idVal;
-                        
-                    }
-					
-				}
 			}
-            m_transport_module->fAlgebraicTransport.outletmatid =3;
-//            kappa_phi[3]=1.0;
-//                FillProperties(&m_transport_module->fAlgebraicTransport, kappa_phi);
         }
-        
     }
     else{
         if (m_sim_data->mTReservoirProperties.mPropsFileName=="") {

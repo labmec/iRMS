@@ -1,17 +1,20 @@
 // Gmsh project created on Fri Jul  5 14:35:05 2024
 SetFactory("OpenCASCADE");
+rin = 30.15; //sandscreen tube radius
+rout = 30.15+345; //external radius
+h = 1000; //height
 //+
-Point(1) = {0, 0, 0, 1.0};
+Point(1) = {rin, 0, 0, 1.0};
 //+
-Point(2) = {310.5, 0, 0, 1.0};
+Point(2) = {rin+310.5, 0, 0, 1.0};
 //+
-Point(3) = {345, 0, 0, 1.0};
+Point(3) = {rout, 0, 0, 1.0};
 //+
-Point(4) = {345, 1000, 0, 1.0};
+Point(4) = {rout, h, 0, 1.0};
 //+
-Point(5) = {310.5, 1000, 0, 1.0};
+Point(5) = {rin+310.5, h, 0, 1.0};
 //+
-Point(6) = {0, 1000, 0, 1.0};
+Point(6) = {rin, h, 0, 1.0};
 //+
 Line(1) = {1, 2};
 //+
