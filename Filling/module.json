@@ -65,8 +65,8 @@
             "DeltaT": 0.025,
             "NSteps": 50000,
             "Gravity": [0.0, -9810.0, 0.0],
-            "IsLinearTrace": true,
-            "IsAxisymmetric": true
+            "IsLinearTrace": false,
+            "IsAxisymmetric": false
         },
     "FluidProperties":
     {
@@ -87,7 +87,7 @@
         "s0":
         {
             "functionType": 0,
-            "value": 1.0 //This is used to apply a constant initial saturation different from 0.0
+            "value": 0.0 //This is used to apply a constant initial saturation different from 0.0
         }
     }
 }

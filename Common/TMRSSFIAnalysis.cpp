@@ -183,6 +183,7 @@ void TMRSSFIAnalysis::FillProperties(){
             int ncells = m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil.size();
             REAL rhow = m_sim_data->mTFluidProperties.mWaterDensityRef;
             REAL rhoo = m_sim_data->mTFluidProperties.mOilDensityRef;
+            m_transport_module->fAlgebraicTransport.initialMass = 0.0;
           
             for (int icell =0; icell<ncells; icell++) {
                 m_transport_module->fAlgebraicTransport.fCellsData.fDensityWater[icell]= rhow; m_transport_module->fAlgebraicTransport.fCellsData.fDensityOil[icell]= rhoo;
@@ -200,6 +201,11 @@ void TMRSSFIAnalysis::FillProperties(){
                         break;
                     }
                 }
+                REAL sat = m_transport_module->fAlgebraicTransport.fCellsData.fSaturation[icell];
+                REAL phi = m_transport_module->fAlgebraicTransport.fCellsData.fporosity[icell];
+                REAL vol = m_transport_module->fAlgebraicTransport.fCellsData.fVolume[icell];
+                m_transport_module->fAlgebraicTransport.initialMass += sat * phi * vol;
+                
                 if (!fountmat){
                     DebugStop();
                 }
